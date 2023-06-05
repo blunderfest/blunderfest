@@ -1,23 +1,41 @@
 {
-    "dockerComposeFile": [
-        "docker-compose.yml"
-    ],
-    "features": {
-        "ghcr.io/devcontainers-contrib/features/erlang-asdf:2": {},
-        "ghcr.io/devcontainers-contrib/features/elixir-asdf:2": {},
-        "ghcr.io/devcontainers/features/node:1": {}
-    },
-    "workspaceFolder": "/workspace/blunderfest",
-    "service": "app_dev",
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "jakebecker.elixir-ls",
-                "eamodio.gitlens"
-            ]
-        },
-    },
-    "forwardPorts": [
-        4000
-    ]
+  "name": "Blunderfest",
+  "dockerComposeFile": ["docker-compose.yml"],
+  "workspaceFolder": "/workspace/blunderfest",
+  "service": "blunderfest",
+  // Configure tool-specific properties.
+  "customizations": {
+    // Configure properties specific to VS Code.
+    "vscode": {
+      // Add the IDs of extensions you want installed when the container is created.
+      "extensions": [
+		"jakebecker.elixir-ls",
+		"phoenixframework.phoenix",
+		"RoyalMist.vscode-eex-format",
+		"dbaeumer.vscode-eslint",
+		"ms-vscode.vscode-typescript-next",
+		"esbenp.prettier-vscode",
+		"wix.vscode-import-cost",
+		"github.vscode-github-actions",
+		"ko-dev.vscode-open-files-in-directory",
+		"mikehanson.auto-barrel",
+		"statelyai.stately-vscode"
+	]
+    }
+  },
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [4000],
+
+  // Use 'postCreateCommand' to run commands after the container is created.
+  // "postCreateCommand": "mix deps.get"
+
+  // Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers-contrib/features/mkcert:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    // "ghcr.io/dhoeric/features/flyctl:1": {}
+  }
 }

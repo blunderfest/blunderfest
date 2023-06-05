@@ -1,0 +1,7 @@
+<%= if dev_env?() do %>
+  <script type="module" src="http://localhost:5173/@vite/client"></script>
+  <script type="module" src="http://localhost:5173/src/index.jsx"></script>
+<% else %>
+  <link phx-track-static rel="stylesheet" href={~p"/assets/main.css"}/>
+  <script defer phx-track-static type="text/javascript" src={~p"/assets/index.js"}></script>
+<% end %>
