@@ -1,9 +1,8 @@
 version: "3.6"
 
 services:
-  app_dev:
+  blunderfest:
     build:
-      # Set the context to the parent directory, so we can add `.tool-versions` to the container
       context: ../
       dockerfile: .devcontainer/Dockerfile
     environment:
