@@ -43,7 +43,7 @@ defmodule BlunderfestWeb do
 
       import Plug.Conn
 
-      unquote(verified_routes())
+      unquote(html_helpers())
     end
   end
 

@@ -13,8 +13,10 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "rIyoa1ecRAMF4ElPVUVj79ztnXk4aIN6W1oajZ2iLs7VJgoRWV9CF4Vnq51C/hdR",
-  watchers: []
+  secret_key_base: "tVR10EUJDR+nLcOf/KSR0ghJC7lalgiUTUL81X7ktVPomMk11U7c8XAUDE4yosux",
+  watchers: [
+    node: ["build.js", "--watch", cd: Path.expand("../assets", __DIR__)]
+  ]
 
 # ## SSL Support
 #

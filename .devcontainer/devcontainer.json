@@ -15,7 +15,8 @@
 				"phoenixframework.phoenix",
 				"RoyalMist.vscode-eex-format",
 				"dbaeumer.vscode-eslint",
-				"rvest.vs-code-prettier-eslint"
+				"rvest.vs-code-prettier-eslint",
+				"ms-vscode.vscode-typescript-next"
 			]
 		}
 	},

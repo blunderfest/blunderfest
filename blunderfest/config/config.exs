@@ -15,7 +15,7 @@ config :blunderfest, BlunderfestWeb.Endpoint,
     layout: false
   ],
   pubsub_server: Blunderfest.PubSub,
-  live_view: [signing_salt: "dEAW8/il"]
+  live_view: [signing_salt: "6Ix183ef"]
 
 # Configures the mailer
 #

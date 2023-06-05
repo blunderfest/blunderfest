@@ -20,6 +20,8 @@ defmodule BlunderfestWeb.Router do
 
   scope "/api", BlunderfestWeb do
     pipe_through :api
+
+    get "/", ApiController, :index
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

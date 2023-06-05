@@ -33,6 +33,7 @@ defmodule Blunderfest.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.7.3"},
+      {:phoenix_html, "~> 3.0"},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:swoosh, "~> 1.3"},
       {:finch, "~> 0.13"},
@@ -51,7 +52,8 @@ defmodule Blunderfest.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get"]
+      setup: ["deps.get", "cmd --cd assets yarn"],
+      "assets.deploy": ["cmd --cd assets node build.js --deploy", "phx.digest"]
     ]
   end
 end

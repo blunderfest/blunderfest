@@ -7,7 +7,7 @@ defmodule BlunderfestWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_blunderfest_key",
-    signing_salt: "B/2attkz",
+    signing_salt: "cA5AMKXP",
     same_site: "Lax"
   ]
 
@@ -21,7 +21,7 @@ defmodule BlunderfestWeb.Endpoint do
     at: "/",
     from: :blunderfest,
     gzip: false,
-    only: BlunderfestWeb.static_paths()
+    only: ~w(assets)
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.

@@ -4,7 +4,7 @@ import Config
 # you can enable the server option below.
 config :blunderfest, BlunderfestWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "J0s+KYLALXMnn8iiLHJ+4ZuJQlklUUHg4GzxNZdjt5VOnfxY1MtNwqZYxjVELkxj",
+  secret_key_base: "MnVmJBEulW7xgumMp8V6n9DZcH0BCkYAaV5mSQUaB5EKzXAU/9rFj42uNPPQeq0i",
   server: false
 
 # In test we don't send emails.
