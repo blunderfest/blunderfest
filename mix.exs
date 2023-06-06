@@ -43,7 +43,8 @@ defmodule Blunderfest.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
-      {:nanoid, "~> 2.0.5"}
+      {:nanoid, "~> 2.0.5"},
+      {:horde, "~> 0.8.7"}
     ]
   end
 
