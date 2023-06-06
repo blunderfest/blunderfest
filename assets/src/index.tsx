@@ -1,21 +1,14 @@
 import * as ReactDOM from "react-dom/client";
-import {
-    createBrowserRouter,
-    RouterProvider,
-  } from "react-router-dom";
 
 import {App} from "./App.js";
 import React from "react";
 
-const router = createBrowserRouter([
-    {
-      path: "/",
-      element: <App />,
-    },
-  ]);
+const gameCode = document
+  .querySelector("meta[name='game-code']")!
+  .getAttribute("content")!;
 
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-      <RouterProvider router={router} />
+      <App gameCode={gameCode} />
     </React.StrictMode>
   );

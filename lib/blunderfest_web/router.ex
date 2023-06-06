@@ -12,16 +12,17 @@ defmodule BlunderfestWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", BlunderfestWeb do
-    pipe_through :browser
-
-    get "/", PageController, :index
-  end
-
   scope "/api", BlunderfestWeb do
     pipe_through :api
 
     get "/", ApiController, :index
+  end
+
+  scope "/", BlunderfestWeb do
+    pipe_through :browser
+
+    get "/", PageController, :index
+    get "/:code", PageController, :join
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

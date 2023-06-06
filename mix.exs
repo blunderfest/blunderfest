@@ -35,12 +35,15 @@ defmodule Blunderfest.MixProject do
       {:phoenix, "~> 1.7.3"},
       {:phoenix_html, "~> 3.0"},
       {:phoenix_live_dashboard, "~> 0.8.0"},
+      {:phoenix_live_reload, "~> 1.3"},
+      {:phoenix_pubsub, "~> 2.1"},
       {:swoosh, "~> 1.3"},
       {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
-      {:plug_cowboy, "~> 2.5"}
+      {:plug_cowboy, "~> 2.5"},
+      {:nanoid, "~> 2.0.5"}
     ]
   end
 

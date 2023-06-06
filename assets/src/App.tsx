@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-export const App = () => {
+export const App: React.FC<{gameCode: string}> = ({gameCode}) => {
     const [count, setCount] = useState(0);
 
     useEffect(() => {
@@ -10,7 +10,7 @@ export const App = () => {
             .catch(error => console.error("Error", error));
     }, []);
 
-    return <div>Hello, World!
+    return <div>Hello, World! <br />{gameCode} <br />
         <button onClick={() => setCount(count + 1) }>Counter: {count}</button>
     </div>;
 }

@@ -18,6 +18,13 @@ config :blunderfest, BlunderfestWeb.Endpoint,
     node: ["build.js", "--watch", cd: Path.expand("../assets", __DIR__)]
   ]
 
+config :blunderfest, BlunderfestWeb.Endpoint,
+  live_reload: [
+    patterns: [
+      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$"
+    ]
+  ]
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

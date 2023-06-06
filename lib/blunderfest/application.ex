@@ -15,7 +15,9 @@ defmodule Blunderfest.Application do
       # Start Finch
       {Finch, name: Blunderfest.Finch},
       # Start the Endpoint (http/https)
-      BlunderfestWeb.Endpoint
+      BlunderfestWeb.Endpoint,
+      {Registry, keys: :unique, name: Blunderfest.GameRegistry},
+      {DynamicSupervisor, strategy: :one_for_one, name: Blunderfest.GameSupervisor}
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)
       # {Blunderfest.Worker, arg}
     ]

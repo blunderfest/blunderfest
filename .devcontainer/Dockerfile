@@ -23,7 +23,7 @@ RUN apt-get update \
   && /bin/bash /tmp/common-setup.sh "${INSTALL_ZSH}" "${USERNAME}" "${USER_UID}" "${USER_GID}" "${UPGRADE_PACKAGES}" \
   #
   # Install dependencies
-  && apt-get install -y build-essential \
+  && apt-get install -y build-essential inotify-tools \
   #
   # Clean up
   && apt-get autoremove -y \
