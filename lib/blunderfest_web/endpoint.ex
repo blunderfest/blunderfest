@@ -11,6 +11,13 @@ defmodule BlunderfestWeb.Endpoint do
     same_site: "Lax"
   ]
 
+  if Mix.env() == :dev do
+    plug Plug.Static,
+      at: "/",
+      from: "assets",
+      gzip: false
+  end
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # You should set gzip to true if you are running phx.digest
