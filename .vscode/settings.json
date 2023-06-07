@@ -11,4 +11,12 @@
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "JakeBecker.elixir-ls"
     },
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true
 }

@@ -21,13 +21,6 @@ config :blunderfest, BlunderfestWeb.Endpoint,
     ]
   ]
 
-config :blunderfest, BlunderfestWeb.Endpoint,
-  live_reload: [
-    patterns: [
-      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$"
-    ]
-  ]
-
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed
