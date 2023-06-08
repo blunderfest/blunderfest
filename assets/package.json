@@ -15,9 +15,11 @@
         "@fontsource/roboto": "^5.0.2",
         "@mui/icons-material": "^5.11.16",
         "@mui/material": "^5.13.4",
+        "immer": "^10.0.2",
         "phoenix": "^1.7.3",
         "react": "^18.2.0",
-        "react-dom": "^18.2.0"
+        "react-dom": "^18.2.0",
+        "zustand": "^4.3.8"
     },
     "devDependencies": {
         "@types/node": "^20.2.5",

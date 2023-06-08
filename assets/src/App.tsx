@@ -1,7 +1,7 @@
-import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { Button } from "@mui/material";
 import { socket } from "./socket";
+import { useStore } from "./store";
 
 type Props = {
     gameCode: string;
@@ -18,7 +18,8 @@ channel
     });
 
 export const App = ({ gameCode }: Props) => {
-    const [count, setCount] = useState(0);
+    const count = useStore(state => state.count);
+    const increment = useStore(state => state.increase);
 
     const handleOnClick = async () => {
         const response = await fetch("/api");
@@ -39,7 +40,7 @@ export const App = ({ gameCode }: Props) => {
             </Button>
             <h1>Vite + React</h1>
             <div className="card">
-                <Button onClick={() => setCount(count => count + 1)} variant="contained">
+                <Button onClick={() => increment()} variant="contained">
                     count is {count}
                 </Button>
                 <p>
