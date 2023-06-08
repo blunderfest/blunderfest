@@ -11,6 +11,8 @@ defmodule BlunderfestWeb.Endpoint do
     same_site: "Lax"
   ]
 
+  socket "/socket", BlunderfestWeb.UserSocket, websocket: true, longpoll: false
+
   if Mix.env() == :dev do
     plug Plug.Static,
       at: "/",

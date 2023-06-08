@@ -1,10 +1,21 @@
 import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { Button } from "@mui/material";
+import { socket } from "./socket";
 
 type Props = {
     gameCode: string;
 };
+
+const channel = socket.channel("room:lobby", {});
+channel
+    .join()
+    .receive("ok", resp => {
+        console.log("Joined successfully", resp);
+    })
+    .receive("error", resp => {
+        console.log("Unable to join", resp);
+    });
 
 export const App = ({ gameCode }: Props) => {
     const [count, setCount] = useState(0);
