@@ -1,16 +1,20 @@
 import { create, useStore as useZustandStore } from "zustand";
 import { immer } from "zustand/middleware/immer";
+import { devtools } from "zustand/middleware";
 
 type StoreType = {
     count: number;
     increase: () => void;
 };
 
-export const store = create<StoreType>()(
-    immer(set => ({
-        count: 0,
-        increase: () => set(state => ({ count: state.count + 1 })),
-    })),
+const storeCreator = create<StoreType>();
+export const store = storeCreator(
+    devtools(
+        immer(set => ({
+            count: 0,
+            increase: () => set(state => ({ count: state.count + 1 })),
+        })),
+    ),
 );
 
 export function useStore(): StoreType;
