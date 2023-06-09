@@ -1,20 +1,22 @@
 import reactLogo from "./assets/react.svg";
 import { Button } from "@mui/material";
 import { useStore } from "./store";
+import { useState } from "react";
 
 type Props = {
-    gameCode: string;
+    roomCode: string;
 };
 
-export const App = ({ gameCode }: Props) => {
+export const App = ({ roomCode }: Props) => {
     const countStore = useStore(state => state.count);
     const channelStore = useStore(state => state.channel);
+    const [data, setData] = useState({ data: "" });
 
     const handleOnClick = async () => {
         const response = await fetch("/api");
         const data = await response.json();
 
-        console.log(data);
+        setData(data);
     };
 
     return (
@@ -24,12 +26,18 @@ export const App = ({ gameCode }: Props) => {
                     <img src={reactLogo} className="logo react" alt="React logo" />
                 </a>
             </div>
-            <Button variant="contained" color="primary" onClick={() => channelStore.connect()} disabled={channelStore.ready}>
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={() => channelStore.connect(roomCode)}
+                disabled={channelStore.ready}
+            >
                 Connect
             </Button>
             <Button variant="contained" color="secondary" onClick={() => handleOnClick()} disabled={!channelStore.ready}>
-                Click {gameCode}
+                Click {roomCode}
             </Button>
+            <div>Data returned: {data.data}</div>
             <h1>Vite + React + Phoenix</h1>
             <div className="card">
                 <Button onClick={() => countStore.increment()} variant="contained">

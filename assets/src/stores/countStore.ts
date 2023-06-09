@@ -5,7 +5,7 @@ type CountStoreState = {
     increment: () => void;
 };
 
-const state: Lens<CountStoreState> = (set, get, api) => ({
+const state: Lens<CountStoreState> = set => ({
     count: 0,
     increment: () => set(state => ({ count: state.count + 1 })),
 });

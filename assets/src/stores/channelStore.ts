@@ -3,17 +3,16 @@ import { Lens, lens } from "@dhmk/zustand-lens";
 
 type ChannelStoreState = {
     ready: boolean;
-    connect: () => void;
+    connect: (roomCode: string) => void;
 };
 
 const state: Lens<ChannelStoreState> = set => ({
     ready: false,
-    connect: () => {
-        console.log("Connecting...");
+    connect: roomCode => {
         const socket = new Socket("/socket");
         socket.connect();
 
-        const channel = socket.channel("room:lobby", {});
+        const channel = socket.channel(`room:${roomCode}`, {});
         channel
             .join()
             .receive("ok", () => {

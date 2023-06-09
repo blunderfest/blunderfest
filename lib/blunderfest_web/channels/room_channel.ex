@@ -2,7 +2,7 @@ defmodule BlunderfestWeb.RoomChannel do
   use BlunderfestWeb, :channel
 
   @impl true
-  def join("room:lobby", payload, socket) do
+  def join("room:" <> roomCode, payload, socket) do
     if authorized?(payload) do
       {:ok, socket}
     else

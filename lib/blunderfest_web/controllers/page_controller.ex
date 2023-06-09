@@ -3,10 +3,8 @@ defmodule BlunderfestWeb.PageController do
   alias Nanoid
 
   def join(conn, %{"code" => code}) do
-    IO.puts(Mix.env())
-
       conn
-      |> assign(:game_code, code)
+      |> assign(:room_code, code)
       |> render(:index, layout: false)
   end
 

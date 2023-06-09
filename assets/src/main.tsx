@@ -11,7 +11,7 @@ import "@fontsource/roboto/700.css";
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { brown, yellow } from "@mui/material/colors";
 
-const gameCode = document.querySelector("meta[name='game-code']")?.getAttribute("content") ?? "";
+const roomCode = document.querySelector("meta[name='room-code']")?.getAttribute("content") ?? "";
 
 const theme = createTheme({
     palette: {
@@ -30,7 +30,7 @@ ReactDOM.createRoot(root).render(
     <React.StrictMode>
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <App gameCode={gameCode} />
+            <App roomCode={roomCode} />
         </ThemeProvider>
     </React.StrictMode>,
 );

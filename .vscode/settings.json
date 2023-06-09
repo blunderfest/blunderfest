@@ -1,26 +1,26 @@
 {
-    "workbench.editor.enablePreview": false,
-    "files.associations": {
-        "*.heex": "phoenix-heex",
-    },
-    "[elixir]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "JakeBecker.elixir-ls"
-    },
-    "[phoenix-heex]": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "JakeBecker.elixir-ls"
-    },
-    "[typescript]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[typescriptreact]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "editor.formatOnPaste": true,
+  "workbench.editor.enablePreview": false,
+  "files.associations": {
+    "*.heex": "phoenix-heex"
+  },
+  "[elixir]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "[jsonc]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    }
+    "editor.defaultFormatter": "JakeBecker.elixir-ls"
+  },
+  "[phoenix-heex]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "RoyalMist.vscode-eex-format"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }
