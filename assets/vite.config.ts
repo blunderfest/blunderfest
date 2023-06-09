@@ -15,6 +15,14 @@ export default defineConfig(({ command }: ConfigEnv) => {
     return {
         publicDir: "static",
         plugins: [react()],
+        server: {
+            proxy: {
+                "/socket": {
+                    target: "http://localhost:4000",
+                    ws: true,
+                },
+            },
+        },
         build: {
             target: "esnext", // build for recent browsers
             outDir: "../priv/static", // emit assets to priv/static

@@ -7,8 +7,8 @@ type Props = {
 };
 
 export const App = ({ gameCode }: Props) => {
-    const count = useStore(state => state.count);
-    const increment = useStore(state => state.increase);
+    const countStore = useStore(state => state.count);
+    const channelStore = useStore(state => state.channel);
 
     const handleOnClick = async () => {
         const response = await fetch("/api");
@@ -24,13 +24,16 @@ export const App = ({ gameCode }: Props) => {
                     <img src={reactLogo} className="logo react" alt="React logo" />
                 </a>
             </div>
-            <Button variant="outlined" color="secondary" onClick={() => handleOnClick()}>
+            <Button variant="contained" color="primary" onClick={() => channelStore.connect()} disabled={channelStore.ready}>
+                Connect
+            </Button>
+            <Button variant="contained" color="secondary" onClick={() => handleOnClick()} disabled={!channelStore.ready}>
                 Click {gameCode}
             </Button>
-            <h1>Vite + React</h1>
+            <h1>Vite + React + Phoenix</h1>
             <div className="card">
-                <Button onClick={() => increment()} variant="contained">
-                    count is {count}
+                <Button onClick={() => countStore.increment()} variant="contained">
+                    count is {countStore.count}
                 </Button>
                 <p>
                     Edit <code>src/App.tsx</code> and save to test HMR

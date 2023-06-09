@@ -1,10 +1,13 @@
-import { StateCreator } from "zustand";
+import { Lens, lens } from "@dhmk/zustand-lens";
 
-export type CountStoreState = {
+type CountStoreState = {
     count: number;
+    increment: () => void;
 };
 
-export const createCountStore: StateCreator<CountStoreState> = (set, get, api) => ({
+const state: Lens<CountStoreState> = (set, get, api) => ({
     count: 0,
-    increment: () => set({ count: get().count + 1 }),
+    increment: () => set(state => ({ count: state.count + 1 })),
 });
+
+export const countStore = lens(state);

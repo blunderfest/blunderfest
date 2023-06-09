@@ -2,11 +2,13 @@ defmodule BlunderfestWeb.PageController do
   use BlunderfestWeb, :controller
   alias Nanoid
 
-  def join(conn, %{"code" => code}),
-    do:
+  def join(conn, %{"code" => code}) do
+    IO.puts(Mix.env())
+
       conn
       |> assign(:game_code, code)
       |> render(:index, layout: false)
+  end
 
   def index(conn, _params), do: conn |> start_new_game()
 

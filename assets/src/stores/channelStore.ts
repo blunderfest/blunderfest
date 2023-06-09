@@ -1,13 +1,15 @@
 import { Socket } from "phoenix";
-import { StateCreator } from "zustand";
+import { Lens, lens } from "@dhmk/zustand-lens";
 
-export type ChannelStoreState = {
+type ChannelStoreState = {
     ready: boolean;
+    connect: () => void;
 };
 
-export const createChannelStore: StateCreator<ChannelStoreState> = (set, get, api) => ({
+const state: Lens<ChannelStoreState> = set => ({
     ready: false,
     connect: () => {
+        console.log("Connecting...");
         const socket = new Socket("/socket");
         socket.connect();
 
@@ -24,3 +26,5 @@ export const createChannelStore: StateCreator<ChannelStoreState> = (set, get, ap
             });
     },
 });
+
+export const channelStore = lens(state);

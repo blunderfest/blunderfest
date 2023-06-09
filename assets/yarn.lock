@@ -332,6 +332,18 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
+"@dhmk/utils@^2.4.2":
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/@dhmk/utils/-/utils-2.4.2.tgz#54de9a4a55f1acf9448bc0aef1b9be81ccc2d38e"
+  integrity sha512-xNF77VfjTPocSkgs5LkEvNUHE7fqzKr5B9LllMoCbU8BobRSqwssIwIL/zMM6oiMGZoHyYHOj/XpzLdvULZZ1A==
+
+"@dhmk/zustand-lens@^2.0.5":
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/@dhmk/zustand-lens/-/zustand-lens-2.0.5.tgz#3d11fffc97a59fc55e49a1506daa7a45dc08629a"
+  integrity sha512-5PoYUpb1z+hlouCP0iE7HRgg1cVe5nuYa0zb8cULCljNHSbd60xHwey8y0KtzujASyUOR37hwwci9ebHqKMskg==
+  dependencies:
+    "@dhmk/utils" "^2.4.2"
+
 "@emotion/babel-plugin@^11.11.0":
   version "11.11.0"
   resolved "https://registry.yarnpkg.com/@emotion/babel-plugin/-/babel-plugin-11.11.0.tgz#c2d872b6a7767a9d176d007f5b31f7d504bb5d6c"
