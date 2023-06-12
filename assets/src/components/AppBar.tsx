@@ -1,3 +1,5 @@
+import ChessPawn from "mdi-material-ui/ChessPawn";
+
 import { AppBar as MUIAppBar, Box, Container, SvgIcon, Toolbar, Typography } from "@mui/material";
 
 import { ConnectionStatus } from "./ConnectionStatus";
@@ -10,10 +12,10 @@ export const AppBar = ({ roomCode }: Props) => {
     return (
         <Box sx={{ display: "flex" }}>
             <MUIAppBar position="fixed">
-                <Container maxWidth="xl">
+                <Container maxWidth={false}>
                     <Toolbar disableGutters>
                         <SvgIcon sx={{ display: "flex", mr: 1 }} color="secondary">
-                            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                            <ChessPawn />
                         </SvgIcon>
                         <Typography
                             variant="h6"

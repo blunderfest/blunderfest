@@ -1,0 +1,6 @@
+{
+    "online": "Connected",
+    "offline": "Disconnected",
+    "connect": "Disconnected. Click to connect to server",
+    "disconnect": "Connected. Click to disconnect from server"
+}

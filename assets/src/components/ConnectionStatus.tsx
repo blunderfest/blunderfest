@@ -4,6 +4,7 @@ import WifiIcon from "@mui/icons-material/Wifi";
 import WifiOffIcon from "@mui/icons-material/WifiOff";
 import { IconButton } from "@mui/material";
 
+import { useI18N } from "../i18n";
 import { useStore } from "../store";
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 export const ConnectionStatus = ({ roomCode }: Props) => {
     const channel = useStore(state => state.channel);
+    const { t } = useI18N();
     const [autoConnect, setAutoConnect] = useState(true);
 
     useEffect(() => {
@@ -27,6 +29,8 @@ export const ConnectionStatus = ({ roomCode }: Props) => {
                 setAutoConnect(false);
             }}
             color="success"
+            aria-label={t(`system:online`)}
+            title={t("system:disconnect")}
         >
             <WifiIcon />
         </IconButton>
@@ -36,7 +40,9 @@ export const ConnectionStatus = ({ roomCode }: Props) => {
                 channel.connect(roomCode);
                 setAutoConnect(true);
             }}
-            color="warning"
+            color="error"
+            aria-label={t(`system:offline`)}
+            title={t("system:connect")}
         >
             <WifiOffIcon />
         </IconButton>

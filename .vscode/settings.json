@@ -24,5 +24,6 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "importSorter.importStringConfiguration.quoteMark": "double",
-  "importSorter.generalConfiguration.sortOnBeforeSave": true
+  "importSorter.generalConfiguration.sortOnBeforeSave": true,
+  "prettier.prettierPath": "./assets/node_modules/prettier"
 }

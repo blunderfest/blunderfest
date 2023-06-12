@@ -6,6 +6,7 @@ type ChannelStoreState = {
     status: "online" | "offline";
     connect: (roomCode: string) => void;
     disconnect: () => void;
+    roomCode: string;
 };
 
 let socket: Socket | undefined = undefined;
@@ -14,18 +15,30 @@ let channel: Channel | undefined = undefined;
 const state: Lens<ChannelStoreState> = set => {
     return {
         status: "offline",
+        roomCode: "",
         connect(roomCode) {
-            socket = new Socket("/socket");
+            socket = new Socket("/socket", {
+                heartbeatIntervalMs: 5000,
+            });
             socket.connect();
+            socket.onOpen(() => set({ status: "online" }));
+            socket.onClose(() => {
+                console.log("onClose");
+                set({ status: "offline" });
+            });
+            socket.onError(() => {
+                console.log("onError");
+                set({ status: "offline" });
+            });
 
             channel = socket.channel(`room:${roomCode}`, {});
             channel
                 .join()
                 .receive("ok", () => {
-                    set({ status: "online" });
+                    set({ roomCode: roomCode });
                 })
                 .receive("error", () => {
-                    set({ status: "offline" });
+                    set({ roomCode: "" });
                 });
         },
         disconnect() {
@@ -33,7 +46,6 @@ const state: Lens<ChannelStoreState> = set => {
                 socket.disconnect();
                 channel = undefined;
                 socket = undefined;
-                set({ status: "offline" });
             }
         },
     };
