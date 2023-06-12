@@ -17,7 +17,8 @@
 				"dbaeumer.vscode-eslint",
 				"ms-vscode.vscode-typescript-next",
 				"esbenp.prettier-vscode",
-				"wix.vscode-import-cost"
+				"wix.vscode-import-cost",
+				"mike-co.import-sorter"
 			]
 		}
 	},

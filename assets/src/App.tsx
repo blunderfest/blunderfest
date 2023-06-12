@@ -1,7 +1,9 @@
-import reactLogo from "./assets/react.svg";
+import { useEffect, useState } from "react";
+
 import { Button } from "@mui/material";
+
+import reactLogo from "./assets/react.svg";
 import { useStore } from "./store";
-import { useState } from "react";
 
 type Props = {
     roomCode: string;
@@ -11,6 +13,12 @@ export const App = ({ roomCode }: Props) => {
     const countStore = useStore(state => state.count);
     const channelStore = useStore(state => state.channel);
     const [data, setData] = useState({ data: "" });
+
+    useEffect(() => {
+        if (!channelStore.ready) {
+            channelStore.connect(roomCode);
+        }
+    }, [channelStore, channelStore.ready, roomCode]);
 
     const handleOnClick = async () => {
         const response = await fetch("/api");
@@ -34,6 +42,16 @@ export const App = ({ roomCode }: Props) => {
             >
                 Connect
             </Button>
+
+            <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => channelStore.disconnect()}
+                disabled={!channelStore.ready}
+            >
+                Disonnect
+            </Button>
+
             <Button variant="contained" color="secondary" onClick={() => handleOnClick()} disabled={!channelStore.ready}>
                 Click {roomCode}
             </Button>
@@ -43,9 +61,6 @@ export const App = ({ roomCode }: Props) => {
                 <Button onClick={() => countStore.increment()} variant="contained">
                     count is {countStore.count}
                 </Button>
-                <p>
-                    Edit <code>src/App.tsx</code> and save to test HMR
-                </p>
             </div>
             <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
         </>

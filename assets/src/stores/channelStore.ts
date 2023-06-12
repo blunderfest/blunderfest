@@ -1,29 +1,40 @@
 import { Socket } from "phoenix";
+
 import { Lens, lens } from "@dhmk/zustand-lens";
 
 type ChannelStoreState = {
     ready: boolean;
     connect: (roomCode: string) => void;
+    disconnect: () => void;
 };
 
-const state: Lens<ChannelStoreState> = set => ({
-    ready: false,
-    connect: roomCode => {
-        const socket = new Socket("/socket");
-        socket.connect();
+let socket: Socket | undefined = undefined;
 
-        const channel = socket.channel(`room:${roomCode}`, {});
-        channel
-            .join()
-            .receive("ok", () => {
-                set({
-                    ready: true,
+const state: Lens<ChannelStoreState> = set => {
+    return {
+        ready: false,
+        connect(roomCode) {
+            socket = new Socket("/socket");
+            socket.connect();
+
+            const channel = socket.channel(`room:${roomCode}`, {});
+            channel
+                .join()
+                .receive("ok", () => {
+                    set({ ready: true });
+                })
+                .receive("error", () => {
+                    set({ ready: false });
                 });
-            })
-            .receive("error", () => {
+        },
+        disconnect() {
+            if (socket) {
+                socket.disconnect();
+                socket = undefined;
                 set({ ready: false });
-            });
-    },
-});
+            }
+        },
+    };
+};
 
 export const channelStore = lens(state);

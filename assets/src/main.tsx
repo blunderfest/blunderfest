@@ -1,15 +1,15 @@
-import * as ReactDOM from "react-dom/client";
-
-import { App } from "./App.js";
-import React from "react";
-
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
-import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import React from "react";
+import * as ReactDOM from "react-dom/client";
+
+import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import { brown, yellow } from "@mui/material/colors";
+
+import { App } from "./App.js";
 
 const roomCode = document.querySelector("meta[name='room-code']")?.getAttribute("content") ?? "";
 

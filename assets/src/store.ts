@@ -1,9 +1,12 @@
 import { create, useStore as useZustandStore } from "zustand";
+import { devtools, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { devtools } from "zustand/middleware";
-import { countStore } from "./stores/countStore";
-import { channelStore } from "./stores/channelStore";
+
 import { withLenses } from "@dhmk/zustand-lens";
+
+import { deepMerge } from "./deep-merge";
+import { channelStore } from "./stores/channelStore";
+import { countStore } from "./stores/countStore";
 
 type StoreType = {
     count: typeof countStore;
@@ -11,7 +14,23 @@ type StoreType = {
 };
 
 const storeCreator = create<StoreType>();
-export const store = storeCreator(devtools(immer(withLenses({ count: countStore, channel: channelStore }))));
+export const store = storeCreator(
+    immer(
+        devtools(
+            persist(
+                withLenses(() => ({
+                    count: countStore,
+                    channel: channelStore,
+                })),
+                {
+                    name: "Test",
+                    merge: (persistedState, currentState) => deepMerge(currentState, persistedState as StoreType),
+                    partialize: state => ({ count: state.count }),
+                },
+            ),
+        ),
+    ),
+);
 
 export function useStore(): StoreType;
 export function useStore<T>(selector: (state: StoreType) => T, equals?: (a: T, b: T) => boolean): T;
