@@ -23,5 +23,6 @@
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "importSorter.importStringConfiguration.quoteMark": "double"
+  "importSorter.importStringConfiguration.quoteMark": "double",
+  "importSorter.generalConfiguration.sortOnBeforeSave": true
 }

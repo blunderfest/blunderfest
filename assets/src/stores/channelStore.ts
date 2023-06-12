@@ -1,37 +1,39 @@
-import { Socket } from "phoenix";
+import { Channel, Socket } from "phoenix";
 
 import { Lens, lens } from "@dhmk/zustand-lens";
 
 type ChannelStoreState = {
-    ready: boolean;
+    status: "online" | "offline";
     connect: (roomCode: string) => void;
     disconnect: () => void;
 };
 
 let socket: Socket | undefined = undefined;
+let channel: Channel | undefined = undefined;
 
 const state: Lens<ChannelStoreState> = set => {
     return {
-        ready: false,
+        status: "offline",
         connect(roomCode) {
             socket = new Socket("/socket");
             socket.connect();
 
-            const channel = socket.channel(`room:${roomCode}`, {});
+            channel = socket.channel(`room:${roomCode}`, {});
             channel
                 .join()
                 .receive("ok", () => {
-                    set({ ready: true });
+                    set({ status: "online" });
                 })
                 .receive("error", () => {
-                    set({ ready: false });
+                    set({ status: "offline" });
                 });
         },
         disconnect() {
             if (socket) {
                 socket.disconnect();
+                channel = undefined;
                 socket = undefined;
-                set({ ready: false });
+                set({ status: "offline" });
             }
         },
     };

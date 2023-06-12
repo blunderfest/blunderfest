@@ -32,7 +32,6 @@ export const store = storeCreator(
     ),
 );
 
-export function useStore(): StoreType;
 export function useStore<T>(selector: (state: StoreType) => T, equals?: (a: T, b: T) => boolean): T;
 export function useStore<T>(selector?: (state: StoreType) => T, equals?: (a: T, b: T) => boolean) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
