@@ -4,7 +4,7 @@ import WifiIcon from "@mui/icons-material/Wifi";
 import WifiOffIcon from "@mui/icons-material/WifiOff";
 import { IconButton } from "@mui/material";
 
-import { useI18N } from "../i18n";
+import { useI18N } from "../hooks/use-i18n";
 import { useStore } from "../store";
 
 type Props = {

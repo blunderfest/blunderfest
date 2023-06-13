@@ -21,6 +21,16 @@ const theme = createTheme({
         background: {
             default: "#1b1716",
         },
+        contrastThreshold: 4.5,
+    },
+    components: {
+        MuiAppBar: {
+            styleOverrides: {
+                root: () => ({
+                    backgroundColor: brown[900],
+                }),
+            },
+        },
     },
 });
 

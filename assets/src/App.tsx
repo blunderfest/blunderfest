@@ -1,6 +1,6 @@
 import "./i18n";
 
-import { Box, Container, Typography } from "@mui/material";
+import { Box, Container } from "@mui/material";
 
 import { AppBar } from "./components/AppBar";
 
@@ -17,9 +17,7 @@ export const App = ({ roomCode }: Props) => {
                     flex: 1,
                     overflow: "auto",
                 }}
-            >
-                <Typography variant="body1">{roomCode}</Typography>
-            </Container>
+            ></Container>
         </Box>
     );
 };
