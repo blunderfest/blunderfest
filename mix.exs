@@ -56,7 +56,7 @@ defmodule Blunderfest.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "cmd --cd assets yarn"],
-      "assets.deploy": ["cmd --cd assets node build.js --deploy", "phx.digest"]
+      "assets.deploy": ["cmd --cd assets yarn build", "phx.digest"]
     ]
   end
 end

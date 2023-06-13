@@ -9,13 +9,6 @@ defmodule BlunderfestWeb.Router do
     plug :put_secure_browser_headers
   end
 
-   pipeline :static do
-    plug Plug.Static,
-      at: "/",
-      from: "assets",
-      gzip: false
-M  end
-
   pipeline :api do
     plug :accepts, ["json"]
   end

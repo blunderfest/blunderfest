@@ -22,8 +22,8 @@ const state: Lens<ChannelStoreState> = set => {
             });
             socket.connect();
             socket.onOpen(() => set({ status: "online" }));
-            socket.onClose(() => {
-                console.log("onClose");
+            socket.onClose(e => {
+                console.log("onClose", e);
                 set({ status: "offline" });
             });
             socket.onError(() => {
@@ -35,9 +35,11 @@ const state: Lens<ChannelStoreState> = set => {
             channel
                 .join()
                 .receive("ok", () => {
+                    console.log("received ok");
                     set({ roomCode: roomCode });
                 })
                 .receive("error", () => {
+                    console.log("received error");
                     set({ roomCode: "" });
                 });
         },
