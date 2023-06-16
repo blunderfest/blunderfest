@@ -19,7 +19,8 @@
 				"esbenp.prettier-vscode",
 				"wix.vscode-import-cost",
 				"mike-co.import-sorter",
-				"bungcip.better-toml"
+				"bungcip.better-toml",
+				"github.vscode-github-actions"
 			]
 		}
 	},
