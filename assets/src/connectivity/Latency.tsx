@@ -11,13 +11,13 @@ export const Latency = () => {
     const latency = useStore(state => state.channel.latency);
     // const { t } = useI18N();
 
-    if (latency < 10) {
+    if (latency < 200) {
         return <SignalWifi4BarIcon />;
-    } else if (latency < 20) {
+    } else if (latency < 350) {
         return <SignalWifi3BarIcon />;
-    } else if (latency < 30) {
+    } else if (latency < 500) {
         return <SignalWifi2BarIcon />;
-    } else if (latency < 40) {
+    } else if (latency < 750) {
         return <SignalWifi1BarIcon />;
     } else {
         return <SignalWifi0BarIcon />;
