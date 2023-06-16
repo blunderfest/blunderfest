@@ -4,12 +4,10 @@ import SignalWifi2BarIcon from "@mui/icons-material/SignalWifi2Bar";
 import SignalWifi3BarIcon from "@mui/icons-material/SignalWifi3Bar";
 import SignalWifi4BarIcon from "@mui/icons-material/SignalWifi4Bar";
 
-// import { useI18N } from "../hooks/use-i18n";
 import { useStore } from "../store";
 
 export const Latency = () => {
     const latency = useStore(state => state.channel.latency);
-    // const { t } = useI18N();
 
     if (latency < 200) {
         return <SignalWifi4BarIcon />;

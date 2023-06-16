@@ -21,7 +21,7 @@ const state: Lens<ChannelStoreState> = set => {
                 set({ latency: rtt }, false, "channel/latency_update");
 
                 if (socket.isConnected()) {
-                    setTimeout(() => socket.ping(determineLatency), 5000);
+                    setTimeout(() => socket.ping(determineLatency), 1000);
                 }
             };
 
