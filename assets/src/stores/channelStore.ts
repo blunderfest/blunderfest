@@ -4,50 +4,59 @@ import { Lens, lens } from "@dhmk/zustand-lens";
 
 type ChannelStoreState = {
     status: "online" | "offline";
+    latency: number;
     connect: (roomCode: string) => void;
     disconnect: () => void;
-    roomCode: string;
 };
 
-let socket: Socket | undefined = undefined;
-let channel: Channel | undefined = undefined;
+const socket: Socket = new Socket("/socket", {
+    heartbeatIntervalMs: 5000,
+});
+const channels = new Map<string, Channel>();
 
-const state: Lens<ChannelStoreState> = set => {
+const state: Lens<ChannelStoreState> = (set, get) => {
     return {
         status: "offline",
-        roomCode: "",
+        latency: 0,
         connect(roomCode) {
-            socket = new Socket("/socket", {
-                heartbeatIntervalMs: 5000,
-            });
             socket.connect();
-            socket.onOpen(() => set({ status: "online" }));
-            socket.onClose(e => {
-                console.log("onClose", e);
-                set({ status: "offline" });
+            socket.onOpen(() => set({ status: "online" }, false, "socket/opened"));
+            socket.onClose(() => {
+                set({ status: "offline" }, false, "socket/closed");
             });
             socket.onError(() => {
-                console.log("onError");
-                set({ status: "offline" });
+                set({ status: "offline" }, false, "socket/errored");
             });
 
-            channel = socket.channel(`room:${roomCode}`, {});
-            channel
-                .join()
-                .receive("ok", () => {
-                    console.log("received ok");
-                    set({ roomCode: roomCode });
-                })
-                .receive("error", () => {
-                    console.log("received error");
-                    set({ roomCode: "" });
+            const channel = socket.channel(`room:${roomCode}`, {});
+            channel.join().receive("ok", () => {
+                channels.set(roomCode, channel);
+            });
+
+            const measure = () => {
+                channel.push("ping", { rtt: Date.now() }, 3000).receive("ok", response => {
+                    const latency = Date.now() - response.rtt;
+                    const currentLatency = get().latency;
+
+                    if (latency !== currentLatency) {
+                        set({ latency: latency }, false, "channel/latency_update");
+                    }
+
+                    setTimeout(() => measure(), 1000);
                 });
+            };
+
+            measure();
         },
         disconnect() {
             if (socket) {
+                for (const channel of channels.values()) {
+                    channel.leave();
+                }
+
+                channels.clear();
+
                 socket.disconnect();
-                channel = undefined;
-                socket = undefined;
             }
         },
     };

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 
-import WifiIcon from "@mui/icons-material/Wifi";
-import WifiOffIcon from "@mui/icons-material/WifiOff";
+import SignalWifiOffIcon from "@mui/icons-material/SignalWifiOff";
 import { IconButton } from "@mui/material";
 
 import { useI18N } from "../hooks/use-i18n";
 import { useStore } from "../store";
+import { Latency } from "./Latency";
 
 type Props = {
     roomCode: string;
@@ -17,7 +17,7 @@ export const ConnectionStatus = ({ roomCode }: Props) => {
     const [autoConnect, setAutoConnect] = useState(true);
 
     useEffect(() => {
-        if (autoConnect) {
+        if (autoConnect && channel.status === "offline") {
             channel.connect(roomCode);
         }
     }, [channel, autoConnect, roomCode]);
@@ -32,19 +32,16 @@ export const ConnectionStatus = ({ roomCode }: Props) => {
             aria-label={t(`system:online`)}
             title={t("system:disconnect")}
         >
-            <WifiIcon />
+            <Latency />
         </IconButton>
     ) : (
         <IconButton
-            onClick={() => {
-                channel.connect(roomCode);
-                setAutoConnect(true);
-            }}
+            onClick={() => setAutoConnect(true)}
             color="error"
             aria-label={t(`system:offline`)}
             title={t("system:connect")}
         >
-            <WifiOffIcon />
+            <SignalWifiOffIcon />
         </IconButton>
     );
 };

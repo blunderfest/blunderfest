@@ -18,7 +18,8 @@
 				"ms-vscode.vscode-typescript-next",
 				"esbenp.prettier-vscode",
 				"wix.vscode-import-cost",
-				"mike-co.import-sorter"
+				"mike-co.import-sorter",
+				"bungcip.better-toml"
 			]
 		}
 	},
@@ -33,6 +34,8 @@
 	"remoteUser": "vscode",
 	"features": {
 		"ghcr.io/devcontainers/features/node:1": {},
-		"ghcr.io/devcontainers-contrib/features/mkcert:1": {}
+		"ghcr.io/devcontainers-contrib/features/mkcert:1": {},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
+		"ghcr.io/dhoeric/features/flyctl:1": {}
 	}
 }

@@ -34,8 +34,12 @@ const theme = createTheme({
     },
 });
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-const root = document.getElementById("root")!;
+const root = document.getElementById("root");
+
+if (root === null) {
+    throw new Error("Root element not found");
+}
+
 ReactDOM.createRoot(root).render(
     <React.StrictMode>
         <ThemeProvider theme={theme}>

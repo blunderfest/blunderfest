@@ -1,7 +1,7 @@
 import { AppBar as MUIAppBar, Box, SvgIcon, Toolbar, Typography } from "@mui/material";
 
+import { ConnectionStatus } from "../connectivity/ConnectionStatus";
 import useAppBarHeight from "../hooks/use-app-bar-height";
-import { ConnectionStatus } from "./ConnectionStatus";
 
 type Props = {
     roomCode: string;

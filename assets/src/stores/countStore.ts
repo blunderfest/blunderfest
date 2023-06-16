@@ -7,5 +7,5 @@ type CountStoreState = {
 
 export const countStore = lens<CountStoreState>(set => ({
     count: 0,
-    increment: () => set(state => ({ count: state.count + 1 })),
+    increment: () => set(state => ({ count: state.count + 1 }), false, "count/incremented"),
 }));

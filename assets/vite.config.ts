@@ -1,4 +1,6 @@
-import { type ConfigEnv, defineConfig } from "vite";
+import { ConfigEnv, defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+
 import react from "@vitejs/plugin-react";
 
 export default defineConfig(({ command }: ConfigEnv) => {
@@ -14,7 +16,7 @@ export default defineConfig(({ command }: ConfigEnv) => {
 
     return {
         publicDir: "static",
-        plugins: [react()],
+        plugins: [react(), tsconfigPaths()],
         server: {
             proxy: {
                 "/socket": {
@@ -22,6 +24,11 @@ export default defineConfig(({ command }: ConfigEnv) => {
                     ws: true,
                 },
             },
+        },
+        test: {
+            globals: true,
+            environment: "jsdom",
+            setupFiles: "./src/__test__/setupTests.ts",
         },
         build: {
             target: "esnext", // build for recent browsers
