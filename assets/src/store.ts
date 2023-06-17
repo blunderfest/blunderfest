@@ -51,14 +51,19 @@ export const store = storeCreator(
                     count: countStore,
                     channel: channelStore,
                 })),
+                {
+                    actionsDenylist: ["channel/latency_update"],
+                    trace: true,
+                },
             ),
             {
                 name: "store",
                 merge: (persistedState, currentState) => deepMerge(currentState, persistedState as StoreType),
                 partialize: state => {
-                    const persisted: Omit<StoreType, "channel"> = { count: state.count };
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const { channel, ...rest } = state;
 
-                    return persisted;
+                    return rest;
                 },
             },
         ),

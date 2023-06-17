@@ -25,18 +25,20 @@ const state: Lens<ChannelStoreState> = set => {
                 }
             };
 
-            socket.connect();
-            socket.onOpen(() => {
-                determineLatency(0);
+            if (!socket.isConnected()) {
+                socket.connect();
+                socket.onOpen(() => {
+                    determineLatency(0);
 
-                set({ status: "online" }, false, "socket/opened");
-            });
-            socket.onClose(() => {
-                set({ status: "offline" }, false, "socket/closed");
-            });
-            socket.onError(() => {
-                set({ status: "offline" }, false, "socket/errored");
-            });
+                    set({ status: "online" }, false, "socket/opened");
+                });
+                socket.onClose(() => {
+                    set({ status: "offline" }, false, "socket/closed");
+                });
+                socket.onError(() => {
+                    set({ status: "offline" }, false, "socket/errored");
+                });
+            }
 
             const channel = socket.channel(`room:${roomCode}`, {});
             channel.join().receive("ok", () => {
