@@ -12,7 +12,7 @@ export const AppBar = ({ roomCode }: Props) => {
 
     return (
         <Box sx={{ display: "flex" }}>
-            <MUIAppBar position="fixed" enableColorOnDark={true} sx={{ backgroundImage: "none" }}>
+            <MUIAppBar position="fixed">
                 <Toolbar disableGutters>
                     <SvgIcon
                         sx={{

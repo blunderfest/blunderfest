@@ -8,53 +8,37 @@ type ChannelStoreState = {
     connect: (roomCode: string) => void;
     disconnect: () => void;
 };
+const socket: Socket = new Socket("/socket", {
+    heartbeatIntervalMs: 1000,
+});
 
-const socket: Socket = new Socket("/socket");
-const channels = new Map<string, Channel>();
+let channel: Channel | undefined = undefined;
 
 const state: Lens<ChannelStoreState> = set => {
     return {
         status: "offline",
         latency: 0,
         connect(roomCode) {
-            const determineLatency = (rtt: number) => {
-                set({ latency: rtt }, false, "channel/latency_update");
-
-                if (socket.isConnected()) {
-                    setTimeout(() => socket.ping(determineLatency), 1000);
-                }
-            };
-
             if (!socket.isConnected()) {
                 socket.connect();
-                socket.onOpen(() => {
-                    determineLatency(0);
-
-                    set({ status: "online" }, false, "socket/opened");
-                });
-                socket.onClose(() => {
-                    set({ status: "offline" }, false, "socket/closed");
-                });
-                socket.onError(() => {
-                    set({ status: "offline" }, false, "socket/errored");
-                });
             }
-
-            const channel = socket.channel(`room:${roomCode}`, {});
+            channel = socket.channel(`room:${roomCode}`, {});
             channel.join().receive("ok", () => {
-                channels.set(roomCode, channel);
+                const determineLatency = (rtt: number) => {
+                    set({ latency: rtt }, false, "channel/latency_update");
+
+                    if (socket.isConnected()) {
+                        setTimeout(() => socket.ping(determineLatency), 1000);
+                    }
+                };
+                determineLatency(0);
+                set({ status: "online" }, false, "channel/online");
             });
         },
         disconnect() {
-            if (socket) {
-                for (const channel of channels.values()) {
-                    channel.leave();
-                }
-
-                channels.clear();
-
-                socket.disconnect();
-            }
+            channel?.leave();
+            socket.disconnect();
+            set({ status: "offline" }, false, "channel/offline");
         },
     };
 };

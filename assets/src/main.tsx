@@ -19,7 +19,7 @@ const theme = createTheme({
         primary: brown,
         secondary: yellow,
         background: {
-            default: "#1b1716",
+            default: "#2e1d1a",
         },
         contrastThreshold: 4.5,
     },
@@ -28,6 +28,13 @@ const theme = createTheme({
             styleOverrides: {
                 root: () => ({
                     backgroundColor: brown[900],
+                }),
+            },
+        },
+        MuiPaper: {
+            styleOverrides: {
+                root: () => ({
+                    backgroundImage: "none",
                 }),
             },
         },

@@ -43,7 +43,8 @@ defmodule Blunderfest.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:nanoid, "~> 2.0.5"},
-      {:horde, "~> 0.8.7"}
+      {:horde, "~> 0.8.7"},
+      {:cors_plug, "~> 3.0", only: :dev},
     ]
   end
 

@@ -21,6 +21,11 @@ config :blunderfest, BlunderfestWeb.Endpoint,
     ]
   ]
 
+config :cors_plug,
+  origin: ["http://localhost:5173"],
+  max_age: 86400,
+  methods: ["GET", "POST"]
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed
