@@ -3,10 +3,18 @@ import { vi } from "vitest";
 
 import { render } from "@testing-library/react";
 
-import { StoreType, useStore } from "../store";
+import { useChannelStore } from "../stores/channelStore";
+
+const initialState = useChannelStore.getState();
+
+type StoreType = typeof initialState;
+
+beforeEach(() => {
+    useChannelStore.setState(initialState);
+});
 
 function TestComponent({ selector, effect }: { selector: (state: StoreType) => unknown; effect: (items: any) => void }) {
-    const items = useStore(selector);
+    const items = useChannelStore(selector);
 
     useEffect(() => effect(items), [effect, items]);
 
@@ -14,7 +22,7 @@ function TestComponent({ selector, effect }: { selector: (state: StoreType) => u
 }
 
 test("sample", () => {
-    const selector = (store: StoreType) => store.count;
+    const selector = (store: StoreType) => store.status;
     const effect = vi.fn();
     render(<TestComponent selector={selector} effect={effect} />);
 
@@ -22,7 +30,7 @@ test("sample", () => {
 });
 
 test("sample 2", () => {
-    const selector = (store: StoreType) => store.count;
+    const selector = (store: StoreType) => store.latency;
     const effect = vi.fn();
     render(<TestComponent selector={selector} effect={effect} />);
 

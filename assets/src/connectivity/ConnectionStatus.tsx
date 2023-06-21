@@ -9,7 +9,7 @@ import SignalWifi4BarIcon from "@mui/icons-material/SignalWifi4Bar";
 import SignalWifiOffIcon from "@mui/icons-material/SignalWifiOff";
 import { IconButton } from "@mui/material";
 
-import { useStore } from "../store";
+import { useChannelStore } from "../stores/channelStore";
 
 type Props = {
     roomCode: string;
@@ -17,7 +17,7 @@ type Props = {
 
 export const ConnectionStatus = ({ roomCode }: Props) => {
     const { t } = useTranslation();
-    const channel = useStore(state => state.channel);
+    const channel = useChannelStore();
     const latency = Math.floor((channel.latency * 2) / 300);
     const [autoConnect, setAutoConnect] = useState(true);
 
