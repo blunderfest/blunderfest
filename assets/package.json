@@ -17,14 +17,16 @@
         "@fontsource/roboto": "^5.0.2",
         "@mui/icons-material": "^5.11.16",
         "@mui/material": "^5.13.4",
+        "@react-spring/web": "^9.7.2",
+        "@reduxjs/toolkit": "^1.9.5",
+        "@use-gesture/react": "^10.2.27",
         "i18next": "^22.5.1",
         "i18next-browser-languagedetector": "^7.0.2",
-        "immer": "^10.0.2",
         "phoenix": "^1.7.3",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-i18next": "^12.3.1",
-        "zustand": "^4.3.8"
+        "react-redux": "^8.1.1"
     },
     "devDependencies": {
         "@testing-library/jest-dom": "^5.16.5",

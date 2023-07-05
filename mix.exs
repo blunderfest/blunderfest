@@ -36,7 +36,7 @@ defmodule Blunderfest.MixProject do
       {:phoenix_html, "~> 3.0"},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:phoenix_pubsub, "~> 2.1"},
-      {:swoosh, "~> 1.3"},
+      {:swoosh, "~> 1.11"},
       {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.0"},
@@ -44,7 +44,7 @@ defmodule Blunderfest.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:nanoid, "~> 2.0.5"},
       {:horde, "~> 0.8.7"},
-      {:cors_plug, "~> 3.0", only: :dev},
+      {:cors_plug, "~> 3.0", only: :dev}
     ]
   end
 
@@ -57,7 +57,10 @@ defmodule Blunderfest.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "cmd --cd assets yarn"],
-      "assets.deploy": ["cmd --cd assets yarn install --frozen-lockfile && yarn build", "phx.digest"]
+      "assets.deploy": [
+        "cmd --cd assets yarn install --frozen-lockfile && yarn build",
+        "phx.digest"
+      ]
     ]
   end
 end
