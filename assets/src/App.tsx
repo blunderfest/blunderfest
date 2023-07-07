@@ -1,15 +1,18 @@
 import { useEffect } from "react";
+
 import { useAppDispatch, useAppSelector } from "~/modules/hooks";
 
 import { Box, Container } from "@mui/material";
 
 import { connectivityActions } from "./modules/connectivity";
+import { Board } from "./modules/games";
 
 type Props = {
     roomCode: string;
 };
 
-export const App = ({ roomCode }: Props) => {
+export const App = (props: Props) => {
+    const { roomCode } = props;
     const users = useAppSelector(state => state.connectivity.users);
     const connectivityStatus = useAppSelector(state => state.connectivity.status);
     const dispatch = useAppDispatch();
@@ -21,15 +24,12 @@ export const App = ({ roomCode }: Props) => {
     });
 
     return (
-        <Box height="100vh" display="flex" flexDirection="column">
-            <Container
-                maxWidth={false}
-                sx={{
-                    flex: 1,
-                    overflow: "auto",
-                }}
-            >
-                Status: {connectivityStatus}
+        <Container maxWidth={false} sx={{ display: "flex", flexDirection: "row", justifyContent: "center" }}>
+            <Box sx={{ height: "100vh", flexBasis: "20%", flexGrow: 0 }}>Status: {connectivityStatus}</Box>
+            <Box sx={{ height: "100vh" }}>
+                <Board />
+            </Box>
+            <Box sx={{ height: "100vh", flexBasis: "20%", flexGrow: 0 }}>
                 <ul>
                     {Object.keys(users)
                         .map(element => users[element])
@@ -39,7 +39,7 @@ export const App = ({ roomCode }: Props) => {
                             </li>
                         ))}
                 </ul>
-            </Container>
-        </Box>
+            </Box>
+        </Container>
     );
 };

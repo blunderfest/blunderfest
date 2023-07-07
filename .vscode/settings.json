@@ -23,7 +23,6 @@
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "importSorter.importStringConfiguration.quoteMark": "double",
-  "importSorter.generalConfiguration.sortOnBeforeSave": true,
+  "tsImportSorter.configuration.wrappingStyle": "prettier",
   "prettier.prettierPath": "./assets/node_modules/prettier"
 }

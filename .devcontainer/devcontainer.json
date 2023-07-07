@@ -1,42 +1,40 @@
 {
-	"name": "Blunderfest",
-    "dockerComposeFile": [
-        "docker-compose.yml"
-    ],
-    "workspaceFolder": "/workspace/blunderfest",
-	"service": "blunderfest",
-	// Configure tool-specific properties.
-	"customizations": {
-		// Configure properties specific to VS Code.
-		"vscode": {			
-			// Add the IDs of extensions you want installed when the container is created.
-			"extensions": [
-				"jakebecker.elixir-ls",
-				"phoenixframework.phoenix",
-				"RoyalMist.vscode-eex-format",
-				"dbaeumer.vscode-eslint",
-				"ms-vscode.vscode-typescript-next",
-				"esbenp.prettier-vscode",
-				"wix.vscode-import-cost",
-				"mike-co.import-sorter",
-				"bungcip.better-toml",
-				"github.vscode-github-actions"
-			]
-		}
-	},
+  "name": "Blunderfest",
+  "dockerComposeFile": ["docker-compose.yml"],
+  "workspaceFolder": "/workspace/blunderfest",
+  "service": "blunderfest",
+  // Configure tool-specific properties.
+  "customizations": {
+    // Configure properties specific to VS Code.
+    "vscode": {
+      // Add the IDs of extensions you want installed when the container is created.
+      "extensions": [
+        "jakebecker.elixir-ls",
+        "phoenixframework.phoenix",
+        "RoyalMist.vscode-eex-format",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-typescript-next",
+        "esbenp.prettier-vscode",
+        "wix.vscode-import-cost",
+        "dozerg.tsimportsorter",
+        "bungcip.better-toml",
+        "github.vscode-github-actions"
+      ]
+    }
+  },
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [4000],
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [4000],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "mix deps.get"
+  // Use 'postCreateCommand' to run commands after the container is created.
+  // "postCreateCommand": "mix deps.get"
 
-	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
-	"remoteUser": "vscode",
-	"features": {
-		"ghcr.io/devcontainers/features/node:1": {},
-		"ghcr.io/devcontainers-contrib/features/mkcert:1": {},
-		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
-		"ghcr.io/dhoeric/features/flyctl:1": {}
-	}
+  // Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers-contrib/features/mkcert:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/dhoeric/features/flyctl:1": {}
+  }
 }

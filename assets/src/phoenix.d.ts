@@ -1,9 +1,12 @@
-import { Socket as PhoenixSocket } from "phoenix";
+type Message = { topic: string; event: string; payload: any; ref: string; join_ref: string };
 
-type Callback = (rtt: number) => void;
+export module "phoenix" {
+    export interface Socket {
+        // onMessage: (message: Message) => void;
+        onMessage(callback: (message: Message) => void | Promise<void>): MessageRef;
+    }
 
-declare module "phoenix" {
-    export interface Socket extends PhoenixSocket {
-        ping: (callback: Callback) => void;
+    export interface Channel {
+        isMember: (topic: string, event: string, payload: any, join_ref: string) => boolean;
     }
 }

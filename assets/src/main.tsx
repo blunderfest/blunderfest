@@ -3,45 +3,39 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
+import React from "react";
+
 import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import React from "react";
 import * as ReactDOM from "react-dom/client";
 import { initReactI18next } from "react-i18next";
 import { Provider } from "react-redux";
 import { store } from "~/modules/store";
 
-import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
+import { CssBaseline } from "@mui/material";
 import { brown, yellow } from "@mui/material/colors";
+import { Experimental_CssVarsProvider as CssVarsProvider, experimental_extendTheme as extendTheme } from "@mui/material/styles";
 
 import { App } from "./App";
 import { enSystem } from "./modules/common";
 
 const roomCode = document.querySelector("meta[name='room-code']")?.getAttribute("content") ?? "";
 
-const theme = createTheme({
-    palette: {
-        mode: "dark",
-        primary: brown,
-        secondary: yellow,
-        background: {
-            default: "#2e1d1a",
-        },
-        contrastThreshold: 4.5,
-    },
-    components: {
-        MuiAppBar: {
-            styleOverrides: {
-                root: () => ({
-                    backgroundColor: brown[900],
-                }),
-            },
-        },
-        MuiPaper: {
-            styleOverrides: {
-                root: () => ({
-                    backgroundImage: "none",
-                }),
+const theme = extendTheme({
+    colorSchemes: {
+        dark: {
+            palette: {
+                mode: "dark",
+                primary: brown,
+                secondary: yellow,
+                background: {
+                    default: "#2e1d1a",
+                },
+                contrastThreshold: 4.5,
+                board: {
+                    light: "#D7DEE4",
+                    dark: "#3869A0",
+                },
             },
         },
     },
@@ -72,10 +66,10 @@ i18n.use(initReactI18next)
 ReactDOM.createRoot(root).render(
     <React.StrictMode>
         <Provider store={store}>
-            <ThemeProvider theme={theme}>
+            <CssVarsProvider theme={theme} defaultMode="dark">
                 <CssBaseline />
                 <App roomCode={roomCode} />
-            </ThemeProvider>
+            </CssVarsProvider>
         </Provider>
     </React.StrictMode>,
 );
