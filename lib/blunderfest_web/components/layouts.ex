@@ -3,5 +3,7 @@ defmodule BlunderfestWeb.Layouts do
 
   embed_templates "layouts/*"
 
-  def dev_env?, do: Mix.env() == :dev
+  @env Mix.env()
+
+  def dev_env?, do: @env == :dev
 end
