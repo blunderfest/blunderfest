@@ -32,8 +32,7 @@
   "cssvar.files": ["./assets/node_modules/open-props/open-props.min.css"],
   // Do not ignore node_modules css files, which is ignored by default
   "cssvar.ignore": [],
-  "cssvar.extensions": ["css", "postcss", "tsx"],
-  "exportall.config.folderListener": ["/assets/src/styles"],
+  "cssvar.extensions": ["css", "postcss", "ts", "js", "jsx"],
   "autoBarrel.defaultLanguage": "JavaScript",
   "autoBarrel.quoteStyle": "Double",
   "autoBarrel.disableRecursiveBarrelling": true

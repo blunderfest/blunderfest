@@ -19,7 +19,8 @@
 		"github.vscode-github-actions",
 		"ko-dev.vscode-open-files-in-directory",
 		"mikehanson.auto-barrel",
-		"statelyai.stately-vscode"
+		"statelyai.stately-vscode",
+		"phoenisx.cssvar"
 	]
     }
   },

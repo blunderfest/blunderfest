@@ -1,5 +1,6 @@
 import { WebsocketProvider, useWebsocket } from "./connectivity/use-websocket";
 import { styledKeyboard } from "./app.css";
+import { testStyle } from "./test.css";
 
 function Body() {
 	const [current, send] = useWebsocket();
@@ -7,7 +8,7 @@ function Body() {
 
 	return (
 		<div>
-			<header>
+			<header class={testStyle}>
 				<p>
 					Edit <code>src/App.jsx</code> and save to reload.
 				</p>
