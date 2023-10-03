@@ -1,6 +1,3 @@
-import logo from "./logo.svg";
-import styles from "./App.module.css";
-
 import { WebsocketProvider, useWebsocket } from "./connectivity/use-websocket";
 import { styledKeyboard } from "./app.css";
 
@@ -9,9 +6,8 @@ function Body() {
 	const [c2] = useWebsocket();
 
 	return (
-		<div class={styles.App}>
-			<header class={styles.header}>
-				<img src={logo} class={styles.logo} alt="logo" />
+		<div>
+			<header>
 				<p>
 					Edit <code>src/App.jsx</code> and save to reload.
 				</p>
