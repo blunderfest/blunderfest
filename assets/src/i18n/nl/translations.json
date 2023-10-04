@@ -1,0 +1,5 @@
+{
+	"title": "Welkom bij je dashboard",
+	"messages_count_one": "Je hebt {{count}} bericht",
+	"messages_count_other": "Je hebt {{count}} berichten"
+}

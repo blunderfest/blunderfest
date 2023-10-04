@@ -4,5 +4,5 @@ import colors from "open-props/src/props.colors-hsl.js";
 
 export const testStyle = style({
 	backgroundColor: colors["--indigo-5-hsl"],
-	fontSize: sizes["--size-13"],
+	fontSize: sizes["--size-3"],
 });
