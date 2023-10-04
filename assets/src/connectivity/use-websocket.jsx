@@ -4,6 +4,9 @@ import { createMachine } from "xstate";
 
 export const WebsocketContext = createContext();
 
+/**
+ * @param {{children: import("solid-js").JSX.Element}} props
+ */
 export function WebsocketProvider(props) {
 	const [current, send] = useMachine(machine);
 
@@ -20,7 +23,7 @@ const connect = () => {
 		setTimeout(() => {
 			console.log("Done deleting");
 			if (Math.random() < 0.8) {
-				resolve();
+				resolve(null);
 			} else {
 				reject();
 			}

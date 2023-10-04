@@ -25,6 +25,7 @@
 		"i18next": "^23.5.1",
 		"i18next-browser-languagedetector": "^7.1.0",
 		"open-props": "^1.6.3",
+		"solid-icons": "^1.0.12",
 		"solid-js": "^1.7.6",
 		"xstate": "^4.38.2"
 	}

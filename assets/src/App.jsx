@@ -1,12 +1,13 @@
+import i18next from "i18next";
+import { BiSolidCompass } from "solid-icons/bi";
+import { TbBrandSolidjs } from "solid-icons/tb";
+import { Show, createSignal, onMount } from "solid-js";
 import { styledKeyboard } from "./app.css";
 import { WebsocketProvider, useWebsocket } from "./connectivity/use-websocket";
-import { testStyle } from "./test.css";
-import i18n from "./i18n/config";
-import { onMount, createSignal } from "solid-js";
-import { Show } from "solid-js";
-import i18next from "i18next";
 import { I18nProvider } from "./i18n/18nProvider";
+import i18n from "./i18n/config";
 import { createI18n, useI18n } from "./i18n/context";
+import { testStyle } from "./test.css";
 
 function Body() {
 	const [current, send] = useWebsocket();
@@ -16,9 +17,11 @@ function Body() {
 	return (
 		<div>
 			<header class={testStyle}>
+				<BiSolidCompass size={24} color="#000000" />
 				<p>
 					Edit <code>src/App.jsx</code> and save to reload.
 				</p>
+				<TbBrandSolidjs />
 				<button onclick={() => send("CONNECT")}>{current.value}</button>
 				<p>{c2.value}</p>
 
@@ -40,8 +43,8 @@ export function App() {
 
 	onMount(async () => {
 		await i18n;
-		updateStore(i18next);
 
+		updateStore(i18next);
 		setLoaded(true);
 	});
 

@@ -1,8 +1,8 @@
 import i18next from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-import en from "./en/translations.json"
-import nl from "./nl/translations.json"
+import en from "./en/translations.json";
+import nl from "./nl/translations.json";
 
 const resources = {
     en: {
@@ -19,7 +19,6 @@ const i18n = i18next
         resources,
         fallbackLng: 'en',
         supportedLngs: ['en', 'nl'],
-        whitelist: ['en', 'nl'],
         ns: 'translations',
         defaultNS: 'translations',
         fallbackNS: false,
