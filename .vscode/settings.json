@@ -26,13 +26,9 @@
     "strings": true
   },
   "editor.autoClosingQuotes": "always",
-  "cssvar.files": ["./assets/node_modules/open-props/open-props.min.css"],
-  "cssvar.ignore": [],
-  "cssvar.extensions": ["css", "postcss", "ts", "js", "jsx"],
   "autoBarrel.defaultLanguage": "JavaScript",
   "autoBarrel.quoteStyle": "Double",
   "autoBarrel.disableRecursiveBarrelling": true,
-  "javascript.preferences.importModuleSpecifierEnding": "js",
-  "typescript.preferences.importModuleSpecifier": "shortest",
-  "javascript.preferences.importModuleSpecifier": "relative"
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "panda.color-hints.color-preview.enabled": true
 }
