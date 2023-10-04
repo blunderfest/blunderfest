@@ -4,19 +4,18 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import en from "./en/translations.json";
 import nl from "./nl/translations.json";
 
-const resources = {
-    en: {
-        translations: en
-    },
-    nl: {
-        translations: nl
-    }
-};
-
-const i18n = i18next
-    .use(LanguageDetector)
+// eslint-disable-next-line import/no-named-as-default-member
+export const i18n = i18next.use(LanguageDetector)
     .init({
-        resources,
+        resources:
+        {
+            en: {
+                translations: en
+            },
+            nl: {
+                translations: nl
+            }
+        },
         fallbackLng: 'en',
         supportedLngs: ['en', 'nl'],
         ns: 'translations',
@@ -27,10 +26,8 @@ const i18n = i18next
             order: ['querystring', 'navigator', 'htmlTag'],
             lookupQuerystring: 'lang',
         },
-    }, (err, t) => {
+    }, (err) => {
         if (err) {
             return console.error(err)
         }
     });
-
-export default i18n;

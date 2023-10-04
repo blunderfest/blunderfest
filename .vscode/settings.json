@@ -31,5 +31,8 @@
   "cssvar.extensions": ["css", "postcss", "ts", "js", "jsx"],
   "autoBarrel.defaultLanguage": "JavaScript",
   "autoBarrel.quoteStyle": "Double",
-  "autoBarrel.disableRecursiveBarrelling": true
+  "autoBarrel.disableRecursiveBarrelling": true,
+  "javascript.preferences.importModuleSpecifierEnding": "js",
+  "typescript.preferences.importModuleSpecifier": "shortest",
+  "javascript.preferences.importModuleSpecifier": "relative"
 }
