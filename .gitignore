@@ -38,7 +38,4 @@ npm-debug.log
 *.beam
 /config/*.secret.exs
 .elixir_ls/
-
-assets2
-assets3
-assets4
+styled-system

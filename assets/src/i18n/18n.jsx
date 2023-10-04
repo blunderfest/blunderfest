@@ -1,4 +1,7 @@
+/* eslint-disable import/no-named-as-default-member */
+
 import i18next from "i18next";
+import LanguageDetector from "i18next-browser-languagedetector";
 import {
 	Show,
 	createContext,
@@ -6,10 +9,41 @@ import {
 	onMount,
 	useContext,
 } from "solid-js";
-import { i18n } from "./config.js";
+import { createStore } from "solid-js/store";
+
+import en from "./en/translations.json";
+import nl from "./nl/translations.json";
+
+const i18n = i18next.use(LanguageDetector).init(
+	{
+		resources: {
+			en: {
+				translations: en,
+			},
+			nl: {
+				translations: nl,
+			},
+		},
+		fallbackLng: "en",
+		supportedLngs: ["en", "nl"],
+		ns: "translations",
+		defaultNS: "translations",
+		fallbackNS: false,
+		debug: true,
+		detection: {
+			order: ["querystring", "navigator", "htmlTag"],
+			lookupQuerystring: "lang",
+		},
+	},
+	(err) => {
+		if (err) {
+			return console.error(err);
+		}
+	},
+);
 
 /**
- * @type {import('solid-js').Context<[import("solid-js").Accessor<I18n>, (lang: "nl" | "en") => void] | undefined>}
+ * @type {import('solid-js').Context<[I18n, (lang: Language) => void] | undefined>}
  */
 const I18nContext = createContext();
 
@@ -25,11 +59,13 @@ export function useI18n() {
 
 /**
  * @param {{children: Children}} props
- * @returns
  */
 export function I18nProvider(props) {
 	const [loaded, setLoaded] = createSignal(false);
-	const [i18nStore, updateStore] = createSignal(i18next);
+	const [i18nStore, updateStore] = createStore({
+		...i18next,
+		t: i18next.t.bind({}),
+	});
 
 	onMount(async () => {
 		await i18n;
@@ -38,10 +74,9 @@ export function I18nProvider(props) {
 		setLoaded(true);
 	});
 
-	const changeLanguage = (/** @type {"nl" | "en"} */ lang) => {
-		// eslint-disable-next-line import/no-named-as-default-member
+	const changeLanguage = (/** @type Language */ lang) => {
 		i18next.changeLanguage(lang).then(() => {
-			updateStore({ ...i18next });
+			updateStore({ ...i18next, t: i18next.t.bind({}) });
 		});
 	};
 

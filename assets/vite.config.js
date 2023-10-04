@@ -1,6 +1,7 @@
+/* eslint-disable no-undef */
+
 import solidPlugin from 'vite-plugin-solid';
 // import devtools from 'solid-devtools/vite';
-import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import { defineConfig } from "vite";
 
 export default defineConfig(({ command }) => {
@@ -16,7 +17,7 @@ export default defineConfig(({ command }) => {
 
   return {
     publicDir: "static",
-    plugins: [solidPlugin(), vanillaExtractPlugin()],
+    plugins: [solidPlugin()],
     server: {
       proxy: {
         "/socket": {

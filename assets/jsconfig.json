@@ -16,5 +16,6 @@
 		"target": "ESNext",
 		"typeRoots": ["./node_modules/@types/", "./types", "./node_modules"],
 		"types": ["vite/client"]
-	}
+	},
+	"exclude": ["styled-system"]
 }

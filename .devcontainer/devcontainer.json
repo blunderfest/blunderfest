@@ -20,7 +20,7 @@
 		"ko-dev.vscode-open-files-in-directory",
 		"mikehanson.auto-barrel",
 		"statelyai.stately-vscode",
-		"phoenisx.cssvar"
+		"chakra-ui.panda-css-vscode"
 	]
     }
   },
