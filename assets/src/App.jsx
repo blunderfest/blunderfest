@@ -1,12 +1,9 @@
+import { WebsocketProvider, useWebsocket } from "@/connectivity/use-websocket";
+import { I18nProvider, useI18n } from "@/i18n";
 import { BiSolidCompass } from "solid-icons/bi";
 import { TbBrandSolidjs } from "solid-icons/tb";
-import { css } from "../styled-system/css/css";
-import { hstack } from "../styled-system/patterns";
-import {
-	WebsocketProvider,
-	useWebsocket,
-} from "./connectivity/use-websocket.jsx";
-import { I18nProvider, useI18n } from "./i18n/18n.jsx";
+import { css } from "styled-system/css";
+import { hstack } from "styled-system/patterns";
 
 export const styledKeyboard = css({
 	display: "flex",

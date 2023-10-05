@@ -2,7 +2,6 @@
 	"compilerOptions": {
 		"allowImportingTsExtensions": true,
 		"allowSyntheticDefaultImports": true,
-		"baseUrl": "src",
 		"checkJs": true,
 		"esModuleInterop": true,
 		"isolatedModules": true,
@@ -11,6 +10,10 @@
 		"module": "ESNext",
 		"moduleResolution": "node",
 		"noEmit": true,
+		"paths": {
+			"styled-system/*": ["./styled-system/*"],
+			"@/*": ["./src/*"]
+		},
 		"resolveJsonModule": true,
 		"strict": true,
 		"target": "ESNext",

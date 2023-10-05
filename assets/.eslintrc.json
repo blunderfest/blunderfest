@@ -3,7 +3,7 @@
 		"browser": true,
 		"es2021": true
 	},
-	"plugins": ["solid", "simple-import-sort", "import"],
+	"plugins": ["plugin:import/errors", "solid", "simple-import-sort", "import"],
 	"extends": [
 		"eslint:recommended",
 		"plugin:solid/recommended",
@@ -13,5 +13,16 @@
 	"parserOptions": {
 		"ecmaVersion": "latest",
 		"sourceType": "module"
+	},
+	"settings": {
+		"import/resolver": {
+			"alias": {
+				"map": [
+					["styled-system", "./styled-system"],
+					["@", "./src"]
+				],
+				"extensions": [".mjs", ".js", ".jsx", ".json"]
+			}
+		}
 	}
 }

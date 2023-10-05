@@ -29,6 +29,5 @@
   "autoBarrel.defaultLanguage": "JavaScript",
   "autoBarrel.quoteStyle": "Double",
   "autoBarrel.disableRecursiveBarrelling": true,
-  "javascript.preferences.importModuleSpecifier": "relative",
   "panda.color-hints.color-preview.enabled": true
 }

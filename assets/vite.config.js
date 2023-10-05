@@ -2,7 +2,9 @@
 
 import solidPlugin from 'vite-plugin-solid';
 // import devtools from 'solid-devtools/vite';
-import { defineConfig } from "vite";
+import path from 'node:path';
+import { visualizer } from "rollup-plugin-visualizer";
+import { defineConfig, splitVendorChunkPlugin } from "vite";
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -17,7 +19,11 @@ export default defineConfig(({ command }) => {
 
   return {
     publicDir: "static",
-    plugins: [solidPlugin()],
+    plugins: [solidPlugin(), splitVendorChunkPlugin(), visualizer({
+      open: true,
+      gzipSize: true,
+      filename: 'chunks-report.html',
+    })],
     server: {
       proxy: {
         "/socket": {
@@ -43,5 +49,12 @@ export default defineConfig(({ command }) => {
         },
       },
     },
+    resolve: {
+      alias: {
+        'styled-system': path.resolve(__dirname, './styled-system'),
+        '@': path.resolve(__dirname, './src'),
+      },
+      extensions: [".mjs", ".js", ".jsx", ".json"]
+    }
   };
 });
