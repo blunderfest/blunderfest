@@ -1,66 +1,49 @@
-import { WebsocketProvider, useWebsocket } from "@/connectivity/use-websocket";
-import { I18nProvider, useI18n } from "@/i18n";
-import { BiSolidCompass } from "solid-icons/bi";
-import { TbBrandSolidjs } from "solid-icons/tb";
-import { css } from "styled-system/css";
-import { hstack } from "styled-system/patterns";
-
-export const styledKeyboard = css({
-	display: "flex",
-	flexDirection: "column",
-	alignItems: "center",
-});
-
-export const testStyle = css({
-	backgroundColor: "zinc.900",
-	color: "amber.300",
-	fontSize: "2xl",
-});
-
-function Body() {
-	const [current, send] = useWebsocket();
-	const [c2] = useWebsocket();
-	const [i18n, changeLanguage] = useI18n();
-
-	return (
-		<div>
-			<header class={testStyle}>
-				<BiSolidCompass size={24} color="#000000" />
-				<p>
-					Edit <code>src/App.jsx</code> and save to reload.
-				</p>
-				<div class={css({ fontSize: "2xl", fontWeight: "bold" })}>
-					Hello 🐼!
-				</div>
-				<TbBrandSolidjs />
-				<button onClick={() => send("Connect")}>{current()}</button>
-				<p>{c2()}</p>
-
-				<button onClick={() => changeLanguage("en")}>EN</button>
-				<button onClick={() => changeLanguage("nl")}>NL</button>
-
-				<h1>{i18n.t("title")}</h1>
-
-				<p>{i18n.t("messages_	count", { count: 1 })}</p>
-				<p>{i18n.t("messages_count", { count: 2 })}</p>
-				<p>{i18n.t("messages_count", { count: 100 })}</p>
-
-				<div class={hstack({})}>
-					<h1>Header</h1>
-					<p>Paragraph</p>
-				</div>
-
-				<div class={styledKeyboard}>Keyboard</div>
-			</header>
-		</div>
-	);
-}
+import { WebsocketProvider } from "@/connectivity/use-websocket";
+import { I18nProvider } from "@/i18n";
+import { For, createSignal } from "solid-js";
+import { Board } from "styled-system/jsx";
+import { Square } from "./recipes/square-recipe";
 
 export function App() {
+	const files = [...Array.from({ length: 8 }).keys()];
+	const ranks = [...Array.from({ length: 8 }).keys()].reverse();
+
+	/**
+	 * @type {Square[]}
+	 */
+	const squares = files.flatMap((file) =>
+		ranks.map((rank) => ({
+			square_index: file + rank * 8,
+			color: file % 2 === rank % 2 ? "light" : "dark",
+			rank: rank,
+			file: file,
+		})),
+	);
+
+	const [selectedSquare, setSelectedSquare] = createSignal(
+		/** @type {number|undefined} */ (undefined),
+	);
+
 	return (
 		<I18nProvider>
 			<WebsocketProvider>
-				<Body />
+				<Board>
+					<For each={squares}>
+						{(square) => (
+							<Square
+								color={square.color}
+								selected={square.square_index === selectedSquare()}
+								onClick={() =>
+									setSelectedSquare((current) =>
+										current === square.square_index
+											? undefined
+											: square.square_index,
+									)
+								}
+							></Square>
+						)}
+					</For>
+				</Board>
 			</WebsocketProvider>
 		</I18nProvider>
 	);
