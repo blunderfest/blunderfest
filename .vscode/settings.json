@@ -31,5 +31,8 @@
   "autoBarrel.disableRecursiveBarrelling": true,
   "panda.color-hints.color-preview.enabled": true,
   "eslint.debug": true,
-  "eslint.workingDirectories": ["assets"]
+  "eslint.workingDirectories": ["assets"],
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }

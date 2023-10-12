@@ -33,7 +33,7 @@ const mapping = {
 };
 
 /**
- * @param {{piece: "king" | "queen" | "rook" | "bishop" | "knight" | "pawn", color: "black" | "white"}} props
+ * @param {Piece} props
  */
 export function Piece({ piece, color }) {
 	const svg = mapping[color][piece];

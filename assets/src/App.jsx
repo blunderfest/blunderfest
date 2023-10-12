@@ -2,10 +2,9 @@ import { deselect, mark, select } from "@/features/board/boardSlice";
 import { useClickAway } from "@uidotdev/usehooks";
 import { useEffect } from "react";
 import { Board } from "styled-system/jsx";
-import { Square } from "./features/board/square-recipe";
 import { useAppDispatch, useAppSelector } from "./store";
 
-import { Piece } from "./features/board/pieces/Piece";
+import { Square } from "./features/board/Square";
 
 function App() {
 	const board = useAppSelector((state) => state.board);
@@ -21,6 +20,82 @@ function App() {
 		document.addEventListener("contextmenu", disableContextMenu);
 
 		return () => document.removeEventListener("contextmenu", disableContextMenu);
+	});
+
+	/** @type {Array<Piece | undefined>} */
+	const pieces = [...Array.from({ length: 64 }).keys()].map((square_index) => {
+		switch (square_index) {
+			case 0:
+				return { color: "white", piece: "rook" };
+			case 1:
+				return { color: "white", piece: "knight" };
+			case 2:
+				return { color: "white", piece: "bishop" };
+			case 3:
+				return { color: "white", piece: "queen" };
+			case 4:
+				return { color: "white", piece: "king" };
+			case 5:
+				return { color: "white", piece: "bishop" };
+			case 6:
+				return { color: "white", piece: "knight" };
+			case 7:
+				return { color: "white", piece: "rook" };
+
+			case 8:
+				return { color: "white", piece: "pawn" };
+			case 9:
+				return { color: "white", piece: "pawn" };
+			case 10:
+				return { color: "white", piece: "pawn" };
+			case 11:
+				return { color: "white", piece: "pawn" };
+			case 12:
+				return { color: "white", piece: "pawn" };
+			case 13:
+				return { color: "white", piece: "pawn" };
+			case 14:
+				return { color: "white", piece: "pawn" };
+			case 15:
+				return { color: "white", piece: "pawn" };
+
+			case 56:
+				return { color: "black", piece: "rook" };
+			case 57:
+				return { color: "black", piece: "knight" };
+			case 58:
+				return { color: "black", piece: "bishop" };
+			case 59:
+				return { color: "black", piece: "queen" };
+			case 60:
+				return { color: "black", piece: "king" };
+			case 61:
+				return { color: "black", piece: "bishop" };
+			case 62:
+				return { color: "black", piece: "knight" };
+
+			case 63:
+				return { color: "black", piece: "rook" };
+			case 48:
+				return { color: "black", piece: "pawn" };
+			case 49:
+				return { color: "black", piece: "pawn" };
+			case 50:
+				return { color: "black", piece: "pawn" };
+			case 51:
+				return { color: "black", piece: "pawn" };
+			case 52:
+				return { color: "black", piece: "pawn" };
+			case 53:
+				return { color: "black", piece: "pawn" };
+			case 54:
+				return { color: "black", piece: "pawn" };
+			case 55:
+				return { color: "black", piece: "pawn" };
+			default: {
+				return undefined;
+			}
+		}
 	});
 
 	return (
@@ -40,43 +115,8 @@ function App() {
 							}),
 						);
 					}}
-				>
-					{square.square_index === 0 && <Piece color="white" piece="rook" />}
-					{square.square_index === 1 && <Piece color="white" piece="knight" />}
-					{square.square_index === 2 && <Piece color="white" piece="bishop" />}
-					{square.square_index === 3 && <Piece color="white" piece="queen" />}
-					{square.square_index === 4 && <Piece color="white" piece="king" />}
-					{square.square_index === 5 && <Piece color="white" piece="bishop" />}
-					{square.square_index === 6 && <Piece color="white" piece="knight" />}
-					{square.square_index === 7 && <Piece color="white" piece="rook" />}
-
-					{square.square_index === 8 && <Piece color="white" piece="pawn" />}
-					{square.square_index === 9 && <Piece color="white" piece="pawn" />}
-					{square.square_index === 10 && <Piece color="white" piece="pawn" />}
-					{square.square_index === 11 && <Piece color="white" piece="pawn" />}
-					{square.square_index === 12 && <Piece color="white" piece="pawn" />}
-					{square.square_index === 13 && <Piece color="white" piece="pawn" />}
-					{square.square_index === 14 && <Piece color="white" piece="pawn" />}
-					{square.square_index === 15 && <Piece color="white" piece="pawn" />}
-
-					{square.square_index === 56 && <Piece color="black" piece="rook" />}
-					{square.square_index === 57 && <Piece color="black" piece="knight" />}
-					{square.square_index === 58 && <Piece color="black" piece="bishop" />}
-					{square.square_index === 59 && <Piece color="black" piece="queen" />}
-					{square.square_index === 60 && <Piece color="black" piece="king" />}
-					{square.square_index === 61 && <Piece color="black" piece="bishop" />}
-					{square.square_index === 62 && <Piece color="black" piece="knight" />}
-
-					{square.square_index === 63 && <Piece color="black" piece="rook" />}
-					{square.square_index === 48 && <Piece color="black" piece="pawn" />}
-					{square.square_index === 49 && <Piece color="black" piece="pawn" />}
-					{square.square_index === 50 && <Piece color="black" piece="pawn" />}
-					{square.square_index === 51 && <Piece color="black" piece="pawn" />}
-					{square.square_index === 52 && <Piece color="black" piece="pawn" />}
-					{square.square_index === 53 && <Piece color="black" piece="pawn" />}
-					{square.square_index === 54 && <Piece color="black" piece="pawn" />}
-					{square.square_index === 55 && <Piece color="black" piece="pawn" />}
-				</Square>
+					piece={pieces[square.square_index]}
+				></Square>
 			))}
 		</Board>
 	);

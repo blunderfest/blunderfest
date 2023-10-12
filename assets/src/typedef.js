@@ -16,3 +16,7 @@
  * @template T
  * @typedef {import('@reduxjs/toolkit').PayloadAction<T>} PayloadAction
  */
+
+/**
+ * @typedef {{piece: "king" | "queen" | "rook" | "bishop" | "knight" | "pawn", color: "black" | "white"}} Piece
+ */
