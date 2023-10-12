@@ -16,18 +16,3 @@
  * @template T
  * @typedef {import('@reduxjs/toolkit').PayloadAction<T>} PayloadAction
  */
-
-/**
- * @typedef {{
- *   square_index: number,
- *   color: "light" | "dark"
- * }} Square
- */
-
-/**
- * @typedef {{
- *  squares: Square[],
- *  selectedSquare: number | undefined,
- *  markedSquares: number[]
- * }} Board
- */

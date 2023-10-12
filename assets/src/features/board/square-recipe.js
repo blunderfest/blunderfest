@@ -16,7 +16,9 @@ const square = cva({
         },
         selected: {
             none: {},
-            marked: {},
+            simple: {},
+            ctrl: {},
+            alt: {},
             highlighted: {}
         },
     },
@@ -28,9 +30,21 @@ const square = cva({
             },
         },
         {
-            selected: "marked",
+            selected: "simple",
             css: {
                 backgroundColor: "red.500"
+            }
+        },
+        {
+            selected: "ctrl",
+            css: {
+                backgroundColor: "green.500"
+            }
+        },
+        {
+            selected: "alt",
+            css: {
+                backgroundColor: "yellow.500"
             }
         }
     ],

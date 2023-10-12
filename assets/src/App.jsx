@@ -1,29 +1,50 @@
-import { mark, select } from "@/features/board/boardSlics";
-import { Square } from "@/recipes/square-recipe";
+import { deselect, mark, select } from "@/features/board/boardSlics";
+import { useClickAway } from "@uidotdev/usehooks";
+import { useEffect } from "react";
 import { Board } from "styled-system/jsx";
+import { Square } from "./features/board/square-recipe";
 import { useAppDispatch, useAppSelector } from "./store";
 
 function App() {
 	const board = useAppSelector((state) => state.board);
 	const dispatch = useAppDispatch();
 
+	/** @type {import("react").MutableRefObject<HTMLDivElement>} */
+	const ref = useClickAway(() => {
+		dispatch(deselect());
+	});
+
+	useEffect(() => {
+		const disableContextMenu = (/** @type {MouseEvent} */ e) =>
+			e.preventDefault();
+		document.addEventListener("contextmenu", disableContextMenu);
+
+		return () =>
+			document.removeEventListener("contextmenu", disableContextMenu);
+	});
+
 	return (
-		<Board>
+		<Board ref={ref}>
 			{board.squares.map((square) => (
 				<Square
 					key={square.square_index}
 					color={square.color}
 					selected={
-						board.markedSquares.includes(square.square_index)
-							? "marked"
-							: square.square_index === board.selectedSquare
+						square.mark !== "none"
+							? square.mark
+							: board.selectedSquare === square.square_index
 							? "highlighted"
 							: "none"
 					}
 					onClick={() => dispatch(select(square.square_index))}
 					onContextMenu={(e) => {
-						e.preventDefault();
-						dispatch(mark(square.square_index));
+						dispatch(
+							mark({
+								square: square.square_index,
+								alt: e.altKey,
+								ctrl: e.ctrlKey,
+							}),
+						);
 					}}
 				></Square>
 			))}

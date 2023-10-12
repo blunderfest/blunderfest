@@ -3,72 +3,81 @@ import { createSlice } from "@reduxjs/toolkit";
 const files = [...Array.from({ length: 8 }).keys()];
 const ranks = [...Array.from({ length: 8 }).keys()].reverse();
 
+/**
+ * @typedef {{
+ *   square_index: number,
+ *   color: "light" | "dark"
+ *   mark: "none" | "simple" | "alt" | "ctrl"
+ * }} Square
+ * 
+ * @typedef {{
+ *   squares: Square[],
+ *   selectedSquare: number | undefined,
+ * }} Board
+ */
+
 const initialState = /** @type Board */({
     squares: files.flatMap((file) =>
         ranks.map((rank) => ({
             square_index: file + rank * 8,
             color: file % 2 === rank % 2 ? "light" : "dark",
+            mark: "none"
         })),
     ),
     selectedSquare: undefined,
-    markedSquares: [],
 });
 
-/*
+/**
+ * @param {Board} board
+ * @param {number} square_index
+ * 
+ * @returns {Square}
+ */
+function getBySquareIndex(board, square_index) {
+    const index = board.squares.findIndex(square => square.square_index === square_index);
 
-                            setBoard(
-                                board.markedSquares.includes(square.square_index)
-                                    ? {
-                                            ...board,
-                                            selectedSquare:
-                                                board.selectedSquare === square.square_index
-                                                    ? undefined
-                                                    : board.selectedSquare,
-                                            markedSquares: board.markedSquares.filter(
-                                                (s) => s !== square.square_index,
-                                            ),
-                                      }
-                                    : {
-                                            ...board,
-                                            selectedSquare:
-                                                board.selectedSquare === square.square_index
-                                                    ? undefined
-                                                    : board.selectedSquare,
+    return board.squares[index];
+}
 
-                                            markedSquares: [
-                                                ...board.markedSquares,
-
-                                                square.square_index,
-                                            ],
-                                      },
-                            );
-
-*/
+/**
+ * 
+ * @param {Board} board
+ */
+function deselectAll(board) {
+    Object.entries(board.squares).forEach(([, square]) => {
+        square.mark = "none";
+    });
+    board.selectedSquare = undefined;
+}
 
 export const boardSlice = createSlice({
     name: "board",
     initialState,
     reducers: {
+        deselect: (state) => deselectAll(state),
         select: (state, /** @type {PayloadAction<number>} */ action) => {
-            if (state.selectedSquare === action.payload || state.markedSquares.length) {
+            if (state.squares.filter(square => square.mark !== "none").length) {
+                deselectAll(state);
+            } else if (state.selectedSquare === action.payload) {
                 state.selectedSquare = undefined;
             } else {
                 state.selectedSquare = action.payload;
             }
-            state.markedSquares = []
         },
-        mark: (state, /** @type {PayloadAction<number>} */ action) => {
-            const index = state.markedSquares.indexOf(action.payload)
-            if (index !== -1) {
-                state.markedSquares.splice(index, 1)
+        mark: (state, /** @type {PayloadAction<{square: number, alt: boolean, ctrl: boolean}>} */ action) => {
+            const mark = action.payload.alt ? "alt" : action.payload.ctrl ? "ctrl" : "simple";
+            const square = getBySquareIndex(state, action.payload.square);
+
+            if (square.mark === mark) {
+                square.mark = "none";
             } else {
-                state.markedSquares.push(action.payload)
+                square.mark = mark;
             }
         }
     }
 });
 
-export const { select, mark } = boardSlice.actions;
+export const { select, deselect, mark } = boardSlice.actions;
 
 export const boardReducer = boardSlice.reducer;
 
