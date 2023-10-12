@@ -105,8 +105,6 @@ const initialState = /** @type Board */ ({
 	selectedSquare: undefined,
 });
 
-console.log(initialState);
-
 /**
  * @param {Board} board
  * @param {number} square_index

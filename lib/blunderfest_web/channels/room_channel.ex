@@ -8,8 +8,6 @@ defmodule BlunderfestWeb.RoomChannel do
     user_id =
       Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-    IO.puts(user_id)
-
     send(self(), :after_join)
     {:ok, assign(socket, :user_id, user_id)}
   end

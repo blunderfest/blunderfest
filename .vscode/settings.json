@@ -1,5 +1,5 @@
 {
-  "workbench.editor.enablePreview": true,
+  "workbench.editor.enablePreview": false,
   "files.associations": {
     "*.heex": "phoenix-heex"
   },
