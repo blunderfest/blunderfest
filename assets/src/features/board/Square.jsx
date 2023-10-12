@@ -1,4 +1,3 @@
-import PropTypes from "prop-types";
 import { sva } from "styled-system/css";
 import { Piece } from "./pieces/Piece";
 
@@ -6,8 +5,8 @@ const square = sva({
 	slots: ["root", "selection", "piece"],
 	base: {
 		root: { aspectRatio: "square", position: "relative" },
-		selection: { width: "100%", height: "100%" },
-		piece: {},
+		selection: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
+		piece: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
 	},
 	variants: {
 		color: {
@@ -86,23 +85,14 @@ const square = sva({
  */
 
 export const Square = (props) => {
-	const { color, selected, piece, onClick, onContextMenu } = props;
+	const { color, selected, piece, onClick, onContextMenu, children } = props;
 	const classes = square({ color: color, selected: selected });
 
 	return (
 		<div className={classes.root} onClick={onClick} onContextMenu={onContextMenu}>
-			<div className={classes.selection}>
-				<div className={classes.piece}></div>
-				{piece && <Piece {...piece} />}
-			</div>
+			<div className={classes.selection}>&nbsp;</div>
+			<div className={classes.piece}>{piece && <Piece {...piece} />}</div>
+			{children}
 		</div>
 	);
-};
-
-Square.propTypes = {
-	color: PropTypes.string.isRequired,
-	selected: PropTypes.string.isRequired,
-	piece: PropTypes.any.isRequired,
-	onClick: PropTypes.func,
-	onContextMenu: PropTypes.func,
 };

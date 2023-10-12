@@ -11,8 +11,6 @@ import WhitePawn from "./WhitePawn.svg";
 import WhiteQueen from "./WhiteQueen.svg";
 import WhiteRook from "./WhiteRook.svg";
 
-import PropTypes from "prop-types";
-
 const mapping = {
 	black: {
 		bishop: BlackBishop,
@@ -40,8 +38,3 @@ export function Piece({ piece, color }) {
 
 	return <img src={svg} width="100%" height="100%" />;
 }
-
-Piece.propTypes = {
-	piece: PropTypes.string.isRequired,
-	color: PropTypes.string.isRequired,
-};

@@ -40,24 +40,6 @@ export default defineConfig({
 		},
 	},
 
-	patterns: {
-		extend: {
-			board: {
-				jsxName: "Board",
-				transform() {
-					return {
-						aspectRatio: "square",
-						backgroundColor: "slate.900",
-						height: "100vh",
-						columns: 8,
-						rowGap: 0,
-						columnGap: 0,
-					};
-				},
-			},
-		},
-	},
-
 	// The output directory for your css system
 	outdir: "styled-system",
 	globalCss,
