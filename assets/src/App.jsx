@@ -1,31 +1,11 @@
+import { mark, select } from "@/features/board/boardSlics";
 import { Square } from "@/recipes/square-recipe";
-import { useState } from "react";
 import { Board } from "styled-system/jsx";
+import { useAppDispatch, useAppSelector } from "./store";
 
 function App() {
-	const files = [...Array.from({ length: 8 }).keys()];
-	const ranks = [...Array.from({ length: 8 }).keys()].reverse();
-
-	const [board, setBoard] = useState(
-		/** @type Board */ ({
-			squares: files.flatMap((file) =>
-				ranks.map((rank) => ({
-					square_index: file + rank * 8,
-					color: file % 2 === rank % 2 ? "light" : "dark",
-				})),
-			),
-			selectedSquare: undefined,
-			markedSquares: [],
-		}),
-	);
-
-	const selectSquare = (/** @type {number} */ index) => {
-		if (board.selectedSquare === index || board.markedSquares.length) {
-			setBoard({ ...board, selectedSquare: undefined, markedSquares: [] });
-		} else {
-			setBoard({ ...board, selectedSquare: index, markedSquares: [] });
-		}
-	};
+	const board = useAppSelector((state) => state.board);
+	const dispatch = useAppDispatch();
 
 	return (
 		<Board>
@@ -40,35 +20,10 @@ function App() {
 							? "highlighted"
 							: "none"
 					}
-					onClick={() => selectSquare(square.square_index)}
+					onClick={() => dispatch(select(square.square_index))}
 					onContextMenu={(e) => {
 						e.preventDefault();
-						setBoard(
-							board.markedSquares.includes(square.square_index)
-								? {
-										...board,
-										selectedSquare:
-											board.selectedSquare === square.square_index
-												? undefined
-												: board.selectedSquare,
-										markedSquares: board.markedSquares.filter(
-											(s) => s !== square.square_index,
-										),
-								  }
-								: {
-										...board,
-										selectedSquare:
-											board.selectedSquare === square.square_index
-												? undefined
-												: board.selectedSquare,
-
-										markedSquares: [
-											...board.markedSquares,
-
-											square.square_index,
-										],
-								  },
-						);
+						dispatch(mark(square.square_index));
 					}}
 				></Square>
 			))}
