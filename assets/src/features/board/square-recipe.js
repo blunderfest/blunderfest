@@ -44,7 +44,7 @@ const square = cva({
         {
             selected: "alt",
             css: {
-                backgroundColor: "yellow.500"
+                backgroundColor: "yellow.500",
             }
         }
     ],

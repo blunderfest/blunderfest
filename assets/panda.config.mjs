@@ -27,7 +27,7 @@ export default defineConfig({
             value: "{colors.slate.950}"
           },
           lightSquare: {
-            value: "{colors.blue.50}"
+            value: "{colors.slate.200}"
           },
           darkSquare: {
             value: "{colors.blue.900}"
