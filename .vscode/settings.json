@@ -30,7 +30,6 @@
   "autoBarrel.quoteStyle": "Double",
   "autoBarrel.disableRecursiveBarrelling": true,
   "panda.color-hints.color-preview.enabled": true,
-  "cssvar.files": ["./assets/node_modules/open-props/open-props.min.css"],
-  "cssvar.ignore": [],
-  "cssvar.extensions": ["javascriptreact", "javascript"]
+  "eslint.debug": true,
+  "eslint.workingDirectories": ["assets"]
 }

@@ -15,17 +15,24 @@ const square = cva({
             },
         },
         selected: {
-            true: {
-            },
+            none: {},
+            marked: {},
+            highlighted: {}
         },
     },
     compoundVariants: [
         {
-            selected: true,
+            selected: "highlighted",
             css: {
                 filter: "brightness(150%)"
             },
         },
+        {
+            selected: "marked",
+            css: {
+                backgroundColor: "red.500"
+            }
+        }
     ],
 });
 

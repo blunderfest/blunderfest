@@ -4,14 +4,25 @@
  */
 
 /**
- * @typedef {import("solid-js").JSX.Element} Children
+ * @typedef {import("react").JSX.Element} Children
+ */
+
+/**
+ * @template T
+ * @typedef {[T, import('react').Dispatch<import('react').SetStateAction<T>>]} useState
  */
 
 /**
  * @typedef {{
  *   square_index: number,
- *   color: "light" | "dark",
- *   rank: number,
- *   file: number
+ *   color: "light" | "dark"
  * }} Square
+ */
+
+/**
+ * @typedef {{
+ *  squares: Square[],
+ *  selectedSquare: number | undefined,
+ *  markedSquares: number[]
+ * }} Board
  */

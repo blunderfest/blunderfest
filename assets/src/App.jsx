@@ -1,50 +1,79 @@
-import { WebsocketProvider } from "@/connectivity/use-websocket";
-import { I18nProvider } from "@/i18n";
-import { For, createSignal } from "solid-js";
+import { Square } from "@/recipes/square-recipe";
+import { useState } from "react";
 import { Board } from "styled-system/jsx";
-import { Square } from "./recipes/square-recipe";
 
-export function App() {
+function App() {
 	const files = [...Array.from({ length: 8 }).keys()];
 	const ranks = [...Array.from({ length: 8 }).keys()].reverse();
 
-	/**
-	 * @type {Square[]}
-	 */
-	const squares = files.flatMap((file) =>
-		ranks.map((rank) => ({
-			square_index: file + rank * 8,
-			color: file % 2 === rank % 2 ? "light" : "dark",
-			rank: rank,
-			file: file,
-		})),
+	const [board, setBoard] = useState(
+		/** @type Board */ ({
+			squares: files.flatMap((file) =>
+				ranks.map((rank) => ({
+					square_index: file + rank * 8,
+					color: file % 2 === rank % 2 ? "light" : "dark",
+				})),
+			),
+			selectedSquare: undefined,
+			markedSquares: [],
+		}),
 	);
 
-	const [selectedSquare, setSelectedSquare] = createSignal(
-		/** @type {number|undefined} */ (undefined),
-	);
+	const selectSquare = (/** @type {number} */ index) => {
+		if (board.selectedSquare === index || board.markedSquares.length) {
+			setBoard({ ...board, selectedSquare: undefined, markedSquares: [] });
+		} else {
+			setBoard({ ...board, selectedSquare: index, markedSquares: [] });
+		}
+	};
 
 	return (
-		<I18nProvider>
-			<WebsocketProvider>
-				<Board>
-					<For each={squares}>
-						{(square) => (
-							<Square
-								color={square.color}
-								selected={square.square_index === selectedSquare()}
-								onClick={() =>
-									setSelectedSquare((current) =>
-										current === square.square_index
-											? undefined
-											: square.square_index,
-									)
-								}
-							></Square>
-						)}
-					</For>
-				</Board>
-			</WebsocketProvider>
-		</I18nProvider>
+		<Board>
+			{board.squares.map((square) => (
+				<Square
+					key={square.square_index}
+					color={square.color}
+					selected={
+						board.markedSquares.includes(square.square_index)
+							? "marked"
+							: square.square_index === board.selectedSquare
+							? "highlighted"
+							: "none"
+					}
+					onClick={() => selectSquare(square.square_index)}
+					onContextMenu={(e) => {
+						e.preventDefault();
+						setBoard(
+							board.markedSquares.includes(square.square_index)
+								? {
+										...board,
+										selectedSquare:
+											board.selectedSquare === square.square_index
+												? undefined
+												: board.selectedSquare,
+										markedSquares: board.markedSquares.filter(
+											(s) => s !== square.square_index,
+										),
+								  }
+								: {
+										...board,
+										selectedSquare:
+											board.selectedSquare === square.square_index
+												? undefined
+												: board.selectedSquare,
+
+										markedSquares: [
+											...board.markedSquares,
+
+											square.square_index,
+										],
+								  },
+						);
+					}}
+				></Square>
+			))}
+		</Board>
 	);
 }
+
+export default App;

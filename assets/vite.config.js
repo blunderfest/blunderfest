@@ -1,10 +1,9 @@
 /* eslint-disable no-undef */
 
-import solidPlugin from 'vite-plugin-solid';
-// import devtools from 'solid-devtools/vite';
-import path from 'node:path';
+import react from '@vitejs/plugin-react-swc';
+import { resolve } from 'path';
 import { visualizer } from "rollup-plugin-visualizer";
-import { defineConfig, splitVendorChunkPlugin } from "vite";
+import { defineConfig, splitVendorChunkPlugin } from 'vite';
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -19,7 +18,7 @@ export default defineConfig(({ command }) => {
 
   return {
     publicDir: "static",
-    plugins: [solidPlugin(), splitVendorChunkPlugin(), visualizer({
+    plugins: [react(), splitVendorChunkPlugin(), visualizer({
       open: true,
       gzipSize: true,
       filename: 'chunks-report.html',
@@ -37,11 +36,9 @@ export default defineConfig(({ command }) => {
       outDir: "../priv/static", // emit assets to priv/static
       emptyOutDir: true,
       sourcemap: isDev, // enable source map in dev build
-      manifest: false, // do not generate manifest.json
+      manifest: true, // do not generate manifest.json
       rollupOptions: {
-        input: {
-          main: "./src/index.jsx",
-        },
+        input: "./src/main.jsx",
         output: {
           entryFileNames: "assets/[name].js", // remove hash
           chunkFileNames: "assets/[name].js",
@@ -51,8 +48,8 @@ export default defineConfig(({ command }) => {
     },
     resolve: {
       alias: {
-        'styled-system': path.resolve(__dirname, './styled-system'),
-        '@': path.resolve(__dirname, './src'),
+        'styled-system': resolve(__dirname, './styled-system'),
+        '@': resolve(__dirname, './src'),
       },
       extensions: [".mjs", ".js", ".jsx", ".json"]
     }

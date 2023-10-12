@@ -13,10 +13,10 @@ export default defineConfig({
   // Where to look for your css declarations
   include: ["./src/**/*.{js,jsx}"],
 
-  jsxFramework: "solid",
-
   // Files to exclude
   exclude: [],
+
+  jsxFramework: "react",
 
   // Useful for theme customization
   theme: {
@@ -37,6 +37,7 @@ export default defineConfig({
           }
         }
       }
+
     }
   },
 
@@ -57,6 +58,7 @@ export default defineConfig({
       }
     }
   },
+
 
   // The output directory for your css system
   outdir: "styled-system",

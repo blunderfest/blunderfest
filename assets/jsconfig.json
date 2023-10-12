@@ -6,7 +6,7 @@
 		"esModuleInterop": true,
 		"isolatedModules": true,
 		"jsx": "preserve",
-		"jsxImportSource": "solid-js",
+		"jsxImportSource": "react",
 		"module": "ESNext",
 		"moduleResolution": "node",
 		"noEmit": true,
