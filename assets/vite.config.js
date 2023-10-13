@@ -43,6 +43,11 @@ export default defineConfig(({ command }) => {
 			manifest: true, // do not generate manifest.json
 			rollupOptions: {
 				input: "./src/main.jsx",
+				output: {
+					entryFileNames: "assets/[name].js", // remove hash
+					chunkFileNames: "assets/[name].js",
+					assetFileNames: "assets/[name][extname]",
+				},
 			},
 		},
 		resolve: {
