@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 
+import { HStack } from "styled-system/jsx/hstack";
 import { Board } from "./features/board/Board";
+import { ConnectionStatus } from "./features/connectivity/Connection";
 
 function App() {
 	useEffect(() => {
@@ -10,7 +12,12 @@ function App() {
 		return () => document.removeEventListener("contextmenu", disableContextMenu);
 	});
 
-	return <Board />;
+	return (
+		<HStack>
+			<Board />
+			<ConnectionStatus />
+		</HStack>
+	);
 }
 
 export default App;

@@ -2,45 +2,88 @@ import { defineConfig, defineGlobalStyles } from "@pandacss/dev";
 
 const globalCss = defineGlobalStyles({
 	body: {
-		backgroundColor: "background",
+		backgroundGradient: "background",
 	},
 });
 
 export default defineConfig({
-	// Whether to use css reset
 	preflight: true,
-
-	// Where to look for your css declarations
 	include: ["./src/**/*.{js,jsx}"],
-
-	// Files to exclude
 	exclude: [],
-
 	jsxFramework: "react",
 
-	// Useful for theme customization
 	theme: {
 		extend: {
 			tokens: {
-				colors: {
+				gradients: {
 					background: {
-						value: "{colors.slate.950}",
+						value: {
+							type: "linear",
+							placement: "to bottom right",
+							stops: ["{colors.slate.600}", "{colors.slate.800}"],
+						},
 					},
-					lightSquare: {
-						value: "{colors.slate.200}",
+					square: {
+						light: {
+							value: {
+								type: "linear",
+								placement: "to bottom right",
+								stops: ["{colors.stone.200}", "{colors.stone.300}"],
+							},
+						},
+						dark: {
+							value: {
+								type: "linear",
+								placement: "to bottom right",
+								stops: ["{colors.violet.900}", "{colors.violet.950}"],
+							},
+						},
 					},
-					darkSquare: {
-						value: "{colors.blue.900}",
-					},
+				},
+				colors: {
 					primary: {
 						value: "{colors.yellow.300}",
 					},
+					success: {
+						value: "{colors.green.700}",
+					},
+					warning: {
+						value: "{colors.amber.500}",
+					},
+					error: {
+						value: "{colors.red.600}",
+					},
+					square: {
+						selection: {
+							simple: {
+								value: "{colors.red.600}",
+							},
+							ctrl: {
+								value: "{colors.green.600}",
+							},
+							alt: {
+								value: "{colors.yellow.400}",
+							},
+						},
+						highlight: {
+							light: {
+								value: "{colors.stone.200}",
+							},
+							dark: {
+								value: "{colors.violet.900}",
+							},
+						},
+					},
 				},
 			},
+
+			semanticTokens: {},
 		},
 	},
+	watch: true,
+	poll: true,
+	optimize: false,
 
-	// The output directory for your css system
 	outdir: "styled-system",
 	globalCss,
 });

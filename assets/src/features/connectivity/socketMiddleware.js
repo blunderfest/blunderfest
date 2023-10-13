@@ -1,4 +1,5 @@
 import { Presence, Socket } from "phoenix";
+import { connected, disconnected } from "./connectivitySlice";
 import { update } from "./presenceSlice";
 
 /**
@@ -31,16 +32,21 @@ export const socketMiddleware = ({ dispatch }) => {
 
 	channel
 		.join()
-		.receive("ok", (resp) => {
-			console.log("Joined successfully", resp);
+		.receive("ok", (response) => {
+			dispatch(connected({ roomCode: roomCode, userId: response.user_id }));
 		})
-		.receive("error", (resp) => {
-			console.log("Unable to join", resp);
+		.receive("error", () => {
+			dispatch(disconnected());
 		});
 
-	return (next) => {
-		console.log("next", next);
+	socket.onMessage((/** @type {any} */ message) => {
+		if (Object.prototype.hasOwnProperty.call(message, "type")) {
+			console.log("Dispatching ", message);
+			dispatch(message);
+		}
+	});
 
+	return (next) => {
 		return async (action) => {
 			// const { dispatch, getState } = params;
 			// const { type } = action;

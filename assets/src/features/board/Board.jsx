@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@/store";
 import { useClickAway } from "@uidotdev/usehooks";
-import { Grid } from "styled-system/jsx";
+import { Grid } from "styled-system/jsx/grid";
 import { Square } from "./Square";
 import { deselect, mark, select } from "./boardSlice";
 
@@ -14,17 +14,32 @@ export function Board() {
 	});
 
 	return (
-		<Grid ref={ref} columns={8} rowGap={0} columnGap={0} height="100vh" aspectRatio="square" backgroundColor="slate.900">
+		<Grid
+			ref={ref}
+			columns={8}
+			rowGap={0}
+			columnGap={0}
+			height={{
+				base: "auto",
+				lg: "100vh",
+			}}
+			width={{
+				base: "100vw",
+				lg: "auto",
+			}}
+			aspectRatio="square"
+			backgroundColor="slate.900"
+		>
 			{board.squares.map((square) => (
 				<Square
-					key={square.square_index}
+					key={square.squareIndex}
 					color={square.color}
-					selected={square.mark !== "none" ? square.mark : board.selectedSquare === square.square_index ? "highlighted" : "none"}
-					onClick={() => dispatch(select(square.square_index))}
+					selected={square.mark !== "none" ? square.mark : board.selectedSquare === square.squareIndex ? "highlighted" : "none"}
+					onClick={() => dispatch(select(square.squareIndex))}
 					onContextMenu={(e) => {
 						dispatch(
 							mark({
-								square: square.square_index,
+								square: square.squareIndex,
 								alt: e.altKey,
 								ctrl: e.ctrlKey,
 							}),

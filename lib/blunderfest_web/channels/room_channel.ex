@@ -9,7 +9,7 @@ defmodule BlunderfestWeb.RoomChannel do
       Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
     send(self(), :after_join)
-    {:ok, assign(socket, :user_id, user_id)}
+    {:ok, %{user_id: user_id}, assign(socket, :user_id, user_id)}
   end
 
   # Channels can be used in a request/response fashion

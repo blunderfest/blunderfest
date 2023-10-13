@@ -4,8 +4,8 @@ const files = [...Array.from({ length: 8 }).keys()];
 const ranks = [...Array.from({ length: 8 }).keys()].reverse();
 
 /** @type {Array<Piece | undefined>} */
-const pieces = [...Array.from({ length: 64 }).keys()].map((square_index) => {
-	switch (square_index) {
+const pieces = [...Array.from({ length: 64 }).keys()].map((squareIndex) => {
+	switch (squareIndex) {
 		case 0:
 			return { color: "white", piece: "rook" };
 		case 1:
@@ -81,7 +81,7 @@ const pieces = [...Array.from({ length: 64 }).keys()].map((square_index) => {
 
 /**
  * @typedef {{
- *   square_index: number,
+ *   squareIndex: number,
  *   color: "light" | "dark"
  *   mark: "none" | "simple" | "alt" | "ctrl",
  *   piece?: Piece
@@ -96,7 +96,7 @@ const pieces = [...Array.from({ length: 64 }).keys()].map((square_index) => {
 const initialState = /** @type Board */ ({
 	squares: ranks.flatMap((rank) =>
 		files.map((file) => ({
-			square_index: rank * 8 + file,
+			squareIndex: rank * 8 + file,
 			color: file % 2 === rank % 2 ? "light" : "dark",
 			mark: "none",
 			piece: pieces[rank * 8 + file],
@@ -107,18 +107,17 @@ const initialState = /** @type Board */ ({
 
 /**
  * @param {Board} board
- * @param {number} square_index
+ * @param {number} squareIndex
  *
  * @returns {Square}
  */
-function getBySquareIndex(board, square_index) {
-	const index = board.squares.findIndex((square) => square.square_index === square_index);
+function getBySquareIndex(board, squareIndex) {
+	const index = board.squares.findIndex((square) => square.squareIndex === squareIndex);
 
 	return board.squares[index];
 }
 
 /**
- *
  * @param {Board} board
  */
 function deselectAll(board) {
