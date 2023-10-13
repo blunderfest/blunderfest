@@ -18,5 +18,22 @@
  */
 
 /**
- * @typedef {{piece: "king" | "queen" | "rook" | "bishop" | "knight" | "pawn", color: "black" | "white"}} Piece
+ * @typedef {{
+ *   piece: "king" | "queen" | "rook" | "bishop" | "knight" | "pawn",
+ *   color: "black" | "white"
+ * }} Piece
+ */
+
+/**
+ * @typedef {{
+ *   squareIndex: number,
+ *   color: "light" | "dark"
+ *   mark: "none" | "simple" | "alt" | "ctrl",
+ *   piece?: Piece
+ * }} Square
+ *
+ * @typedef {{
+ *   squares: Square[],
+ *   selectedSquare?: number,
+ * }} Board
  */

@@ -6,34 +6,34 @@ import en from "./en/translations.json";
 import nl from "./nl/translations.json";
 
 const i18n = i18next
-	.use(initReactI18next)
-	.use(LanguageDetector)
-	.init(
-		{
-			resources: {
-				en: {
-					translations: en,
-				},
-				nl: {
-					translations: nl,
-				},
-			},
-			fallbackLng: "en",
-			supportedLngs: ["en", "nl"],
-			ns: "translations",
-			defaultNS: "translations",
-			fallbackNS: false,
-			debug: true,
-			detection: {
-				order: ["querystring", "navigator", "htmlTag"],
-				lookupQuerystring: "lang",
-			},
-		},
-		(err) => {
-			if (err) {
-				return console.error(err);
-			}
-		},
-	);
+  .use(initReactI18next)
+  .use(LanguageDetector)
+  .init(
+    {
+      resources: {
+        en: {
+          translations: en,
+        },
+        nl: {
+          translations: nl,
+        },
+      },
+      fallbackLng: "en",
+      supportedLngs: ["en", "nl"],
+      ns: "translations",
+      defaultNS: "translations",
+      fallbackNS: false,
+      debug: true,
+      detection: {
+        order: ["querystring", "navigator", "htmlTag"],
+        lookupQuerystring: "lang",
+      },
+    },
+    (err) => {
+      if (err) {
+        return console.error(err);
+      }
+    },
+  );
 
 export default i18n;

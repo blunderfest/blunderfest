@@ -8,24 +8,24 @@ import { createSlice } from "@reduxjs/toolkit";
  * }}
  */
 const initialState = {
-	status: "offline",
-	roomCode: undefined,
-	userId: undefined,
+  status: "offline",
+  roomCode: undefined,
+  userId: undefined,
 };
 
 export const connectivitySlice = createSlice({
-	name: "system/connectivity",
-	initialState,
-	reducers: {
-		connected: (state, /** @type {PayloadAction<{userId: String, roomCode: string}>} */ action) => {
-			state.roomCode = action.payload.roomCode;
-			state.userId = action.payload.userId;
-			state.status = "online";
-		},
-		disconnected: (state) => {
-			state.status = "offline";
-		},
-	},
+  name: "system/connectivity",
+  initialState,
+  reducers: {
+    connected: (state, /** @type {PayloadAction<{userId: String, roomCode: string}>} */ action) => {
+      state.roomCode = action.payload.roomCode;
+      state.userId = action.payload.userId;
+      state.status = "online";
+    },
+    disconnected: (state) => {
+      state.status = "offline";
+    },
+  },
 });
 
 export const { connected, disconnected } = connectivitySlice.actions;

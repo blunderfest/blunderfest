@@ -12,29 +12,29 @@ import WhiteQueen from "./WhiteQueen.svg";
 import WhiteRook from "./WhiteRook.svg";
 
 const mapping = {
-	black: {
-		bishop: BlackBishop,
-		king: BlackKing,
-		knight: BlackKnight,
-		pawn: BlackPawn,
-		queen: BlackQueen,
-		rook: BlackRook,
-	},
-	white: {
-		bishop: WhiteBishop,
-		king: WhiteKing,
-		knight: WhiteKnight,
-		pawn: WhitePawn,
-		queen: WhiteQueen,
-		rook: WhiteRook,
-	},
+  black: {
+    bishop: BlackBishop,
+    king: BlackKing,
+    knight: BlackKnight,
+    pawn: BlackPawn,
+    queen: BlackQueen,
+    rook: BlackRook,
+  },
+  white: {
+    bishop: WhiteBishop,
+    king: WhiteKing,
+    knight: WhiteKnight,
+    pawn: WhitePawn,
+    queen: WhiteQueen,
+    rook: WhiteRook,
+  },
 };
 
 /**
  * @param {Piece} props
  */
 export function Piece({ piece, color }) {
-	const svg = mapping[color][piece];
+  const svg = mapping[color][piece];
 
-	return <img src={svg} width="100%" height="100%" />;
+  return <img src={svg} width="100%" height="100%" />;
 }

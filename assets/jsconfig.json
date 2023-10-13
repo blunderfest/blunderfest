@@ -1,23 +1,23 @@
 {
-	"compilerOptions": {
-		"allowImportingTsExtensions": true,
-		"allowSyntheticDefaultImports": true,
-		"checkJs": true,
-		"esModuleInterop": true,
-		"isolatedModules": true,
-		"jsx": "preserve",
-		"jsxImportSource": "react",
-		"module": "ESNext",
-		"moduleResolution": "node",
-		"noEmit": true,
-		"paths": {
-			"styled-system/*": ["./styled-system/*"],
-			"@/*": ["./src/*"]
-		},
-		"resolveJsonModule": true,
-		"strict": true,
-		"target": "ESNext",
-		"typeRoots": ["./node_modules/@types/", "./types", "./node_modules"],
-		"types": ["vite/client"]
-	}
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "allowSyntheticDefaultImports": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "jsxImportSource": "react",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "paths": {
+      "styled-system/*": ["./styled-system/*"],
+      "@/*": ["./src/*"]
+    },
+    "resolveJsonModule": true,
+    "strict": true,
+    "target": "ESNext",
+    "typeRoots": ["./node_modules/@types/", "./types", "./node_modules"],
+    "types": ["vite/client"]
+  }
 }
