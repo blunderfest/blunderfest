@@ -2,7 +2,7 @@ import { useAppSelector } from "@/store";
 import { circle } from "styled-system/patterns";
 
 export function ConnectionStatus() {
-	const connection = useAppSelector((state) => state.connectivity);
+	const connection = useAppSelector((state) => state.system.connectivity);
 
 	return (
 		<div

@@ -23,7 +23,7 @@ defmodule BlunderfestWeb.RoomChannel do
   # broadcast to everyone in the current topic (room:lobby).
   @impl true
   def handle_in("shout", payload, socket) do
-    broadcast(socket, "shout", payload)
+    broadcast_from(socket, "shout", payload)
     {:noreply, socket}
   end
 

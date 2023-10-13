@@ -10,7 +10,7 @@ const initialState = {
 };
 
 export const presenceSlice = createSlice({
-	name: "presence",
+	name: "system/presence",
 	initialState,
 	reducers: {
 		update: (state, /** @type {PayloadAction<string[]>} */ action) => {

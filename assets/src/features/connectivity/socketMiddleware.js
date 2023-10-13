@@ -5,7 +5,7 @@ import { update } from "./presenceSlice";
 /**
  * @type {import("@reduxjs/toolkit").Middleware}
  */
-export const socketMiddleware = ({ dispatch }) => {
+export const socketMiddleware = ({ dispatch, getState }) => {
 	const socket = new Socket("/socket");
 	const roomCode = document.querySelector('meta[name="room-code"]')?.getAttribute("content");
 
@@ -39,32 +39,22 @@ export const socketMiddleware = ({ dispatch }) => {
 			dispatch(disconnected());
 		});
 
-	socket.onMessage((/** @type {any} */ message) => {
-		if (Object.prototype.hasOwnProperty.call(message, "type")) {
-			console.log("Dispatching ", message);
-			dispatch(message);
+	channel.on("shout", (response) => {
+		const userId = getState().system.connectivity.userId;
+
+		if (response.type && response.from !== userId) {
+			dispatch(response);
 		}
 	});
 
 	return (next) => {
 		return async (action) => {
-			// const { dispatch, getState } = params;
-			// const { type } = action;
-			console.log("action", action);
+			const userId = getState().system.connectivity.userId;
 
-			// switch (type) {
-			// 	case "socket/connect":
-			// 		socket.connect("wss://example.com");
-			// 		socket.on("open", () => {});
-			// 		socket.on("message", (data) => {});
-			// 		socket.on("close", () => {});
-			// 		break;
-			// 	case "socket/disconnect":
-			// 		socket.disconnect();
-			// 		break;
-			// 	default:
-			// 		break;
-			// }
+			if (!Object.prototype.hasOwnProperty.call(action, "from") && !action.type.startsWith("system/")) {
+				channel.push("shout", { ...action, from: userId });
+			}
+
 			return next(action);
 		};
 	};

@@ -1,16 +1,17 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector } from "react-redux";
 import { boardReducer } from "./features/board/boardSlice";
 import { connectivityReducer } from "./features/connectivity/connectivitySlice";
 import { presenceReducer } from "./features/connectivity/presenceSlice";
 import { socketMiddleware } from "./features/connectivity/socketMiddleware";
 
+const rootReducer = combineReducers({
+	board: boardReducer,
+	system: combineReducers({ presence: presenceReducer, connectivity: connectivityReducer }),
+});
+
 export const store = configureStore({
-	reducer: {
-		board: boardReducer,
-		presence: presenceReducer,
-		connectivity: connectivityReducer,
-	},
+	reducer: rootReducer,
 	middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(socketMiddleware),
 });
 

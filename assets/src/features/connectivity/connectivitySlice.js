@@ -14,7 +14,7 @@ const initialState = {
 };
 
 export const connectivitySlice = createSlice({
-	name: "connectivity",
+	name: "system/connectivity",
 	initialState,
 	reducers: {
 		connected: (state, /** @type {PayloadAction<{userId: String, roomCode: string}>} */ action) => {
