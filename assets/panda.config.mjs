@@ -23,22 +23,6 @@ export default defineConfig({
               stops: ["{colors.slate.600}", "{colors.slate.800}"],
             },
           },
-          square: {
-            light: {
-              value: {
-                type: "linear",
-                placement: "to bottom right",
-                stops: ["{colors.stone.200}", "{colors.stone.300}"],
-              },
-            },
-            dark: {
-              value: {
-                type: "linear",
-                placement: "to bottom right",
-                stops: ["{colors.violet.900}", "{colors.violet.950}"],
-              },
-            },
-          },
         },
         colors: {
           primary: {
@@ -54,6 +38,12 @@ export default defineConfig({
             value: "{colors.red.600}",
           },
           square: {
+            light: {
+              value: "{colors.sky.200}",
+            },
+            dark: {
+              value: "{colors.sky.700}",
+            },
             selection: {
               simple: {
                 value: "{colors.red.600}",
@@ -64,13 +54,13 @@ export default defineConfig({
               alt: {
                 value: "{colors.yellow.400}",
               },
-            },
-            highlight: {
-              light: {
-                value: "{colors.stone.200}",
-              },
-              dark: {
-                value: "{colors.violet.900}",
+              highlight: {
+                light: {
+                  value: "{colors.square.light}",
+                },
+                dark: {
+                  value: "{colors.square.dark}",
+                },
               },
             },
           },

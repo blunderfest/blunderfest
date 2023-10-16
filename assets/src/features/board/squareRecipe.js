@@ -3,7 +3,7 @@ import { sva } from "styled-system/css";
 export const squareRecipe = sva({
   slots: ["root", "selection", "piece"],
   base: {
-    root: { aspectRatio: "square", position: "relative" },
+    root: { aspectRatio: "square", position: "relative", cursor: "pointer" },
     selection: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
     piece: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
   },
@@ -11,12 +11,12 @@ export const squareRecipe = sva({
     color: {
       dark: {
         root: {
-          backgroundGradient: "square.dark",
+          backgroundColor: "square.dark",
         },
       },
       light: {
         root: {
-          backgroundGradient: "square.light",
+          backgroundColor: "square.light",
         },
       },
     },
@@ -49,7 +49,7 @@ export const squareRecipe = sva({
       color: "light",
       css: {
         selection: {
-          backgroundColor: "square.highlight.light",
+          backgroundColor: "square.selection.highlight.light",
           filter: "brightness(120%) opacity(0.8)",
         },
       },
@@ -59,7 +59,7 @@ export const squareRecipe = sva({
       color: "dark",
       css: {
         selection: {
-          backgroundColor: "square.highlight.dark",
+          backgroundColor: "square.selection.highlight.dark",
           filter: "brightness(140%) opacity(0.8)",
         },
       },
