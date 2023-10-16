@@ -1,15 +1,15 @@
-import BlackBishop from "./BlackBishop.svg";
-import BlackKing from "./BlackKing.svg";
-import BlackKnight from "./BlackKnight.svg";
-import BlackPawn from "./BlackPawn.svg";
-import BlackQueen from "./BlackQueen.svg";
-import BlackRook from "./BlackRook.svg";
-import WhiteBishop from "./WhiteBishop.svg";
-import WhiteKing from "./WhiteKing.svg";
-import WhiteKnight from "./WhiteKnight.svg";
-import WhitePawn from "./WhitePawn.svg";
-import WhiteQueen from "./WhiteQueen.svg";
-import WhiteRook from "./WhiteRook.svg";
+import { BlackBishop } from "./BlackBishop";
+import { BlackKing } from "./BlackKing";
+import { BlackKnight } from "./BlackKnight";
+import { BlackPawn } from "./BlackPawn";
+import { BlackQueen } from "./BlackQueen";
+import { BlackRook } from "./BlackRook";
+import { WhiteBishop } from "./WhiteBishop";
+import { WhiteKing } from "./WhiteKing";
+import { WhiteKnight } from "./WhiteKnight";
+import { WhitePawn } from "./WhitePawn";
+import { WhiteQueen } from "./WhiteQueen";
+import { WhiteRook } from "./WhiteRook";
 
 const mapping = {
   black: {
@@ -34,7 +34,7 @@ const mapping = {
  * @param {Piece} props
  */
 export function Piece({ piece, color }) {
-  const svg = mapping[color][piece];
+  const Svg = mapping[color][piece];
 
-  return <img src={svg} width="100%" height="100%" />;
+  return <Svg width="100%" height="100%" viewBox="0 0 45 45" />;
 }
