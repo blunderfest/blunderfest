@@ -9,18 +9,19 @@
     "vscode": {
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
-        "chakra-ui.panda-css-vscode",
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "github.vscode-github-actions",
-        "jakebecker.elixir-ls",
-        "ko-dev.vscode-open-files-in-directory",
-        "mikehanson.auto-barrel",
-        "ms-vscode.vscode-typescript-next",
-        "phoenixframework.phoenix",
-        "RoyalMist.vscode-eex-format",
-        "wix.vscode-import-cost"
-      ]
+		"chakra-ui.panda-css-vscode",
+		"dbaeumer.vscode-eslint",
+		"esbenp.prettier-vscode",
+		"github.vscode-github-actions",
+		"jakebecker.elixir-ls",
+		"ko-dev.vscode-open-files-in-directory",
+		"mikehanson.auto-barrel",
+		"ms-vscode.vscode-typescript-next",
+		"phoenixframework.phoenix",
+		"RoyalMist.vscode-eex-format",
+		"wix.vscode-import-cost",
+		"deque-systems.vscode-axe-linter"
+	]
     }
   },
 

@@ -1,4 +1,5 @@
 import { Presence, Socket } from "phoenix";
+import { createGame } from "../games/gamesSlice";
 import { connected, disconnected } from "./connectivitySlice";
 import { update } from "./presenceSlice";
 
@@ -34,6 +35,8 @@ export const socketMiddleware = ({ dispatch, getState }) => {
     .join()
     .receive("ok", (response) => {
       dispatch(connected({ roomCode: roomCode, userId: response.user_id }));
+      dispatch(createGame("game-1"));
+      dispatch(createGame("game-2"));
     })
     .receive("error", () => {
       dispatch(disconnected());

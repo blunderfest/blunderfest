@@ -1,21 +1,19 @@
-import { useAppDispatch, useAppSelector } from "@/store";
-import { useClickAway } from "@uidotdev/usehooks";
+import { useAppSelector } from "@/store";
 import { Grid } from "styled-system/jsx/grid";
+import { selectCurrentPosition } from "../games/gamesSlice";
 import { Square } from "./Square";
-import { deselect } from "./boardSlice";
 
 export function Board() {
-  const board = useAppSelector((state) => state.board);
-  const dispatch = useAppDispatch();
+  const board = useAppSelector(selectCurrentPosition);
 
-  /** @type {import("react").MutableRefObject<HTMLDivElement>} */
-  const ref = useClickAway(() => {
-    dispatch(deselect());
-  });
+  if (!board) {
+    return <>Loading...</>;
+  }
+
+  const selectedSquare = board.selectedSquare;
 
   return (
     <Grid
-      ref={ref}
       columns={8}
       rowGap={0}
       columnGap={0}
@@ -31,7 +29,7 @@ export function Board() {
       backgroundColor="slate.900"
     >
       {board.squares.map((square) => (
-        <Square key={square.squareIndex} square={square} />
+        <Square key={square.squareIndex} square={square} highlighted={selectedSquare === square.squareIndex} />
       ))}
     </Grid>
   );

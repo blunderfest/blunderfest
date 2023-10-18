@@ -9,7 +9,7 @@ const initialState = {
   users: [],
 };
 
-export const presenceSlice = createSlice({
+const presenceSlice = createSlice({
   name: "system/presence",
   initialState,
   reducers: {

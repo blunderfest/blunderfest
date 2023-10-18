@@ -35,5 +35,5 @@
  * @typedef {{
  *   squares: Square[],
  *   selectedSquare?: number,
- * }} Board
+ * }} Position
  */

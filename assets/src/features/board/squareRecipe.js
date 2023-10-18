@@ -3,7 +3,11 @@ import { sva } from "styled-system/css";
 export const squareRecipe = sva({
   slots: ["root", "selection", "piece"],
   base: {
-    root: { aspectRatio: "square", position: "relative", cursor: "pointer" },
+    root: {
+      aspectRatio: "square",
+      position: "relative",
+      cursor: "pointer",
+    },
     selection: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
     piece: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
   },

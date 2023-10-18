@@ -1,5 +1,3 @@
-import { createSlice } from "@reduxjs/toolkit";
-
 const files = [...Array.from({ length: 8 }).keys()];
 const ranks = [...Array.from({ length: 8 }).keys()].reverse();
 
@@ -79,71 +77,19 @@ const pieces = [...Array.from({ length: 64 }).keys()].map((squareIndex) => {
   }
 });
 
-const initialState = /** @type Board */ ({
-  squares: ranks.flatMap((rank) =>
-    files.map((file) => ({
-      squareIndex: rank * 8 + file,
-      color: file % 2 === rank % 2 ? "light" : "dark",
-      mark: "none",
-      piece: pieces[rank * 8 + file],
-    })),
-  ),
-  selectedSquare: undefined,
-});
-
 /**
- * @param {Board} board
- * @param {number} squareIndex
- *
- * @returns {Square}
+ * @returns {Position}
  */
-function getBySquareIndex(board, squareIndex) {
-  const index = board.squares.findIndex((square) => square.squareIndex === squareIndex);
-
-  return board.squares[index];
+export function newPosition() {
+  return {
+    squares: ranks.flatMap((rank) =>
+      files.map((file) => ({
+        squareIndex: rank * 8 + file,
+        color: file % 2 === rank % 2 ? "light" : "dark",
+        mark: "none",
+        piece: pieces[rank * 8 + file],
+      })),
+    ),
+    selectedSquare: undefined,
+  };
 }
-
-/**
- * @param {Board} board
- */
-function deselectAll(board) {
-  Object.entries(board.squares).forEach(([, square]) => {
-    square.mark = "none";
-  });
-  board.selectedSquare = undefined;
-}
-
-export const boardSlice = createSlice({
-  name: "board",
-  initialState,
-  reducers: {
-    deselect: (state) => deselectAll(state),
-    select: (state, /** @type {PayloadAction<number>} */ action) => {
-      const square = getBySquareIndex(state, action.payload);
-
-      if (!square.piece) {
-        deselectAll(state);
-      } else if (state.squares.filter((square) => square.mark !== "none").length) {
-        deselectAll(state);
-      } else if (state.selectedSquare === action.payload) {
-        state.selectedSquare = undefined;
-      } else {
-        state.selectedSquare = action.payload;
-      }
-    },
-    mark: (state, /** @type {PayloadAction<{square: number, alt: boolean, ctrl: boolean}>} */ action) => {
-      const mark = action.payload.alt ? "alt" : action.payload.ctrl ? "ctrl" : "simple";
-      const square = getBySquareIndex(state, action.payload.square);
-
-      if (square.mark === mark) {
-        square.mark = "none";
-      } else {
-        square.mark = mark;
-      }
-    },
-  },
-});
-
-export const { select, deselect, mark } = boardSlice.actions;
-
-export const boardReducer = boardSlice.reducer;

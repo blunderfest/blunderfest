@@ -13,7 +13,7 @@ const initialState = {
   userId: undefined,
 };
 
-export const connectivitySlice = createSlice({
+const connectivitySlice = createSlice({
   name: "system/connectivity",
   initialState,
   reducers: {
