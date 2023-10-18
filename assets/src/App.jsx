@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 import { Container, HStack, VStack } from "styled-system/jsx";
 import { Board } from "./features/board/Board";
@@ -7,13 +7,21 @@ import { deselect, switchGame } from "./features/games/gamesSlice";
 import { useAppDispatch, useAppSelector } from "./store";
 
 function App() {
-  const ref = useRef(null);
-
   useEffect(() => {
     const disableContextMenu = (/** @type {MouseEvent} */ e) => e.preventDefault();
-    document.addEventListener("contextmenu", disableContextMenu);
+    const deselectAll = (/** @type {KeyboardEvent} */ e) => {
+      if (e.key === "Escape") {
+        dispatch(deselect());
+      }
+    };
 
-    return () => document.removeEventListener("contextmenu", disableContextMenu);
+    document.addEventListener("contextmenu", disableContextMenu);
+    document.addEventListener("keydown", deselectAll);
+
+    return () => {
+      document.removeEventListener("contextmenu", disableContextMenu);
+      document.removeEventListener("keydown", deselectAll);
+    };
   });
 
   const games = useAppSelector((state) => state.games.allIds);
@@ -24,29 +32,12 @@ function App() {
   return (
     <main>
       <HStack>
-        <VStack
-          ref={ref}
-          onClick={(e) => {
-            if (e.target === ref.current) {
-              dispatch(deselect());
-            }
-          }}
-          onTouchStart={(e) => {
-            if (e.target === ref.current) {
-              dispatch(deselect());
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              dispatch(deselect());
-            }
-          }}
-        >
+        <VStack>
           <ConnectionStatus />
           Active: {activeGame}
-          {games.map((game) => (
+          {games.map((game, index) => (
             <button key={game} onClick={() => dispatch(switchGame(game))}>
-              {game}
+              Game {index + 1}
             </button>
           ))}
         </VStack>

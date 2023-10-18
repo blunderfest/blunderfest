@@ -123,7 +123,7 @@ export const gamesReducer = gamesSlice.reducer;
 export const selectCurrentGame = createSelector(
   (/** @type {import("@/store").RootState} */ state) => state.games.byId,
   (/** @type {import("@/store").RootState} */ state) => state.games.activeGame,
-  (byId, gameId) => (!(gameId in byId) ? undefined : byId[gameId]),
+  (byId, gameId) => byId[gameId],
 );
 
 export const selectCurrentPosition = (/** @type {import("@/store").RootState} */ state) => {

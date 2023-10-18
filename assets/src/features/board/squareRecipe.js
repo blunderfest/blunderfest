@@ -7,6 +7,11 @@ export const squareRecipe = sva({
       aspectRatio: "square",
       position: "relative",
       cursor: "pointer",
+      boxSizing: "border-box",
+      _focus: {
+        border: "5px solid #000",
+        outline: "none",
+      },
     },
     selection: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
     piece: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
