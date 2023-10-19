@@ -2,8 +2,11 @@ import i18next from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 
 import { initReactI18next } from "react-i18next";
-import en from "./en/translations.json";
-import nl from "./nl/translations.json";
+
+import enBoard from "./en/board.json";
+import enTranslations from "./en/translations.json";
+import nlBoard from "./nl/board.json";
+import nlTranslations from "./nl/translations.json";
 
 const i18n = i18next
   .use(initReactI18next)
@@ -12,10 +15,12 @@ const i18n = i18next
     {
       resources: {
         en: {
-          translations: en,
+          translations: enTranslations,
+          board: enBoard,
         },
         nl: {
-          translations: nl,
+          translations: nlTranslations,
+          board: nlBoard,
         },
       },
       fallbackLng: "en",

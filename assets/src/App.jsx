@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 
+import { css } from "styled-system/css";
 import { Container, HStack, VStack } from "styled-system/jsx";
 import { Board } from "./features/board/Board";
 import { ConnectionStatus } from "./features/connectivity/Connection";
@@ -32,7 +33,11 @@ function App() {
   return (
     <main>
       <HStack>
-        <VStack>
+        <VStack
+          className={css({
+            backgroundColor: "slate.200",
+          })}
+        >
           <ConnectionStatus />
           Active: {activeGame}
           {games.map((game, index) => (

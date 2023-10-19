@@ -85,6 +85,8 @@ export function newPosition() {
     squares: ranks.flatMap((rank) =>
       files.map((file) => ({
         squareIndex: rank * 8 + file,
+        file: String.fromCharCode(97 + file),
+        rank: rank + 1,
         color: file % 2 === rank % 2 ? "light" : "dark",
         mark: "none",
         piece: pieces[rank * 8 + file],

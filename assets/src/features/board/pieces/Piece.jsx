@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { BlackBishop } from "./BlackBishop";
 import { BlackKing } from "./BlackKing";
 import { BlackKnight } from "./BlackKnight";
@@ -34,7 +35,9 @@ const mapping = {
  * @param {Piece} props
  */
 export function Piece({ piece, color }) {
+  const { t } = useTranslation("board");
+
   const Svg = mapping[color][piece];
 
-  return <Svg width="100%" height="100%" viewBox="0 0 45 45" />;
+  return <Svg width="100%" height="100%" viewBox="0 0 45 45" title={t(`${color}_${piece}`)} />;
 }

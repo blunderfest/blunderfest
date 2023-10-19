@@ -1,7 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@/store";
 import { useRef } from "react";
 import { useClickAway, useKey } from "react-use";
-import { css } from "styled-system/css";
 import { Grid } from "styled-system/jsx/grid";
 import { deselect, selectCurrentPosition } from "../games/gamesSlice";
 import { Square } from "./Square";
@@ -44,6 +43,9 @@ export function Board() {
 
   return (
     <Grid
+      role="grid"
+      aria-colcount={8}
+      aria-rowcount={8}
       ref={ref}
       columns={8}
       rowGap={0}
@@ -57,7 +59,6 @@ export function Board() {
         lg: "auto",
       }}
       aspectRatio="square"
-      position="relative"
     >
       {board.squares.map((square, index) => (
         <Square
@@ -67,18 +68,6 @@ export function Board() {
           highlighted={board.selectedSquare === square.squareIndex}
         />
       ))}
-      <div
-        className={css({
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: "marble",
-          filter: "opacity(0.1)",
-          pointerEvents: "none",
-        })}
-      ></div>
     </Grid>
   );
 }

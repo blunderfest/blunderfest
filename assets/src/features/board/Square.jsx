@@ -57,7 +57,9 @@ export const Square = forwardRef(
       <div
         ref={ref}
         tabIndex={0}
-        role="button"
+        role="gridcell"
+        aria-label={square.file + square.rank}
+        aria-selected={highlighted}
         className={classes.root}
         onClick={onSelect}
         onContextMenu={(e) => onMark(e.altKey, e.ctrlKey)}

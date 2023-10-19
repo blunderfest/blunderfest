@@ -27,6 +27,8 @@
 /**
  * @typedef {{
  *   squareIndex: number,
+ *   file: string,
+ *   rank: number,
  *   color: "light" | "dark"
  *   mark: "none" | "simple" | "alt" | "ctrl",
  *   piece?: Piece
