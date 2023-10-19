@@ -85,11 +85,27 @@ const gamesSlice = createSlice({
 
       if (!square.piece) {
         deselectAll(position);
-      } else if (position.squares.filter((square) => square.mark !== "none").length) {
+      } else if (position.squares.filter((square) => square.mark !== "none" && square.mark !== "highlighted").length) {
         deselectAll(position);
       } else if (position.selectedSquare === action.payload.squareIndex) {
+        const square = position.squares.find((square) => square.squareIndex === position.selectedSquare);
+
+        if (square) {
+          square.mark = "none";
+        }
+
         position.selectedSquare = undefined;
       } else {
+        const square = position.squares.find((square) => square.squareIndex === position.selectedSquare);
+        const newSquare = position.squares.find((square) => square.squareIndex === action.payload.squareIndex);
+
+        if (square) {
+          square.mark = "none";
+        }
+
+        if (newSquare) {
+          newSquare.mark = "highlighted";
+        }
         position.selectedSquare = action.payload.squareIndex;
       }
     },

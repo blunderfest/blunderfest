@@ -30,7 +30,7 @@
  *   file: string,
  *   rank: number,
  *   color: "light" | "dark"
- *   mark: "none" | "simple" | "alt" | "ctrl",
+ *   mark: "none" | "highlighted" | "simple" | "alt" | "ctrl",
  *   piece?: Piece
  * }} Square
  *

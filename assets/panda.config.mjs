@@ -44,6 +44,11 @@ export default defineConfig({
             dark: {
               value: "{colors.sky.700}",
             },
+            keyboardFocussed: {
+              border: {
+                value: "{colors.neutral.900}",
+              },
+            },
             selection: {
               simple: {
                 value: "{colors.red.600}",

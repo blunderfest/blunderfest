@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 
+import { useKeyboard } from "react-aria";
 import { css } from "styled-system/css";
 import { Container, HStack, VStack } from "styled-system/jsx";
 import { Board } from "./features/board/Board";
@@ -8,20 +9,20 @@ import { deselect, switchGame } from "./features/games/gamesSlice";
 import { useAppDispatch, useAppSelector } from "./store";
 
 function App() {
-  useEffect(() => {
-    const disableContextMenu = (/** @type {MouseEvent} */ e) => e.preventDefault();
-    const deselectAll = (/** @type {KeyboardEvent} */ e) => {
+  const { keyboardProps } = useKeyboard({
+    onKeyDown: (e) => {
       if (e.key === "Escape") {
         dispatch(deselect());
       }
-    };
+    },
+  });
 
+  useEffect(() => {
+    const disableContextMenu = (/** @type {MouseEvent} */ e) => e.preventDefault();
     document.addEventListener("contextmenu", disableContextMenu);
-    document.addEventListener("keydown", deselectAll);
 
     return () => {
       document.removeEventListener("contextmenu", disableContextMenu);
-      document.removeEventListener("keydown", deselectAll);
     };
   });
 
@@ -31,7 +32,7 @@ function App() {
   const dispatch = useAppDispatch();
 
   return (
-    <main>
+    <main {...keyboardProps}>
       <HStack>
         <VStack
           className={css({

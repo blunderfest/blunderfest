@@ -1,41 +1,9 @@
-import { useAppDispatch, useAppSelector } from "@/store";
-import { useRef } from "react";
-import { useClickAway, useKey } from "react-use";
 import { Grid } from "styled-system/jsx/grid";
-import { deselect, selectCurrentPosition } from "../games/gamesSlice";
 import { Square } from "./Square";
+import { useBoard } from "./useBoard";
 
 export function Board() {
-  const board = useAppSelector(selectCurrentPosition);
-  const dispatch = useAppDispatch();
-  const ref = useRef(null);
-  const squareRefs = useRef([...Array.from({ length: 64 })]);
-
-  useClickAway(ref, (e) => {
-    const target = /** @type {HTMLElement} */ (e.target);
-
-    if (!target || !target.onclick || typeof target.onclick !== "function") {
-      dispatch(deselect());
-    }
-  });
-
-  const focus = (/** @type {number} */ delta) => {
-    const refs = squareRefs.current;
-
-    const index = refs.findIndex((ref) => ref === document.activeElement);
-
-    if (index !== -1) {
-      const nextIndex = (index + delta + 64) % 64;
-      const ref = refs[nextIndex];
-
-      ref.focus();
-    }
-  };
-
-  useKey("ArrowUp", () => focus(-8));
-  useKey("ArrowDown", () => focus(8));
-  useKey("ArrowLeft", () => focus(-1));
-  useKey("ArrowRight", () => focus(1));
+  const { board, boardRef, squareRefs, keyboardProps } = useBoard();
 
   if (!board) {
     return <>Loading...</>;
@@ -46,7 +14,7 @@ export function Board() {
       role="grid"
       aria-colcount={8}
       aria-rowcount={8}
-      ref={ref}
+      ref={boardRef}
       columns={8}
       rowGap={0}
       columnGap={0}
@@ -59,14 +27,10 @@ export function Board() {
         lg: "auto",
       }}
       aspectRatio="square"
+      {...keyboardProps}
     >
       {board.squares.map((square, index) => (
-        <Square
-          key={square.squareIndex}
-          ref={(node) => (squareRefs.current[index] = node)}
-          square={square}
-          highlighted={board.selectedSquare === square.squareIndex}
-        />
+        <Square key={square.squareIndex} ref={(node) => (squareRefs.current[index] = node)} square={square} />
       ))}
     </Grid>
   );

@@ -8,15 +8,21 @@ export const squareRecipe = sva({
       position: "relative",
       cursor: "pointer",
       boxSizing: "border-box",
-      _focus: {
-        border: "5px solid #000",
-        outline: "none",
-      },
+      outline: "none",
     },
     selection: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
     piece: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
   },
   variants: {
+    focussed: {
+      true: {
+        root: {
+          borderWidth: "5px",
+          borderStyle: "solid",
+          borderColor: "square.keyboardFocussed.border",
+        },
+      },
+    },
     color: {
       dark: {
         root: {
