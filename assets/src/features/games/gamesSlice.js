@@ -3,6 +3,22 @@ import { newPosition } from "./temp";
 
 /**
  * @param {Position} position
+ * @param {number | undefined} squareIndex
+ *
+ * @returns {Square?}
+ */
+function findBySquareIndex(position, squareIndex) {
+  const index = position.squares.findIndex((square) => square.squareIndex === squareIndex);
+
+  if (index === -1) {
+    return null;
+  }
+
+  return position.squares[index];
+}
+
+/**
+ * @param {Position} position
  * @param {number} squareIndex
  *
  * @returns {Square}
@@ -83,30 +99,21 @@ const gamesSlice = createSlice({
       const position = game.positions[game.currentPosition];
       const square = getBySquareIndex(position, action.payload.squareIndex);
 
-      if (!square.piece) {
+      if (!square.piece || position.squares.filter((square) => square.mark !== "none" && square.mark !== "highlighted").length) {
         deselectAll(position);
-      } else if (position.squares.filter((square) => square.mark !== "none" && square.mark !== "highlighted").length) {
-        deselectAll(position);
-      } else if (position.selectedSquare === action.payload.squareIndex) {
-        const square = position.squares.find((square) => square.squareIndex === position.selectedSquare);
-
-        if (square) {
-          square.mark = "none";
-        }
-
-        position.selectedSquare = undefined;
       } else {
-        const square = position.squares.find((square) => square.squareIndex === position.selectedSquare);
-        const newSquare = position.squares.find((square) => square.squareIndex === action.payload.squareIndex);
+        const currentSelected = findBySquareIndex(position, position.selectedSquare);
+        const newSelected = getBySquareIndex(position, action.payload.squareIndex);
 
-        if (square) {
-          square.mark = "none";
+        if (currentSelected) {
+          currentSelected.mark = "none";
+          position.selectedSquare = undefined;
         }
 
-        if (newSquare) {
-          newSquare.mark = "highlighted";
+        if (currentSelected?.squareIndex !== newSelected?.squareIndex) {
+          newSelected.mark = "highlighted";
+          position.selectedSquare = newSelected.squareIndex;
         }
-        position.selectedSquare = action.payload.squareIndex;
       }
     },
     mark: (state, /** @type {PayloadAction<{squareIndex: number, alt: boolean, ctrl: boolean}>} */ action) => {
@@ -127,6 +134,7 @@ const gamesSlice = createSlice({
 
       const position = game.positions[game.currentPosition];
       const square = getBySquareIndex(position, action.payload.squareIndex);
+
       square.mark = "none";
     },
   },

@@ -1,5 +1,5 @@
 import { useAppDispatch } from "@/store";
-import { useFocusRing, useKeyboard, usePress } from "react-aria";
+import { mergeProps, useFocusRing, useLongPress, usePress } from "react-aria";
 import { mark, select, unmark } from "../games/gamesSlice";
 import { squareRecipe } from "./squareRecipe";
 import { useBoard } from "./useBoard";
@@ -8,23 +8,19 @@ export const useSquare = (/** @type {Square} */ square) => {
   const { board } = useBoard();
   const dispatch = useAppDispatch();
 
-  const { keyboardProps } = useKeyboard({
-    onKeyDown: (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        if (e.ctrlKey) {
-          cycle();
-        } else {
-          onSelect();
-        }
-      } else {
-        e.continuePropagation();
-      }
+  const { longPressProps } = useLongPress({
+    onLongPress: () => {
+      cycle();
     },
   });
 
   const { pressProps } = usePress({
-    onPress: () => {
-      dispatch(select({ squareIndex: square.squareIndex }));
+    onPress: (e) => {
+      if (e.pointerType === "keyboard" && e.ctrlKey) {
+        cycle();
+      } else {
+        onSelect();
+      }
     },
   });
 
@@ -74,9 +70,7 @@ export const useSquare = (/** @type {Square} */ square) => {
     label: square.file + square.rank,
     selected: board?.selectedSquare === square.squareIndex,
     classes,
-    keyboardProps,
-    pressProps,
-    focusProps,
+    elementProps: mergeProps(longPressProps, pressProps, focusProps),
     onSelect,
     onMark,
     piece: square.piece,

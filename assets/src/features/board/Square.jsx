@@ -9,7 +9,7 @@ export const Square = forwardRef(
    * }} props
    */
   (props, ref) => {
-    const { label, selected, classes, focusProps, keyboardProps, pressProps, onMark, piece } = useSquare(props.square);
+    const { label, selected, classes, elementProps, onMark, piece } = useSquare(props.square);
 
     return (
       <div
@@ -20,9 +20,7 @@ export const Square = forwardRef(
         aria-selected={selected}
         className={classes.root}
         onContextMenu={(e) => onMark(e.altKey, e.ctrlKey)}
-        {...focusProps}
-        {...pressProps}
-        {...keyboardProps}
+        {...elementProps}
       >
         <div className={classes.selection}>&nbsp;</div>
         <div className={classes.piece}>{piece && <Piece {...piece} />}</div>
