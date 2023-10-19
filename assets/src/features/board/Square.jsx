@@ -19,8 +19,12 @@ export const Square = forwardRef(
         aria-label={label}
         aria-selected={selected}
         className={classes.root}
-        onContextMenu={(e) => onMark(e.altKey, e.ctrlKey)}
         {...elementProps}
+        onContextMenu={(e) => {
+          if (!e.defaultPrevented) {
+            onMark(e.altKey, e.ctrlKey);
+          }
+        }}
       >
         <div className={classes.selection}>&nbsp;</div>
         <div className={classes.piece}>{piece && <Piece {...piece} />}</div>
