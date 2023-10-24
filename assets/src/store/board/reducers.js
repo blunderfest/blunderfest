@@ -2,10 +2,7 @@ import { createReducer } from "@reduxjs/toolkit";
 import { mark, reset, select } from "./actions";
 
 /**
- * @type {{
- *   selectedSquare: number?,
- *   marks: Array<Mark>
- * }}
+ * @type {Board}
  */
 const initialState = {
   selectedSquare: null,

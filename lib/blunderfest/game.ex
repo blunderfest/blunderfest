@@ -23,17 +23,15 @@ defmodule Blunderfest.Position do
   alias __MODULE__
   alias Blunderfest.Move
 
-  @derive {Jason.Encoder, only: [:fen, :selectedSquare, :moves]}
+  @derive {Jason.Encoder, only: [:fen, :moves]}
   typedstruct do
     field(:fen, String.t(), enforce: true)
-    field(:selectedSquare, String.t())
     field(:moves, list(Move.t()))
   end
 
   def new(),
     do: %Position{
       fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
-      selectedSquare: 12,
       moves: [
         Move.new("e2e4")
       ]
@@ -41,8 +39,7 @@ defmodule Blunderfest.Position do
 
   def new2(),
     do: %Position{
-      fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
-      selectedSquare: 20
+      fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
     }
 end
 

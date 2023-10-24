@@ -70,6 +70,7 @@ function parseRank(rankIndex, rank) {
 
 /**
  * @param {string} fen
+ * @returns {Position}
  */
 export function parseFen(fen) {
   const [piecePlacement, activeColor, castlingAvailability, enPassant, halfmoveClock, fullmoveNumber] = fen.split(" ");
@@ -79,8 +80,8 @@ export function parseFen(fen) {
   return {
     squares: ranks.flatMap((rank, index) => parseRank(7 - index, rank)),
     activeColor: activeColor === "w" ? "white" : "black",
-    castlingAvailability: castlingAvailability === "-" ? null : castlingAvailability.split(""),
-    enPassant: enPassant === "-" ? null : enPassant,
+    castlingAvailability: castlingAvailability === "-" ? [] : castlingAvailability.split(""),
+    enPassant: enPassant === "-" ? null : enPassant[0].charCodeAt(0) - 97 + (Number(enPassant[1]) - 1) * 8,
     halfmoveClock: Number(halfmoveClock),
     fullmoveNumber: Number(fullmoveNumber),
   };

@@ -35,18 +35,31 @@
  *
  * @typedef {{
  *   san: string,
- *   position: Position
+ *   position: Position2
  * }} Move
  *
  * @typedef {{
  *   fen: string,
- *   selectedSquare?: number,
  *   moves: Move[]
- * }} Position
+ * }} Position2
  *
  * @typedef {{
  *   id: string,
- *   positions: Position[],
+ *   positions: Position2[],
  *   currentPosition: number[]
  * }} Game
+ *
+ * @typedef {{
+ *   selectedSquare: number?,
+ *   marks: Array<Mark>
+ * }} Board
+ *
+ * @typedef {{
+ *   squares: Square[],
+ *   activeColor: "white" | "black",
+ *   castlingAvailability: string[],
+ *   enPassant: number?,
+ *   halfmoveClock: number,
+ *   fullmoveNumber: number,
+ * }} Position
  */

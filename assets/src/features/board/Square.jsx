@@ -1,7 +1,7 @@
 import { useAppDispatch, useAppSelector } from "@/store";
-import { mark, select } from "@/store/board";
+import { mark } from "@/store/board";
 import { forwardRef } from "react";
-import { mergeProps, useFocusRing, useLongPress, usePress } from "react-aria";
+import { useSquareAria } from "./aria";
 import { Piece } from "./pieces/Piece";
 import { squareRecipe } from "./squareRecipe";
 
@@ -16,34 +16,7 @@ export const Square = forwardRef(
 
     const dispatch = useAppDispatch();
     const board = useAppSelector((state) => state.board);
-
-    const { longPressProps } = useLongPress({
-      onLongPress: () => {
-        cycle();
-      },
-    });
-
-    const { pressProps } = usePress({
-      onPress: (e) => {
-        if (e.pointerType === "keyboard" && e.ctrlKey) {
-          cycle();
-        } else {
-          dispatch(select(square.squareIndex));
-        }
-      },
-    });
-
-    const { focusProps, isFocusVisible } = useFocusRing({
-      within: true,
-    });
-
-    const cycle = () => {
-      const marks = /** @type {Array<Mark>} */ (["none", "simple", "alt", "ctrl"]);
-      const currentMark = marks.indexOf(board.marks[square.squareIndex]);
-      const nextMark = marks[(currentMark + 1) % marks.length];
-
-      dispatch(mark(square.squareIndex, nextMark));
-    };
+    const { elementProps, isFocusVisible } = useSquareAria(square);
 
     const classes = squareRecipe({
       focussed: isFocusVisible,
@@ -64,7 +37,7 @@ export const Square = forwardRef(
         aria-label={square.file + square.rank}
         aria-selected={board.selectedSquare === square.squareIndex}
         className={classes.root}
-        {...mergeProps(longPressProps, pressProps, focusProps)}
+        {...elementProps}
         onContextMenu={(e) => {
           if (!e.defaultPrevented) {
             e.preventDefault();
