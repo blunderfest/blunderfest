@@ -44,7 +44,8 @@ defmodule Blunderfest.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:nanoid, "~> 2.0.5"},
       {:horde, "~> 0.8.7"},
-      {:cors_plug, "~> 3.0", only: :dev}
+      {:cors_plug, "~> 3.0", only: :dev},
+      {:typed_struct, "~> 0.3.0"}
     ]
   end
 

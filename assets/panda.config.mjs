@@ -1,9 +1,12 @@
 import { defineConfig, defineGlobalStyles } from "@pandacss/dev";
+import pandaBase from "@pandacss/preset-base";
+import pandaPreset from "@pandacss/preset-panda";
 
 const globalCss = defineGlobalStyles({
   body: {
     backgroundGradient: "background",
     height: "100vh",
+    touchAction: "none",
   },
 });
 
@@ -11,6 +14,7 @@ export default defineConfig({
   preflight: true,
   include: ["./src/**/*.{js,jsx}"],
   exclude: [],
+  presets: [pandaBase, pandaPreset],
   jsxFramework: "react",
   theme: {
     extend: {
@@ -75,7 +79,9 @@ export default defineConfig({
   },
   watch: true,
   optimize: true,
+  minify: true,
 
+  cwd: "/workspace/blunderfest/assets",
   outdir: "styled-system",
   globalCss,
 });

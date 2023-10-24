@@ -1,5 +1,7 @@
 defmodule BlunderfestWeb.RoomChannel do
   use BlunderfestWeb, :channel
+
+  alias Blunderfest.Game
   alias BlunderfestWeb.Presence
   alias Nanoid
 
@@ -8,8 +10,23 @@ defmodule BlunderfestWeb.RoomChannel do
     user_id =
       Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+    # game_id =
+    #   Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+    # game_id2 =
+    #   Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+    # game_id3 =
+    #   Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+    games = [Game.new("game_1"), Game.new("game_2"), Game.new("game_3")]
+
     send(self(), :after_join)
-    {:ok, %{user_id: user_id}, assign(socket, :user_id, user_id)}
+
+    {:ok,
+     %{
+       user_id: user_id
+     }, socket |> assign(:user_id, user_id) |> assign(:games, games)}
   end
 
   # Channels can be used in a request/response fashion
@@ -31,11 +48,15 @@ defmodule BlunderfestWeb.RoomChannel do
   def handle_info(:after_join, socket) do
     {:ok, _} =
       Presence.track(socket, socket.assigns.user_id, %{
-        online_at: inspect(System.system_time(:millisecond)),
         user_id: socket.assigns.user_id
       })
 
     push(socket, "presence_state", Presence.list(socket))
+
+    socket.assigns.games
+    |> Enum.map(fn game -> %{type: "games/add", payload: game} end)
+    |> Enum.each(fn event -> push(socket, "shout", event) end)
+
     {:noreply, socket}
   end
 end

@@ -18,24 +18,35 @@
  */
 
 /**
+ * @typedef {"none" | "simple" | "alt" | "ctrl"} Mark
+ *
  * @typedef {{
  *   piece: "king" | "queen" | "rook" | "bishop" | "knight" | "pawn",
  *   color: "black" | "white"
  * }} Piece
- */
-
-/**
+ *
  * @typedef {{
  *   squareIndex: number,
  *   file: string,
  *   rank: number,
  *   color: "light" | "dark"
- *   mark: "none" | "highlighted" | "simple" | "alt" | "ctrl",
  *   piece?: Piece
  * }} Square
  *
  * @typedef {{
- *   squares: Square[],
+ *   san: string,
+ *   position: Position
+ * }} Move
+ *
+ * @typedef {{
+ *   fen: string,
  *   selectedSquare?: number,
+ *   moves: Move[]
  * }} Position
+ *
+ * @typedef {{
+ *   id: string,
+ *   positions: Position[],
+ *   currentPosition: number[]
+ * }} Game
  */
