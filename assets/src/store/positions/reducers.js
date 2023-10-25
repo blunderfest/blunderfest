@@ -5,11 +5,13 @@ import { addGame } from "../room";
 
 /**
  * @type {{
- *   byId: Record<string, Position>
+ *   byId: Record<string, Position>,
+ *   currentPositions: Record<string, string>
  * }}
  */
 const initialState = {
   byId: {},
+  currentPositions: {},
 };
 
 const flattenPositions =
@@ -31,11 +33,13 @@ export const positionReducer = createReducer(initialState, (builder) => {
     .addCase(addGame, (state, action) => {
       const positions = flattenPositions(action.payload);
       positions.forEach((position) => (state.byId[position.id] = position));
+      state.currentPositions[action.payload.id] = action.payload.position.id;
     })
     .addCase(move, (state, action) => {
-      const { variation } = action.payload;
+      const { gameId, variation } = action.payload;
 
       state.byId[variation.position.id] = variation.position;
+      state.currentPositions[gameId] = variation.position.id;
     })
     .addCase(mark, (state, action) => {
       const { positionId, squareIndex, mark } = action.payload;

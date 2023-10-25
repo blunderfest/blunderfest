@@ -27,7 +27,7 @@ defmodule BlunderfestWeb.Endpoint do
   plug Plug.Static,
     at: "/",
     from: :blunderfest,
-    gzip: false,
+    gzip: true,
     only: BlunderfestWeb.static_paths()
 
   # Code reloading can be explicitly enabled under the

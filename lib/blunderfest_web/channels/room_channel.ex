@@ -10,15 +10,6 @@ defmodule BlunderfestWeb.RoomChannel do
     user_id =
       Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-    # game_id =
-    #   Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-    # game_id2 =
-    #   Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-    # game_id3 =
-    #   Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
     games = [Game.new("game_1"), Game.new("game_2"), Game.new("game_3")]
 
     send(self(), :after_join)

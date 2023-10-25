@@ -13,7 +13,7 @@
  * @typedef {{
  *   from: number,
  *   to: number,
- *   promotion: Piece?
+ *   promotion?: Piece
  * }} Move
  *
  * @typedef {{
@@ -66,4 +66,12 @@
  * @typedef {{
  *   move: Move
  * } & GameNode} Variation
+ * 
+       * @typedef {{
+     *   id: string,
+     *   move: Move,
+     *   ply: number,
+     *   moves: MappedMove[]
+     * }} MappedMove
+
  */

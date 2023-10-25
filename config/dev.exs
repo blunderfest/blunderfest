@@ -15,11 +15,18 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "tVR10EUJDR+nLcOf/KSR0ghJC7lalgiUTUL81X7ktVPomMk11U7c8XAUDE4yosux",
   watchers: [
-    yarn: [
-      "dev",
+    node: [
+      "node_modules/vite/bin/vite.js",
       cd: Path.expand("../assets", __DIR__)
     ]
   ]
+
+# watchers: [
+#   yarn: [
+#     "dev",
+#     cd: Path.expand("../assets", __DIR__)
+#   ]
+# ]
 
 config :cors_plug,
   origin: ["http://localhost:5173"],

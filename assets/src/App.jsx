@@ -1,16 +1,15 @@
 import { useKeyboard } from "react-aria";
 import { css } from "styled-system/css";
-import { Container, HStack, VStack } from "styled-system/jsx";
+import { HStack, VStack } from "styled-system/jsx";
 import { Board } from "./features/board/Board";
 import { ConnectionStatus } from "./features/connectivity/Connection";
+import { MoveListBox } from "./features/movelist/MoveListBox";
 import { useAppDispatch, useAppSelector } from "./store";
 import { reset } from "./store/positions";
-import { switchGame } from "./store/room/actions";
 
 function App() {
-  const games = useAppSelector((state) => state.room.games);
   const activeGame = useAppSelector((state) => state.room.activeGame);
-  const positionId = useAppSelector((state) => (activeGame ? state.game.byId[activeGame].currentPositionId : undefined));
+  const positionId = useAppSelector((state) => (activeGame ? state.position.currentPositions[activeGame] : undefined));
 
   const dispatch = useAppDispatch();
 
@@ -31,13 +30,9 @@ function App() {
           })}
         >
           <ConnectionStatus />
-          {games.map((game, index) => (
-            <button key={game} onClick={() => dispatch(switchGame(game))}>
-              Game {index + 1} {activeGame === game ? "A" : ""}
-            </button>
-          ))}
         </VStack>
-        <Container>{positionId && <Board positionId={positionId} />}</Container>
+        {positionId && <Board positionId={positionId} />}
+        {activeGame && positionId && <MoveListBox gameId={activeGame} positionId={positionId} />}
       </HStack>
     </main>
   );

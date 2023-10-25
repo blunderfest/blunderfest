@@ -1,6 +1,4 @@
 import { defineConfig, defineGlobalStyles } from "@pandacss/dev";
-import pandaBase from "@pandacss/preset-base";
-import pandaPreset from "@pandacss/preset-panda";
 
 const globalCss = defineGlobalStyles({
   body: {
@@ -12,10 +10,15 @@ const globalCss = defineGlobalStyles({
 
 export default defineConfig({
   preflight: true,
+  presets: ["@pandacss/preset-panda"],
   include: ["./src/**/*.{js,jsx}"],
   exclude: [],
-  presets: [pandaBase, pandaPreset],
   jsxFramework: "react",
+  conditions: {
+    extend: {
+      close: "[data-close]",
+    },
+  },
   theme: {
     extend: {
       tokens: {
@@ -70,6 +73,17 @@ export default defineConfig({
                 black: {
                   value: "{colors.square.black}",
                 },
+              },
+            },
+          },
+        },
+      },
+      semanticTokens: {
+        colors: {
+          primary: {
+            DEFAULT: {
+              value: {
+                base: "{colors.primary}",
               },
             },
           },

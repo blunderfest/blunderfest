@@ -6,7 +6,7 @@ export const addGame = createAction(
    * @param {Game} game
    */
   (game) => ({
-    payload: { ...game },
+    payload: game,
   }),
 );
 

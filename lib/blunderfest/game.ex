@@ -1,9 +1,6 @@
 defmodule Blunderfest.Game do
   use TypedStruct
 
-  alias __MODULE__
-  alias Blunderfest.Game.Square
-
   @derive {Jason.Encoder, []}
   typedstruct module: Square do
     field(:rank, Integer.t(), enforce: true)
@@ -48,33 +45,126 @@ defmodule Blunderfest.Game do
     field(:variations, list(Variation.t()))
   end
 
-  def new(game_id),
-    do: %Game{
+  alias Nanoid
+
+  def new(game_id) do
+    pos_1 = Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    pos_2 = Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    pos_3 = Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+    pos_3_2 =
+      Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+    pos_3_3 =
+      Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+    pos_4 = Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    pos_5 = Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+    %Blunderfest.Game{
       id: game_id,
       position: %{
-        id: game_id <> "pos_1",
+        id: pos_1,
         fen: "4r3/2P3R1/R1N2k1P/5Np1/K1p1p3/1pr5/3P4/Bn3Q2 w - - 0 1",
         ply: 0,
         arrows: [],
-        marks: 0..63 |> Enum.map(fn _ -> "none" end),
+        marks: [],
         selectedSquareIndex: nil
       },
       variations: [
         %{
           move: %{
-            from: 11,
-            to: 27
+            from: 1,
+            to: 2
           },
           position: %{
-            id: game_id <> "pos_2",
+            id: pos_2,
             fen: "4r3/2P3R1/R1N2k1P/5Np1/K1pPp3/1pr5/8/Bn3Q2 b - d3 0 1",
             ply: 1,
             arrows: [],
-            marks: 0..63 |> Enum.map(fn _ -> "none" end),
+            marks: [],
+            selectedSquareIndex: nil
+          },
+          variations: [
+            %{
+              move: %{
+                from: 62,
+                to: 63
+              },
+              position: %{
+                id: pos_3,
+                fen: "4r3/2P3R1/R1N2k1P/5Np1/K1pPp3/1pr5/8/Bn3Q2 b - d3 0 1",
+                ply: 12,
+                arrows: [],
+                marks: [],
+                selectedSquareIndex: nil
+              },
+              variations: [
+                %{
+                  move: %{
+                    from: 63,
+                    to: 7
+                  },
+                  position: %{
+                    id: pos_3_2,
+                    fen: "4r3/2P3R1/R1N2k1P/5Np1/K1pPp3/1pr5/8/Bn3Q2 b - d3 0 1",
+                    ply: 122,
+                    arrows: [],
+                    marks: [],
+                    selectedSquareIndex: nil
+                  },
+                  variations: []
+                },
+                %{
+                  move: %{
+                    from: 7,
+                    to: 4
+                  },
+                  position: %{
+                    id: pos_3_3,
+                    fen: "4r3/2P3R1/R1N2k1P/5Np1/K1pPp3/1pr5/8/Bn3Q2 b - d3 0 1",
+                    ply: 123,
+                    arrows: [],
+                    marks: [],
+                    selectedSquareIndex: nil
+                  },
+                  variations: []
+                }
+              ]
+            },
+            %{
+              move: %{
+                from: 2,
+                to: 99
+              },
+              position: %{
+                id: pos_4,
+                fen: "4r3/2P3R1/R1N2k1P/5Np1/K1pPp3/1pr5/8/Bn3Q2 b - d3 0 1",
+                ply: 2,
+                arrows: [],
+                marks: [],
+                selectedSquareIndex: nil
+              },
+              variations: []
+            }
+          ]
+        },
+        %{
+          move: %{
+            from: 1,
+            to: 99
+          },
+          position: %{
+            id: pos_5,
+            fen: "4r3/2P3R1/R1N2k1P/5Np1/K1pPp3/1pr5/8/Bn3Q2 b - d3 0 1",
+            ply: 666,
+            arrows: [],
+            marks: [],
             selectedSquareIndex: nil
           },
           variations: []
         }
       ]
     }
+  end
 end

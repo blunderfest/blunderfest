@@ -4,7 +4,7 @@ import { move } from "./actions";
 
 /**
  * @type {{
- *   byId: Record<string, {currentPositionId: string, tags: Tag[]}>,
+ *   byId: Record<string, Game>,
  *   allIds: string[]
  * }}
  */
@@ -18,13 +18,13 @@ export const gameReducer = createReducer(initialState, (builder) => {
     .addCase(addGame, (state, action) => {
       const game = action.payload;
 
-      state.byId[game.id] = { tags: game.tags, currentPositionId: game.position.id };
+      state.byId[game.id] = game;
       state.allIds.push(game.id);
     })
     .addCase(move, (state, action) => {
       const { gameId, variation } = action.payload;
 
       const game = state.byId[gameId];
-      game.currentPositionId = variation.position.id;
+      game.variations.push(variation);
     });
 });
