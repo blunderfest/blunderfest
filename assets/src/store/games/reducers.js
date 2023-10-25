@@ -3,15 +3,20 @@ import { addGame } from "../room";
 
 /**
  * @type {{
- *   games: Record<string, Game>
+ *   byId: Record<string, Game>,
+ *   allIds: string[]
  * }}
  */
 const initialState = {
-  games: {},
+  byId: {},
+  allIds: [],
 };
 
 export const gameReducer = createReducer(initialState, (builder) => {
   builder.addCase(addGame, (state, action) => {
-    state.games[action.payload.id] = action.payload;
+    const { id } = action.payload;
+
+    state.byId[id] = action.payload;
+    state.allIds.push(id);
   });
 });

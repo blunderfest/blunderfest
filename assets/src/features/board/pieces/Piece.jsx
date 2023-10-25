@@ -13,31 +13,28 @@ import { WhiteQueen } from "./WhiteQueen";
 import { WhiteRook } from "./WhiteRook";
 
 const mapping = {
-  black: {
-    bishop: BlackBishop,
-    king: BlackKing,
-    knight: BlackKnight,
-    pawn: BlackPawn,
-    queen: BlackQueen,
-    rook: BlackRook,
-  },
-  white: {
-    bishop: WhiteBishop,
-    king: WhiteKing,
-    knight: WhiteKnight,
-    pawn: WhitePawn,
-    queen: WhiteQueen,
-    rook: WhiteRook,
-  },
+  b: BlackBishop,
+  k: BlackKing,
+  n: BlackKnight,
+  p: BlackPawn,
+  q: BlackQueen,
+  r: BlackRook,
+  B: WhiteBishop,
+  K: WhiteKing,
+  N: WhiteKnight,
+  P: WhitePawn,
+  Q: WhiteQueen,
+  R: WhiteRook,
 };
 
 /**
- * @param {Piece} props
+ * @param {{piece: Piece}} props
  */
-export function Piece({ piece, color }) {
+export function Piece(props) {
+  const { piece } = props;
   const { t } = useTranslation("board");
 
-  const Svg = mapping[color][piece];
+  const Svg = mapping[piece];
 
-  return <Svg width="100%" height="100%" viewBox="0 0 45 45" title={t(`${color}_${piece}`)} />;
+  return <Svg width="100%" height="100%" viewBox="0 0 45 45" title={t(`piece_${piece}`)} />;
 }

@@ -42,10 +42,10 @@ export default defineConfig({
             value: "{colors.red.600}",
           },
           square: {
-            light: {
+            white: {
               value: "{colors.sky.200}",
             },
-            dark: {
+            black: {
               value: "{colors.sky.700}",
             },
             keyboardFocussed: {
@@ -64,11 +64,11 @@ export default defineConfig({
                 value: "{colors.yellow.400}",
               },
               highlight: {
-                light: {
-                  value: "{colors.square.light}",
+                white: {
+                  value: "{colors.square.white}",
                 },
-                dark: {
-                  value: "{colors.square.dark}",
+                black: {
+                  value: "{colors.square.black}",
                 },
               },
             },

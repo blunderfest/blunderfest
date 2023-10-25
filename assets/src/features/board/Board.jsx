@@ -5,7 +5,7 @@ import { useBoardAria } from "./aria";
 
 export const Board = forwardRef(
   /**
-   * @param {{position: Position}} props
+   * @param {{position: ParsedPosition}} props
    * @param {import("react").Ref<HTMLDivElement>} ref
    */
   (props, ref) => {
@@ -33,7 +33,7 @@ export const Board = forwardRef(
         {...keyboardProps}
       >
         {position.squares.map((square, index) => (
-          <Square key={square.squareIndex} ref={(node) => (squareRefs.current[index] = node)} square={square} />
+          <Square key={square.file + square.rank} ref={(node) => (squareRefs.current[index] = node)} square={square} />
         ))}
       </Grid>
     );

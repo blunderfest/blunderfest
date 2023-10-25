@@ -24,14 +24,14 @@ export const squareRecipe = sva({
       },
     },
     color: {
-      dark: {
+      black: {
         root: {
-          backgroundColor: "square.dark",
+          backgroundColor: "square.black",
         },
       },
-      light: {
+      white: {
         root: {
-          backgroundColor: "square.light",
+          backgroundColor: "square.white",
         },
       },
     },
@@ -61,20 +61,20 @@ export const squareRecipe = sva({
   compoundVariants: [
     {
       selected: "highlighted",
-      color: "light",
+      color: "white",
       css: {
         selection: {
-          backgroundColor: "square.selection.highlight.light",
+          backgroundColor: "square.selection.highlight.white",
           filter: "brightness(120%) opacity(0.8)",
         },
       },
     },
     {
       selected: "highlighted",
-      color: "dark",
+      color: "black",
       css: {
         selection: {
-          backgroundColor: "square.selection.highlight.dark",
+          backgroundColor: "square.selection.highlight.black",
           filter: "brightness(140%) opacity(0.8)",
         },
       },

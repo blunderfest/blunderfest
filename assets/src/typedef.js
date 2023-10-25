@@ -1,65 +1,61 @@
 /**
- * @typedef {import("i18next").i18n} I18n
- * @typedef {"en" | "nl"} Language
- */
-
-/**
- * @typedef {import("react").JSX.Element} Children
- */
-
-/**
- * @template T
- * @typedef {[T, import('react').Dispatch<import('react').SetStateAction<T>>]} useState
- */
-
-/**
- * @template T
- * @typedef {import('@reduxjs/toolkit').PayloadAction<T>} PayloadAction
- */
-
-/**
  * @typedef {"none" | "simple" | "alt" | "ctrl"} Mark
  *
- * @typedef {{
- *   piece: "king" | "queen" | "rook" | "bishop" | "knight" | "pawn",
- *   color: "black" | "white"
- * }} Piece
+ * @typedef {"black" | "white"} Color
+ *
+ * @typedef {"K" | "Q" | "R" | "B" | "N" | "P" | "k" | "q" | "r" | "b" | "n" | "p"} Piece
  *
  * @typedef {{
- *   squareIndex: number,
- *   file: string,
  *   rank: number,
- *   color: "light" | "dark"
- *   piece?: Piece
+ *   file: string
  * }} Square
  *
  * @typedef {{
- *   san: string,
- *   position: Position2
+ *   from: number,
+ *   to: number,
+ *   promotion: Piece?
  * }} Move
  *
  * @typedef {{
- *   fen: string,
- *   moves: Move[]
- * }} Position2
+ *   from: Square,
+ *   to: Square,
+ *   color: Mark
+ * }} Arrow
  *
  * @typedef {{
- *   id: string,
- *   positions: Position2[],
- *   currentPosition: number[]
- * }} Game
+ *   rank: number,
+ *   file: string,
+ *   squareIndex: number,
+ *   color: Color,
+ *   piece: Piece?
+ * }} ParsedSquare
  *
  * @typedef {{
- *   selectedSquare: number?,
- *   marks: Array<Mark>
- * }} Board
- *
- * @typedef {{
- *   squares: Square[],
+ *   squares: ParsedSquare[],
  *   activeColor: "white" | "black",
  *   castlingAvailability: string[],
  *   enPassant: number?,
  *   halfmoveClock: number,
  *   fullmoveNumber: number,
+ * }} ParsedPosition
+ *
+ * @typedef {{
+ *   fen: string,
+ *   ply: number,
+ *   arrows: Arrow[],
+ *   marks: Mark[]
  * }} Position
+ *
+ * @typedef {{
+ *   position: Position,
+ *   variations: Array<Variation>
+ * }} GameNode
+ *
+ * @typedef {{
+ *   id: string
+ * } & GameNode} Game
+ *
+ * @typedef {{
+ *   move: Move
+ * } & GameNode} Variation
  */

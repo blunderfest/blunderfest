@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useKeyboard } from "react-aria";
 import { useClickAway } from "react-use";
 import { css } from "styled-system/css";
@@ -11,7 +11,9 @@ import { reset } from "./store/board";
 import { switchGame } from "./store/room/actions";
 
 function App() {
-  const games = useAppSelector((state) => state.game.games);
+  const games = useAppSelector((state) => state.room.games);
+  const activeGame = useAppSelector((state) => state.game.byId[state.room.activeGame]);
+
   const dispatch = useAppDispatch();
 
   const ref = useRef(null);
@@ -32,13 +34,20 @@ function App() {
     }
   });
 
-  const activeGame = useAppSelector((state) => state.game.games[state.room.activeGame]);
+  const fen = activeGame ? activeGame.position.fen : undefined;
+  const position = useMemo(() => {
+    if (fen) {
+      return parseFen(fen);
+    }
 
-  if (!activeGame) {
+    return undefined;
+  }, [fen]);
+
+  if (!position) {
     return <>Loading...</>;
   }
 
-  const position = parseFen(activeGame.positions[0].fen);
+  console.log(fen, position);
 
   return (
     <main {...keyboardProps}>
@@ -49,7 +58,6 @@ function App() {
           })}
         >
           <ConnectionStatus />
-          Active: {activeGame.id}
           {Object.keys(games).map((game, index) => (
             <button key={game} onClick={() => dispatch(switchGame(game))}>
               Game {index + 1}

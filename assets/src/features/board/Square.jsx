@@ -8,7 +8,7 @@ import { squareRecipe } from "./squareRecipe";
 export const Square = forwardRef(
   /**
    * @param {{
-   *   square: Square
+   *   square: ParsedSquare
    * }} props
    */
   (props, ref) => {
@@ -46,7 +46,7 @@ export const Square = forwardRef(
         }}
       >
         <div className={classes.selection}>&nbsp;</div>
-        <div className={classes.piece}>{square.piece && <Piece {...square.piece} />}</div>
+        <div className={classes.piece}>{square.piece && <Piece piece={square.piece} />}</div>
       </div>
     );
   },

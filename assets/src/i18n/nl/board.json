@@ -1,14 +1,14 @@
 {
-  "black_toren": "Zwarte toren",
-  "black_paard": "Zwarte paard",
-  "black_loper": "Zwarte loper",
-  "black_dame": "Zwarte dame",
-  "black_koning": "Zwarte koning",
-  "black_pion": "Zwarte pion",
-  "white_toren": "Witte toren",
-  "white_paard": "Witte paard",
-  "white_loper": "Witte loper",
-  "white_dame": "Witte dame",
-  "white_koning": "Witte koning",
-  "white_pion": "Witte pion"
+  "piece_b": "Zwarte toren",
+  "piece_k": "Zwarte paard",
+  "piece_n": "Zwarte loper",
+  "piece_p": "Zwarte dame",
+  "piece_q": "Zwarte koning",
+  "piece_r": "Zwarte pion",
+  "piece_B": "Witte toren",
+  "piece_K": "Witte paard",
+  "piece_N": "Witte loper",
+  "piece_P": "Witte dame",
+  "piece_Q": "Witte koning",
+  "piece_R": "Witte pion"
 }

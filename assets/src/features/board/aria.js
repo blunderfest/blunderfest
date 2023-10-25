@@ -43,7 +43,7 @@ export const useBoardAria = () => {
 };
 
 /**
- * @param {Square} square
+ * @param {ParsedSquare} square
  */
 export const useSquareAria = (square) => {
   const dispatch = useAppDispatch();
@@ -86,6 +86,8 @@ export const useSquareAria = (square) => {
       case "ctrl":
         return "none";
     }
+
+    return "none";
   };
 
   return {
