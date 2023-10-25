@@ -43,7 +43,7 @@ export default defineConfig({
           },
           square: {
             white: {
-              value: "{colors.sky.200}",
+              value: "{colors.neutral.200}",
             },
             black: {
               value: "{colors.sky.700}",
@@ -65,7 +65,7 @@ export default defineConfig({
               },
               highlight: {
                 white: {
-                  value: "{colors.square.white}",
+                  value: "{colors.sky.300}",
                 },
                 black: {
                   value: "{colors.square.black}",

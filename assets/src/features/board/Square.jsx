@@ -1,5 +1,5 @@
 import { useAppDispatch, useAppSelector } from "@/store";
-import { mark } from "@/store/board";
+import { mark } from "@/store/positions";
 import { forwardRef } from "react";
 import { useSquareAria } from "./aria";
 import { Piece } from "./pieces/Piece";
@@ -8,23 +8,24 @@ import { squareRecipe } from "./squareRecipe";
 export const Square = forwardRef(
   /**
    * @param {{
+   *   positionId: string,
    *   square: ParsedSquare
    * }} props
    */
   (props, ref) => {
-    const { square } = props;
+    const { positionId, square } = props;
 
     const dispatch = useAppDispatch();
-    const board = useAppSelector((state) => state.board);
-    const { elementProps, isFocusVisible } = useSquareAria(square);
+    const position = useAppSelector((state) => state.position.byId[positionId]);
+    const { elementProps, isFocusVisible } = useSquareAria(positionId, square);
 
     const classes = squareRecipe({
       focussed: isFocusVisible,
       color: square.color,
       selected:
-        board.marks[square.squareIndex] !== "none"
-          ? board.marks[square.squareIndex]
-          : board?.selectedSquare === square.squareIndex
+        position.marks[square.squareIndex] !== "none"
+          ? position.marks[square.squareIndex]
+          : position?.selectedSquareIndex === square.squareIndex
           ? "highlighted"
           : "none",
     });
@@ -35,13 +36,13 @@ export const Square = forwardRef(
         tabIndex={0}
         role="gridcell"
         aria-label={square.file + square.rank}
-        aria-selected={board.selectedSquare === square.squareIndex}
+        aria-selected={position.selectedSquareIndex === square.squareIndex}
         className={classes.root}
         {...elementProps}
         onContextMenu={(e) => {
           if (!e.defaultPrevented) {
             e.preventDefault();
-            dispatch(mark(square.squareIndex, e.altKey ? "alt" : e.ctrlKey ? "ctrl" : "simple"));
+            dispatch(mark(positionId, square.squareIndex, e.altKey ? "alt" : e.ctrlKey ? "ctrl" : "simple"));
           }
         }}
       >

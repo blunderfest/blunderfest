@@ -1,8 +1,7 @@
 import { useAppDispatch, useAppSelector } from "@/store";
-import { mark, reset, select, selectHasMarks } from "@/store/board";
+import { mark, reset, select } from "@/store/positions";
 import { useRef } from "react";
 import { mergeProps, useFocusRing, useKeyboard, useLongPress, usePress } from "react-aria";
-import { useSelector } from "react-redux";
 
 export const useBoardAria = () => {
   const squareRefs = useRef([...Array.from({ length: 64 })]);
@@ -43,40 +42,19 @@ export const useBoardAria = () => {
 };
 
 /**
+ * @param {string} positionId
  * @param {ParsedSquare} square
  */
-export const useSquareAria = (square) => {
+export const useSquareAria = (positionId, square) => {
   const dispatch = useAppDispatch();
-  const board = useAppSelector((state) => state.board);
-  const hasMarks = useSelector(selectHasMarks);
-
-  const { longPressProps } = useLongPress({
-    onLongPress: () => {
-      dispatch(mark(square.squareIndex, nextMark()));
-    },
-  });
-
-  const { pressProps } = usePress({
-    onPress: (e) => {
-      if (e.pointerType === "keyboard" && e.ctrlKey) {
-        dispatch(mark(square.squareIndex, nextMark()));
-      } else if (square.piece && !hasMarks) {
-        dispatch(select(square.squareIndex));
-      } else {
-        dispatch(reset());
-      }
-    },
-  });
-
-  const { focusProps, isFocusVisible } = useFocusRing({
-    within: true,
-  });
+  const position = useAppSelector((state) => state.position.byId[positionId]);
+  const hasMarks = useAppSelector((state) => state.position.byId[positionId].marks.findIndex((mark) => mark !== "none") !== -1);
 
   /**
    * @returns {Mark}
    */
   const nextMark = () => {
-    switch (board.marks[square.squareIndex]) {
+    switch (position.marks[square.squareIndex]) {
       case "none":
         return "simple";
       case "simple":
@@ -86,9 +64,29 @@ export const useSquareAria = (square) => {
       case "ctrl":
         return "none";
     }
-
-    return "none";
   };
+
+  const { longPressProps } = useLongPress({
+    onLongPress: () => {
+      dispatch(mark(positionId, square.squareIndex, nextMark()));
+    },
+  });
+
+  const { pressProps } = usePress({
+    onPress: (e) => {
+      if (e.pointerType === "keyboard" && e.ctrlKey) {
+        dispatch(mark(positionId, square.squareIndex, nextMark()));
+      } else if (square.piece && !hasMarks) {
+        dispatch(select(positionId, square.squareIndex));
+      } else {
+        dispatch(reset(positionId));
+      }
+    },
+  });
+
+  const { focusProps, isFocusVisible } = useFocusRing({
+    within: true,
+  });
 
   return {
     elementProps: mergeProps(longPressProps, pressProps, focusProps),

@@ -5,7 +5,7 @@ import { addGame, join, leave, switchGame } from "./actions";
  * @type {{
  *   users: string[],
  *   games: string[],
- *   activeGame: string
+ *   activeGame?: string
  * }}
  */
 const initialState = {

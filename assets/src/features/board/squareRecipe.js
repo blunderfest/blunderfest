@@ -65,7 +65,7 @@ export const squareRecipe = sva({
       css: {
         selection: {
           backgroundColor: "square.selection.highlight.white",
-          filter: "brightness(120%) opacity(0.8)",
+          filter: "opacity(0.8)",
         },
       },
     },

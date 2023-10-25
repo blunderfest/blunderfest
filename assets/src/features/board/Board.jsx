@@ -1,15 +1,36 @@
-import { forwardRef } from "react";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { reset } from "@/store/positions";
+import { useMemo, useRef } from "react";
+import { useClickAway } from "react-use";
 import { Grid } from "styled-system/jsx/grid";
+import { parseFen } from "../parsers/parseFen";
 import { Square } from "./Square";
 import { useBoardAria } from "./aria";
 
-export const Board = forwardRef(
+export const Board =
   /**
-   * @param {{position: ParsedPosition}} props
-   * @param {import("react").Ref<HTMLDivElement>} ref
+   *
+   * @param {{
+   *   positionId: string
+   * }} props
+   * @returns
    */
-  (props, ref) => {
-    const { position } = props;
+  (props) => {
+    const { positionId } = props;
+
+    const dispatch = useAppDispatch();
+    const position = useAppSelector((state) => state.position.byId[positionId]);
+    const squares = useMemo(() => parseFen(position.fen).squares, [position.fen]);
+
+    const ref = useRef(null);
+    useClickAway(ref, (e) => {
+      const target = /** @type {HTMLElement} */ (e.target);
+
+      if (!target || !target.onclick || typeof target.onclick !== "function") {
+        dispatch(reset(positionId));
+      }
+    });
+
     const { squareRefs, keyboardProps } = useBoardAria();
 
     return (
@@ -32,12 +53,14 @@ export const Board = forwardRef(
         aspectRatio="square"
         {...keyboardProps}
       >
-        {position.squares.map((square, index) => (
-          <Square key={square.file + square.rank} ref={(node) => (squareRefs.current[index] = node)} square={square} />
+        {squares.map((square, index) => (
+          <Square
+            key={square.file + square.rank}
+            ref={(node) => (squareRefs.current[index] = node)}
+            positionId={positionId}
+            square={square}
+          />
         ))}
       </Grid>
     );
-  },
-);
-
-Board.displayName = "Board";
+  };

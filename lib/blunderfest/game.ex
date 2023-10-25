@@ -26,8 +26,12 @@ defmodule Blunderfest.Game do
 
   @derive {Jason.Encoder, []}
   typedstruct module: Position do
+    field(:id, String.t(), enforce: true)
     field(:fen, String.t(), enforce: true)
     field(:ply, Integer.t(), enforce: true)
+    field(:arrows, list(Arrow.t()), enforce: true)
+    field(:marks, list(String.t()), enforce: true)
+    field(:selectedSquareIndex, Integer.t())
   end
 
   @derive {Jason.Encoder, []}
@@ -48,8 +52,12 @@ defmodule Blunderfest.Game do
     do: %Game{
       id: game_id,
       position: %{
+        id: game_id <> "pos_1",
         fen: "4r3/2P3R1/R1N2k1P/5Np1/K1p1p3/1pr5/3P4/Bn3Q2 w - - 0 1",
-        ply: 0
+        ply: 0,
+        arrows: [],
+        marks: 0..63 |> Enum.map(fn _ -> "none" end),
+        selectedSquareIndex: nil
       },
       variations: [
         %{
@@ -58,8 +66,12 @@ defmodule Blunderfest.Game do
             to: 27
           },
           position: %{
+            id: game_id <> "pos_2",
             fen: "4r3/2P3R1/R1N2k1P/5Np1/K1pPp3/1pr5/8/Bn3Q2 b - d3 0 1",
-            ply: 1
+            ply: 1,
+            arrows: [],
+            marks: 0..63 |> Enum.map(fn _ -> "none" end),
+            selectedSquareIndex: nil
           },
           variations: []
         }

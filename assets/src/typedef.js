@@ -40,10 +40,12 @@
  * }} ParsedPosition
  *
  * @typedef {{
+ *   id: string,
  *   fen: string,
  *   ply: number,
  *   arrows: Arrow[],
- *   marks: Mark[]
+ *   marks: Mark[],
+ *   selectedSquareIndex: number?
  * }} Position
  *
  * @typedef {{
@@ -52,7 +54,13 @@
  * }} GameNode
  *
  * @typedef {{
- *   id: string
+ *   name: string,
+ *   value: string
+ * }} Tag
+ *
+ * @typedef {{
+ *   id: string,
+ *   tags: Tag[]
  * } & GameNode} Game
  *
  * @typedef {{
