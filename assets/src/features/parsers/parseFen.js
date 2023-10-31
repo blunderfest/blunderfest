@@ -18,7 +18,7 @@ function parseRank(rankIndex, rank) {
     squareIndex: rankIndex + 8 * fileIndex,
     file: String.fromCharCode(97 + fileIndex),
     rank: rankIndex + 1,
-    color: fileIndex % 2 === rankIndex % 2 ? "white" : "black",
+    color: fileIndex % 2 === rankIndex % 2 ? "light" : "dark",
     piece: piece,
   }));
 }

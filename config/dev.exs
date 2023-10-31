@@ -15,6 +15,10 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "tVR10EUJDR+nLcOf/KSR0ghJC7lalgiUTUL81X7ktVPomMk11U7c8XAUDE4yosux",
   watchers: [
+    yarn: [
+      "panda",
+      cd: Path.expand("../assets", __DIR__)
+    ],
     node: [
       "node_modules/vite/bin/vite.js",
       cd: Path.expand("../assets", __DIR__)

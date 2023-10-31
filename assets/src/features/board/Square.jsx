@@ -1,33 +1,29 @@
 import { useAppDispatch, useAppSelector } from "@/store";
 import { mark } from "@/store/positions";
 import { forwardRef } from "react";
+import { square } from "styled-system/recipes";
 import { useSquareAria } from "./aria";
 import { Piece } from "./pieces/Piece";
-import { squareRecipe } from "./squareRecipe";
 
 export const Square = forwardRef(
   /**
    * @param {{
    *   positionId: string,
-   *   square: ParsedSquare
+   *   parsedSquare: ParsedSquare
    * }} props
    */
   (props, ref) => {
-    const { positionId, square } = props;
+    const { positionId, parsedSquare } = props;
 
     const dispatch = useAppDispatch();
     const position = useAppSelector((state) => state.position.byId[positionId]);
-    const { elementProps, isFocusVisible } = useSquareAria(positionId, square);
+    const { elementProps, isFocusVisible } = useSquareAria(positionId, parsedSquare);
 
-    const classes = squareRecipe({
+    const classes = square({
       focussed: isFocusVisible,
-      color: square.color,
-      selected:
-        position.marks[square.squareIndex] !== "none"
-          ? position.marks[square.squareIndex]
-          : position?.selectedSquareIndex === square.squareIndex
-          ? "highlighted"
-          : "none",
+      color: parsedSquare.color,
+      marked: position.marks[parsedSquare.squareIndex] ?? "none",
+      highlighted: position.selectedSquareIndex === parsedSquare.squareIndex,
     });
 
     return (
@@ -35,19 +31,19 @@ export const Square = forwardRef(
         ref={ref}
         tabIndex={0}
         role="gridcell"
-        aria-label={square.file + square.rank}
-        aria-selected={position.selectedSquareIndex === square.squareIndex}
+        aria-label={parsedSquare.file + parsedSquare.rank}
+        aria-selected={position.selectedSquareIndex === parsedSquare.squareIndex}
         className={classes.root}
         {...elementProps}
         onContextMenu={(e) => {
           if (!e.defaultPrevented) {
             e.preventDefault();
-            dispatch(mark(positionId, square.squareIndex, e.altKey ? "alt" : e.ctrlKey ? "ctrl" : "simple"));
+            dispatch(mark(positionId, parsedSquare.squareIndex, e.altKey ? "alt" : e.ctrlKey ? "ctrl" : "simple"));
           }
         }}
       >
         <div className={classes.selection}>&nbsp;</div>
-        <div className={classes.piece}>{square.piece && <Piece piece={square.piece} />}</div>
+        <div className={classes.piece}>{parsedSquare.piece && <Piece piece={parsedSquare.piece} />}</div>
       </div>
     );
   },

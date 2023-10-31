@@ -1,9 +1,12 @@
 /* eslint-disable no-undef */
 
 import react from "@vitejs/plugin-react-swc";
-import { resolve } from "path";
+import path from "path";
 import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig, splitVendorChunkPlugin } from "vite";
+
+const projectRootDir = path.resolve(__dirname);
+console.log("VITE PROJECT ROOT DIR", projectRootDir);
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -51,10 +54,10 @@ export default defineConfig(({ command }) => {
       },
     },
     resolve: {
-      alias: {
-        "styled-system": resolve(__dirname, "./styled-system"),
-        "@": resolve(__dirname, "./src"),
-      },
+      alias: [
+        { find: "styled-system", replacement: path.resolve(projectRootDir, "styled-system") },
+        { find: "@", replacement: path.resolve(projectRootDir, "src") },
+      ],
       extensions: [".mjs", ".js", ".jsx", ".json"],
     },
   };

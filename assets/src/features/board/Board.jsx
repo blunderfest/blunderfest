@@ -2,7 +2,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { reset } from "@/store/positions";
 import { useMemo, useRef } from "react";
 import { useClickAway } from "react-use";
-import { Grid } from "styled-system/jsx/grid";
+import { Grid } from "styled-system/jsx";
 import { parseFen } from "../parsers/parseFen";
 import { Square } from "./Square";
 import { useBoardAria } from "./aria";
@@ -56,7 +56,7 @@ export function Board(props) {
           key={square.file + square.rank}
           ref={(node) => (squareRefs.current[index] = node)}
           positionId={positionId}
-          square={square}
+          parsedSquare={square}
         />
       ))}
     </Grid>

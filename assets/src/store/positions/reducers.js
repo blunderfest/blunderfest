@@ -57,7 +57,7 @@ export const positionReducer = createReducer(initialState, (builder) => {
 
       position.selectedSquareIndex = null;
       position.arrows = [];
-      position.marks = [...Array.from({ length: 64 })].map(() => "none");
+      position.marks = [];
     })
     .addCase(select, (state, action) => {
       const { positionId, squareIndex } = action.payload;

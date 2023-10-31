@@ -1,7 +1,7 @@
 /**
  * @typedef {"none" | "simple" | "alt" | "ctrl"} Mark
  *
- * @typedef {"black" | "white"} Color
+ * @typedef {"dark" | "light"} Color
  *
  * @typedef {"K" | "Q" | "R" | "B" | "N" | "P" | "k" | "q" | "r" | "b" | "n" | "p"} Piece
  *
