@@ -38,7 +38,7 @@ export const squareRecipe = defineSlotRecipe({
       focussed: true,
       css: {
         root: {
-          border: "5px solid red",
+          border: "square.focussed",
         },
       },
     },

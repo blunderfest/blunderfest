@@ -46,7 +46,7 @@ export const positionReducer = createReducer(initialState, (builder) => {
       const position = state.byId[positionId];
 
       if (position.marks[squareIndex] === mark) {
-        position.marks[squareIndex] = "none";
+        delete position.marks[squareIndex];
       } else {
         position.marks[squareIndex] = mark;
       }

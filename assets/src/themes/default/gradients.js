@@ -5,7 +5,7 @@ export const gradients = defineTokens.gradients({
     value: {
       type: "linear",
       placement: "to bottom right",
-      stops: ["{colors.surface.1}", "{colors.surface.4}"],
+      stops: ["hsl({colors.surface.1} / 1)", "hsl({colors.surface.4} / 1)"],
     },
   },
 });

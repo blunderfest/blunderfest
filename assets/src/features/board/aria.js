@@ -1,5 +1,5 @@
 import { useAppDispatch, useAppSelector } from "@/store";
-import { mark, select } from "@/store/positions";
+import { mark, reset, select } from "@/store/positions";
 import { useRef } from "react";
 import { mergeProps, useFocusRing, useKeyboard, useLongPress, usePress } from "react-aria";
 
@@ -55,6 +55,7 @@ export const useSquareAria = (positionId, square) => {
    */
   const nextMark = () => {
     switch (position.marks[square.squareIndex]) {
+      case undefined:
       case "none":
         return "simple";
       case "simple":
@@ -79,8 +80,7 @@ export const useSquareAria = (positionId, square) => {
       } else if (square.piece && !hasMarks) {
         dispatch(select(positionId, square.squareIndex));
       } else {
-        dispatch(select(positionId, square.squareIndex));
-        // dispatch(reset(positionId));
+        dispatch(reset(positionId));
       }
     },
   });

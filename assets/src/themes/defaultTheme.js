@@ -1,4 +1,3 @@
-import { buttonRecipe } from "@/components/buttonRecipe";
 import { squareRecipe } from "@/features/board/squareRecipe";
 import { borders, breakpoints, colors, gradients, radii, semanticTokens } from "./default";
 
@@ -14,9 +13,7 @@ export const defaultTheme = {
     radii: radii,
   },
   semanticTokens: semanticTokens,
-  recipes: {
-    button: buttonRecipe,
-  },
+  recipes: {},
   slotRecipes: {
     square: squareRecipe,
   },

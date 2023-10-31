@@ -42,9 +42,15 @@ export const Square = forwardRef(
           }
         }}
       >
-        <div className={classes.highlight}>&nbsp;</div>
-        <div className={classes.mark}>&nbsp;</div>
-        <div className={classes.piece}>{parsedSquare.piece && <Piece piece={parsedSquare.piece} />}</div>
+        <div tabIndex={-1} className={classes.highlight}>
+          &nbsp;
+        </div>
+        <div tabIndex={-1} className={classes.mark}>
+          &nbsp;
+        </div>
+        <div tabIndex={-1} className={classes.piece}>
+          {parsedSquare.piece && <Piece piece={parsedSquare.piece} />}
+        </div>
       </div>
     );
   },
