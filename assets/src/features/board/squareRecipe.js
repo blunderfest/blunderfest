@@ -2,7 +2,7 @@ import { defineSlotRecipe } from "@pandacss/dev";
 
 export const squareRecipe = defineSlotRecipe({
   className: "square",
-  slots: ["root", "selection", "piece"],
+  slots: ["root", "highlight", "mark", "piece"],
   base: {
     root: {
       aspectRatio: "square",
@@ -11,7 +11,8 @@ export const squareRecipe = defineSlotRecipe({
       boxSizing: "border-box",
       outline: "none",
     },
-    selection: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
+    highlight: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
+    mark: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0, borderRadius: "round" },
     piece: { position: "absolute", top: 0, left: 0, bottom: 0, right: 0 },
   },
   variants: {
@@ -62,8 +63,8 @@ export const squareRecipe = defineSlotRecipe({
       marked: "none",
       color: "dark",
       css: {
-        selection: {
-          backgroundColor: "square.dark.background.highlighted",
+        highlight: {
+          backgroundColor: "square.dark.background.highlight",
           filter: "opacity(0.8)",
         },
       },
@@ -73,8 +74,8 @@ export const squareRecipe = defineSlotRecipe({
       marked: "none",
       color: "light",
       css: {
-        selection: {
-          backgroundColor: "square.light.background.highlighted",
+        highlight: {
+          backgroundColor: "square.light.background.highlight",
           filter: "opacity(0.8)",
         },
       },
@@ -83,9 +84,8 @@ export const squareRecipe = defineSlotRecipe({
       marked: "simple",
       color: "dark",
       css: {
-        selection: {
-          backgroundColor: "square.dark.background.selection.simple",
-          filter: "opacity(0.8)",
+        mark: {
+          border: "square.dark.mark.simple",
         },
       },
     },
@@ -93,9 +93,8 @@ export const squareRecipe = defineSlotRecipe({
       marked: "simple",
       color: "light",
       css: {
-        selection: {
-          backgroundColor: "square.light.background.selection.simple",
-          filter: "opacity(0.8)",
+        mark: {
+          border: "square.light.mark.simple",
         },
       },
     },
@@ -103,9 +102,8 @@ export const squareRecipe = defineSlotRecipe({
       marked: "ctrl",
       color: "dark",
       css: {
-        selection: {
-          backgroundColor: "square.dark.background.selection.ctrl",
-          filter: "opacity(0.8)",
+        mark: {
+          border: "square.dark.mark.ctrl",
         },
       },
     },
@@ -113,9 +111,8 @@ export const squareRecipe = defineSlotRecipe({
       marked: "ctrl",
       color: "light",
       css: {
-        selection: {
-          backgroundColor: "square.light.background.selection.ctrl",
-          filter: "opacity(0.8)",
+        mark: {
+          border: "square.light.mark.ctrl",
         },
       },
     },
@@ -123,9 +120,8 @@ export const squareRecipe = defineSlotRecipe({
       marked: "alt",
       color: "dark",
       css: {
-        selection: {
-          backgroundColor: "square.dark.background.selection.alt",
-          filter: "opacity(0.8)",
+        mark: {
+          border: "square.dark.mark.alt",
         },
       },
     },
@@ -133,9 +129,8 @@ export const squareRecipe = defineSlotRecipe({
       marked: "alt",
       color: "light",
       css: {
-        selection: {
-          backgroundColor: "square.light.background.selection.alt",
-          filter: "opacity(0.8)",
+        mark: {
+          border: "square.light.mark.alt",
         },
       },
     },

@@ -6,7 +6,6 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig, splitVendorChunkPlugin } from "vite";
 
 const projectRootDir = path.resolve(__dirname);
-console.log("VITE PROJECT ROOT DIR", projectRootDir);
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";

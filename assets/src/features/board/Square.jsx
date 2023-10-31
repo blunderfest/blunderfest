@@ -42,7 +42,8 @@ export const Square = forwardRef(
           }
         }}
       >
-        <div className={classes.selection}>&nbsp;</div>
+        <div className={classes.highlight}>&nbsp;</div>
+        <div className={classes.mark}>&nbsp;</div>
         <div className={classes.piece}>{parsedSquare.piece && <Piece piece={parsedSquare.piece} />}</div>
       </div>
     );
