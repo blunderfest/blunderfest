@@ -54,11 +54,11 @@ export const socketMiddleware = ({ dispatch, getState }) => {
 
   return (next) => {
     return async (action) => {
-      if (!action.meta || !action.meta.skipSocket) {
+      if (action.meta && action.meta.skipSocket) {
+        next(action);
+      } else {
         channel.push("shout", action);
       }
-
-      return next(action);
     };
   };
 };

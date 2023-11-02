@@ -10,7 +10,7 @@ defmodule BlunderfestWeb.RoomChannel do
     user_id =
       Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-    games = [Game.new("game_1"), Game.new("game_2"), Game.new("game_3")]
+    games = [Game.new("game_1")]
 
     send(self(), :after_join)
 
@@ -30,8 +30,37 @@ defmodule BlunderfestWeb.RoomChannel do
   # It is also common to receive messages from the client and
   # broadcast to everyone in the current topic (room:lobby).
   @impl true
+  def handle_in(
+        "shout",
+        %{
+          "type" => "game/move",
+          "payload" => %{
+            "move" => %{"from" => from, "to" => to},
+            "gameId" => gameId,
+            "positionId" => positionId
+          }
+        } = payload,
+        socket
+      ) do
+    broadcast(socket, "shout", %{
+      "type" => "game/moved",
+      "payload" => %{
+        "gameId" => gameId,
+        "positionId" => positionId,
+        "move" => %{from: from, to: to},
+        "ply" => 12,
+        "fen" => "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+      }
+    })
+
+    {:noreply, socket}
+  end
+
+  # It is also common to receive messages from the client and
+  # broadcast to everyone in the current topic (room:lobby).
+  @impl true
   def handle_in("shout", payload, socket) do
-    broadcast_from(socket, "shout", payload)
+    broadcast(socket, "shout", payload)
     {:noreply, socket}
   end
 

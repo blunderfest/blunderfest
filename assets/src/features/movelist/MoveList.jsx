@@ -1,6 +1,7 @@
 import { useAppSelector } from "@/store";
 import { selectMainVariation } from "@/store/games";
 import { useTreeData } from "react-stately";
+import { css } from "styled-system/css";
 
 /**
  * @param {{moves: import("@react-stately/data").TreeNode<MappedMove>[]}} props
@@ -66,9 +67,12 @@ export function MoveList(props) {
     if (items.length) {
       return (
         <ol
-          style={{
+          style={{}}
+          className={css({
             marginLeft: `${level * 10}px`,
-          }}
+            backgroundColor: "stone.10",
+            color: "stone.1",
+          })}
         >
           {items.map((item) => (
             <li key={item.key}>

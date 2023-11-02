@@ -19,6 +19,9 @@ export const squareRecipe = defineSlotRecipe({
     focussed: {
       true: {},
     },
+    draggedOver: {
+      true: {},
+    },
     color: {
       dark: {},
       light: {},
@@ -60,22 +63,42 @@ export const squareRecipe = defineSlotRecipe({
     },
     {
       highlighted: true,
-      marked: "none",
+      draggedOver: false,
       color: "dark",
       css: {
         highlight: {
-          backgroundColor: "square.dark.background.highlight",
+          backgroundColor: "square.dark.background.highlighted",
           filter: "opacity(0.8)",
         },
       },
     },
     {
       highlighted: true,
-      marked: "none",
+      draggedOver: false,
       color: "light",
       css: {
         highlight: {
-          backgroundColor: "square.light.background.highlight",
+          backgroundColor: "square.light.background.highlighted",
+          filter: "opacity(0.8)",
+        },
+      },
+    },
+    {
+      draggedOver: true,
+      color: "light",
+      css: {
+        highlight: {
+          backgroundColor: "square.light.background.draggedOver",
+          filter: "opacity(0.6)",
+        },
+      },
+    },
+    {
+      draggedOver: true,
+      color: "dark",
+      css: {
+        highlight: {
+          backgroundColor: "square.dark.background.draggedOver",
           filter: "opacity(0.8)",
         },
       },
@@ -85,7 +108,7 @@ export const squareRecipe = defineSlotRecipe({
       color: "dark",
       css: {
         mark: {
-          border: "square.dark.mark.simple",
+          border: "square.dark.marked.simple",
         },
       },
     },
@@ -94,7 +117,7 @@ export const squareRecipe = defineSlotRecipe({
       color: "light",
       css: {
         mark: {
-          border: "square.light.mark.simple",
+          border: "square.light.marked.simple",
         },
       },
     },
@@ -103,7 +126,7 @@ export const squareRecipe = defineSlotRecipe({
       color: "dark",
       css: {
         mark: {
-          border: "square.dark.mark.ctrl",
+          border: "square.dark.marked.ctrl",
         },
       },
     },
@@ -112,7 +135,7 @@ export const squareRecipe = defineSlotRecipe({
       color: "light",
       css: {
         mark: {
-          border: "square.light.mark.ctrl",
+          border: "square.light.marked.ctrl",
         },
       },
     },
@@ -121,7 +144,7 @@ export const squareRecipe = defineSlotRecipe({
       color: "dark",
       css: {
         mark: {
-          border: "square.dark.mark.alt",
+          border: "square.dark.marked.alt",
         },
       },
     },
@@ -130,7 +153,7 @@ export const squareRecipe = defineSlotRecipe({
       color: "light",
       css: {
         mark: {
-          border: "square.light.mark.alt",
+          border: "square.light.marked.alt",
         },
       },
     },

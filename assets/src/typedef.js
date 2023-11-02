@@ -66,12 +66,11 @@
  * @typedef {{
  *   move: Move
  * } & GameNode} Variation
- * 
-       * @typedef {{
-     *   id: string,
-     *   move: Move,
-     *   ply: number,
-     *   moves: MappedMove[]
-     * }} MappedMove
-
+ *
+ * @typedef {{
+ *   id: string,
+ *   move: Move,
+ *   ply: number,
+ *   moves: MappedMove[]
+ * }} MappedMove
  */

@@ -1,6 +1,6 @@
 import { createReducer } from "@reduxjs/toolkit";
 import { addGame } from "../room";
-import { move } from "./actions";
+import { moved } from "./actions";
 
 /**
  * @type {{
@@ -21,10 +21,24 @@ export const gameReducer = createReducer(initialState, (builder) => {
       state.byId[game.id] = game;
       state.allIds.push(game.id);
     })
-    .addCase(move, (state, action) => {
-      const { gameId, variation } = action.payload;
-
+    .addCase(moved, (state, action) => {
+      const { gameId, move, fen, positionId, ply } = action.payload;
       const game = state.byId[gameId];
+      const position = /** @type {Position} */ ({
+        id: positionId,
+        fen: fen,
+        arrows: [],
+        marks: [],
+        ply: ply,
+        selectedSquareIndex: 0,
+      });
+
+      const variation = /** @type {Variation} */ ({
+        position: position,
+        move: move,
+        variations: [],
+      });
+
       game.variations.push(variation);
     });
 });

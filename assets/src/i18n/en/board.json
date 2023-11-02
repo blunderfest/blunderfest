@@ -1,14 +1,14 @@
 {
-  "piece_b": "Black rook",
-  "piece_k": "Black knight",
-  "piece_n": "Black bishop",
-  "piece_p": "Black queen",
-  "piece_q": "Black king",
-  "piece_r": "Black pawn",
-  "piece_B": "White rook",
-  "piece_K": "White knight",
-  "piece_N": "White bishop",
-  "piece_P": "White queen",
-  "piece_Q": "White king",
-  "piece_R": "White pawn"
+  "piece_b": "Black bishop",
+  "piece_k": "Black king",
+  "piece_n": "Black knight",
+  "piece_p": "Black pawn",
+  "piece_q": "Black queen",
+  "piece_r": "Black rook",
+  "piece_B": "White bishop",
+  "piece_K": "White king",
+  "piece_N": "White knight",
+  "piece_P": "White pawn",
+  "piece_Q": "White queen",
+  "piece_R": "White rook"
 }

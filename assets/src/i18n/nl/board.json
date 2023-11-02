@@ -1,14 +1,14 @@
 {
-  "piece_b": "Zwarte toren",
-  "piece_k": "Zwarte paard",
-  "piece_n": "Zwarte loper",
-  "piece_p": "Zwarte dame",
-  "piece_q": "Zwarte koning",
-  "piece_r": "Zwarte pion",
-  "piece_B": "Witte toren",
-  "piece_K": "Witte paard",
-  "piece_N": "Witte loper",
-  "piece_P": "Witte dame",
-  "piece_Q": "Witte koning",
-  "piece_R": "Witte pion"
+  "piece_b": "Zwarte loper",
+  "piece_k": "Zwarte koning",
+  "piece_n": "Zwarte paard",
+  "piece_p": "Zwarte pion",
+  "piece_q": "Zwarte dame",
+  "piece_r": "Zwarte toren",
+  "piece_B": "Witte loper",
+  "piece_K": "Witte koning",
+  "piece_N": "Witte paard",
+  "piece_P": "Witte pion",
+  "piece_Q": "Witte dame",
+  "piece_R": "Witte toren"
 }
