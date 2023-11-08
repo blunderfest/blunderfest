@@ -1,6 +1,6 @@
 import { Draggable } from "@/components/Draggable";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { mark } from "@/store/marks";
+import { marked } from "@/store/markSlice";
 import { useDroppable } from "@dnd-kit/core";
 import { cva } from "styled-system/css";
 import { square } from "styled-system/recipes";
@@ -64,7 +64,13 @@ export const Square =
         onContextMenu={(e) => {
           if (!e.defaultPrevented) {
             e.preventDefault();
-            dispatch(mark(positionId, parsedSquare.squareIndex, e.altKey ? "alt" : e.ctrlKey ? "ctrl" : "simple"));
+            dispatch(
+              marked({
+                positionId: positionId,
+                squareIndex: parsedSquare.squareIndex,
+                mark: e.altKey ? "alt" : e.ctrlKey ? "ctrl" : "simple",
+              }),
+            );
           }
         }}>
         <div tabIndex={-1} className={classes.highlight}>

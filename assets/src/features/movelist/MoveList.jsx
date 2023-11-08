@@ -1,5 +1,5 @@
 import { useAppSelector } from "@/store";
-import { selectMainVariation } from "@/store/games";
+import { selectMainVariation } from "@/store/games/selectors";
 import { useTreeData } from "react-stately";
 import { css } from "styled-system/css";
 
@@ -72,8 +72,7 @@ export function MoveList(props) {
             marginLeft: `${level * 10}px`,
             backgroundColor: "stone.10",
             color: "stone.1",
-          })}
-        >
+          })}>
           {items.map((item) => (
             <li key={item.key}>
               <h1>{item.value.position.ply}</h1>

@@ -1,5 +1,5 @@
-import { connected, disconnected } from "@/store/connectivity/actions";
-import { join, leave } from "@/store/room/actions";
+import { connected, disconnected } from "@/store/connectivitySlice";
+import { joined, left } from "@/store/roomSlice";
 import { Presence, Socket } from "phoenix";
 
 /**
@@ -35,7 +35,7 @@ export const socketMiddleware = ({ dispatch, getState }) => {
     const currentUserId = getState().connectivity.userId;
 
     if (userId && currentUserId !== userId) {
-      dispatch(fromServer(join(userId)));
+      dispatch(fromServer(joined(userId)));
     }
   });
 
@@ -43,14 +43,14 @@ export const socketMiddleware = ({ dispatch, getState }) => {
     const currentUserId = getState().connectivity.userId;
 
     if (userId && currentUserId !== userId) {
-      dispatch(fromServer(leave(userId)));
+      dispatch(fromServer(left(userId)));
     }
   });
 
   channel
     .join()
     .receive("ok", (response) => {
-      dispatch(fromServer(connected(response.user_id, roomCode)));
+      dispatch(fromServer(connected({ userId: response.user_id, roomCode: roomCode })));
     })
     .receive("error", () => {
       dispatch(fromServer(disconnected()));

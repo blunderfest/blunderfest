@@ -1,11 +1,11 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector } from "react-redux";
-import { connectivityReducer } from "./connectivity";
-import { gameReducer } from "./games";
-import { marksReducer } from "./marks/reducers";
-import { socketMiddleware } from "./middlewares/socketMiddleware";
-import { positionReducer } from "./positions";
-import { roomReducer } from "./room";
+import { connectivityReducer } from "./connectivitySlice";
+import { gameReducer } from "./gameSlice";
+import { marksReducer } from "./markSlice";
+import { positionReducer } from "./positionSlice";
+import { roomReducer } from "./roomSlice";
+import { socketMiddleware } from "./socketMiddleware";
 
 const rootReducer = combineReducers({
   room: roomReducer,

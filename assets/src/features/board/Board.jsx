@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@/store";
-import { move } from "@/store/games";
-import { reset } from "@/store/positions";
+import { move } from "@/store/gameSlice";
+import { reset } from "@/store/positionSlice";
 import { DndContext } from "@dnd-kit/core";
 import { useMemo, useRef } from "react";
 import { useClickAway } from "react-use";
@@ -45,9 +45,13 @@ export function Board(props) {
 
       if (from !== to) {
         dispatch(
-          move(gameId, positionId, {
-            from: from,
-            to: to,
+          move({
+            gameId: gameId,
+            positionId: positionId,
+            move: {
+              from: from,
+              to: to,
+            },
           }),
         );
       }

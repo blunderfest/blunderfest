@@ -5,7 +5,7 @@ import { Board } from "./features/board/Board";
 import { ConnectionStatus } from "./features/connectivity/Connection";
 import { MoveListBox } from "./features/movelist/MoveListBox";
 import { useAppDispatch, useAppSelector } from "./store";
-import { reset } from "./store/positions";
+import { reset } from "./store/positionSlice";
 
 function App() {
   const activeGame = useAppSelector((state) => state.room.activeGame);
@@ -27,8 +27,7 @@ function App() {
         <VStack
           className={css({
             backgroundColor: "surface.4",
-          })}
-        >
+          })}>
           <ConnectionStatus />
         </VStack>
         {activeGame && positionId && <Board gameId={activeGame} positionId={positionId} />}

@@ -1,4 +1,9 @@
 /**
+ * @template T
+ * @typedef {import("@reduxjs/toolkit").PayloadAction<T>} PayloadAction
+ */
+
+/**
  * @typedef {"none" | "simple" | "alt" | "ctrl"} Mark
  *
  * @typedef {"dark" | "light"} Color
