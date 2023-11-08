@@ -39,14 +39,14 @@ defmodule BlunderfestWeb.RoomChannel do
             "gameId" => gameId,
             "positionId" => positionId
           }
-        } = payload,
+        },
         socket
       ) do
     broadcast(socket, "shout", %{
       "type" => "game/moved",
       "payload" => %{
         "gameId" => gameId,
-        "positionId" => positionId,
+        "positionId" => positionId <> "_new",
         "move" => %{from: from, to: to},
         "ply" => 12,
         "fen" => "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"

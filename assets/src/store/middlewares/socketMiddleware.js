@@ -1,6 +1,19 @@
-import { connect, disconnect } from "@/store/connectivity/actions";
+import { connected, disconnected } from "@/store/connectivity/actions";
 import { join, leave } from "@/store/room/actions";
 import { Presence, Socket } from "phoenix";
+
+/**
+ * @template T
+ * @param {import("@reduxjs/toolkit").PayloadAction<T>} action
+ */
+function fromServer(action) {
+  return {
+    ...action,
+    meta: {
+      fromServer: true,
+    },
+  };
+}
 
 /**
  * @type {import("@reduxjs/toolkit").Middleware}
@@ -22,7 +35,7 @@ export const socketMiddleware = ({ dispatch, getState }) => {
     const currentUserId = getState().connectivity.userId;
 
     if (userId && currentUserId !== userId) {
-      dispatch(join(userId));
+      dispatch(fromServer(join(userId)));
     }
   });
 
@@ -30,31 +43,26 @@ export const socketMiddleware = ({ dispatch, getState }) => {
     const currentUserId = getState().connectivity.userId;
 
     if (userId && currentUserId !== userId) {
-      dispatch(leave(userId));
+      dispatch(fromServer(leave(userId)));
     }
   });
 
   channel
     .join()
     .receive("ok", (response) => {
-      dispatch(connect(response.user_id, roomCode));
+      dispatch(fromServer(connected(response.user_id, roomCode)));
     })
     .receive("error", () => {
-      dispatch(disconnect());
+      dispatch(fromServer(disconnected()));
     });
 
   channel.on("shout", (response) => {
-    dispatch({
-      ...response,
-      meta: {
-        skipSocket: true,
-      },
-    });
+    dispatch(fromServer(response));
   });
 
   return (next) => {
     return async (action) => {
-      if (action.meta && action.meta.skipSocket) {
+      if (action.meta && action.meta.fromServer) {
         next(action);
       } else {
         channel.push("shout", action);

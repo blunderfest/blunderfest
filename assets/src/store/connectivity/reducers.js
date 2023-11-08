@@ -1,5 +1,5 @@
 import { createReducer } from "@reduxjs/toolkit";
-import { connect, disconnect } from "./actions";
+import { connected, disconnected } from "./actions";
 
 /**
  * @type {{
@@ -16,14 +16,14 @@ const initialState = {
 
 export const connectivityReducer = createReducer(initialState, (builder) => {
   builder
-    .addCase(connect, (state, action) => {
+    .addCase(connected, (state, action) => {
       const { roomCode, userId } = action.payload;
 
       state.roomCode = roomCode;
       state.userId = userId;
       state.status = "online";
     })
-    .addCase(disconnect, (state) => {
+    .addCase(disconnected, (state) => {
       state.status = "offline";
     });
 });

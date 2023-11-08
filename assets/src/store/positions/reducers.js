@@ -1,6 +1,6 @@
 import { createReducer } from "@reduxjs/toolkit";
 import { moved } from "../games";
-import { mark, reset, select } from "../positions";
+import { reset, select } from "../positions";
 import { addGame } from "../room";
 
 /**
@@ -40,22 +40,11 @@ export const positionReducer = createReducer(initialState, (builder) => {
       state.byId[positionId] = {
         id: positionId,
         arrows: [],
-        marks: [],
         selectedSquareIndex: 0,
         ply: ply,
         fen: fen,
       };
       state.currentPositions[gameId] = positionId;
-    })
-    .addCase(mark, (state, action) => {
-      const { positionId, squareIndex, mark } = action.payload;
-      const position = state.byId[positionId];
-
-      if (position.marks[squareIndex] === mark) {
-        delete position.marks[squareIndex];
-      } else {
-        position.marks[squareIndex] = mark;
-      }
     })
     .addCase(reset, (state, action) => {
       const { positionId } = action.payload;
@@ -63,7 +52,6 @@ export const positionReducer = createReducer(initialState, (builder) => {
 
       position.selectedSquareIndex = null;
       position.arrows = [];
-      position.marks = [];
     })
     .addCase(select, (state, action) => {
       const { positionId, squareIndex } = action.payload;

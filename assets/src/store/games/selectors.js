@@ -17,7 +17,7 @@ function* flattenVariations(variations) {
 
 export const selectMainVariation = createSelector(
   /**
-   * @param {import("@/store").RootState} state
+   * @param {import("@/store/index").RootState} state
    * @param {string} gameId
    */
   (state, gameId) => state.game.byId[gameId],

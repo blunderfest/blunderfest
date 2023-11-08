@@ -1,6 +1,6 @@
 import { Draggable } from "@/components/Draggable";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { mark } from "@/store/positions";
+import { mark } from "@/store/marks";
 import { useDroppable } from "@dnd-kit/core";
 import { cva } from "styled-system/css";
 import { square } from "styled-system/recipes";
@@ -34,6 +34,8 @@ export const Square =
 
     const dispatch = useAppDispatch();
     const position = useAppSelector((state) => state.position.byId[positionId]);
+    const marks = useAppSelector((state) => state.marks.byPositionId[position.id][parsedSquare.squareIndex]);
+
     const { elementProps, isFocusVisible } = useSquareAria(positionId, parsedSquare);
     const { setNodeRef: setDroppableRef, isOver } = useDroppable({
       id: parsedSquare.squareIndex,
@@ -42,7 +44,7 @@ export const Square =
     const classes = square({
       focussed: isFocusVisible,
       color: parsedSquare.color,
-      marked: position.marks[parsedSquare.squareIndex] ?? "none",
+      marked: marks,
       highlighted: position.selectedSquareIndex === parsedSquare.squareIndex,
       draggedOver: isOver,
     });
@@ -64,8 +66,7 @@ export const Square =
             e.preventDefault();
             dispatch(mark(positionId, parsedSquare.squareIndex, e.altKey ? "alt" : e.ctrlKey ? "ctrl" : "simple"));
           }
-        }}
-      >
+        }}>
         <div tabIndex={-1} className={classes.highlight}>
           &nbsp;
         </div>
@@ -77,12 +78,10 @@ export const Square =
             <Draggable
               id={parsedSquare.squareIndex.toString()}
               data={{ piece: parsedSquare.piece }}
-              recipe={(dragging) => pieceRecipe({ dragging: dragging })}
-            >
+              recipe={(dragging) => pieceRecipe({ dragging: dragging })}>
               <Piece piece={parsedSquare.piece} />
             </Draggable>
           )}
-          {parsedSquare.squareIndex}
         </div>
       </div>
     );

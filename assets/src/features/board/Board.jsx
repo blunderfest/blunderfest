@@ -40,15 +40,17 @@ export function Board(props) {
     const { active, over } = event;
 
     if (over) {
-      const from = active.id;
-      const to = over.id;
+      const from = Number(active.id);
+      const to = Number(over.id);
 
-      dispatch(
-        move(gameId, positionId, {
-          from: Number(from),
-          to: Number(to),
-        }),
-      );
+      if (from !== to) {
+        dispatch(
+          move(gameId, positionId, {
+            from: from,
+            to: to,
+          }),
+        );
+      }
     }
   }
 

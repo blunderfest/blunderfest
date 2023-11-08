@@ -44,7 +44,6 @@
  *   fen: string,
  *   ply: number,
  *   arrows: Arrow[],
- *   marks: Mark[],
  *   selectedSquareIndex: number?
  * }} Position
  *

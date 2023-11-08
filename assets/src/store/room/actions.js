@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const addGame = createAction(
-  "games/add",
+  "room/add",
   /**
    * @param {Game} game
    */
@@ -28,9 +28,6 @@ export const join = createAction(
    * @param {string} userId
    */
   (userId) => ({
-    meta: {
-      skipSocket: true,
-    },
     payload: {
       userId,
     },
@@ -43,9 +40,6 @@ export const leave = createAction(
    * @param {string} userId
    */
   (userId) => ({
-    meta: {
-      skipSocket: true,
-    },
     payload: {
       userId,
     },

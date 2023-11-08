@@ -1,15 +1,12 @@
 import { createAction } from "@reduxjs/toolkit";
 
-export const connect = createAction(
-  "connectivity/connect",
+export const connected = createAction(
+  "connectivity/connected",
   /**
    * @param {string} userId
    * @param {string} roomCode
    */
   (userId, roomCode) => ({
-    meta: {
-      skipSocket: true,
-    },
     payload: {
       userId,
       roomCode,
@@ -17,9 +14,4 @@ export const connect = createAction(
   }),
 );
 
-export const disconnect = createAction("connectivity/disconnect", () => ({
-  meta: {
-    skipSocket: true,
-  },
-  payload: {},
-}));
+export const disconnected = createAction("connectivity/disconnected");

@@ -25,19 +25,3 @@ export const reset = createAction(
     },
   }),
 );
-
-export const mark = createAction(
-  "position/mark",
-  /**
-   * @param {string} positionId,
-   * @param {number} squareIndex
-   * @param {Mark} mark
-   */
-  (positionId, squareIndex, mark) => ({
-    payload: {
-      positionId,
-      squareIndex,
-      mark,
-    },
-  }),
-);
