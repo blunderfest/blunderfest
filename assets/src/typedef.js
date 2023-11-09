@@ -40,7 +40,7 @@
  * }} ParsedPosition
  *
  * @typedef {{
- *   id: string,
+ *   positionId: string,
  *   fen: string,
  *   ply: number,
  *   arrows: Arrow[],
@@ -48,6 +48,7 @@
  * }} PositionFromServer
  *
  * @typedef {{
+ *   gameId: string,
  *   position: PositionFromServer,
  *   variations: Array<VariationFromServer>
  * }} GameNode
@@ -58,7 +59,6 @@
  * }} Tag
  *
  * @typedef {{
- *   id: string,
  *   tags: Tag[]
  * } & GameNode} GameFromServer
  *

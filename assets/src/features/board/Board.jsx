@@ -1,10 +1,9 @@
 import { useAppDispatch, useAppSelector } from "@/store";
 import { movePiece, resetPosition } from "@/store/actions";
 import { DndContext } from "@dnd-kit/core";
-import { useMemo, useRef } from "react";
+import { useRef } from "react";
 import { useClickAway } from "react-use";
 import { Grid } from "styled-system/jsx";
-import { parseFen } from "../parsers/parseFen";
 import { Square } from "./Square";
 import { useBoardAria } from "./aria";
 
@@ -19,7 +18,6 @@ export function Board(props) {
 
   const dispatch = useAppDispatch();
   const position = useAppSelector((state) => state.position.entities[positionId]);
-  const squares = useMemo(() => parseFen(position?.position.fen ?? "").squares, [position?.position.fen]);
   const ref = useRef(null);
 
   useClickAway(ref, (e) => {
@@ -73,7 +71,7 @@ export function Board(props) {
         }}
         aspectRatio="square"
         {...keyboardProps}>
-        {squares.map((square, index) => (
+        {position?.squares.map((square, index) => (
           <Square
             key={square.file + square.rank}
             setNodeRef={(node) => (squareRefs.current[index] = node)}

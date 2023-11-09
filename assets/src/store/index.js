@@ -6,11 +6,13 @@ import { markReducer } from "./markReducer";
 import { positionReducer } from "./positionReducer";
 import { roomReducer } from "./roomReducer";
 import { socketMiddleware } from "./socketMiddleware";
+import { variationReducer } from "./variationReducer";
 
 const rootReducer = combineReducers({
   room: roomReducer,
   game: gameReducer,
   position: positionReducer,
+  variation: variationReducer,
   marks: markReducer,
   connectivity: connectivityReducer,
 });

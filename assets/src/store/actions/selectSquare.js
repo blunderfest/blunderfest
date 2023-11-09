@@ -13,3 +13,17 @@ export const selectSquare = createAction(
     },
   }),
 );
+
+export const deselectSquare = createAction(
+  "deselectSquare",
+  /**
+   * @param {string} positionId
+   * @param {number} squareIndex
+   */
+  (positionId, squareIndex) => ({
+    payload: {
+      positionId,
+      squareIndex,
+    },
+  }),
+);

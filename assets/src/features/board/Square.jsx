@@ -49,7 +49,7 @@ export const Square =
       focussed: isFocusVisible,
       color: parsedSquare.color,
       marked: marks,
-      highlighted: position.position.selectedSquareIndex === parsedSquare.squareIndex,
+      highlighted: position.selectedSquareIndex === parsedSquare.squareIndex,
       draggedOver: isOver,
     });
 
@@ -62,7 +62,7 @@ export const Square =
         tabIndex={0}
         role="gridcell"
         aria-label={parsedSquare.file + parsedSquare.rank}
-        aria-selected={position.position.selectedSquareIndex === parsedSquare.squareIndex}
+        aria-selected={position.selectedSquareIndex === parsedSquare.squareIndex}
         className={classes.root}
         {...elementProps}
         onContextMenu={(e) => {

@@ -3,7 +3,7 @@ import { createAction } from "@reduxjs/toolkit";
 export const pieceMoved = createAction(
   "pieceMoved",
   /**
-   * @param {MovedFromServer} move
+   * @param {VariationFromServer} variation
    */
-  (move) => ({ payload: move }),
+  (variation) => ({ payload: variation }),
 );

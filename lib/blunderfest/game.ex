@@ -23,7 +23,7 @@ defmodule Blunderfest.Game do
 
   @derive {Jason.Encoder, []}
   typedstruct module: Position do
-    field(:id, String.t(), enforce: true)
+    field(:positionId, String.t(), enforce: true)
     field(:fen, String.t(), enforce: true)
     field(:ply, Integer.t(), enforce: true)
     field(:arrows, list(Arrow.t()), enforce: true)
@@ -40,7 +40,7 @@ defmodule Blunderfest.Game do
 
   @derive {Jason.Encoder, []}
   typedstruct do
-    field(:id, String.t(), enforce: true)
+    field(:gameId, String.t(), enforce: true)
     field(:position, Position.t(), enforce: true)
     field(:variations, list(Variation.t()))
   end
@@ -49,9 +49,9 @@ defmodule Blunderfest.Game do
 
   def new(game_id) do
     %Blunderfest.Game{
-      id: game_id,
+      gameId: game_id,
       position: %{
-        id: game_id <> "_pos_1",
+        positionId: game_id <> "_pos_1",
         fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         ply: 0,
         arrows: [],

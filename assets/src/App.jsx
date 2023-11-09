@@ -16,8 +16,8 @@ function App() {
 
   const { keyboardProps } = useKeyboard({
     onKeyDown: (e) => {
-      if (e.key === "Escape" && position?.position) {
-        dispatch(resetPosition(position.position.id));
+      if (e.key === "Escape" && position) {
+        dispatch(resetPosition(position.positionId));
       }
     },
   });
@@ -31,8 +31,8 @@ function App() {
           })}>
           <ConnectionStatus />
         </VStack>
-        {activeGameId && position && <Board gameId={activeGameId} positionId={position.position.id} />}
-        {activeGameId && position && <MoveListBox gameId={activeGameId} positionId={position.position.id} />}
+        {activeGameId && position && <Board gameId={activeGameId} positionId={position.positionId} />}
+        {activeGameId && position && <MoveListBox gameId={activeGameId} positionId={position.positionId} />}
       </HStack>
     </main>
   );
