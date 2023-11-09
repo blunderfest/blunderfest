@@ -1,6 +1,6 @@
 import { Draggable } from "@/components/Draggable";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { marked } from "@/store/markSlice";
+import { markSquare } from "@/store/actions";
 import { useDroppable } from "@dnd-kit/core";
 import { cva } from "styled-system/css";
 import { square } from "styled-system/recipes";
@@ -33,19 +33,23 @@ export const Square =
     const { positionId, parsedSquare, setNodeRef } = props;
 
     const dispatch = useAppDispatch();
-    const position = useAppSelector((state) => state.position.byId[positionId]);
-    const marks = useAppSelector((state) => state.marks.byPositionId[position.id][parsedSquare.squareIndex]);
+    const position = useAppSelector((state) => state.position.entities[positionId]);
+    const marks = useAppSelector((state) => state.marks.byPositionId[positionId][parsedSquare.squareIndex]);
 
     const { elementProps, isFocusVisible } = useSquareAria(positionId, parsedSquare);
     const { setNodeRef: setDroppableRef, isOver } = useDroppable({
       id: parsedSquare.squareIndex,
     });
 
+    if (!position) {
+      return <></>;
+    }
+
     const classes = square({
       focussed: isFocusVisible,
       color: parsedSquare.color,
       marked: marks,
-      highlighted: position.selectedSquareIndex === parsedSquare.squareIndex,
+      highlighted: position.position.selectedSquareIndex === parsedSquare.squareIndex,
       draggedOver: isOver,
     });
 
@@ -58,19 +62,13 @@ export const Square =
         tabIndex={0}
         role="gridcell"
         aria-label={parsedSquare.file + parsedSquare.rank}
-        aria-selected={position.selectedSquareIndex === parsedSquare.squareIndex}
+        aria-selected={position.position.selectedSquareIndex === parsedSquare.squareIndex}
         className={classes.root}
         {...elementProps}
         onContextMenu={(e) => {
           if (!e.defaultPrevented) {
             e.preventDefault();
-            dispatch(
-              marked({
-                positionId: positionId,
-                squareIndex: parsedSquare.squareIndex,
-                mark: e.altKey ? "alt" : e.ctrlKey ? "ctrl" : "simple",
-              }),
-            );
+            dispatch(markSquare(positionId, parsedSquare.squareIndex, e.altKey ? "alt" : e.ctrlKey ? "ctrl" : "simple"));
           }
         }}>
         <div tabIndex={-1} className={classes.highlight}>

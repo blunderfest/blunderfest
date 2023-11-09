@@ -1,6 +1,5 @@
 import { useAppDispatch, useAppSelector } from "@/store";
-import { marked } from "@/store/markSlice";
-import { reset, select } from "@/store/positionSlice";
+import { markSquare, resetPosition, selectSquare } from "@/store/actions";
 import { useRef } from "react";
 import { mergeProps, useFocusRing, useKeyboard, useLongPress, usePress } from "react-aria";
 
@@ -48,7 +47,6 @@ export const useBoardAria = () => {
  */
 export const useSquareAria = (positionId, square) => {
   const dispatch = useAppDispatch();
-  const position = useAppSelector((state) => state.position.byId[positionId]);
   const mark = useAppSelector((state) => state.marks.byPositionId[positionId][square.squareIndex]);
 
   /**
@@ -72,18 +70,18 @@ export const useSquareAria = (positionId, square) => {
 
   const { longPressProps } = useLongPress({
     onLongPress: () => {
-      dispatch(marked({ positionId: positionId, squareIndex: square.squareIndex, mark: nextMark() }));
+      dispatch(markSquare(positionId, square.squareIndex, nextMark()));
     },
   });
 
   const { pressProps } = usePress({
     onPress: (e) => {
       if (e.pointerType === "keyboard" && e.ctrlKey) {
-        dispatch(marked({ positionId: positionId, squareIndex: square.squareIndex, mark: nextMark() }));
+        dispatch(markSquare(positionId, square.squareIndex, nextMark()));
       } else if (square.piece && (mark === undefined || mark === "none")) {
-        dispatch(select({ positionId: positionId, squareIndex: square.squareIndex }));
+        dispatch(selectSquare(positionId, square.squareIndex));
       } else {
-        dispatch(reset(positionId));
+        dispatch(resetPosition(positionId));
       }
     },
   });

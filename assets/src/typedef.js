@@ -1,9 +1,4 @@
 /**
- * @template T
- * @typedef {import("@reduxjs/toolkit").PayloadAction<T>} PayloadAction
- */
-
-/**
  * @typedef {"none" | "simple" | "alt" | "ctrl"} Mark
  *
  * @typedef {"dark" | "light"} Color
@@ -50,11 +45,11 @@
  *   ply: number,
  *   arrows: Arrow[],
  *   selectedSquareIndex: number?
- * }} Position
+ * }} PositionFromServer
  *
  * @typedef {{
- *   position: Position,
- *   variations: Array<Variation>
+ *   position: PositionFromServer,
+ *   variations: Array<VariationFromServer>
  * }} GameNode
  *
  * @typedef {{
@@ -65,11 +60,11 @@
  * @typedef {{
  *   id: string,
  *   tags: Tag[]
- * } & GameNode} Game
+ * } & GameNode} GameFromServer
  *
  * @typedef {{
  *   move: Move
- * } & GameNode} Variation
+ * } & GameNode} VariationFromServer
  *
  * @typedef {{
  *   id: string,
@@ -77,4 +72,12 @@
  *   ply: number,
  *   moves: MappedMove[]
  * }} MappedMove
+ *
+ * @typedef {{
+ *   id: String,
+ *   positionId: String,
+ *   move: Move,
+ *   ply: Number,
+ *   fen: String
+ * }} MovedFromServer
  */

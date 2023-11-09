@@ -1,5 +1,4 @@
-import { connected, disconnected } from "@/store/connectivitySlice";
-import { joined, left } from "@/store/roomSlice";
+import { connected, disconnected, joined, left } from "@/store/actions";
 import { Presence, Socket } from "phoenix";
 
 /**
@@ -50,7 +49,7 @@ export const socketMiddleware = ({ dispatch, getState }) => {
   channel
     .join()
     .receive("ok", (response) => {
-      dispatch(fromServer(connected({ userId: response.user_id, roomCode: roomCode })));
+      dispatch(fromServer(connected(response.user_id, roomCode)));
     })
     .receive("error", () => {
       dispatch(fromServer(disconnected()));

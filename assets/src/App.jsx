@@ -5,18 +5,19 @@ import { Board } from "./features/board/Board";
 import { ConnectionStatus } from "./features/connectivity/Connection";
 import { MoveListBox } from "./features/movelist/MoveListBox";
 import { useAppDispatch, useAppSelector } from "./store";
-import { reset } from "./store/positionSlice";
+import { resetPosition } from "./store/actions";
 
 function App() {
-  const activeGame = useAppSelector((state) => state.room.activeGame);
-  const positionId = useAppSelector((state) => (activeGame ? state.position.currentPositions[activeGame] : undefined));
+  const activeGameId = useAppSelector((state) => state.room.activeGame);
+  const activeGame = useAppSelector((state) => state.game.entities[activeGameId ?? ""]);
+  const position = useAppSelector((state) => (activeGame ? state.position.entities[activeGame.currentPositionId] : undefined));
 
   const dispatch = useAppDispatch();
 
   const { keyboardProps } = useKeyboard({
     onKeyDown: (e) => {
-      if (e.key === "Escape" && positionId) {
-        dispatch(reset(positionId));
+      if (e.key === "Escape" && position?.position) {
+        dispatch(resetPosition(position.position.id));
       }
     },
   });
@@ -30,8 +31,8 @@ function App() {
           })}>
           <ConnectionStatus />
         </VStack>
-        {activeGame && positionId && <Board gameId={activeGame} positionId={positionId} />}
-        {activeGame && positionId && <MoveListBox gameId={activeGame} positionId={positionId} />}
+        {activeGameId && position && <Board gameId={activeGameId} positionId={position.position.id} />}
+        {activeGameId && position && <MoveListBox gameId={activeGameId} positionId={position.position.id} />}
       </HStack>
     </main>
   );

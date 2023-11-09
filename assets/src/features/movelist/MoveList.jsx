@@ -1,5 +1,5 @@
 import { useAppSelector } from "@/store";
-import { selectMainVariation } from "@/store/games/selectors";
+import { selectMainVariation } from "@/store/positionReducer";
 import { useTreeData } from "react-stately";
 import { css } from "styled-system/css";
 
@@ -60,7 +60,7 @@ export function MoveList(props) {
   }
 
   /**
-   * @param {import("@react-stately/data").TreeNode<Variation>[]} items
+   * @param {import("@react-stately/data").TreeNode<VariationFromServer>[]} items
    * @param {number} level
    */
   function render(items, level) {
@@ -75,7 +75,6 @@ export function MoveList(props) {
           })}>
           {items.map((item) => (
             <li key={item.key}>
-              <h1>{item.value.position.ply}</h1>
               {toSquare(item.value.move.from)}
               {toSquare(item.value.move.to)}
               {render(item.children, level + 1)}

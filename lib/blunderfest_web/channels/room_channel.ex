@@ -33,9 +33,9 @@ defmodule BlunderfestWeb.RoomChannel do
   def handle_in(
         "shout",
         %{
-          "type" => "game/move",
+          "type" => "movePiece",
           "payload" => %{
-            "move" => %{"from" => from, "to" => to},
+            "move" => move,
             "gameId" => gameId,
             "positionId" => positionId
           }
@@ -43,11 +43,11 @@ defmodule BlunderfestWeb.RoomChannel do
         socket
       ) do
     broadcast(socket, "shout", %{
-      "type" => "game/moved",
+      "type" => "pieceMoved",
       "payload" => %{
         "id" => gameId,
         "positionId" => positionId <> "_new",
-        "move" => %{from: from, to: to},
+        "move" => move,
         "ply" => 12,
         "fen" => "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
       }
@@ -74,7 +74,7 @@ defmodule BlunderfestWeb.RoomChannel do
     push(socket, "presence_state", Presence.list(socket))
 
     socket.assigns.games
-    |> Enum.map(fn game -> %{type: "room/gameAdded", payload: game} end)
+    |> Enum.map(fn game -> %{type: "gameAdded", payload: game} end)
     |> Enum.each(fn event -> push(socket, "shout", event) end)
 
     {:noreply, socket}

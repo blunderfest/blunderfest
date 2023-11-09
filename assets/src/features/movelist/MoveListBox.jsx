@@ -1,5 +1,5 @@
 import { useAppDispatch, useAppSelector } from "@/store";
-import { gameSwitched } from "@/store/roomSlice";
+import { gameSwitched } from "@/store/actions";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@radix-ui/react-accordion";
 import { css } from "styled-system/css";
 import { MoveList } from "./MoveList";
@@ -13,14 +13,14 @@ import { MoveList } from "./MoveList";
 export function MoveListBox(props) {
   const { gameId, positionId } = props;
 
-  const gameIds = useAppSelector((state) => state.room.games);
+  const gameIds = useAppSelector((state) => state.game.ids);
 
   const dispatch = useAppDispatch();
 
   return (
     <Accordion type="single" defaultValue={gameId} onValueChange={(e) => dispatch(gameSwitched(e))}>
       {gameIds.map((gameId) => (
-        <AccordionItem key={gameId} value={gameId}>
+        <AccordionItem key={gameId} value={gameId.toString()}>
           <AccordionTrigger
             className={css({
               width: "140px",
@@ -36,7 +36,7 @@ export function MoveListBox(props) {
             {gameId}
           </AccordionTrigger>
           <AccordionContent>
-            <MoveList gameId={gameId} positionId={positionId} />
+            <MoveList gameId={gameId.toString()} positionId={positionId} />
           </AccordionContent>
         </AccordionItem>
       ))}

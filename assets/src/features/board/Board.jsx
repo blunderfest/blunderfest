@@ -1,6 +1,5 @@
 import { useAppDispatch, useAppSelector } from "@/store";
-import { move } from "@/store/gameSlice";
-import { reset } from "@/store/positionSlice";
+import { movePiece, resetPosition } from "@/store/actions";
 import { DndContext } from "@dnd-kit/core";
 import { useMemo, useRef } from "react";
 import { useClickAway } from "react-use";
@@ -19,15 +18,15 @@ export function Board(props) {
   const { gameId, positionId } = props;
 
   const dispatch = useAppDispatch();
-  const position = useAppSelector((state) => state.position.byId[positionId]);
-  const squares = useMemo(() => parseFen(position.fen).squares, [position.fen]);
+  const position = useAppSelector((state) => state.position.entities[positionId]);
+  const squares = useMemo(() => parseFen(position?.position.fen ?? "").squares, [position?.position.fen]);
   const ref = useRef(null);
 
   useClickAway(ref, (e) => {
     const target = /** @type {HTMLElement} */ (e.target);
 
     if (!target || !target.onclick || typeof target.onclick !== "function") {
-      dispatch(reset(positionId));
+      dispatch(resetPosition(positionId));
     }
   });
 
@@ -45,13 +44,9 @@ export function Board(props) {
 
       if (from !== to) {
         dispatch(
-          move({
-            gameId: gameId,
-            positionId: positionId,
-            move: {
-              from: from,
-              to: to,
-            },
+          movePiece(gameId, positionId, {
+            from: from,
+            to: to,
           }),
         );
       }
