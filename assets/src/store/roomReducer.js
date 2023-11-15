@@ -1,5 +1,5 @@
 import { createReducer } from "@reduxjs/toolkit";
-import { gameAdded, gameSwitched, joined, left } from "./actions";
+import { gameAdded, gameSwitched, userJoined, userLeft } from "./actions";
 
 /**
  * @type {{
@@ -16,10 +16,10 @@ const initialState = {
 
 export const roomReducer = createReducer(initialState, (builder) => {
   builder
-    .addCase(joined, (state, action) => {
+    .addCase(userJoined, (state, action) => {
       state.users.push(action.payload);
     })
-    .addCase(left, (state, action) => {
+    .addCase(userLeft, (state, action) => {
       state.users = state.users.filter((user) => user != action.payload);
     })
     .addCase(gameSwitched, (state, action) => {

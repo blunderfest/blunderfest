@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
-export const left = createAction(
-  "left",
+export const userJoined = createAction(
+  "userJoined",
   /**
    * @param {string} userId
    */

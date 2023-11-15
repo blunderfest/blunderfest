@@ -1,8 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@/store";
-import { movePiece, resetPosition } from "@/store/actions";
+import { movePiece } from "@/store/actions";
 import { DndContext } from "@dnd-kit/core";
-import { useRef } from "react";
-import { useClickAway } from "react-use";
 import { Grid } from "styled-system/jsx";
 import { Square } from "./Square";
 import { useBoardAria } from "./aria";
@@ -10,25 +8,16 @@ import { useBoardAria } from "./aria";
 /**
  * @param {{
  *   gameId: string,
- *   positionId: string
  * }} props
  */
 export function Board(props) {
-  const { gameId, positionId } = props;
+  const { gameId } = props;
+  const positionId = useAppSelector((state) => state.game.entities[gameId]?.currentPositionId) ?? "";
 
   const dispatch = useAppDispatch();
   const position = useAppSelector((state) => state.position.entities[positionId]);
-  const ref = useRef(null);
 
-  useClickAway(ref, (e) => {
-    const target = /** @type {HTMLElement} */ (e.target);
-
-    if (!target || !target.onclick || typeof target.onclick !== "function") {
-      dispatch(resetPosition(positionId));
-    }
-  });
-
-  const { squareRefs, keyboardProps } = useBoardAria();
+  const { keyboardProps } = useBoardAria();
 
   /**
    * @param {import("@dnd-kit/core").DragEndEvent} event
@@ -55,29 +44,15 @@ export function Board(props) {
     <DndContext onDragEnd={(e) => handleDragEnd(e)}>
       <Grid
         role="grid"
+        {...keyboardProps}
         aria-colcount={8}
         aria-rowcount={8}
-        ref={ref}
         columns={8}
-        rowGap={0}
-        columnGap={0}
-        height={{
-          base: "auto",
-          lg: "100vh",
-        }}
-        width={{
-          base: "100vw",
-          lg: "auto",
-        }}
-        aspectRatio="square"
-        {...keyboardProps}>
-        {position?.squares.map((square, index) => (
-          <Square
-            key={square.file + square.rank}
-            setNodeRef={(node) => (squareRefs.current[index] = node)}
-            positionId={positionId}
-            parsedSquare={square}
-          />
+        gap={0}
+        height={"100vh"}
+        aspectRatio="square">
+        {position?.squares.map((square) => (
+          <Square key={square.file + square.rank} positionId={positionId} parsedSquare={square} />
         ))}
       </Grid>
     </DndContext>

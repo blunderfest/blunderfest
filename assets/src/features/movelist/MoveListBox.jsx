@@ -1,24 +1,25 @@
 import { useAppDispatch, useAppSelector } from "@/store";
 import { gameSwitched } from "@/store/actions";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@radix-ui/react-accordion";
+import { forwardRef } from "react";
+import { FocusScope } from "react-aria";
 import { css } from "styled-system/css";
 import { MoveList } from "./MoveList";
 
 /**
  * @param {{
- *   gameId: string,
- *   positionId: string
+ *   gameId: string
  * }} props
+ * @param {import("react").Ref<HTMLDivElement> | undefined} ref
  */
-export function MoveListBox(props) {
-  const { gameId, positionId } = props;
+function _MoveListBox(props, ref) {
+  const { gameId } = props;
 
   const gameIds = useAppSelector((state) => state.game.ids);
-
   const dispatch = useAppDispatch();
 
   return (
-    <Accordion type="single" defaultValue={gameId} onValueChange={(e) => dispatch(gameSwitched(e))}>
+    <Accordion ref={ref} type="single" defaultValue={gameId} onValueChange={(e) => dispatch(gameSwitched(e))}>
       {gameIds.map((gameId) => (
         <AccordionItem key={gameId} value={gameId.toString()}>
           <AccordionTrigger
@@ -36,10 +37,14 @@ export function MoveListBox(props) {
             {gameId}
           </AccordionTrigger>
           <AccordionContent>
-            <MoveList gameId={gameId.toString()} positionId={positionId} />
+            <FocusScope>
+              <MoveList gameId={gameId.toString()} />
+            </FocusScope>
           </AccordionContent>
         </AccordionItem>
       ))}
     </Accordion>
   );
 }
+
+export const MoveListBox = forwardRef(_MoveListBox);

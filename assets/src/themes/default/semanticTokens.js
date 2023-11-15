@@ -47,6 +47,20 @@ export const semanticTokens = defineSemanticTokens({
         _osDark: "{colors.indigo.9}",
       },
     },
+    text: {
+      1: {
+        value: {
+          _osLight: "{colors.gray.9}",
+          _osDark: "{colors.gray.1}",
+        },
+      },
+      2: {
+        value: {
+          _osLight: "{colors.gray.8}",
+          _osDark: "{colors.gray.2}",
+        },
+      },
+    },
     success: {
       value: {
         _osLight: "{colors.green.7}",

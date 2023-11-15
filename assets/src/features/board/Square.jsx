@@ -26,11 +26,10 @@ export const Square =
    * @param {{
    *   positionId: string,
    *   parsedSquare: ParsedSquare,
-   *   setNodeRef: (element: HTMLElement | null) => void
    * }} props
    */
   (props) => {
-    const { positionId, parsedSquare, setNodeRef } = props;
+    const { positionId, parsedSquare } = props;
 
     const dispatch = useAppDispatch();
     const position = useAppSelector((state) => state.position.entities[positionId]);
@@ -55,10 +54,7 @@ export const Square =
 
     return (
       <div
-        ref={(node) => {
-          setDroppableRef(node);
-          setNodeRef(node);
-        }}
+        ref={(node) => setDroppableRef(node)}
         tabIndex={0}
         role="gridcell"
         aria-label={parsedSquare.file + parsedSquare.rank}

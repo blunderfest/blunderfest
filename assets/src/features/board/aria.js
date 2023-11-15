@@ -1,44 +1,16 @@
+import { useFocusManager } from "@/aria/focusManager";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { deselectSquare, markSquare, resetPosition, selectSquare } from "@/store/actions";
-import { useRef } from "react";
-import { mergeProps, useFocusRing, useKeyboard, useLongPress, usePress } from "react-aria";
+import { mergeProps, useFocusRing, useLongPress, usePress } from "react-aria";
 
 export const useBoardAria = () => {
-  const squareRefs = useRef([...Array.from({ length: 64 })]);
-
-  const focus = (/** @type {number} */ delta) => {
-    const refs = squareRefs.current;
-
-    const index = refs.findIndex((ref) => ref === document.activeElement);
-
-    if (index !== -1) {
-      const nextIndex = (index + delta + 64) % 64;
-      const ref = refs[nextIndex];
-
-      ref.focus();
-    }
-  };
-
-  const { keyboardProps } = useKeyboard({
-    onKeyDown: (e) => {
-      if (e.key === "ArrowUp") {
-        focus(-8);
-      } else if (e.key === "ArrowDown") {
-        focus(8);
-      } else if (e.key === "ArrowLeft") {
-        focus(-1);
-      } else if (e.key === "ArrowRight") {
-        focus(1);
-      } else {
-        e.continuePropagation();
-      }
-    },
+  const focusManager = useFocusManager({
+    accept: (node) => node.getAttribute("role") === "gridcell",
+    amountUp: 8,
+    amountDown: 8,
   });
 
-  return {
-    keyboardProps,
-    squareRefs,
-  };
+  return focusManager;
 };
 
 /**

@@ -1,4 +1,4 @@
-import { connected, disconnected, joined, left } from "@/store/actions";
+import { connected, disconnected, userJoined, userLeft } from "@/store/actions";
 import { Presence, Socket } from "phoenix";
 
 /**
@@ -34,7 +34,7 @@ export const socketMiddleware = ({ dispatch, getState }) => {
     const currentUserId = getState().connectivity.userId;
 
     if (userId && currentUserId !== userId) {
-      dispatch(fromServer(joined(userId)));
+      dispatch(fromServer(userJoined(userId)));
     }
   });
 
@@ -42,7 +42,7 @@ export const socketMiddleware = ({ dispatch, getState }) => {
     const currentUserId = getState().connectivity.userId;
 
     if (userId && currentUserId !== userId) {
-      dispatch(fromServer(left(userId)));
+      dispatch(fromServer(userLeft(userId)));
     }
   });
 
