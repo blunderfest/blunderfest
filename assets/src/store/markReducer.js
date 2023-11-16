@@ -30,7 +30,7 @@ export const markReducer = createReducer(initialState, (builder) => {
       state.byPositionId[positionId] = {};
     })
     .addCase(pieceMoved, (state, action) => {
-      const positionId = action.payload.position.positionId;
+      const positionId = action.payload.variation.position.positionId;
       state.byPositionId[positionId] = {};
     });
 });

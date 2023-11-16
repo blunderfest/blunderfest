@@ -20,14 +20,14 @@ const move = cva({
 
 /**
  * @param {{
- *   gameId: string,
+ *   gameCode: string,
  * }} props
  */
 export function MoveList(props) {
-  const { gameId } = props;
+  const { gameCode } = props;
 
-  const variations = useAppSelector((state) => selectVariation(state, gameId));
-  const positionId = useAppSelector((state) => state.game.entities[gameId]?.currentPositionId) ?? "";
+  const variations = useAppSelector((state) => selectVariation(state, gameCode));
+  const positionId = useAppSelector((state) => state.game.entities[gameCode]?.currentPositionId) ?? "";
   const dispatch = useAppDispatch();
 
   const focusManager = useFocusManager({
@@ -36,7 +36,7 @@ export function MoveList(props) {
       const positionId = node.getAttribute("data-position-id");
 
       if (positionId) {
-        dispatch(selectPosition(gameId, positionId));
+        dispatch(selectPosition(gameCode, positionId));
       }
     },
     amountUp: 2,
@@ -56,7 +56,7 @@ export function MoveList(props) {
             data-position-id={variant.positionId}
             tabIndex={0}
             className={move({ selected: variant.positionId === positionId })}
-            onClick={() => dispatch(selectPosition(gameId, variant.positionId))}>
+            onClick={() => dispatch(selectPosition(gameCode, variant.positionId))}>
             {variant.positionId}
           </GridItem>
         </Fragment>

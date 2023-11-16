@@ -62,7 +62,7 @@ export const positionReducer = createReducer(positionAdapter.getInitialState(), 
       positionAdapter.addOne(state, convert(action.payload.position));
     })
     .addCase(pieceMoved, (state, action) => {
-      positionAdapter.addOne(state, convert(action.payload.position));
+      positionAdapter.addOne(state, convert(action.payload.variation.position));
     });
 });
 

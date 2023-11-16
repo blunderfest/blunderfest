@@ -1,23 +1,21 @@
 defmodule BlunderfestWeb.RoomChannel do
   use BlunderfestWeb, :channel
 
-  alias Blunderfest.Game
+  alias Blunderfest.Game.GameServer
+  alias Blunderfest.Game.RoomServer
+  alias Blunderfest.Game.IdGenerator
   alias BlunderfestWeb.Presence
-  alias Nanoid
 
   @impl true
-  def join("room:" <> _roomCode, _payload, socket) do
-    user_id =
-      Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-    games = [Game.new("game_1")]
+  def join("room:" <> roomCode, _payload, socket) do
+    user_id = IdGenerator.generate()
 
     send(self(), :after_join)
 
     {:ok,
      %{
        user_id: user_id
-     }, socket |> assign(:user_id, user_id) |> assign(:games, games)}
+     }, socket |> assign(:user_id, user_id) |> assign(:room_code, roomCode)}
   end
 
   # Channels can be used in a request/response fashion
@@ -36,7 +34,7 @@ defmodule BlunderfestWeb.RoomChannel do
           "type" => "movePiece",
           "payload" => %{
             "move" => move,
-            "gameId" => gameId,
+            "gameCode" => game_code,
             "positionId" => positionId
           }
         },
@@ -45,7 +43,7 @@ defmodule BlunderfestWeb.RoomChannel do
     broadcast(socket, "shout", %{
       "type" => "pieceMoved",
       "payload" => %{
-        "gameId" => gameId,
+        "gameCode" => game_code,
         "position" => %{
           "positionId" => positionId <> "_new",
           "fen" => "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
@@ -76,8 +74,19 @@ defmodule BlunderfestWeb.RoomChannel do
 
     push(socket, "presence_state", Presence.list(socket))
 
-    socket.assigns.games
-    |> Enum.map(fn game -> %{type: "gameAdded", payload: game} end)
+    room = RoomServer.get_room(socket.assigns.room_code)
+
+    room.game_codes
+    |> Enum.each(fn game_code -> GameServer.start_link(game_code) end)
+
+    room.game_codes
+    |> Enum.map(fn game_code -> GameServer.get_game(game_code) end)
+    |> Enum.map(fn game ->
+      %{
+        type: "gameAdded",
+        payload: game |> Map.from_struct() |> Recase.Enumerable.convert_keys(&Recase.to_camel/1)
+      }
+    end)
     |> Enum.each(fn event -> push(socket, "shout", event) end)
 
     {:noreply, socket}

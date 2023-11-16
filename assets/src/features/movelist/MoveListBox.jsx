@@ -8,20 +8,20 @@ import { MoveList } from "./MoveList";
 
 /**
  * @param {{
- *   gameId: string
+ *   gameCode: string
  * }} props
  * @param {import("react").Ref<HTMLDivElement> | undefined} ref
  */
 function _MoveListBox(props, ref) {
-  const { gameId } = props;
+  const { gameCode } = props;
 
-  const gameIds = useAppSelector((state) => state.game.ids);
+  const gameCodes = useAppSelector((state) => state.game.ids);
   const dispatch = useAppDispatch();
 
   return (
-    <Accordion ref={ref} type="single" defaultValue={gameId} onValueChange={(e) => dispatch(gameSwitched(e))}>
-      {gameIds.map((gameId) => (
-        <AccordionItem key={gameId} value={gameId.toString()}>
+    <Accordion ref={ref} type="single" defaultValue={gameCode} onValueChange={(e) => dispatch(gameSwitched(e))}>
+      {gameCodes.map((gameCode) => (
+        <AccordionItem key={gameCode} value={gameCode.toString()}>
           <AccordionTrigger
             className={css({
               width: "140px",
@@ -34,11 +34,11 @@ function _MoveListBox(props, ref) {
                 color: "secondary",
               },
             })}>
-            {gameId}
+            {gameCode}
           </AccordionTrigger>
           <AccordionContent>
             <FocusScope>
-              <MoveList gameId={gameId.toString()} />
+              <MoveList gameCode={gameCode.toString()} />
             </FocusScope>
           </AccordionContent>
         </AccordionItem>

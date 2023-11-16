@@ -13,8 +13,8 @@ function App() {
   const [moveListBox, serMoveListBox] = useState(/** @type {HTMLDivElement | null} */ (null));
   const [vstack, serVstack] = useState(/** @type {HTMLDivElement | null} */ (null));
 
-  const gameId = useAppSelector((state) => state.room.activeGame);
-  const game = useAppSelector((state) => state.game.entities[gameId ?? ""]);
+  const gameCode = useAppSelector((state) => state.room.activeGame);
+  const game = useAppSelector((state) => state.game.entities[gameCode ?? ""]);
 
   const dispatch = useAppDispatch();
 
@@ -36,7 +36,7 @@ function App() {
     },
   });
 
-  if (!gameId) {
+  if (!gameCode) {
     return <></>;
   }
 
@@ -51,9 +51,9 @@ function App() {
           <ConnectionStatus />
         </VStack>
         <FocusScope>
-          <Board gameId={gameId} />
+          <Board gameCode={gameCode} />
         </FocusScope>
-        <MoveListBox ref={serMoveListBox} gameId={gameId} />
+        <MoveListBox ref={serMoveListBox} gameCode={gameCode} />
       </HStack>
     </main>
   );

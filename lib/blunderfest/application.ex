@@ -7,6 +7,8 @@ defmodule Blunderfest.Application do
 
   @impl true
   def start(_type, _args) do
+    topologies = Application.get_env(:libcluster, :topologies) || []
+
     children = [
       # Start the Telemetry supervisor
       BlunderfestWeb.Telemetry,
@@ -14,11 +16,14 @@ defmodule Blunderfest.Application do
       {Phoenix.PubSub, name: Blunderfest.PubSub},
       # Start Finch
       {Finch, name: Blunderfest.Finch},
+      # setup for clustering
+      {Cluster.Supervisor, [topologies, [name: Blunderfest.ClusterSupervisor]]},
       # Start the Endpoint (http/https)
       BlunderfestWeb.Endpoint,
       BlunderfestWeb.Presence,
-      {Horde.Registry, keys: :unique, name: Blunderfest.GameRegistry},
-      {Horde.DynamicSupervisor, strategy: :one_for_one, name: Blunderfest.GameSupervisor}
+      {Horde.Registry, [name: Blunderfest.Registry, keys: :unique]},
+      {Horde.DynamicSupervisor,
+       [name: Blunderfest.DynamicSupervisor, strategy: :one_for_one, members: :auto]}
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)
       # {Blunderfest.Worker, arg}
     ]

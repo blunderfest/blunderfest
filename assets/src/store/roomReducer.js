@@ -26,10 +26,10 @@ export const roomReducer = createReducer(initialState, (builder) => {
       state.activeGame = action.payload;
     })
     .addCase(gameAdded, (state, action) => {
-      state.games.push(action.payload.gameId);
+      state.games.push(action.payload.gameCode);
 
       if (!state.activeGame) {
-        state.activeGame = action.payload.gameId;
+        state.activeGame = action.payload.gameCode;
       }
     });
 });

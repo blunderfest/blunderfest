@@ -7,12 +7,12 @@ import { useBoardAria } from "./aria";
 
 /**
  * @param {{
- *   gameId: string,
+ *   gameCode: string,
  * }} props
  */
 export function Board(props) {
-  const { gameId } = props;
-  const positionId = useAppSelector((state) => state.game.entities[gameId]?.currentPositionId) ?? "";
+  const { gameCode } = props;
+  const positionId = useAppSelector((state) => state.game.entities[gameCode]?.currentPositionId) ?? "";
 
   const dispatch = useAppDispatch();
   const position = useAppSelector((state) => state.position.entities[positionId]);
@@ -31,7 +31,7 @@ export function Board(props) {
 
       if (from !== to) {
         dispatch(
-          movePiece(gameId, positionId, {
+          movePiece(gameCode, positionId, {
             from: from,
             to: to,
           }),

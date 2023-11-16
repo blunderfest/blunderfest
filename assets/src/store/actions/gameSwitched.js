@@ -3,7 +3,7 @@ import { createAction } from "@reduxjs/toolkit";
 export const gameSwitched = createAction(
   "gameSwitched",
   /**
-   * @param {string} gameId
+   * @param {string} gameCode
    */
-  (gameId) => ({ payload: gameId }),
+  (gameCode) => ({ payload: gameCode }),
 );

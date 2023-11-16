@@ -48,7 +48,6 @@
  * }} PositionFromServer
  *
  * @typedef {{
- *   gameId: string,
  *   position: PositionFromServer,
  *   variations: Array<VariationFromServer>
  * }} GameNode
@@ -59,25 +58,11 @@
  * }} Tag
  *
  * @typedef {{
+ *   gameCode: string,
  *   tags: Tag[]
  * } & GameNode} GameFromServer
  *
  * @typedef {{
  *   move: Move
  * } & GameNode} VariationFromServer
- *
- * @typedef {{
- *   id: string,
- *   move: Move,
- *   ply: number,
- *   moves: MappedMove[]
- * }} MappedMove
- *
- * @typedef {{
- *   id: String,
- *   positionId: String,
- *   move: Move,
- *   ply: Number,
- *   fen: String
- * }} MovedFromServer
  */

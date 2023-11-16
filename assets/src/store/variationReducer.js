@@ -3,63 +3,41 @@ import { pieceMoved } from "./actions";
 
 /**
  * @typedef {{move: Move, ply: number, positionId: string, variations: Variation[]}} Variation
- * @typedef {{gameId: string, variations: Variation[]}} Game
+ * @typedef {{gameCode: string, variations: Variation[]}} Game
+ *
  * @type {import("@reduxjs/toolkit").EntityAdapter<Game>}
  */
 const variationAdapter = createEntityAdapter({
-  selectId: (variation) => variation.gameId,
+  selectId: (variation) => variation.gameCode,
 });
 
 /**
- * @param {VariationFromServer} variationFromServer
+ * @param {VariationFromServer} variation
  * @returns {Variation}
  */
-function convert(variationFromServer) {
+function convert(variation) {
   return {
-    move: variationFromServer.move,
-    ply: variationFromServer.position.ply,
-    positionId: variationFromServer.position.positionId,
-    variations: variationFromServer.variations.map((variation) => convert(variation)),
+    move: variation.move,
+    ply: variation.position.ply,
+    positionId: variation.position.positionId,
+    variations: variation.variations.map((variation) => convert(variation)),
   };
 }
 
 export const variationReducer = createReducer(variationAdapter.getInitialState(), (builder) => {
   builder.addCase(pieceMoved, (state, action) => {
-    const variation = state.entities[action.payload.gameId];
+    const variation = state.entities[action.payload.gameCode];
 
     if (variation) {
-      variationAdapter.upsertOne(state, { ...variation, variations: [...variation.variations, convert(action.payload)] });
+      variationAdapter.upsertOne(state, {
+        ...variation,
+        variations: [...variation.variations, convert(action.payload.variation)],
+      });
     } else {
-      variationAdapter.addOne(state, { gameId: action.payload.gameId, variations: [convert(action.payload)] });
+      variationAdapter.addOne(state, { gameCode: action.payload.gameCode, variations: [convert(action.payload.variation)] });
     }
   });
 });
-
-/**
- * {index, move}
- *
- * 0 e4
- *   0 d5
- *     0 exd5
- *       0 Qxd5
- *         0 Nc3
- *           0 Qd8
- *           1 Qa5
- *     1 Nc3
- *       0 dxe4
- *       1 d4
- *
- * e4
- * d5
- * exd5
- *   Nc3
- *   dxe4
- *     d4
- * Qxd5
- * Nc3
- * Qd8
- *   Qa5
- */
 
 /**
  * @returns {Variation}
@@ -73,12 +51,12 @@ export const selectVariation = createSelector(
 
     /**
      * @param {import(".").RootState} _state
-     * @param {String} gameId
+     * @param {String} gameCode
      */
-    (_state, gameId) => gameId,
+    (_state, gameCode) => gameCode,
   ],
-  (variations, gameId) => {
-    const game = variations[gameId];
+  (variations, gameCode) => {
+    const game = variations[gameCode];
 
     if (game) {
       return game.variations;

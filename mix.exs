@@ -45,7 +45,9 @@ defmodule Blunderfest.MixProject do
       {:nanoid, "~> 2.0.5"},
       {:horde, "~> 0.8.7"},
       {:cors_plug, "~> 3.0", only: :dev},
-      {:typedstruct, "~> 0.5", runtime: false}
+      {:typedstruct, "~> 0.5", runtime: false},
+      {:libcluster, "~> 3.3"},
+      {:recase, "~> 0.5"}
     ]
   end
 

@@ -3,8 +3,8 @@ import { createAction } from "@reduxjs/toolkit";
 export const selectPosition = createAction(
   "selectPosition",
   /**
-   * @param {string} gameId
+   * @param {string} gameCode
    * @param {string} positionId
    */
-  (gameId, positionId) => ({ payload: { gameId, positionId } }),
+  (gameCode, positionId) => ({ payload: { gameCode, positionId } }),
 );

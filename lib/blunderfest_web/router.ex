@@ -23,7 +23,7 @@ defmodule BlunderfestWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :index
-    get "/:code", PageController, :join
+    get "/:room_code", PageController, :join
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

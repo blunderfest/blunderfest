@@ -3,33 +3,33 @@ import { gameAdded, pieceMoved } from "./actions";
 import { selectPosition } from "./actions/selectPosition";
 
 /**
- * @typedef {{gameId: String, tags: Tag[], currentPositionId: String}} Game
+ * @typedef {{gameCode: String, tags: Tag[], currentPositionId: String}} Game
  * @type {import("@reduxjs/toolkit").EntityAdapter<Game>}
  */
 const gameAdapter = createEntityAdapter({
-  selectId: (game) => game.gameId,
+  selectId: (game) => game.gameCode,
 });
 
 export const gameReducer = createReducer(gameAdapter.getInitialState(), (builder) => {
   builder
     .addCase(gameAdded, (state, action) => {
       gameAdapter.addOne(state, {
-        gameId: action.payload.gameId,
+        gameCode: action.payload.gameCode,
         currentPositionId: action.payload.position.positionId,
         tags: action.payload.tags,
       });
     })
     .addCase(pieceMoved, (state, action) => {
       gameAdapter.updateOne(state, {
-        id: action.payload.gameId,
+        id: action.payload.gameCode,
         changes: {
-          currentPositionId: action.payload.position.positionId,
+          currentPositionId: action.payload.variation.position.positionId,
         },
       });
     })
     .addCase(selectPosition, (state, action) => {
       gameAdapter.updateOne(state, {
-        id: action.payload.gameId,
+        id: action.payload.gameCode,
         changes: {
           currentPositionId: action.payload.positionId,
         },
