@@ -1,11 +1,11 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const resetPosition = createAction(
-  "resetPosition",
+  "position/reset",
   /**
    * @param {string} positionId
    */
   (positionId) => ({
-    payload: positionId,
+    payload: { positionId },
   }),
 );

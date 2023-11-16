@@ -46,7 +46,7 @@ export const positionReducer = createReducer(positionAdapter.getInitialState(), 
       });
     })
     .addCase(resetPosition, (state, action) => {
-      const positionId = action.payload;
+      const positionId = action.payload.positionId;
       const position = state.entities[positionId];
 
       if (position) {

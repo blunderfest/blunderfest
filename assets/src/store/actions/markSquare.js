@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const markSquare = createAction(
-  "markSquare",
+  "square/mark",
   /**
    * @param {string} positionId
    * @param {number} squareIndex

@@ -1,3 +1,3 @@
 import { createAction } from "@reduxjs/toolkit";
 
-export const disconnected = createAction("disconnected");
+export const disconnected = createAction("server/disconnected");

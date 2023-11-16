@@ -65,4 +65,7 @@
  * @typedef {{
  *   move: Move
  * } & GameNode} VariationFromServer
+ *
+ * @typedef { {metas: {user_id: string, phx_ref: string}[]} } Presence
+ *
  */

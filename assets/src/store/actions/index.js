@@ -1,4 +1,5 @@
 export * from "./connected";
+export * from "./deselectSquare";
 export * from "./disconnected";
 export * from "./gameAdded";
 export * from "./gameSwitched";

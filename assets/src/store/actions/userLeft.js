@@ -1,9 +1,9 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const userLeft = createAction(
-  "userLeft",
+  "user/left",
   /**
    * @param {string} userId
    */
-  (userId) => ({ payload: userId }),
+  (userId) => ({ payload: { userId } }),
 );

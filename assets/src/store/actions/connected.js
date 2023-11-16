@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const connected = createAction(
-  "connected",
+  "server/connected",
   /**
    * @param {string} userId
    * @param {string} roomCode

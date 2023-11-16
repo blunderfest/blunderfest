@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const movePiece = createAction(
-  "movePiece",
+  "piece/move",
   /**
    * @param {string} gameCode
    * @param {string} positionId

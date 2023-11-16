@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const gameAdded = createAction(
-  "gameAdded",
+  "game/added",
   /**
    * @param {GameFromServer} game
    */

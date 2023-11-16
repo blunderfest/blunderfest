@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
-export const selectSquare = createAction(
-  "square/select",
+export const deselectSquare = createAction(
+  "square/deselect",
   /**
    * @param {string} positionId
    * @param {number} squareIndex

@@ -25,33 +25,25 @@ defmodule BlunderfestWeb.RoomChannel do
     {:reply, {:ok, payload}, socket}
   end
 
-  # It is also common to receive messages from the client and
-  # broadcast to everyone in the current topic (room:lobby).
   @impl true
   def handle_in(
-        "shout",
+        "move/piece",
         %{
-          "type" => "movePiece",
-          "payload" => %{
-            "move" => move,
-            "gameCode" => game_code,
-            "positionId" => positionId
-          }
+          "move" => move,
+          "gameCode" => game_code,
+          "positionId" => positionId
         },
         socket
       ) do
-    broadcast(socket, "shout", %{
-      "type" => "pieceMoved",
-      "payload" => %{
-        "gameCode" => game_code,
-        "position" => %{
-          "positionId" => positionId <> "_new",
-          "fen" => "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
-          "ply" => 12
-        },
-        "move" => move,
-        "variations" => []
-      }
+    broadcast(socket, "piece/moved", %{
+      "gameCode" => game_code,
+      "position" => %{
+        "positionId" => positionId <> "_new",
+        "fen" => "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+        "ply" => 12
+      },
+      "move" => move,
+      "variations" => []
     })
 
     {:noreply, socket}
@@ -60,8 +52,13 @@ defmodule BlunderfestWeb.RoomChannel do
   # It is also common to receive messages from the client and
   # broadcast to everyone in the current topic (room:lobby).
   @impl true
-  def handle_in("shout", payload, socket) do
-    broadcast(socket, "shout", payload)
+  def handle_in(
+        event,
+        payload,
+        socket
+      ) do
+    socket |> broadcast(event, payload)
+
     {:noreply, socket}
   end
 
@@ -77,17 +74,14 @@ defmodule BlunderfestWeb.RoomChannel do
     room = RoomServer.get_room(socket.assigns.room_code)
 
     room.game_codes
-    |> Enum.each(fn game_code -> GameServer.start_link(game_code) end)
-
-    room.game_codes
     |> Enum.map(fn game_code -> GameServer.get_game(game_code) end)
-    |> Enum.map(fn game ->
-      %{
-        type: "gameAdded",
-        payload: game |> Map.from_struct() |> Recase.Enumerable.convert_keys(&Recase.to_camel/1)
-      }
+    |> Enum.each(fn game ->
+      socket
+      |> push(
+        "game/added",
+        game |> Map.from_struct() |> Recase.Enumerable.convert_keys(&Recase.to_camel/1)
+      )
     end)
-    |> Enum.each(fn event -> push(socket, "shout", event) end)
 
     {:noreply, socket}
   end

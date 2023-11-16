@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const selectPosition = createAction(
-  "selectPosition",
+  "position/select",
   /**
    * @param {string} gameCode
    * @param {string} positionId

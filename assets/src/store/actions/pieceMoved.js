@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const pieceMoved = createAction(
-  "pieceMoved",
+  "piece/moved",
   /**
    * @param {string} gameCode
    * @param {VariationFromServer} variation

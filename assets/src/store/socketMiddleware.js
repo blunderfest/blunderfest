@@ -1,5 +1,5 @@
-import { connected, disconnected, userJoined, userLeft } from "@/store/actions";
-import { Presence, Socket } from "phoenix";
+import { connected, disconnected } from "@/store/actions";
+import { Socket } from "phoenix";
 
 /**
  * @template T
@@ -17,7 +17,7 @@ function fromServer(action) {
 /**
  * @type {import("@reduxjs/toolkit").Middleware}
  */
-export const socketMiddleware = ({ dispatch, getState }) => {
+export const socketMiddleware = ({ dispatch }) => {
   const socket = new Socket("/socket");
   const roomCode = document.querySelector('meta[name="room-code"]')?.getAttribute("content");
 
@@ -26,25 +26,30 @@ export const socketMiddleware = ({ dispatch, getState }) => {
   }
 
   const channel = socket.channel(`room:${roomCode}`);
-  const presence = new Presence(channel);
 
   socket.connect();
 
-  presence.onJoin((userId) => {
-    const currentUserId = getState().connectivity.userId;
+  socket.onMessage(
+    /**
+     * @param {{event: string, payload: any} | any} message
+     */
+    (message) => {
+      const { event, payload } = message;
 
-    if (userId && currentUserId !== userId) {
-      dispatch(fromServer(userJoined(userId)));
-    }
-  });
+      if (event === "phx_reply") {
+        return;
+      }
 
-  presence.onLeave((userId) => {
-    const currentUserId = getState().connectivity.userId;
-
-    if (userId && currentUserId !== userId) {
-      dispatch(fromServer(userLeft(userId)));
-    }
-  });
+      if (event && payload) {
+        dispatch(
+          fromServer({
+            type: event,
+            payload: payload,
+          }),
+        );
+      }
+    },
+  );
 
   channel
     .join()
@@ -55,16 +60,12 @@ export const socketMiddleware = ({ dispatch, getState }) => {
       dispatch(fromServer(disconnected()));
     });
 
-  channel.on("shout", (response) => {
-    dispatch(fromServer(response));
-  });
-
   return (next) => {
     return async (action) => {
       if (action.meta && action.meta.fromServer) {
         next(action);
       } else {
-        channel.push("shout", action);
+        channel.push(action.type, action.payload);
       }
     };
   };

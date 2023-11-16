@@ -23,7 +23,7 @@ export const markReducer = createReducer(initialState, (builder) => {
       }
     })
     .addCase(resetPosition, (state, action) => {
-      state.byPositionId[action.payload] = {};
+      state.byPositionId[action.payload.positionId] = {};
     })
     .addCase(gameAdded, (state, action) => {
       const positionId = action.payload.position.positionId;
