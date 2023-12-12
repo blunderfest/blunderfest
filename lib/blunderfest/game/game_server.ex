@@ -15,14 +15,16 @@ defmodule Blunderfest.Game.GameServer do
     GenServer.start_link(__MODULE__, game_code, name: via_tuple(game_code))
   end
 
-  defp via_tuple(game_code) do
-    {:via, Horde.Registry, {Blunderfest.Registry, game_code}}
-  end
+  def get_game(game_code), do: call_by_name(game_code, :get_game)
 
-  def get_game(game_code) do
+  defp call_by_name(game_code, command) do
     game_code
     |> via_tuple()
-    |> GenServer.call(:get_game)
+    |> GenServer.call(command)
+  end
+
+  defp via_tuple(game_code) do
+    {:via, Horde.Registry, {Blunderfest.Registry, game_code}}
   end
 
   @impl true

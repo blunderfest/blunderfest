@@ -17,16 +17,8 @@ defmodule Blunderfest.Game.RoomServer do
     GenServer.start_link(__MODULE__, room, name: via_tuple(room_code))
   end
 
-  defp via_tuple(room_code) do
-    {:via, Horde.Registry, {Blunderfest.Registry, room_code}}
-  end
-
   @spec get_room(Room.room_code()) :: Room.t()
-  def get_room(room_code) do
-    room_code
-    |> via_tuple()
-    |> GenServer.call(:get_room)
-  end
+  def get_room(room_code), do: room_code |> call_by_name(:get_room)
 
   @spec server_found?(Room.room_code()) :: boolean()
   def server_found?(room_code) do
@@ -34,6 +26,16 @@ defmodule Blunderfest.Game.RoomServer do
       [] -> false
       [{pid, _} | _] when is_pid(pid) -> true
     end
+  end
+
+  defp call_by_name(room_code, command) do
+    room_code
+    |> via_tuple()
+    |> GenServer.call(command)
+  end
+
+  defp via_tuple(room_code) do
+    {:via, Horde.Registry, {Blunderfest.Registry, room_code}}
   end
 
   @impl true

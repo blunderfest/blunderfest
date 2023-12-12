@@ -1,6 +1,8 @@
 defmodule BlunderfestWeb.PageController do
   use BlunderfestWeb, :controller
 
+  alias BlunderfestWeb.Presence
+  alias Blunderfest.Game.IdGenerator
   alias Blunderfest.Game.RoomServer
   alias Nanoid
 

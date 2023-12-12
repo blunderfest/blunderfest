@@ -1,5 +1,5 @@
 import { createReducer } from "@reduxjs/toolkit";
-import { gameAdded, gameSwitched, userJoined, userLeft } from "./actions";
+import { gameAdded, gameSwitched } from "./actions";
 import { presenceDiff } from "./actions/presenceDiff";
 import { presenceState } from "./actions/presenceState";
 
@@ -24,17 +24,12 @@ export const roomReducer = createReducer(initialState, (builder) => {
       state.users = userIds;
     })
     .addCase(presenceDiff, (state, action) => {
-      const joined = Object.keys(action.payload.joins);
-      const left = Object.keys(action.payload.leaves);
+      const users = new Set(state.users);
 
-      joined.forEach((userId) => state.users.push(userId));
-      left.forEach((userId) => state.users.filter((user) => user != userId));
-    })
-    .addCase(userJoined, (state, action) => {
-      state.users.push(action.payload);
-    })
-    .addCase(userLeft, (state, action) => {
-      state.users = state.users.filter((user) => user != action.payload.userId);
+      Object.keys(action.payload.joins).forEach((joined) => users.add(joined));
+      Object.keys(action.payload.leaves).forEach((joined) => users.delete(joined));
+
+      state.users = [...users];
     })
     .addCase(gameSwitched, (state, action) => {
       state.activeGame = action.payload.gameCode;

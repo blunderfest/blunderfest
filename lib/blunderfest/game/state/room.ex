@@ -4,7 +4,7 @@ defmodule Blunderfest.Game.State.Room do
   alias Blunderfest.Game.State.Game
   alias Blunderfest.Game.IdGenerator
 
-  @type room_code :: String.t()
+  @type room_code :: IdGenerator.id()
 
   @derive {Jason.Encoder, []}
   typedstruct do
