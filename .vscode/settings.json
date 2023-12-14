@@ -13,37 +13,30 @@
   },
   "editor.formatOnPaste": true,
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true
+    "source.organizeImports": "explicit"
   },
-  "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "prettier.prettierPath": "./assets/node_modules/prettier",
   "scss.validate": false,
   "editor.quickSuggestions": {
     "strings": true
   },
   "editor.autoClosingQuotes": "always",
-  "autoBarrel.defaultLanguage": "JavaScript",
-  "autoBarrel.quoteStyle": "Double",
-  "autoBarrel.disableRecursiveBarrelling": true,
-  "panda.color-hints.color-preview.enabled": true,
   "eslint.debug": true,
-  "eslint.workingDirectories": ["assets"],
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
+  "eslint.workingDirectories": [
+    "assets"
+  ],
+  "elixirLS.projectDir": "blunderfest",
   "javascript.suggest.autoImports": true,
-  "cssvar.files": ["./assets/node_modules/open-props/open-props.min.css"],
-
-  // Do not ignore node_modules css files, which is ignored by default
-  "cssvar.ignore": ["./_build", "./priv/static"],
-
-  // add support for autocomplete in JS or JS like files
-  "cssvar.extensions": ["css", "postcss", "jsx", "tsx"],
+  "cssVariables.lookupFiles": [
+    "**/*.css",
+    "**/*.html.heex",
+    "**/*.ex",
+    "./blunderfest/assets/node_modules/open-props/open-props.min.css"
+  ],
+  "cssVariables.blacklistFolders": [
+    "**/.git",
+    "./blunderfest/_build",
+    "./blunderfest/priv/static"
+  ],
   "typescript.tsserver.log": "verbose",
-  "panda.debug.enabled": true,
-  "panda.diagnostics.enabled": true
 }

@@ -1,6 +1,8 @@
 {
   "name": "Blunderfest",
-  "dockerComposeFile": ["docker-compose.yml"],
+  "dockerComposeFile": [
+    "docker-compose.yml"
+  ],
   "workspaceFolder": "/workspace/blunderfest",
   "service": "blunderfest",
   // Configure tool-specific properties.
@@ -9,29 +11,20 @@
     "vscode": {
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
-        "chakra-ui.panda-css-vscode@0.3.16978258",
-        "dbaeumer.vscode-eslint",
-        "deque-systems.vscode-axe-linter",
-        "esbenp.prettier-vscode",
         "github.vscode-github-actions",
         "jakebecker.elixir-ls",
-        "ko-dev.vscode-open-files-in-directory",
-        "mikehanson.auto-barrel",
-        "ms-vscode.vscode-typescript-next",
-        "phoenisx.cssvar",
         "phoenixframework.phoenix",
         "RoyalMist.vscode-eex-format",
-        "wix.vscode-import-cost"
+        "vunguyentuan.vscode-css-variables"
       ]
     }
   },
-
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  "forwardPorts": [4000],
-
+  "forwardPorts": [
+    4000
+  ],
   // Use 'postCreateCommand' to run commands after the container is created.
   // "postCreateCommand": "mix deps.get"
-
   // Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
   "features": {
