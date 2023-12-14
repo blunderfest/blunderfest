@@ -21,10 +21,13 @@ ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 
 FROM ${BUILDER_IMAGE} as builder
 
+
 # install build dependencies
 RUN apt-get update -y && apt-get install -y build-essential git curl gnupg2 \
-  && curl -fsSL https://deb.nodesource.com/setup_18.x | sh \
-  && apt-get install -y nodejs \
+  && curl -SLO https://deb.nodesource.com/nsolid_setup_deb.sh \
+  && chmod 500 nsolid_setup_deb.sh \
+  && ./nsolid_setup_deb.sh 21 \
+  && apt-get install nodejs -y \
   && npm install -g yarn \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
@@ -56,6 +59,7 @@ COPY lib lib
 COPY assets assets
 
 # compile assets
+RUN mix setup
 RUN mix assets.deploy
 
 # Compile the release

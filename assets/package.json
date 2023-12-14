@@ -1,8 +1,8 @@
 {
   "scripts": {
     "deploy": "yarn deploy:js && yarn deploy:css",
-    "deploy:js": "esbuild ./js/app.js --bundle --minify --sourcemap --outdir=../priv/static/js",
-    "deploy:css": "postcss ./css/app.css --dir=../priv/static/css"
+    "deploy:js": "yarn esbuild ./js/app.js --bundle --minify --sourcemap --outdir=../priv/static/js",
+    "deploy:css": "yarn postcss ./css/app.css --dir=../priv/static/css"
   },
   "dependencies": {
     "open-props": "^1.6.16",
