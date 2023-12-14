@@ -35,7 +35,3 @@ blunderfest-*.tar
 npm-debug.log
 /assets/node_modules/
 
-*.beam
-/config/*.secret.exs
-.elixir_ls/
-styled-system

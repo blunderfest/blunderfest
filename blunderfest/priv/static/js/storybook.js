@@ -1,3 +1,0 @@
-(() => {
-})();
-//# sourceMappingURL=storybook.js.map

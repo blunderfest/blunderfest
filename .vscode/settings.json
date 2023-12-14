@@ -25,18 +25,17 @@
   "eslint.workingDirectories": [
     "assets"
   ],
-  "elixirLS.projectDir": "blunderfest",
   "javascript.suggest.autoImports": true,
   "cssVariables.lookupFiles": [
     "**/*.css",
     "**/*.html.heex",
     "**/*.ex",
-    "./blunderfest/assets/node_modules/open-props/open-props.min.css"
+    "./assets/node_modules/open-props/open-props.min.css"
   ],
   "cssVariables.blacklistFolders": [
     "**/.git",
-    "./blunderfest/_build",
-    "./blunderfest/priv/static"
+    "./_build",
+    "./priv/static"
   ],
   "typescript.tsserver.log": "verbose",
 }
