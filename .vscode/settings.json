@@ -9,7 +9,7 @@
   },
   "[phoenix-heex]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "RoyalMist.vscode-eex-format"
+    "editor.defaultFormatter": "JakeBecker.elixir-ls"
   },
   "editor.formatOnPaste": true,
   "editor.formatOnSave": true,

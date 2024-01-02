@@ -1,26 +1,26 @@
-    .flex {
-        display: flex;
-        gap: var(--size-3);
-    }
+.flex {
+  display: flex;
+  gap: var(--size-3);
+}
 
-    .grid {
-        display: grid;
-        gap: var(--size-3);
-    }
+.grid {
+  display: grid;
+  gap: var(--size-3);
+}
 
-    .square {
-        aspect-ratio: var(--ratio-square);
-    }
+.square {
+  aspect-ratio: var(--ratio-square);
+}
 
-    /* https: //blog.logrocket.com/design-accessibility-css-visually-hidden-class/ */
-    .visually-hidden:not(:focus):not(:active) {
-        border: 0;
-        clip: rect(0 0 0 0);
-        height: auto;
-        margin: 0;
-        overflow: hidden;
-        padding: 0;
-        position: absolute;
-        width: 1px;
-        white-space: nowrap;
-    }
+/* https: //blog.logrocket.com/design-accessibility-css-visually-hidden-class/ */
+.visually-hidden:not(:focus):not(:active) {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: auto;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  white-space: nowrap;
+}

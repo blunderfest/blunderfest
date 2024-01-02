@@ -1,6 +1,17 @@
 defmodule BlunderfestWeb.CoreComponents do
   use Phoenix.Component
 
+  attr(:color, :string, required: true, values: ~w(dark light))
+  attr(:rest, :global)
+
+  def square(assigns) do
+    ~H"""
+    <div class={"square #{@color}"} {@rest}>
+      <%= @color %>
+    </div>
+    """
+  end
+
   def theme_toggle(assigns) do
     ~H"""
     <button

@@ -15,7 +15,8 @@
         "jakebecker.elixir-ls",
         "phoenixframework.phoenix",
         "RoyalMist.vscode-eex-format",
-        "vunguyentuan.vscode-css-variables"
+        "vunguyentuan.vscode-css-variables",
+        "esbenp.prettier-vscode"
       ]
     }
   },

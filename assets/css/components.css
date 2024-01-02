@@ -1,3 +1,11 @@
-    .button {
-        background-color: var(--surface-2);
-    }
+.button {
+  background-color: var(--surface-2);
+}
+
+.square.dark {
+  background-color: hsl(var(--square-dark));
+}
+
+.square.light {
+  background-color: hsl(var(--square-light));
+}
