@@ -1,6 +1,4 @@
 defmodule BlunderfestWeb do
-  use Boundary, deps: [Blunderfest], exports: [Endpoint]
-
   @moduledoc """
   The entrypoint for defining your web interface, such
   as controllers, components, channels, and so on.
@@ -53,8 +51,7 @@ defmodule BlunderfestWeb do
 
   def live_view do
     quote do
-      use Phoenix.LiveView,
-        layout: {BlunderfestWeb.Layouts, :app}
+      use Phoenix.LiveView
 
       unquote(html_helpers())
     end

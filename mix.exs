@@ -8,7 +8,7 @@ defmodule Blunderfest.MixProject do
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      compilers: [:boundary] ++ Mix.compilers(),
+      compilers: Mix.compilers(),
       aliases: aliases(),
       deps: deps()
     ]
@@ -26,6 +26,8 @@ defmodule Blunderfest.MixProject do
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:dev), do: ["lib", "test/support"]
+
   defp elixirc_paths(_), do: ["lib"]
 
   # Specifies your project dependencies.
@@ -34,7 +36,7 @@ defmodule Blunderfest.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.7.10"},
-      {:phoenix_html, "~> 3.3"},
+      {:phoenix_html, "~> 4.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 0.20.1"},
       {:floki, ">= 0.30.0", only: :test},
@@ -47,7 +49,7 @@ defmodule Blunderfest.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:plug_cowboy, "~> 2.5"},
-      {:boundary, "~> 0.10", runtime: false}
+      {:nanoid, "~> 2.1"}
     ]
   end
 

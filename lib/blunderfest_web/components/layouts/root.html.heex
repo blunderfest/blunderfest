@@ -8,10 +8,13 @@
       <%= assigns[:page_title] || "Blunderfest" %>
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/css/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/js/app.js"}></script>
+    <script defer phx-track-static type="text/javascript" src={~p"/js/app.js"}>
+    </script>
   </head>
   <body>
     <.theme_toggle />
-    <%= @inner_content %>
+    <main>
+      <%= @inner_content %>
+    </main>
   </body>
 </html>

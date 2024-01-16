@@ -1,6 +1,4 @@
 defmodule Blunderfest.Application do
-  use Boundary, top_level?: true, deps: [Blunderfest, BlunderfestWeb]
-
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
   @moduledoc false
@@ -13,6 +11,8 @@ defmodule Blunderfest.Application do
       BlunderfestWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
+      {DynamicSupervisor, name: Blunderfest.RoomSupervisor, strategy: :one_for_one},
+      {Registry, keys: :unique, name: Blunderfest.RoomRegistry},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Blunderfest.Finch},
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)

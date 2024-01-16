@@ -1,4 +1,6 @@
 <h1>Home</h1>
-<a href={~p"/design_system"}>Design system</a>
 <button class="blue">Blue button?</button>
 <.my_first_organism title="My first title" text="The text" />
+<%= if @local && @local.room_code do %>
+  <%= @local.room_code %>
+<% end %>

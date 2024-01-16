@@ -17,8 +17,8 @@ defmodule BlunderfestWeb.Router do
   scope "/", BlunderfestWeb do
     pipe_through(:browser)
 
-    get("/", PageController, :home)
-    get("/design_system", PageController, :design_system)
+    live "/:room_code", BlunderfestLive
+    get("/", BlunderfestEntry, :index)
   end
 
   # Other scopes may use custom stacks.

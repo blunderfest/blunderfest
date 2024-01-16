@@ -7,6 +7,10 @@
   box-sizing: border-box;
 }
 
+* {
+  min-width: 0;
+}
+
 /* Prevent font size inflation */
 html {
   -moz-text-size-adjust: none;

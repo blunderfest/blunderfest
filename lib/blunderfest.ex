@@ -1,6 +1,4 @@
 defmodule Blunderfest do
-  use Boundary, deps: [], exports: []
-
   @moduledoc """
   Blunderfest keeps the contexts that define your domain
   and business logic.
