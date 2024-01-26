@@ -1,6 +1,13 @@
 <h1>Home</h1>
 <button class="blue">Blue button?</button>
 <.my_first_organism title="My first title" text="The text" />
-<%= if @local && @local.room_code do %>
+
+<h1 :if={@local && @local.room_code}>
   <%= @local.room_code %>
-<% end %>
+</h1>
+
+<ul>
+  <li :for={user <- @users}>
+    <%= user.user_id %>
+  </li>
+</ul>
