@@ -36,6 +36,11 @@ defmodule Blunderfest.Core.Room do
           [Access.key!(:games_by_code), Access.key!(game_code)],
           &Game.handle_event(event, params, &1)
         )
+
+      _ ->
+        IO.puts("Unknown event #{event}")
+
+        room
     end
   end
 end

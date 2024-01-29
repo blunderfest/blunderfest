@@ -5,7 +5,7 @@ defmodule Blunderfest.Core.State.Game do
   @type t() :: %__MODULE__{
           game_code: String.t(),
           squares: list(Square.t()),
-          position: Position.t(),
+          position: String.t(),
           count: integer()
         }
 
@@ -17,7 +17,7 @@ defmodule Blunderfest.Core.State.Game do
       # 0..63 |> Enum.map(fn square_index -> Square.new(square_index) end),
       squares: [],
       # Position.new(),
-      position: nil,
+      position: "x",
       count: 0
     }
 
@@ -28,6 +28,9 @@ defmodule Blunderfest.Core.State.Game do
     case event do
       ["game", "increment"] ->
         update_in(game.count, &(&1 + 1))
+
+      _ ->
+        IO.inspect("Unknown game event #{event}")
     end
   end
 end

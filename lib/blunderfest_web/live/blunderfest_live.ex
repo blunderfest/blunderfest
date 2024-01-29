@@ -3,7 +3,7 @@ defmodule BlunderfestWeb.BlunderfestLive do
 
   alias Blunderfest.RoomSupervisor
   alias Blunderfest.Core.RoomServer
-  alias BlunderfestWeb.Presence
+  alias Blunderfest.Presence
 
   def mount(
         %{"room_code" => room_code} = _params,
@@ -12,8 +12,12 @@ defmodule BlunderfestWeb.BlunderfestLive do
       ) do
     if connected?(socket) do
       case RoomServer.join(room_code, user_id) do
-        {:error, :room_not_found} -> {:ok, socket |> push_navigate(to: "/")}
-        {:ok, _room} -> {:ok, socket |> assign_room(room_code) |> assign(:users, [])}
+        {:error, :room_not_found} ->
+          {:ok, socket |> push_navigate(to: "/")}
+
+        {:ok, room} ->
+          {:ok,
+           socket |> assign(:room_code, room_code) |> assign(:room, room) |> assign(:users, [])}
       end
     else
       {:ok, socket |> assign(:room, nil) |> assign(:users, [])}
@@ -41,14 +45,8 @@ defmodule BlunderfestWeb.BlunderfestLive do
   def handle_event(event, params, socket), do: do_handle_event(event, params, socket)
 
   defp do_handle_event(raw_event, params, %{assigns: %{room: %{room_code: room_code}}} = socket) do
-    :ok = RoomServer.handle_event(room_code, raw_event, params)
-    {:noreply, socket}
-  end
-
-  defp assign_room(socket, room_code) do
-    socket
-    |> assign(:room_code, room_code)
-    |> assign_room()
+    {:ok, room} = RoomServer.handle_event(room_code, raw_event, params)
+    {:noreply, socket |> assign(:room, room)}
   end
 
   defp assign_room(%{assigns: %{room_code: room_code}} = socket) do

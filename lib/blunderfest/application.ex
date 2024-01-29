@@ -19,7 +19,7 @@ defmodule Blunderfest.Application do
       # {Blunderfest.Worker, arg},
       # Start to serve requests, typically the last entry
       BlunderfestWeb.Endpoint,
-      BlunderfestWeb.Presence
+      Blunderfest.Presence
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

@@ -1,5 +1,4 @@
 defmodule Blunderfest.Core.RoomServer do
-  alias BlunderfestWeb.Presence
   alias Blunderfest.Core.Room
 
   use GenServer
@@ -11,38 +10,33 @@ defmodule Blunderfest.Core.RoomServer do
 
   @spec join(String.t(), String.t()) :: {:error, :room_not_found} | {:ok, String.t()}
   def join(room_code, user_id) do
-    room_code
-    |> topic()
-    |> subscribe()
-    |> track(user_id)
+    Blunderfest.PubSub.subscribe(room_code)
+    Blunderfest.PubSub.track(room_code, user_id)
 
-    call_by_room_code(room_code, :join)
-    |> case do
+    room = call_by_room_code(room_code, :join)
+
+    case room do
       {:error, _} -> {:error, :room_not_found}
-      :ok -> {:ok, room_code}
+      {:ok, room} -> {:ok, room}
     end
   end
 
   def get(room_code) do
-    room_code
-    |> call_by_room_code(:get)
+    {:ok, room} =
+      room_code
+      |> call_by_room_code(:get)
+
+    room
   end
 
   def handle_event(room_code, raw_event, params) do
-    room_code
-    |> cast_by_room_code({raw_event, params})
+    result =
+      room_code
+      |> call_by_room_code({raw_event, params})
 
-    Phoenix.PubSub.broadcast(Blunderfest.PubSub, topic(room_code), :update)
-  end
+    Blunderfest.PubSub.broadcast_from(room_code, :update)
 
-  defp subscribe(topic) do
-    Phoenix.PubSub.subscribe(Blunderfest.PubSub, topic)
-    topic
-  end
-
-  defp track(topic, user_id) do
-    Presence.track_user(topic, user_id)
-    topic
+    result
   end
 
   defp call_by_room_code(room_code, message) when is_binary(room_code) do
@@ -51,41 +45,33 @@ defmodule Blunderfest.Core.RoomServer do
     |> GenServer.call(message)
   end
 
-  defp cast_by_room_code(room_code, message) do
-    room_code
-    |> via_tuple()
-    |> GenServer.cast(message)
-  end
-
   defp via_tuple(room_code), do: {:via, Registry, {Blunderfest.RoomRegistry, room_code}}
-
-  defp topic(room_code), do: "room:#{room_code}"
 
   @impl true
   def init(room_code), do: {:ok, Room.new(room_code), @timeout}
 
   @impl true
   def handle_call(:join, _, state) do
-    {:reply, :ok, state, @timeout}
+    {:reply, {:ok, state}, state, @timeout}
   end
 
   @impl true
   def handle_call(:get, _, state) do
-    {:reply, state, state, @timeout}
+    {:reply, {:ok, state}, state, @timeout}
   end
 
   @impl true
-  def handle_cast({event, params}, state) do
-    {:noreply,
-     event
-     |> normalize_event()
-     |> Room.handle_event(params, state)}
+  def handle_call({event, params}, _from, state) do
+    new_state =
+      event
+      |> String.split("/")
+      |> Room.handle_event(params, state)
+
+    {:reply, {:ok, new_state}, new_state, @timeout}
   end
 
   @impl true
   def handle_info(:timeout, state) do
     {:stop, :normal, state}
   end
-
-  defp normalize_event(event), do: event |> String.split("/")
 end

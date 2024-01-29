@@ -3,6 +3,7 @@ defmodule Blunderfest.RoomSupervisor do
 
   alias Blunderfest.Core.RoomServer
 
+  @spec create() :: {:error, any()} | {:ok, String.t()}
   def create() do
     room_code = Nanoid.generate()
 

@@ -2,8 +2,8 @@
 <button class="blue">Blue button?</button>
 <.my_first_organism title="My first title" text="The text" />
 
-<h1 :if={@room && @room.room_code}>
-  <%= @room.room_code %>
+<h1 :if={@room && @room_code}>
+  <%= @room_code %>
 </h1>
 
 <h2>Users</h2>
@@ -24,5 +24,6 @@
   >
     <%= game_code %>
     <%= @room.games_by_code[game_code].count %>
+    <button phx-click="game/increment" phx-value-game_code={game_code}>Increment</button>
   </li>
 </ul>
