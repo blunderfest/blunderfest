@@ -9,3 +9,7 @@
 .square.light {
   background-color: hsl(var(--square-light));
 }
+
+.active {
+  font-weight: bolder;
+}

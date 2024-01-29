@@ -2,12 +2,27 @@
 <button class="blue">Blue button?</button>
 <.my_first_organism title="My first title" text="The text" />
 
-<h1 :if={@local && @local.room_code}>
-  <%= @local.room_code %>
+<h1 :if={@room && @room.room_code}>
+  <%= @room.room_code %>
 </h1>
 
+<h2>Users</h2>
 <ul>
   <li :for={user <- @users}>
     <%= user.user_id %>
+  </li>
+</ul>
+
+<h2>Games</h2>
+<h3 :if={@room && @room.active_game}><%= @room.active_game %></h3>
+<ul :if={@room && @room.games}>
+  <li
+    :for={game_code <- @room.games}
+    class={classnames(active: game_code == @room.active_game)}
+    phx-click="room/activate_game"
+    phx-value-game_code={game_code}
+  >
+    <%= game_code %>
+    <%= @room.games_by_code[game_code].count %>
   </li>
 </ul>

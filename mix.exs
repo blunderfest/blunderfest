@@ -49,7 +49,8 @@ defmodule Blunderfest.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:plug_cowboy, "~> 2.5"},
-      {:nanoid, "~> 2.1"}
+      {:nanoid, "~> 2.1"},
+      {:classnames, "~> 0.1.0"}
     ]
   end
 

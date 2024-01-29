@@ -86,6 +86,8 @@ defmodule BlunderfestWeb do
       import BlunderfestWeb.CoreComponents
       import BlunderfestWeb.Gettext
 
+      use Classnames
+
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
 

@@ -3,7 +3,17 @@ defmodule Blunderfest.RoomSupervisor do
 
   alias Blunderfest.Core.RoomServer
 
-  def start_child(room_code) do
+  def create() do
+    room_code = Nanoid.generate()
+
+    case start_child(room_code) do
+      {:ok, _} -> {:ok, room_code}
+      {:error, {:already_started, _pid}} -> {:ok, room_code}
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  defp start_child(room_code) do
     child_spec = %{
       id: RoomServer,
       start: {RoomServer, :start_link, [room_code]},

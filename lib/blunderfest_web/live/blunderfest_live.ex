@@ -2,9 +2,8 @@ defmodule BlunderfestWeb.BlunderfestLive do
   use BlunderfestWeb, :live_view
 
   alias Blunderfest.RoomSupervisor
-  alias BlunderfestWeb.Presence
   alias Blunderfest.Core.RoomServer
-  alias Blunderfest.Core.State.Game.LocalState
+  alias BlunderfestWeb.Presence
 
   def mount(
         %{"room_code" => room_code} = _params,
@@ -13,38 +12,47 @@ defmodule BlunderfestWeb.BlunderfestLive do
       ) do
     if connected?(socket) do
       case RoomServer.join(room_code, user_id) do
-        {:error, :room_not_found} -> {:ok, push_navigate(socket, to: "/")}
-        state -> {:ok, socket |> assign(:local, state) |> assign(:users, [])}
+        {:error, :room_not_found} -> {:ok, socket |> push_navigate(to: "/")}
+        {:ok, _room} -> {:ok, socket |> assign_room(room_code) |> assign(:users, [])}
       end
     else
-      {:ok, socket |> assign(:local, nil) |> assign(:users, [])}
+      {:ok, socket |> assign(:room, nil) |> assign(:users, [])}
     end
   end
 
   def mount(_params, _session, socket) do
-    room_code = Nanoid.generate()
-    RoomSupervisor.start_child(room_code)
-
-    {:ok, socket |> push_navigate(to: ~p"/#{room_code}")}
+    case RoomSupervisor.create() do
+      {:ok, room_code} -> {:ok, socket |> push_navigate(to: ~p"/#{room_code}")}
+      {:error, error} -> raise error
+    end
   end
 
   def handle_info(%{event: "presence_diff", topic: topic}, socket) do
     {:noreply, socket |> assign(:users, Presence.list_users(topic))}
   end
 
+  def handle_info(:update, socket) do
+    {:noreply, socket |> assign_room()}
+  end
+
   # https://www.youtube.com/watch?v=aErs_DIWxl8
-  def handle_info({event, params}, socket), do: do_handle_event(event, params, socket)
+  def handle_info(event, params, socket), do: do_handle_event(event, params, socket)
 
   def handle_event(event, params, socket), do: do_handle_event(event, params, socket)
 
-  defp do_handle_event(raw_event, params, socket) do
-    {:noreply,
-     socket
-     |> assign(
-       :local,
-       raw_event |> normalize_event() |> LocalState.handle_event(params, socket.assigns)
-     )}
+  defp do_handle_event(raw_event, params, %{assigns: %{room: %{room_code: room_code}}} = socket) do
+    :ok = RoomServer.handle_event(room_code, raw_event, params)
+    {:noreply, socket}
   end
 
-  defp normalize_event(event), do: event |> String.split("/")
+  defp assign_room(socket, room_code) do
+    socket
+    |> assign(:room_code, room_code)
+    |> assign_room()
+  end
+
+  defp assign_room(%{assigns: %{room_code: room_code}} = socket) do
+    socket
+    |> assign(:room, RoomServer.get(room_code))
+  end
 end
