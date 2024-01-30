@@ -10,15 +10,21 @@ defmodule Blunderfest.Core.RoomServer do
 
   @spec join(String.t(), String.t()) :: {:error, :room_not_found} | {:ok, String.t()}
   def join(room_code, user_id) do
-    Blunderfest.PubSub.subscribe(room_code)
-    Blunderfest.PubSub.track(room_code, user_id)
+    if exists?(room_code) do
+      Blunderfest.PubSub.subscribe(room_code)
+      Blunderfest.PubSub.track(room_code, user_id)
 
-    room = call_by_room_code(room_code, :join)
-
-    case room do
-      {:error, _} -> {:error, :room_not_found}
-      {:ok, room} -> {:ok, room}
+      call_by_room_code(room_code, :join)
+    else
+      {:error, :room_not_found}
     end
+  end
+
+  def exists?(room_code) do
+    !(room_code
+      |> via_tuple()
+      |> Horde.Registry.whereis()
+      |> Enum.empty?())
   end
 
   def get(room_code) do

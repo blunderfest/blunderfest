@@ -18,7 +18,7 @@
 <ul :if={@room && @room.games}>
   <li
     :for={game_code <- @room.games}
-    class={classnames(active: game_code == @room.active_game)}
+    class={[game_code == @room.active_game && "active"]}
     phx-click="room/activate_game"
     phx-value-game_code={game_code}
   >

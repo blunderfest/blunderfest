@@ -10,6 +10,8 @@ kill_signal = "SIGTERM"
 [env]
   PHX_HOST = "blunderfest.fly.dev"
   PORT = "8080"
+  RELEASE_COOKIE = "a_2oMIOUZGVaXp1sCHzTLIosfR674ifuxhejKCMyzcnVY-SR6OKjgA=="
+  DNS_CLUSTER_QUERY = "blunderfest.internal"
 
 [http_service]
   internal_port = 8080
