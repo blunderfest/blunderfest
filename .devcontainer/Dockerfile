@@ -30,8 +30,7 @@ RUN apt-get update \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/* /tmp/common-setup.sh /tmp/node-setup.sh
 
-RUN su ${USERNAME} -c "echo alias fly=flyctl >> /home/vscode/.bashrc \
-  && mix local.hex --force \
+RUN su ${USERNAME} -c "mix local.hex --force \
   && mix local.rebar --force"
 
 # [Optional] Uncomment this section to install additional OS packages.

@@ -50,7 +50,9 @@ defmodule Blunderfest.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:plug_cowboy, "~> 2.5"},
       {:nanoid, "~> 2.1"},
-      {:classnames, "~> 0.1.0"}
+      {:classnames, "~> 0.1.0"},
+      {:libcluster, "~> 3.3"},
+      {:horde, "~> 0.8.7"}
     ]
   end
 

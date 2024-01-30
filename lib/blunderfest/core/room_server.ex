@@ -45,7 +45,7 @@ defmodule Blunderfest.Core.RoomServer do
     |> GenServer.call(message)
   end
 
-  defp via_tuple(room_code), do: {:via, Registry, {Blunderfest.RoomRegistry, room_code}}
+  defp via_tuple(room_code), do: {:via, Horde.Registry, {Blunderfest.RoomRegistry, room_code}}
 
   @impl true
   def init(room_code), do: {:ok, Room.new(room_code), @timeout}

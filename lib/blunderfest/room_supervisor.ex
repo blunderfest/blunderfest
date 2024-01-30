@@ -1,5 +1,5 @@
 defmodule Blunderfest.RoomSupervisor do
-  use DynamicSupervisor
+  use Horde.DynamicSupervisor
 
   alias Blunderfest.Core.RoomServer
 
@@ -14,18 +14,27 @@ defmodule Blunderfest.RoomSupervisor do
     end
   end
 
-  defp start_child(room_code) do
+  def start_link(_) do
+    Horde.DynamicSupervisor.start_link(__MODULE__, [strategy: :one_for_one], name: __MODULE__)
+  end
+
+  def init(init_arg) do
+    [members: members()]
+    |> Keyword.merge(init_arg)
+    |> Horde.DynamicSupervisor.init()
+  end
+
+  def start_child(room_code) do
     child_spec = %{
       id: RoomServer,
       start: {RoomServer, :start_link, [room_code]},
       restart: :transient
     }
 
-    DynamicSupervisor.start_child(__MODULE__, child_spec)
+    Horde.DynamicSupervisor.start_child(__MODULE__, child_spec)
   end
 
-  @impl true
-  def init(_init_arg) do
-    DynamicSupervisor.init(strategy: :one_for_one)
+  defp members() do
+    Enum.map([Node.self() | Node.list()], &{__MODULE__, &1})
   end
 end

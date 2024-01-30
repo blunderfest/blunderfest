@@ -7,12 +7,16 @@ defmodule Blunderfest.Application do
 
   @impl true
   def start(_type, _args) do
+    topologies = Application.get_env(:libcluster, :topologies) || []
+
     children = [
       BlunderfestWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
-      {DynamicSupervisor, name: Blunderfest.RoomSupervisor, strategy: :one_for_one},
-      {Registry, keys: :unique, name: Blunderfest.RoomRegistry},
+      {Cluster.Supervisor, [topologies, [name: Blunderfest.ClusterSupervisor]]},
+      {Horde.DynamicSupervisor, [name: Blunderfest.RoomSupervisor, strategy: :one_for_one]},
+      {Horde.Registry, keys: :unique, name: Blunderfest.RoomRegistry},
+      Blunderfest.NodeObserver,
       # Start the Finch HTTP client for sending emails
       {Finch, name: Blunderfest.Finch},
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)
