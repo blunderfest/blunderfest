@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 
 export default defineConfig(({ command }) => {
@@ -30,7 +30,7 @@ export default defineConfig(({ command }) => {
       outDir: "../priv/static", // emit assets to priv/static
       emptyOutDir: true,
       sourcemap: isDev, // enable source map in dev build
-      manifest: true, // do not generate manifest.json
+      manifest: false, // do not generate manifest.json
       rollupOptions: {
         input: "./src/main.jsx",
         output: {
@@ -39,9 +39,6 @@ export default defineConfig(({ command }) => {
           assetFileNames: "assets/[name][extname]",
         },
       },
-    },
-    resolve: {
-      extensions: [".mjs", ".js", ".jsx", ".json"],
     },
   };
 });
