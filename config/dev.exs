@@ -17,25 +17,16 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "SMW5GhJBjRhpIjooOdWlhlxyyvXtB7AWvTI+OFChCkOCZ9HpiCKtnq/yjV8wxNLb",
   watchers: [
-    "#{esbuild}": [
-      "./js/app.js",
-      "--target=es2017",
-      "--bundle",
-      "--outdir=../priv/static/js/",
-      "--sourcemap",
-      "--watch",
-      cd: Path.expand("../assets", __DIR__)
-    ],
     node: [
-      "./node_modules/.bin/postcss",
-      "./css/app.css",
-      "--dir",
-      "../priv/static/css/",
-      "-w",
-      cd: Path.expand("../assets", __DIR__),
-      env: [{"NODE_ENV", "development"}]
+      "node_modules/vite/bin/vite.js",
+      cd: Path.expand("../assets", __DIR__)
     ]
   ]
+
+config :cors_plug,
+  origin: ["*"],
+  max_age: 86400,
+  methods: ["GET", "POST"]
 
 # ## SSL Support
 #

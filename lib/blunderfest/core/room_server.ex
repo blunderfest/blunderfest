@@ -8,7 +8,7 @@ defmodule Blunderfest.Core.RoomServer do
   def start_link(room_code),
     do: GenServer.start(__MODULE__, room_code, name: room_code |> via_tuple())
 
-  @spec join(String.t(), String.t()) :: {:error, :room_not_found} | {:ok, String.t()}
+  @spec join(String.t(), String.t()) :: {:error, :room_not_found} | {:ok, Room.t()}
   def join(room_code, user_id) do
     if exists?(room_code) do
       Blunderfest.PubSub.subscribe(room_code)

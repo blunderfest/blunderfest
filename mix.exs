@@ -51,7 +51,10 @@ defmodule Blunderfest.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:nanoid, "~> 2.1"},
       {:libcluster, "~> 3.3"},
-      {:horde, "~> 0.8.7"}
+      {:horde, "~> 0.8.7"},
+      {:typedstruct, "~> 0.5", runtime: false},
+      {:recase, "~> 0.5"},
+      {:cors_plug, "~> 3.0", only: :dev}
     ]
   end
 
@@ -64,7 +67,10 @@ defmodule Blunderfest.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "cmd --cd assets yarn install"],
-      "assets.deploy": ["cmd --cd assets yarn deploy", "phx.digest"]
+      "assets.deploy": [
+        "cmd --cd assets yarn install --frozen-lockfile && yarn build",
+        "phx.digest"
+      ]
     ]
   end
 end

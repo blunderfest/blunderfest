@@ -2,6 +2,8 @@ defmodule Blunderfest.Core.Parsers.FenParser do
   alias Blunderfest.Core.State.Game.Piece
   alias Blunderfest.Core.State.Game.Position
 
+  @spec parse(String.t()) ::
+          {:error, :invalid_fen} | {:ok, Position.t()}
   def parse(fen) do
     try do
       [pieces, active_color, castling_availability, en_passant | rest] = String.split(fen, " ")
@@ -23,7 +25,10 @@ defmodule Blunderfest.Core.Parsers.FenParser do
            |> List.flatten(),
          active_color: active_color |> to_charlist() |> parse_active_color(),
          castling_availability:
-           castling_availability |> to_charlist() |> Enum.map(&parse_castling_availability/1),
+           castling_availability
+           |> to_charlist()
+           |> Enum.map(&parse_castling_availability/1)
+           |> Enum.filter(fn castling -> castling != nil end),
          en_passant: en_passant |> to_charlist() |> parse_en_passant(),
          halfmove_clock: half_move_clock,
          fullmove_number: move_number

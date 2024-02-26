@@ -12,6 +12,20 @@ defmodule BlunderfestWeb.CoreComponents do
     """
   end
 
+  attr(:room, :any, required: true)
+
+  def room(assigns) do
+    game = assigns.room.games_by_code[assigns.room.active_game]
+    IO.inspect(game)
+
+    ~H"""
+    <%= @room.room_code %>
+    <%= @room.count %>
+    <button phx-click="room/increment_count">Increment</button>
+    <button phx-click="room/decrement_count">Decrement</button>
+    """
+  end
+
   def theme_toggle(assigns) do
     ~H"""
     <button
@@ -39,35 +53,6 @@ defmodule BlunderfestWeb.CoreComponents do
         </g>
       </svg>
     </button>
-    """
-  end
-
-  attr(:text, :string)
-
-  def my_first_atom(assigns) do
-    ~H"""
-    <p><%= @text %></p>
-    """
-  end
-
-  attr(:title, :string)
-  attr(:text, :string)
-
-  def my_first_molecule(assigns) do
-    ~H"""
-    <h1><%= @title %></h1>
-    <.my_first_atom text={@text} />
-    """
-  end
-
-  attr(:title, :string)
-  attr(:text, :string)
-
-  def my_first_organism(assigns) do
-    ~H"""
-    <div class="organism">
-      <.my_first_molecule title={@title} text={@text} />
-    </div>
     """
   end
 end

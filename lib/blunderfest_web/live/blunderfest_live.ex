@@ -17,10 +17,17 @@ defmodule BlunderfestWeb.BlunderfestLive do
 
         {:ok, room} ->
           {:ok,
-           socket |> assign(:room_code, room_code) |> assign(:room, room) |> assign(:users, [])}
+           socket
+           |> assign(:room_code, room_code)
+           |> assign(:room, room)
+           |> assign(:users, [])}
       end
     else
-      {:ok, socket |> assign(:room, nil) |> assign(:users, [])}
+      {:ok,
+       socket
+       |> assign(:room_code, nil)
+       |> assign(:users, [])
+       |> assign(:room, nil)}
     end
   end
 
@@ -35,8 +42,8 @@ defmodule BlunderfestWeb.BlunderfestLive do
     {:noreply, socket |> assign(:users, Presence.list_users(topic))}
   end
 
-  def handle_info(:update, socket) do
-    {:noreply, socket |> assign_room()}
+  def handle_info(:update, %{assigns: %{room: %{room_code: room_code}}} = socket) do
+    {:noreply, socket |> assign(:room, RoomServer.get(room_code))}
   end
 
   # https://www.youtube.com/watch?v=aErs_DIWxl8
@@ -44,13 +51,8 @@ defmodule BlunderfestWeb.BlunderfestLive do
 
   def handle_event(event, params, socket), do: do_handle_event(event, params, socket)
 
-  defp do_handle_event(raw_event, params, %{assigns: %{room: %{room_code: room_code}}} = socket) do
+  defp do_handle_event(raw_event, params, %{assigns: %{room_code: room_code}} = socket) do
     {:ok, room} = RoomServer.handle_event(room_code, raw_event, params)
     {:noreply, socket |> assign(:room, room)}
-  end
-
-  defp assign_room(%{assigns: %{room_code: room_code}} = socket) do
-    socket
-    |> assign(:room, RoomServer.get(room_code))
   end
 end

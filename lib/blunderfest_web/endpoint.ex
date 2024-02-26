@@ -13,6 +13,13 @@ defmodule BlunderfestWeb.Endpoint do
 
   socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
 
+  if Mix.env() == :dev do
+    plug Plug.Static,
+      at: "/",
+      from: "assets",
+      gzip: false
+  end
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # You should set gzip to true if you are running phx.digest
@@ -20,7 +27,7 @@ defmodule BlunderfestWeb.Endpoint do
   plug Plug.Static,
     at: "/",
     from: :blunderfest,
-    gzip: false,
+    gzip: true,
     only: BlunderfestWeb.static_paths()
 
   # Code reloading can be explicitly enabled under the

@@ -10,7 +10,7 @@ defmodule Blunderfest.Core.Room do
           active_game: String.t()
         }
 
-  defstruct [:room_code, :games, :games_by_code, :active_game]
+  defstruct [:room_code, :count, :games, :games_by_code, :active_game]
 
   def new(room_code) do
     game = Game.new()
