@@ -2,6 +2,7 @@
 
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import styleX from "vite-plugin-stylex";
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -16,7 +17,7 @@ export default defineConfig(({ command }) => {
 
   return {
     publicDir: "static",
-    plugins: [react()],
+    plugins: [react(), styleX()],
     server: {
       proxy: {
         "/socket": {
@@ -30,15 +31,7 @@ export default defineConfig(({ command }) => {
       outDir: "../priv/static", // emit assets to priv/static
       emptyOutDir: true,
       sourcemap: isDev, // enable source map in dev build
-      manifest: false, // do not generate manifest.json
-      rollupOptions: {
-        input: "./src/main.jsx",
-        output: {
-          entryFileNames: "assets/[name].js", // remove hash
-          chunkFileNames: "assets/[name].js",
-          assetFileNames: "assets/[name][extname]",
-        },
-      },
+      manifest: true, // do not generate manifest.json
     },
   };
 });

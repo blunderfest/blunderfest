@@ -1,9 +1,26 @@
-import { useState } from 'react'
-import './App.css'
-import reactLogo from './assets/react.svg'
+import { useState } from "react";
+import "./App.css";
+import reactLogo from "./assets/react.svg";
+
+import { colorsHSL } from "@stylexjs/open-props/lib/colorsHSL.stylex";
+import * as stylex from "@stylexjs/stylex";
+
+const styles = stylex.create({
+  base: {
+    fontSize: 16,
+    lineHeight: 1.5,
+    color: "rgb(60,60,60)",
+  },
+  highlighted: {
+    color: `hsl(${colorsHSL.choco10})`,
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "black",
+  },
+});
 
 function App() {
-  const [count, setCount] = useState(1)
+  const [count, setCount] = useState(1);
 
   return (
     <>
@@ -17,7 +34,7 @@ function App() {
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
         </button>
-        <p>
+        <p {...stylex.props(styles.base, styles.highlighted)}>
           Edit <code>src/App.jsx</code> and save to test HMR
         </p>
       </div>
@@ -25,7 +42,7 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
