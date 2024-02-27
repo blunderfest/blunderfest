@@ -37,11 +37,6 @@ export default defineConfig(({ command }) => {
           main: "src/main.jsx",
         },
       },
-      // output: {
-      //   entryFileNames: "js/[name].js",
-      //   chunkFileNames: "js/[name].js",
-      //   assetFileNames: "[ext]/[name][extname]",
-      // },
     },
   };
 });

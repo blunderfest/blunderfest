@@ -11,6 +11,7 @@
   <script type="module" src="http://localhost:5173/src/main.jsx">
   </script>
 <% else %>
+  <link phx-track-static rel="stylesheet" href={Vite.Manifest.stylex_css()} />
   <script type="module" crossorigin defer phx-track-static src={Vite.Manifest.main_js()}>
   </script>
 <% end %>

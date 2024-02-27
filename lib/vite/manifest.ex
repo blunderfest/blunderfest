@@ -92,6 +92,7 @@ defmodule Vite do
     """
     # specified in vite.config.js in build.rollupOptions.input
     @main_file "src/main.jsx"
+    @stylex_css "stylex.css"
 
     @spec read() :: map()
     def read() do
@@ -106,6 +107,11 @@ defmodule Vite do
     @spec main_css() :: binary()
     def main_css() do
       get_css(@main_file)
+    end
+
+    @spec stylex_css() :: binary()
+    def stylex_css() do
+      get_file(@stylex_css)
     end
 
     @spec vendor_js() :: binary()

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./App.css";
 import reactLogo from "./assets/react.svg";
 
 import { colorsHSL } from "@stylexjs/open-props/lib/colorsHSL.stylex";
