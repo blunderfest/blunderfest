@@ -30,8 +30,18 @@ export default defineConfig(({ command }) => {
       target: "esnext", // build for recent browsers
       outDir: "../priv/static", // emit assets to priv/static
       emptyOutDir: true,
-      sourcemap: isDev, // enable source map in dev build
+      sourcemap: true, // enable source map in dev build
       manifest: true, // do not generate manifest.json
+      rollupOptions: {
+        input: {
+          main: "src/main.jsx",
+        },
+      },
+      // output: {
+      //   entryFileNames: "js/[name].js",
+      //   chunkFileNames: "js/[name].js",
+      //   assetFileNames: "[ext]/[name][extname]",
+      // },
     },
   };
 });
