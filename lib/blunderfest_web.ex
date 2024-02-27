@@ -17,7 +17,7 @@ defmodule BlunderfestWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets css js fonts images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets css js fonts images favicon.ico robots.txt cache_manifest.json)
 
   def router do
     quote do
