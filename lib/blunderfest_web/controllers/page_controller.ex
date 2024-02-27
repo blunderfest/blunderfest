@@ -9,18 +9,15 @@ defmodule BlunderfestWeb.PageController do
         conn,
         %{"room_code" => room_code} = _params
       ) do
-    user_id = get_session(conn, :user_id)
+    if RoomServer.exists?(room_code) do
+      user_id = get_session(conn, :user_id)
 
-    case RoomServer.join(room_code, user_id) do
-      {:error, :room_not_found} ->
-        conn |> redirect(to: ~p"/") |> halt()
-
-      {:ok, room} ->
-        conn
-        |> assign(:room_code, room_code)
-        |> assign(:room, room)
-        |> assign(:users, [])
-        |> render(:index, layout: false)
+      conn
+      |> assign(:user_id, user_id)
+      |> assign(:room_code, room_code)
+      |> render(:index, layout: false)
+    else
+      conn |> redirect(to: ~p"/") |> halt()
     end
   end
 

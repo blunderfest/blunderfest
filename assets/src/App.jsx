@@ -1,8 +1,11 @@
-import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 
-import { colorsHSL } from "@stylexjs/open-props/lib/colorsHSL.stylex";
+import { colors } from "@stylexjs/open-props/lib/colors.stylex";
 import * as stylex from "@stylexjs/stylex";
+
+import { useDispatch, useSelector } from "react-redux";
+import { decrement, increment, incrementByAmount, selectCount } from "./store";
+import "./user_socket";
 
 const styles = stylex.create({
   base: {
@@ -11,7 +14,7 @@ const styles = stylex.create({
     color: "rgb(60,60,60)",
   },
   highlighted: {
-    color: `hsl(${colorsHSL.choco10})`,
+    color: colors.pink3,
     borderWidth: "1px",
     borderStyle: "solid",
     borderColor: "black",
@@ -19,7 +22,8 @@ const styles = stylex.create({
 });
 
 function App() {
-  const [count, setCount] = useState(1);
+  const count = useSelector(selectCount);
+  const dispatch = useDispatch();
 
   return (
     <>
@@ -30,9 +34,10 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
+        count is {count}
+        <button onClick={() => dispatch(increment())}>+</button>
+        <button onClick={() => dispatch(incrementByAmount(5))}>+ 5</button>
+        <button onClick={() => dispatch(decrement())}>-</button>
         <p {...stylex.props(styles.base, styles.highlighted)}>
           Edit <code>src/App.jsx</code> and save to test HMR
         </p>

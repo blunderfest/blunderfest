@@ -11,7 +11,9 @@ defmodule BlunderfestWeb.Endpoint do
     same_site: "Lax"
   ]
 
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  socket "/socket", BlunderfestWeb.UserSocket,
+    websocket: true,
+    longpoll: false
 
   if Mix.env() == :dev do
     plug Plug.Static,
@@ -33,8 +35,6 @@ defmodule BlunderfestWeb.Endpoint do
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do
-    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-    plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
   end
 

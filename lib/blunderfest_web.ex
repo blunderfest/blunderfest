@@ -83,11 +83,7 @@ defmodule BlunderfestWeb do
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components and translation
-      import BlunderfestWeb.CoreComponents
       import BlunderfestWeb.Gettext
-
-      # Shortcut for generating JS commands
-      alias Phoenix.LiveView.JS
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())
