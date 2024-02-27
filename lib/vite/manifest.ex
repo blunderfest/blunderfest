@@ -62,7 +62,7 @@ defmodule Vite do
     end
 
     def current_env() do
-      Application.get_env(:demo, :environment, :dev)
+      Application.get_env(:blunderfest, :environment, :dev)
     end
   end
 
