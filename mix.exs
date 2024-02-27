@@ -68,8 +68,7 @@ defmodule Blunderfest.MixProject do
     [
       setup: ["deps.get", "cmd --cd assets yarn install"],
       "assets.deploy": [
-        "cmd --cd assets yarn install --frozen-lockfile && yarn build && mv ../priv/static/.vite/manifest.json ../priv/static/cache_manifest.json",
-        "phx.digest"
+        "cmd --cd assets yarn install --frozen-lockfile && yarn build && mv ../priv/static/.vite/manifest.json ../priv/static/cache_manifest.json"
       ]
     ]
   end
