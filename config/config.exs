@@ -22,6 +22,8 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   live_view: [signing_salt: "u99BYFHy"],
   server: true
 
+config :blunderfest, :environment, Mix.env()
+
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails

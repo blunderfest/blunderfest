@@ -18,3 +18,4 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
 - Source: https://github.com/phoenixframework/phoenix
 
 https://bigardone.dev/blog/2021/06/06/three-real-world-examples-of-distributed-elixir-pt-2
+https://mindreframer.com/posts/js-bundling-with-instant-live-reload-for-phoenix-and-liveview/
