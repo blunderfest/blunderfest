@@ -15,25 +15,13 @@ defmodule BlunderfestWeb.RoomChannel do
   end
 
   @impl true
-  def handle_in("increment", _params, socket) do
-    IO.puts("Increment")
+  def handle_in(event, payload, %{topic: "room:" <> room_code} = socket) do
+    RoomServer.handle_event(room_code, event, payload)
     {:noreply, socket}
   end
 
   @impl true
-  def handle_in("incrementByAmount", %{"amount" => amount}, socket) do
-    IO.puts("Increment by #{amount}")
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_in("decrement", _params, socket) do
-    IO.puts("Decrement")
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_out(event, payload, socket) do
+  def handle_info(%{event: event, payload: payload}, socket) do
     push(socket, event, payload)
     {:noreply, socket}
   end

@@ -1,7 +1,7 @@
 import { createAction } from "@reduxjs/toolkit";
 
 export const incrementByAmount = createAction(
-  "incrementByAmount",
+  "room/incrementByAmount",
   /**
    * @param {string} roomCode
    * @param {number} amount

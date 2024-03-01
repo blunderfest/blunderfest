@@ -11,7 +11,6 @@ defmodule Blunderfest.Core.RoomServer do
   @spec join(String.t(), String.t()) :: {:error, :room_not_found} | {:ok, Room.t()}
   def join(room_code, user_id) do
     if exists?(room_code) do
-      Blunderfest.PubSub.subscribe(room_code)
       Blunderfest.PubSub.track(room_code, user_id)
 
       call_by_room_code(room_code, :join)
@@ -40,7 +39,7 @@ defmodule Blunderfest.Core.RoomServer do
       room_code
       |> call_by_room_code({raw_event, params})
 
-    Blunderfest.PubSub.broadcast_from(room_code, :update)
+    Blunderfest.PubSub.broadcast_from(room_code, raw_event, params)
 
     result
   end

@@ -1,10 +1,8 @@
 defmodule Blunderfest.PubSub do
-  def subscribe(room_code) do
-    Phoenix.PubSub.subscribe(Blunderfest.PubSub, topic(room_code))
-  end
+  alias BlunderfestWeb.Endpoint
 
-  def broadcast_from(room_code, message) do
-    Phoenix.PubSub.broadcast_from(Blunderfest.PubSub, self(), topic(room_code), message)
+  def broadcast_from(room_code, event, message) do
+    Endpoint.broadcast_from(self(), topic(room_code), event, message)
   end
 
   def track(room_code, user_id) do
