@@ -2,6 +2,7 @@
 
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import jsconfigPaths from "vite-jsconfig-paths";
 import styleX from "vite-plugin-stylex";
 
 export default defineConfig(({ command }) => {
@@ -17,7 +18,7 @@ export default defineConfig(({ command }) => {
 
   return {
     publicDir: "static",
-    plugins: [react(), styleX()],
+    plugins: [react(), styleX(), jsconfigPaths()],
     server: {
       proxy: {
         "/socket": {

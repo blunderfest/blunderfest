@@ -1,18 +1,26 @@
-import { configureStore, createAction, createSlice } from "@reduxjs/toolkit";
+import { combineReducers, configureStore, createSlice } from "@reduxjs/toolkit";
+import { decrement } from "./actions/decrement";
+import { increment } from "./actions/increment";
+import { incrementByAmount } from "./actions/incrementByAmount";
+import { websocketMiddleware } from "./connectivity/middlewares/websocketMiddleware";
 
-export const increment = createAction("increment");
-export const decrement = createAction("decrement");
-export const incrementByAmount = createAction(
-  "incrementByAmount",
-  /**
-   * @param {number} amount
-   */
-  (amount) => ({
-    payload: {
-      amount: amount,
-    },
-  })
-);
+import { connectivityReducer } from "connectivity/connectivityReducer";
+import {
+  FLUSH,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+  REHYDRATE,
+  persistReducer,
+  persistStore,
+} from "redux-persist";
+import storage from "redux-persist/lib/storage";
+
+const persistConfig = {
+  key: "root",
+  storage,
+};
 
 const counterSlice = createSlice({
   name: "counter",
@@ -34,10 +42,27 @@ const counterSlice = createSlice({
   },
 });
 
-export const store = configureStore({
-  reducer: {
-    counter: counterSlice.reducer,
-  },
+const rootReducer = combineReducers({
+  counter: counterSlice.reducer,
 });
 
-export const selectCount = (state) => state.counter.value;
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+export const store = configureStore({
+  reducer: combineReducers({
+    root: persistedReducer,
+    connectivity: connectivityReducer,
+  }),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }).concat(websocketMiddleware),
+});
+
+export const selectCount = (state) => {
+  return state.root.counter.value;
+};
+
+export const persistor = persistStore(store);
