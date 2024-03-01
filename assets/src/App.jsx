@@ -3,15 +3,21 @@ import reactLogo from "assets/react.svg";
 import { colors } from "@stylexjs/open-props/lib/colors.stylex";
 import * as stylex from "@stylexjs/stylex";
 
+import { connect, disconnect, join, leave } from "connectivity/actions/actions";
+import {
+  selectOnline,
+  selectRooms,
+  selectUserId,
+} from "connectivity/connectivityReducer";
 import { useDispatch, useSelector } from "react-redux";
 import { decrement } from "./actions/decrement";
 import { increment } from "./actions/increment";
 import { incrementByAmount } from "./actions/incrementByAmount";
-import { connect } from "./connectivity/actions/connect";
-import { disconnect } from "./connectivity/actions/disconnect";
-import { join } from "./connectivity/actions/join";
-import { leave } from "./connectivity/actions/leave";
 import { selectCount } from "./store";
+
+const roomCode = document
+  .querySelector("meta[name='room_code']")
+  .getAttribute("content");
 
 const styles = stylex.create({
   base: {
@@ -27,16 +33,13 @@ const styles = stylex.create({
   },
 });
 
-const user_id = document
-  .querySelector("meta[name='user_id']")
-  .getAttribute("content");
-const room_code = document
-  .querySelector("meta[name='room_code']")
-  .getAttribute("content");
-
 function App() {
   const count = useSelector(selectCount);
   const dispatch = useDispatch();
+
+  const online = useSelector(selectOnline);
+  const rooms = useSelector(selectRooms);
+  const userId = useSelector(selectUserId);
 
   return (
     <>
@@ -45,18 +48,39 @@ function App() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <button onClick={() => dispatch(connect())}>Connect</button>
-      <button onClick={() => dispatch(disconnect())}>Disconnect</button>
-      <button onClick={() => dispatch(join(user_id, room_code))}>Join</button>
-      <button onClick={() => dispatch(leave(room_code))}>Leave</button>
+      <button disabled={online} onClick={() => dispatch(connect())}>
+        Connect
+      </button>
+      <button disabled={!online} onClick={() => dispatch(disconnect())}>
+        Disconnect
+      </button>
+      <button
+        disabled={!online || rooms.includes(roomCode)}
+        onClick={() =>
+          dispatch(
+            join({
+              userId: userId,
+              roomCode: roomCode,
+            })
+          )
+        }
+      >
+        Join
+      </button>
+      <button
+        disabled={!online || !rooms.includes(roomCode)}
+        onClick={() => dispatch(leave({ roomCode: roomCode }))}
+      >
+        Leave
+      </button>
       <h1>Vite + React</h1>
       <div className="card">
         count is {count}
-        <button onClick={() => dispatch(increment(room_code))}>+</button>
-        <button onClick={() => dispatch(incrementByAmount(room_code, 5))}>
+        <button onClick={() => dispatch(increment(roomCode))}>+</button>
+        <button onClick={() => dispatch(incrementByAmount(roomCode, 5))}>
           + 5
         </button>
-        <button onClick={() => dispatch(decrement(room_code))}>-</button>
+        <button onClick={() => dispatch(decrement(roomCode))}>-</button>
         <p {...stylex.props(styles.base, styles.highlighted)}>
           Edit <code>src/App.jsx</code> and save to test HMR
         </p>

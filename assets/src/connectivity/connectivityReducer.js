@@ -1,8 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { connected } from "./actions/connected";
-import { disconnected } from "./actions/disconnected";
-import { joined } from "./actions/joined";
-import { left } from "./actions/left";
+import { connect, disconnect, join, leave } from "./actions/actions";
 
 const connectivitySlice = createSlice({
   name: "connectivity",
@@ -14,22 +11,36 @@ const connectivitySlice = createSlice({
   reducers: [],
   extraReducers: (builder) => {
     builder
-      .addCase(connected, (state) => {
+      .addCase(connect.fulfilled, (state) => {
         state.online = true;
       })
-      .addCase(disconnected, (state) => {
+      .addCase(connect.rejected, (state) => {
         state.online = false;
       })
-      .addCase(joined, (state, action) => {
-        state.rooms.push(action.payload.roomCode);
+      .addCase(disconnect.fulfilled, (state) => {
+        state.online = false;
+      })
+      .addCase(join.fulfilled, (state, action) => {
+        if (!state.rooms.includes(action.payload.roomCode)) {
+          state.rooms.push(action.payload.roomCode);
+        }
+
         state.userId = action.payload.userId;
       })
-      .addCase(left, (state, action) => {
+      .addCase(leave.fulfilled, (state, action) => {
         state.rooms = state.rooms.filter(
           (room) => room !== action.payload.roomCode
         );
       });
   },
+  selectors: {
+    selectOnline: (state) => state.online,
+    selectRooms: (state) => state.rooms,
+    selectUserId: (state) => state.userId,
+  },
 });
 
 export const connectivityReducer = connectivitySlice.reducer;
+
+export const { selectOnline, selectRooms, selectUserId } =
+  connectivitySlice.selectors;

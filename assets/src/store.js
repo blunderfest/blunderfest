@@ -17,11 +17,6 @@ import {
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 
-const persistConfig = {
-  key: "root",
-  storage,
-};
-
 const counterSlice = createSlice({
   name: "counter",
   initialState: {
@@ -40,19 +35,27 @@ const counterSlice = createSlice({
         state.value += action.payload.amount;
       });
   },
+  selectors: {
+    selectCount: (state) => state.value,
+  },
 });
+
+export const { selectCount } = counterSlice.selectors;
 
 const rootReducer = combineReducers({
   counter: counterSlice.reducer,
+  connectivity: connectivityReducer,
 });
+
+const persistConfig = {
+  key: "root",
+  storage: storage,
+};
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: combineReducers({
-    root: persistedReducer,
-    connectivity: connectivityReducer,
-  }),
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
@@ -60,9 +63,5 @@ export const store = configureStore({
       },
     }).concat(websocketMiddleware),
 });
-
-export const selectCount = (state) => {
-  return state.root.counter.value;
-};
 
 export const persistor = persistStore(store);
