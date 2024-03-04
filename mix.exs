@@ -53,7 +53,8 @@ defmodule Blunderfest.MixProject do
       {:horde, "~> 0.8.7"},
       {:typedstruct, "~> 0.5", runtime: false},
       {:recase, "~> 0.5"},
-      {:cors_plug, "~> 3.0", only: :dev}
+      {:cors_plug, "~> 3.0", only: :dev},
+      {:vite_phx, "~> 0.2"}
     ]
   end
 
@@ -65,9 +66,10 @@ defmodule Blunderfest.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "cmd --cd assets yarn install"],
+      setup: ["deps.get", "cmd --cd assets pnpm install"],
       "assets.deploy": [
-        "cmd --cd assets yarn install --frozen-lockfile && yarn build && mv ../priv/static/.vite/manifest.json ../priv/static/cache_manifest.json"
+        "cmd --cd assets npx nx run-many -t build",
+        "phx.digest"
       ]
     ]
   end

@@ -14,7 +14,8 @@
         "phoenixframework.phoenix",
         "RoyalMist.vscode-eex-format",
         "vunguyentuan.vscode-css-variables",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "nrwl.angular-console"
       ]
     }
   },

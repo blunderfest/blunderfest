@@ -1,7 +1,5 @@
 import Config
 
-esbuild = Path.expand("../assets/node_modules/.bin/esbuild", __DIR__)
-
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
@@ -18,7 +16,9 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   secret_key_base: "SMW5GhJBjRhpIjooOdWlhlxyyvXtB7AWvTI+OFChCkOCZ9HpiCKtnq/yjV8wxNLb",
   watchers: [
     node: [
-      "node_modules/vite/bin/vite.js",
+      "node_modules/nx/bin/nx.js",
+      "serve",
+      "blunderfest",
       cd: Path.expand("../assets", __DIR__)
     ]
   ]

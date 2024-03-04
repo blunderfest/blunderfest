@@ -38,3 +38,5 @@ npm-debug.log
 /assets/node_modules/
 
 .elixir_ls/
+assets2
+.pnpm-store/

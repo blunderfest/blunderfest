@@ -45,6 +45,18 @@ config :nanoid,
   size: 10,
   alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+config :vite_phx,
+  release_app: :blunderfest,
+  # to tell prod and dev env apart
+  environment: Mix.env(),
+  # this manifest is different from the Phoenix "cache_manifest.json"!
+  # optional
+  vite_manifest: "priv/static/.vite/manifest.json",
+  # optional
+  phx_manifest: "priv/static/cache_manifest.json",
+  # optional
+  dev_server_address: "http://localhost:5173"
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

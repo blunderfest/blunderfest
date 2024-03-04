@@ -28,7 +28,7 @@ RUN apt-get update -y && apt-get install -y build-essential git curl gnupg2 \
   && chmod 500 nsolid_setup_deb.sh \
   && ./nsolid_setup_deb.sh 21 \
   && apt-get install nodejs -y \
-  && npm install -g yarn \
+  && npm install -g pnpm \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # prepare build dir
