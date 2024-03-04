@@ -1,9 +1,9 @@
 /* eslint-disable no-undef */
 
+import { vanillaExtractPlugin } from "@vanilla-extract/vite-plugin";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import jsconfigPaths from "vite-jsconfig-paths";
-import styleX from "vite-plugin-stylex";
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -18,7 +18,7 @@ export default defineConfig(({ command }) => {
 
   return {
     publicDir: "static",
-    plugins: [react(), styleX(), jsconfigPaths()],
+    plugins: [react(), vanillaExtractPlugin(), jsconfigPaths()],
     server: {
       proxy: {
         "/socket": {

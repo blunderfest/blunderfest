@@ -1,8 +1,5 @@
 import reactLogo from "assets/react.svg";
 
-import { colors } from "@stylexjs/open-props/lib/colors.stylex";
-import * as stylex from "@stylexjs/stylex";
-
 import { connect, disconnect, join, leave } from "connectivity/actions/actions";
 import {
   selectOnline,
@@ -15,23 +12,13 @@ import { increment } from "./actions/increment";
 import { incrementByAmount } from "./actions/incrementByAmount";
 import { selectCount } from "./store";
 
+import { noMargin } from "reset.css";
+import { sprinkles } from "sprinkles.css";
+import { container } from "./styles.css.ts";
+
 const roomCode = document
   .querySelector("meta[name='room_code']")
   .getAttribute("content");
-
-const styles = stylex.create({
-  base: {
-    fontSize: 16,
-    lineHeight: 1.5,
-    color: "rgb(60,60,60)",
-  },
-  highlighted: {
-    color: colors.pink3,
-    borderWidth: "1px",
-    borderStyle: "solid",
-    borderColor: "black",
-  },
-});
 
 function App() {
   const count = useSelector(selectCount);
@@ -43,7 +30,11 @@ function App() {
 
   return (
     <>
-      <div>
+      <div
+        className={sprinkles({
+          color: "blue-100",
+        })}
+      >
         <a href="https://react.dev" target="_blank">
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
@@ -81,11 +72,11 @@ function App() {
           + 5
         </button>
         <button onClick={() => dispatch(decrement(roomCode))}>-</button>
-        <p {...stylex.props(styles.base, styles.highlighted)}>
+        <p className={container}>
           Edit <code>src/App.jsx</code> and save to test HMR
         </p>
       </div>
-      <p className="read-the-docs">
+      <p className={noMargin}>
         Click on the Vite and React logos to learn more
       </p>
     </>
