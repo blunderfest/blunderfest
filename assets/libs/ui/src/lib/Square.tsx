@@ -1,7 +1,20 @@
-import { SquareVariants, square } from "@blunderfest/design-system";
+import { square } from "@blunderfest/design-system";
+import React from "react";
 
-export function Square(props: React.PropsWithChildren & SquareVariants) {
-    const { children, ...rest } = props;
+type Props = React.PropsWithChildren & {
+    squareIndex: number;
+};
 
-    return <div className={square(rest)}>{children}</div>;
+export function Square(props: Props) {
+    const { children, squareIndex } = props;
+    const color = squareIndex % 2 === (squareIndex >>> 3) % 2 ? "light" : "dark";
+
+    return (
+        <div
+            className={square({
+                color: color,
+            })}>
+            {children}
+        </div>
+    );
 }

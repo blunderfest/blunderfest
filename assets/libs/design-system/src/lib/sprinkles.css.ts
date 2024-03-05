@@ -1,5 +1,7 @@
 import { createSprinkles, defineProperties } from "@vanilla-extract/sprinkles";
 
+import { CustomMedia } from "open-props/src/props.media";
+
 const space = {
     none: 0,
     small: "4px",
@@ -8,11 +10,18 @@ const space = {
     // etc.
 };
 
+const unresponsiveProperties = defineProperties({
+    properties: {
+        borderStyle: ["groove", "solid"],
+        borderWidth: space,
+    },
+});
+
 const responsiveProperties = defineProperties({
     conditions: {
         mobile: {},
-        tablet: { "@media": "screen and (min-width: 768px)" },
-        desktop: { "@media": "screen and (min-width: 1024px)" },
+        tablet: { "@media": CustomMedia["--md-n-above"] },
+        desktop: { "@media": CustomMedia["--lg-n-above"] },
     },
     defaultCondition: "mobile",
     properties: {
@@ -35,6 +44,8 @@ const responsiveProperties = defineProperties({
 });
 
 const colors = {
+    red: "#F00",
+    green: "#0F0",
     "blue-50": "#eff6ff",
     "blue-100": "#dbeafe",
     "blue-200": "#bfdbfe",
@@ -47,17 +58,18 @@ const colors = {
 const colorProperties = defineProperties({
     conditions: {
         lightMode: {},
-        darkMode: { "@media": "(prefers-color-scheme: dark)" },
+        darkMode: { "@media": CustomMedia["--OSdark"] },
     },
     defaultCondition: "lightMode",
     properties: {
         color: colors,
         background: colors,
+        borderColor: colors,
         // etc.
     },
 });
 
-export const atoms = createSprinkles(responsiveProperties, colorProperties);
+export const sprinkles = createSprinkles(unresponsiveProperties, responsiveProperties, colorProperties);
 
 // It's a good idea to export the Sprinkles type too
-export type Sprinkles = Parameters<typeof atoms>[0];
+export type Sprinkles = Parameters<typeof sprinkles>[0];

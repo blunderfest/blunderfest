@@ -1,16 +1,32 @@
 import { recipe, RecipeVariants } from "@vanilla-extract/recipes";
+import AspectRatio from "open-props/src/props.aspects";
+import { CustomMedia } from "open-props/src/props.media";
 
 export const square = recipe({
     base: {
-        aspectRatio: "1 / 1",
+        aspectRatio: AspectRatio["--ratio-square"],
     },
     variants: {
         color: {
             dark: {
-                backgroundColor: "#000",
+                "@media": {
+                    [CustomMedia["--OSdark"]]: {
+                        backgroundColor: "#000",
+                    },
+                    [CustomMedia["--OSlight"]]: {
+                        backgroundColor: "#CCC",
+                    },
+                },
             },
             light: {
-                backgroundColor: "#FFF",
+                "@media": {
+                    [CustomMedia["--OSdark"]]: {
+                        backgroundColor: "#CCC",
+                    },
+                    [CustomMedia["--OSlight"]]: {
+                        backgroundColor: "#EEE",
+                    },
+                },
             },
         },
     },

@@ -1,93 +1,91 @@
-import { createAsyncThunk } from '@reduxjs/toolkit';
-import { Socket } from 'phoenix';
+import { createAsyncThunk } from "@reduxjs/toolkit";
+import { Socket } from "phoenix";
 
-const socket = new Socket('/socket', { params: { token: window.userToken } });
+const socket = new Socket("/socket", { params: { token: window.userToken } });
 
-const channels: Record<string, import('phoenix').Channel> = {};
+const channels: Record<string, import("phoenix").Channel> = {};
 
-export const connect = createAsyncThunk('connect', () => {
-  return new Promise<void>((resolve, reject) => {
-    socket.connect();
-    socket.onOpen(() => resolve());
-    socket.onError((e) => {
-      console.error(e);
-      reject();
+export const connect = createAsyncThunk("connect", () => {
+    return new Promise<void>((resolve, reject) => {
+        socket.connect();
+        socket.onOpen(() => resolve());
+        socket.onError((e) => {
+            console.error(e);
+            reject();
+        });
     });
-  });
 });
 
-export const disconnect = createAsyncThunk('disconnect', () => {
-  return new Promise<void>((resolve) => {
-    socket.disconnect();
-    resolve();
-  });
+export const disconnect = createAsyncThunk("disconnect", () => {
+    return new Promise<void>((resolve) => {
+        socket.disconnect();
+        resolve();
+    });
 });
-
-type JoinParams = {
-  userId: string;
-  roomCode: string;
-};
 
 export const join = createAsyncThunk(
-  'join',
-  (params: JoinParams, { dispatch }) => {
-    const { userId, roomCode } = params;
+    "join",
+    (
+        params: {
+            userId: string;
+            roomCode: string;
+        },
+        { dispatch, fulfillWithValue, rejectWithValue }
+    ) => {
+        const { userId, roomCode } = params;
 
-    return new Promise<JoinParams>((resolve, reject) => {
-      const channel = socket.channel('room:' + roomCode, {
-        user_id: userId,
-      });
-
-      channels[roomCode] = channel;
-
-      channel
-        .join()
-        .receive('ok', () => resolve(params))
-        .receive('error', (resp) => {
-          console.error(resp);
-          return reject({ message: 'Unable to join', resp });
+        const channel = socket.channel("room:" + roomCode, {
+            user_id: userId,
         });
 
-      channel.onMessage = (event, payload) => {
-        dispatch({
-          type: event,
-          payload,
-          meta: {
-            remote: true,
-          },
+        channels[roomCode] = channel;
+
+        channel
+            .join()
+            .receive("ok", () => fulfillWithValue(params))
+            .receive("error", (resp) => {
+                console.error(resp);
+
+                rejectWithValue({ message: "Unable to join", resp });
+            });
+
+        channel.onMessage = (event, payload) => {
+            dispatch({
+                type: event,
+                payload,
+                meta: {
+                    remote: true,
+                },
+            });
+
+            return payload;
+        };
+
+        channel.onClose(() => {
+            if (channel.state !== "leaving") {
+                dispatch(leave({ roomCode: roomCode }));
+            }
         });
 
-        return payload;
-      };
-
-      channel.onClose(() => {
-        if (channel.state !== 'leaving') {
-          dispatch(leave({ roomCode: roomCode }));
-        }
-      });
-
-      channel.onError((reason) => reject(reason));
-    });
-  }
+        channel.onError((reason) => {
+            rejectWithValue(reason);
+        });
+    }
 );
 
-type LeaveParams = { roomCode: string };
+export const leave = createAsyncThunk("leave", (params: { roomCode: string }, { fulfillWithValue, rejectWithValue }) => {
+    const channel = selectChannel(params.roomCode);
 
-export const leave = createAsyncThunk('leave', (params: LeaveParams) => {
-  return new Promise<LeaveParams>((resolve, reject) => {
-    const channel = channels[params.roomCode];
-
-    if (!channel || channel.state !== 'joined') {
-      reject();
+    if (!channel || channel.state !== "joined") {
+        rejectWithValue("Not joined");
     } else {
-      if (channel.state === 'joined') {
-        channel.leave();
-      }
+        if (channel.state === "joined") {
+            channel.leave();
+        }
 
-      delete channels[params.roomCode];
-      resolve(params);
+        delete channels[params.roomCode];
+        fulfillWithValue(params);
     }
-  });
 });
 
 export const selectChannel = (roomCode: string) => channels[roomCode];
