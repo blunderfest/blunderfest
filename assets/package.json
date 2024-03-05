@@ -13,7 +13,10 @@
         "react-aria-components": "^1.1.1",
         "react-dom": "18.2.0",
         "react-redux": "^9.1.0",
+        "redux": "^5.0.1",
         "redux-persist": "^6.0.0",
+        "redux-thunk": "^3.1.0",
+        "reselect": "^5.1.0",
         "tslib": "^2.3.0"
     },
     "devDependencies": {

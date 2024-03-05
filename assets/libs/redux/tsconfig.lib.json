@@ -3,8 +3,8 @@
     "compilerOptions": {
         "outDir": "../../dist/out-tsc",
         "types": ["node", "@nx/react/typings/cssmodule.d.ts", "@nx/react/typings/image.d.ts"],
-        "declaration": false,
-        "declarationMap": false
+        "declarationMap": false,
+        "composite": true
     },
     "exclude": [],
     "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"]

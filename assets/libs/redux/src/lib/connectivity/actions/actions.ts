@@ -1,9 +1,10 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { Socket } from "phoenix";
+import { Channel, Socket } from "phoenix";
 
-const socket = new Socket("/socket", { params: { token: window.userToken } });
+//"window.userToken"
+const socket = new Socket("/socket", { params: { token: undefined } });
 
-const channels: Record<string, import("phoenix").Channel> = {};
+const channels: Record<string, Channel> = {};
 
 export const connect = createAsyncThunk("connect", () => {
     return new Promise<void>((resolve, reject) => {
