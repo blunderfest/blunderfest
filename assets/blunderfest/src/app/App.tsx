@@ -1,20 +1,19 @@
-import { decrement } from './actions/decrement';
-import { increment } from './actions/increment';
-import { incrementByAmount } from './actions/incrementByAmount';
+import { button, container, noMargin } from '@blunderfest/design-system';
 import {
   connect,
+  decrement,
   disconnect,
+  increment,
+  incrementByAmount,
   join,
   leave,
-} from './connectivity/actions/actions';
-import {
+  selectCount,
   selectOnline,
   selectRooms,
   selectUserId,
-} from './connectivity/connectivityReducer';
-import { selectCount, useAppDispatch, useAppSelector } from './store';
-
-import { button, container, noMargin } from '@blunderfest/design-system';
+  useAppDispatch,
+  useAppSelector,
+} from '@blunderfest/redux';
 
 type Props = {
   roomCode: string;

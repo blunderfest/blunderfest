@@ -1,11 +1,8 @@
 import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
-import { Provider } from 'react-redux';
-import { PersistGate } from 'redux-persist/integration/react';
-import { persistor, store } from './app/store';
 
+import { StoreProvider, connect, join, store } from '@blunderfest/redux';
 import { App } from './app/App';
-import { connect, join } from './app/connectivity/actions/actions';
 
 const userId = document
   ?.querySelector("meta[name='user_id']")
@@ -32,10 +29,6 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <StrictMode>
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        {roomCode && <App roomCode={roomCode} />}
-      </PersistGate>
-    </Provider>
+    <StoreProvider>{roomCode && <App roomCode={roomCode} />}</StoreProvider>
   </StrictMode>
 );

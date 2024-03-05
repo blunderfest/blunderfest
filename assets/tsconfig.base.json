@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@blunderfest/redux": ["libs/redux/src/index.ts"],
       "@blunderfest/design-system": ["libs/design-system/src/index.ts"]
     }
   },
