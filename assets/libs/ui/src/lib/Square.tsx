@@ -1,5 +1,5 @@
-import { square } from "@blunderfest/design-system";
 import React from "react";
+import { square } from "./square.css";
 
 type Props = React.PropsWithChildren & {
     squareIndex: number;

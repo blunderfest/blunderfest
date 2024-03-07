@@ -1,4 +1,4 @@
-import { button, container, sprinkles } from "@blunderfest/design-system";
+import { container } from "@blunderfest/design-system";
 import {
     connect,
     decrement,
@@ -14,7 +14,7 @@ import {
     useAppDispatch,
     useAppSelector,
 } from "@blunderfest/redux";
-import { Board } from "@blunderfest/ui";
+import { Board, Button } from "@blunderfest/ui";
 
 type Props = {
     roomCode: string;
@@ -54,27 +54,13 @@ export function App(props: Props) {
             </button>
             <h1>Vite + React</h1>
             <a href="https://www.google.nl">Go to google</a>
-            <div
-                className={sprinkles({
-                    display: {
-                        desktop: "block",
-                        mobile: "none",
-                    },
-                    background: {
-                        darkMode: "blue-100",
-                        lightMode: "gray-800",
-                    },
-                })}>
+            <div>
                 count is {count}
-                <button
-                    className={button({
-                        background: "default",
-                    })}
-                    onClick={() => dispatch(increment(roomCode))}>
-                    INCREMENT
-                </button>
-                <button onClick={() => dispatch(incrementByAmount(roomCode, 5))}>+ 5</button>
-                <button onClick={() => dispatch(decrement(roomCode))}>-</button>
+                <Button onClick={() => dispatch(increment(roomCode))}>INCREMENT</Button>
+                <Button tone="neutral" onClick={() => dispatch(incrementByAmount(roomCode, 5))}>
+                    + 5
+                </Button>
+                <Button onClick={() => dispatch(decrement(roomCode))}>-</Button>
                 <p className={container}>
                     Edit <code>src/App.jsx</code> and save to test HMR
                 </p>

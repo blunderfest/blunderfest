@@ -1,5 +1,5 @@
-import { board } from "@blunderfest/design-system";
 import { Square } from "./Square";
+import { board } from "./board.css";
 
 export function Board() {
     const squares = Array.from({ length: 8 }).flatMap((_, rank) =>
