@@ -31,6 +31,7 @@ export default defineConfig(({ command }) => {
             emptyOutDir: true,
             sourcemap: true,
             manifest: true,
+            outDir: "../priv/static",
             rollupOptions: {
                 input: {
                     main: "./src/main.tsx",

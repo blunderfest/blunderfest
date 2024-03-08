@@ -26,9 +26,7 @@
   "javascript.suggest.autoImports": true,
   "javascript.validate.enable": false,
   "cssVariables.lookupFiles": [
-    "**/*.css",
-    "**/*.html.heex",
-    "**/*.ex",
+    "./assets/node_modules/@radix-ui/**/*.css",
     "./assets/node_modules/open-props/open-props.min.css"
   ],
   "cssVariables.blacklistFolders": ["**/.git", "./_build", "./priv/static"],
