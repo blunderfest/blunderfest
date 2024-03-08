@@ -66,9 +66,9 @@ defmodule Blunderfest.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "cmd --cd assets yarn install"],
+      setup: ["deps.get", "cmd --cd assets pnpm install"],
       "assets.deploy": [
-        "cmd --cd assets npx nx run-many -t build",
+        "cmd --cd assets pnpm build",
         "phx.digest"
       ]
     ]

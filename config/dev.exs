@@ -16,9 +16,8 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   secret_key_base: "SMW5GhJBjRhpIjooOdWlhlxyyvXtB7AWvTI+OFChCkOCZ9HpiCKtnq/yjV8wxNLb",
   watchers: [
     node: [
-      "node_modules/nx/bin/nx.js",
-      "serve",
-      "blunderfest",
+      "node_modules/vite/bin/vite",
+      "dev",
       cd: Path.expand("../assets", __DIR__)
     ]
   ]
