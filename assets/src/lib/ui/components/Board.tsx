@@ -23,9 +23,12 @@ export function Board() {
                 aspectRatio: "square",
                 gap: "0",
                 columns: 8,
-                borderWidth: "1",
-                borderColor: "blue.dark.1",
+                borderColor: {
+                    _osLight: "gray.light.8",
+                    _osDark: "gray.dark.8"
+                },
                 borderStyle: "solid",
+                height: "2xl"
             })}>
             {squares.map((square) => (
                 <Square key={square.index} color={square.color} />

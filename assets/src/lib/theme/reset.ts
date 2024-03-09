@@ -14,18 +14,19 @@ export const reset = defineGlobalStyles({
         textSizeAdjust: "none",
         fontFamily: "system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif",
     },
+    body: {
+        margin: 0,
+        lineHeight: 1.5,
+        backgroundColor: "{colors.surface.1}",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+    },
     "body, h1, h2, h3, h4, p, figure, blockquote, dl, dd": {
         marginBlockEnd: 0,
     },
     "ul[role='list'], ol[role='list']": {
         listStyle: "none",
-    },
-    body: {
-        margin: 0,
-        height: "100vh",
-        width: "100vw",
-        lineHeight: 1.5,
-        backgroundColor: "{colors.surface.1}",
     },
     "h1, h2, h3, h4, button, input, label": {
         lineHeight: 1.1,
@@ -52,5 +53,7 @@ export const reset = defineGlobalStyles({
     },
     "#root": {
         isolation: "isolate",
+        marginBottom: "auto",
+        flex: "1 auto",
     },
 });
