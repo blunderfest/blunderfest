@@ -1,7 +1,7 @@
 import { StoreProvider, connect, join, store } from "@blunderfest/redux";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { App } from "./App.tsx";
+import { App } from "./apps/App.tsx";
 import "./index.css";
 
 const userId = document?.querySelector("meta[name='user_id']")?.getAttribute("content");

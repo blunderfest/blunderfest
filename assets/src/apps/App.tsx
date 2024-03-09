@@ -13,12 +13,13 @@ import {
     useAppDispatch,
     useAppSelector,
 } from "@blunderfest/redux";
+import { Board } from "@blunderfest/ui/components/Board";
 
 type Props = {
     roomCode: string;
 };
 
-export function App(props: Props) {
+export function App(props: Readonly<Props>) {
     const { roomCode } = props;
     const count = useAppSelector(selectCount);
     const dispatch = useAppDispatch();
@@ -63,6 +64,7 @@ export function App(props: Props) {
                     Edit <code>src/App.jsx</code> and save to test HMR
                 </p>
             </div>
+            <Board />
             <p>Click on the Vite and React logos to learn more</p>
         </>
     );

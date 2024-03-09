@@ -9,13 +9,14 @@
     "vscode": {
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
+        "esbenp.prettier-vscode",
         "github.vscode-github-actions",
         "jakebecker.elixir-ls",
+        "mikerhyssmith.ts-barrelr",
         "phoenixframework.phoenix",
         "RoyalMist.vscode-eex-format",
-        "vunguyentuan.vscode-css-variables",
-        "esbenp.prettier-vscode",
-        "mikerhyssmith.ts-barrelr"
+        "SonarSource.sonarlint-vscode",
+        "wix.vscode-import-cost"
       ]
     }
   },
