@@ -1,9 +1,10 @@
 import { defineConfig } from "@pandacss/dev";
-import { reset, theme } from "./src/lib/theme/";
+import { preset, reset, theme } from "./src/lib/theme/";
 
 export default defineConfig({
     // Whether to use css reset
     preflight: false,
+    presets: [preset],
 
     // Where to look for your css declarations
     include: ["./src/**/*.{ts,tsx}"],

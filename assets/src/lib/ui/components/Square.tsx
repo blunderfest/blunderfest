@@ -1,11 +1,9 @@
 import { RecipeVariantProps, cva } from "@blunderfest/styled-system/css";
-import { token } from "@blunderfest/styled-system/tokens";
 
-console.log(token.var("colors.blue.light.6"));
-console.log(token("colors.blue.light.6"));
 const square = cva({
     base: {
         aspectRatio: "square",
+        position: "relative",
     },
     variants: {
         color: {
@@ -18,9 +16,12 @@ const square = cva({
         },
         selected: {
             true: {
-                position: "relative",
-                boxShadow: "inset 0 0 0 4px red",
-
+                // boxShadow: "inset 0 0 0 4px red",
+                backgroundColor: "blue.dark.6",
+            },
+        },
+        marked: {
+            true: {
                 _after: {
                     content: "' '",
                     position: "absolute",
@@ -31,7 +32,7 @@ const square = cva({
                     borderStyle: "solid",
                     borderWidth: "4",
                     borderColor: "square.marked",
-                    borderRadius: "full",
+                    borderRadius: "round",
                 },
             },
         },

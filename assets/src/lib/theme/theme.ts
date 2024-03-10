@@ -1,13 +1,7 @@
-import { defineTokens } from "@pandacss/dev";
 import { colors } from "./colors";
 
-import { preset } from "@pandacss/preset-panda";
-
-const { tokens, ...remaining } = preset.theme;
-
 export const theme = {
-    ...remaining,
-    tokens: defineTokens(Object.assign({}, { ...tokens }, { colors: colors })),
+    tokens: { colors: colors },
     semanticTokens: {
         colors: {
             surface: {

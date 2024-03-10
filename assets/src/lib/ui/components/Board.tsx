@@ -21,7 +21,7 @@ export function Board() {
         <div
             className={grid({
                 aspectRatio: "square",
-                gap: "0",
+                gap: "00",
                 columns: 8,
                 borderColor: {
                     _light: "gray.light.8",
@@ -30,7 +30,12 @@ export function Board() {
                 borderStyle: "solid",
             })}>
             {squares.map((square) => (
-                <Square key={square.index} color={square.color} selected={square.index === 43 || square.index === 30} />
+                <Square
+                    key={square.index}
+                    color={square.color}
+                    marked={square.index === 43 || square.index === 30}
+                    selected={square.index === 43}
+                />
             ))}
         </div>
     );
