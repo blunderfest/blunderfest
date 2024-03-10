@@ -8,9 +8,6 @@ dependencies:
   '@reduxjs/toolkit':
     specifier: ^2.2.1
     version: 2.2.1(react-redux@9.1.0)(react@18.2.0)
-  open-props:
-    specifier: ^1.6.21
-    version: 1.6.21
   phoenix:
     specifier: ^1.7.11
     version: 1.7.11
@@ -40,6 +37,9 @@ devDependencies:
   '@pandacss/dev':
     specifier: ^0.34.1
     version: 0.34.1(typescript@5.4.2)
+  '@pandacss/preset-panda':
+    specifier: ^0.34.3
+    version: 0.34.3
   '@radix-ui/colors':
     specifier: ^3.0.0
     version: 3.0.0
@@ -1117,6 +1117,12 @@ packages:
       '@pandacss/types': 0.34.1
     dev: true
 
+  /@pandacss/preset-panda@0.34.3:
+    resolution: {integrity: sha512-70eYX0O06UZi8yVqpjX3vIc27XgD7A8RlvuqPXVN4mOnNRrHi6hCGFGkYeAV/Dip5ZkxLhW5wnKFHTTW98dQHA==}
+    dependencies:
+      '@pandacss/types': 0.34.3
+    dev: true
+
   /@pandacss/shared@0.34.1:
     resolution: {integrity: sha512-td+3a8yMNlvanNYUR8ecyVsVLQi8i6C3ZK5cQP9+/jLH72uME/ArPf3UFgtXf6wr4fj/DxjEat+f6uw6nffpaQ==}
     dev: true
@@ -1132,6 +1138,10 @@ packages:
 
   /@pandacss/types@0.34.1:
     resolution: {integrity: sha512-FjYPBIUDRHcd7y+fkMbVmFz2dAB2TMPMB9Mmbfm7RGGwCMKkn9jQktxZbkkYEJWgHLR5XwUdXIZ+89mcX5IHxA==}
+    dev: true
+
+  /@pandacss/types@0.34.3:
+    resolution: {integrity: sha512-MBwY4DCQfzv3xMqj4y6QSkFUv3wW46ipCHp9hATaeMdyb0aE316xiAgXnxnPZQA+xpjhTpWv7QE7NN3S9g0j/A==}
     dev: true
 
   /@radix-ui/colors@3.0.0:
@@ -3900,10 +3910,6 @@ packages:
     dependencies:
       wrappy: 1.0.2
     dev: true
-
-  /open-props@1.6.21:
-    resolution: {integrity: sha512-leK6x7SvLX3K/idbHyFrnwoygaB0YBBMecQ5FJcms/Oqn82b/FIqgMyuLeSqGxpFOwIPdvMirFGpiB74ef+ULg==}
-    dev: false
 
   /optionator@0.9.3:
     resolution: {integrity: sha512-JjCoypp+jKn1ttEFExxhetCKeJt9zhAgAve5FXHixTvFDW/5aEktX9bufBKLRRMdU7bNtpLfcGu94B3cdEJgjg==}

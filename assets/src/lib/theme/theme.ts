@@ -1,23 +1,13 @@
 import { defineTokens } from "@pandacss/dev";
-import { aspectRatios } from "./aspectRatios";
-import { borderWidths } from "./borderWidths";
 import { colors } from "./colors";
-import { fontSizes } from "./fontSizes";
-import { radii } from "./radii";
-import { sizes } from "./sizes";
-import { zIndex } from "./zIndex";
+
+import { preset } from "@pandacss/preset-panda";
+
+const { tokens, ...remaining } = preset.theme;
 
 export const theme = {
-    tokens: defineTokens({
-        colors: colors,
-        aspectRatios: aspectRatios,
-        sizes: sizes,
-        spacing: sizes,
-        borderWidths: borderWidths,
-        radii: radii,
-        fontSizes: fontSizes,
-        zIndex: zIndex,
-    }),
+    ...remaining,
+    tokens: defineTokens(Object.assign({}, { ...tokens }, { colors: colors })),
     semanticTokens: {
         colors: {
             surface: {

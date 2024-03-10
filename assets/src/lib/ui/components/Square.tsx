@@ -31,7 +31,7 @@ const square = cva({
                     borderStyle: "solid",
                     borderWidth: "4",
                     borderColor: "square.marked",
-                    borderRadius: "round",
+                    borderRadius: "full",
                 },
             },
         },

@@ -13,7 +13,6 @@
     },
     "dependencies": {
         "@reduxjs/toolkit": "^2.2.1",
-        "open-props": "^1.6.21",
         "phoenix": "^1.7.11",
         "react": "^18.2.0",
         "react-aria": "^3.32.1",
@@ -25,6 +24,7 @@
     },
     "devDependencies": {
         "@pandacss/dev": "^0.34.1",
+        "@pandacss/preset-panda": "^0.34.3",
         "@radix-ui/colors": "^3.0.0",
         "@types/phoenix": "^1.6.4",
         "@types/react": "^18.2.56",

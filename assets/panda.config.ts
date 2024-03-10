@@ -4,7 +4,6 @@ import { reset, theme } from "./src/lib/theme/";
 export default defineConfig({
     // Whether to use css reset
     preflight: false,
-    presets: ["@pandacss/preset-base"],
 
     // Where to look for your css declarations
     include: ["./src/**/*.{ts,tsx}"],
@@ -17,12 +16,14 @@ export default defineConfig({
     outdir: "src/lib/styled-system",
     watch: true,
     strictPropertyValues: true,
-    strictTokens: false,
+    strictTokens: true,
 
     globalCss: reset,
 
     // Useful for theme customization
-    theme: theme,
+    theme: {
+        extend: { ...theme },
+    },
     conditions: {
         extend: {
             dark: '[data-color-scheme="dark"] &',
