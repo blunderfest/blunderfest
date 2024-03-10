@@ -2,6 +2,7 @@ import { defineTokens } from "@pandacss/dev";
 import { aspectRatios } from "./aspectRatios";
 import { borderWidths } from "./borderWidths";
 import { colors } from "./colors";
+import { fontSizes } from "./fontSizes";
 import { radii } from "./radii";
 import { sizes } from "./sizes";
 
@@ -13,6 +14,7 @@ export const theme = {
         spacing: sizes,
         borderWidths: borderWidths,
         radii: radii,
+        fontSizes: fontSizes,
     }),
     semanticTokens: {
         colors: {

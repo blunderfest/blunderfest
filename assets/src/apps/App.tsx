@@ -1,3 +1,4 @@
+import { css } from "@blunderfest/styled-system/css";
 import { Box, Flex, Grid, GridItem } from "@blunderfest/styled-system/jsx";
 import { Board } from "@blunderfest/ui/components/Board";
 import { ColorSchemeToggle } from "@blunderfest/ui/components/ColorSchemeToggle";
@@ -14,7 +15,15 @@ export const App = ({ roomCode }: AppProps) => {
             </Box>
             <Grid columns={7} flexGrow={1}>
                 <GridItem colSpan={3}>
-                    {roomCode}
+                    <p
+                        className={css({
+                            color: {
+                                _dark: "gray.dark.11",
+                                _light: "gray.light.11",
+                            },
+                        })}>
+                        {roomCode}
+                    </p>
                     <Board />
                 </GridItem>
                 <GridItem colSpan={4}></GridItem>

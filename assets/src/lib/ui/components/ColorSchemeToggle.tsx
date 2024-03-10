@@ -1,5 +1,6 @@
 import { css } from "@blunderfest/styled-system/css";
 import { useCallback, useLayoutEffect, useState } from "react";
+import { MdDarkMode, MdLightMode } from "react-icons/md";
 
 const matchMedia = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -30,19 +31,32 @@ export function ColorSchemeToggle() {
     }, [onMediaQueryChanged]);
 
     return (
-        <div>
-            <label
-                className={css({
-                    _dark: {
-                        color: "gray.dark.12",
-                    },
-                    _light: {
-                        color: "gray.light.12",
-                    },
-                })}>
-                <input type="checkbox" checked={themeToggle} onChange={(e) => setColorTheme(e.target.checked)} />
-                Dark mode?
-            </label>
+        <div
+            onClick={() => setColorTheme(!themeToggle)}
+            className={css({
+                _dark: {
+                    color: "gray.dark.12",
+                },
+                _light: {
+                    color: "gray.light.12",
+                },
+            })}>
+            {themeToggle && (
+                <MdLightMode
+                    className={css({
+                        fontSize: "4",
+                        cursor: "pointer",
+                    })}
+                />
+            )}
+            {!themeToggle && (
+                <MdDarkMode
+                    className={css({
+                        fontSize: "4",
+                        cursor: "pointer",
+                    })}
+                />
+            )}
         </div>
     );
 }
