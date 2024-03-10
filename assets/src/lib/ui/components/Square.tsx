@@ -13,6 +13,13 @@ const square = cva({
                 backgroundColor: "square.light",
             },
         },
+        selected: {
+            true: {
+                borderStyle: "solid",
+                borderWidth: "4",
+                borderColor: "square.border",
+            },
+        },
     },
 });
 

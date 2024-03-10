@@ -15,52 +15,35 @@ import {
     yellow,
     yellowDark,
 } from "@radix-ui/colors";
-
-import { Recursive, Token } from "@blunderfest/styled-system/types/composition";
-
-const digits = RegExp(/\d+/);
-
-function convert(from: Record<string, string>) {
-    const result: Recursive<Token<string>> = {};
-
-    for (const key in from) {
-        const scale = Number(digits.exec(key)![0]);
-
-        result[scale] = {
-            value: from[key],
-        };
-    }
-
-    return result;
-}
+import { convert } from "./converter";
 
 export const colors = defineTokens.colors({
     blue: {
-        light: convert(blue),
-        dark: convert(blueDark),
+        light: convert(blue, "blue"),
+        dark: convert(blueDark, "blue"),
     },
     gray: {
-        light: convert(gray),
-        dark: convert(grayDark),
+        light: convert(gray, "gray"),
+        dark: convert(grayDark, "gray"),
     },
     green: {
-        light: convert(green),
-        dark: convert(greenDark),
+        light: convert(green, "green"),
+        dark: convert(greenDark, "green"),
     },
     orange: {
-        light: convert(orange),
-        dark: convert(orangeDark),
+        light: convert(orange, "orange"),
+        dark: convert(orangeDark, "orange"),
     },
     red: {
-        light: convert(tomato),
-        dark: convert(tomatoDark),
+        light: convert(tomato, "tomato"),
+        dark: convert(tomatoDark, "tomato"),
     },
     slate: {
-        light: convert(slate),
-        dark: convert(slateDark),
+        light: convert(slate, "slate"),
+        dark: convert(slateDark, "slate"),
     },
     yellow: {
-        light: convert(yellow),
-        dark: convert(yellowDark),
+        light: convert(yellow, "yellow"),
+        dark: convert(yellowDark, "yellow"),
     },
 });

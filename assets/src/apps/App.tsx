@@ -1,71 +1,24 @@
-import {
-    connect,
-    decrement,
-    disconnect,
-    increment,
-    incrementByAmount,
-    join,
-    leave,
-    selectCount,
-    selectOnline,
-    selectRooms,
-    selectUserId,
-    useAppDispatch,
-    useAppSelector,
-} from "@blunderfest/redux";
+import { Box, Flex, Grid, GridItem } from "@blunderfest/styled-system/jsx";
 import { Board } from "@blunderfest/ui/components/Board";
+import { ColorSchemeToggle } from "@blunderfest/ui/components/ColorSchemeToggle";
 
-type Props = {
+type AppProps = {
     roomCode: string;
 };
 
-export function App(props: Readonly<Props>) {
-    const { roomCode } = props;
-    const count = useAppSelector(selectCount);
-    const dispatch = useAppDispatch();
-
-    const online = useAppSelector(selectOnline);
-    const rooms = useAppSelector(selectRooms);
-    const userId = useAppSelector(selectUserId);
-
+export const App = ({ roomCode }: AppProps) => {
     return (
-        <>
-            <button disabled={online} onClick={() => dispatch(connect())}>
-                Connect
-            </button>
-            <button disabled={!online} onClick={() => dispatch(disconnect())}>
-                Disconnect
-            </button>
-            <button
-                disabled={!online || rooms.includes(roomCode)}
-                onClick={() =>
-                    dispatch(
-                        join({
-                            userId: userId,
-                            roomCode: roomCode,
-                        })
-                    )
-                }>
-                Join
-            </button>
-            <button disabled={!online || !rooms.includes(roomCode)} onClick={() => dispatch(leave({ roomCode: roomCode }))}>
-                Leave
-            </button>
-            <h1>Vite + React</h1>
-            <a href="https://www.google.nl">Go to google</a>
-            <div>
-                count is {count}
-                <button onClick={() => dispatch(increment(roomCode))}>INCREMENT</button>
-                <button onClick={() => dispatch(incrementByAmount(roomCode, 5))}>+ 5</button>
-                <button title="Some title" onClick={() => dispatch(decrement(roomCode))}>
-                    -
-                </button>
-                <p>
-                    Edit <code>src/App.jsx</code> and save to test HMR
-                </p>
-            </div>
-            <Board />
-            <p>Click on the Vite and React logos to learn more</p>
-        </>
+        <Flex direction="column" height="dvh">
+            <Box>
+                <ColorSchemeToggle />
+            </Box>
+            <Grid columns={7} flexGrow={1}>
+                <GridItem colSpan={3}>
+                    {roomCode}
+                    <Board />
+                </GridItem>
+                <GridItem colSpan={4}></GridItem>
+            </Grid>
+        </Flex>
     );
-}
+};

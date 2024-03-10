@@ -16,7 +16,8 @@
         "phoenixframework.phoenix",
         "RoyalMist.vscode-eex-format",
         "SonarSource.sonarlint-vscode",
-        "wix.vscode-import-cost"
+        "wix.vscode-import-cost",
+        "phoenisx.cssvar"
       ]
     }
   },
