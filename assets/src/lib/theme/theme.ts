@@ -5,6 +5,7 @@ import { colors } from "./colors";
 import { fontSizes } from "./fontSizes";
 import { radii } from "./radii";
 import { sizes } from "./sizes";
+import { zIndex } from "./zIndex";
 
 export const theme = {
     tokens: defineTokens({
@@ -15,6 +16,7 @@ export const theme = {
         borderWidths: borderWidths,
         radii: radii,
         fontSizes: fontSizes,
+        zIndex: zIndex,
     }),
     semanticTokens: {
         colors: {
@@ -35,20 +37,26 @@ export const theme = {
             square: {
                 dark: {
                     value: {
-                        _light: "{colors.gray.light.5}",
-                        _dark: "{colors.gray.dark.5}",
+                        _light: "{colors.gray.light.12}",
+                        _dark: "{colors.gray.dark.4}",
                     },
                 },
                 light: {
                     value: {
-                        _light: "{colors.gray.light.2}",
+                        _light: "{colors.gray.light.4}",
                         _dark: "{colors.gray.dark.12}",
                     },
                 },
-                border: {
+                focussed: {
                     value: {
                         _light: "{colors.blue.light.8}",
                         _dark: "{colors.blue.dark.8}",
+                    },
+                },
+                marked: {
+                    value: {
+                        _light: "{colors.green.light.8}",
+                        _dark: "{colors.green.dark.8}",
                     },
                 },
             },

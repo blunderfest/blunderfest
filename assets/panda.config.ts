@@ -17,7 +17,7 @@ export default defineConfig({
     outdir: "src/lib/styled-system",
     watch: true,
     strictPropertyValues: true,
-    strictTokens: true,
+    strictTokens: false,
 
     globalCss: reset,
 

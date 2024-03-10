@@ -1,7 +1,7 @@
 import { Recursive, Token } from "@blunderfest/styled-system/types/composition";
 
-export function convert(from: Record<string, string>, prefix: string) {
-    const result: Recursive<Token<string>> = {};
+export function convert<T>(from: Record<string, T>, prefix: string) {
+    const result: Recursive<Token<T>> = {};
 
     for (const key in from) {
         if (key.startsWith(prefix)) {
