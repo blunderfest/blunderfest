@@ -1,10 +1,9 @@
 import { defineConfig } from "@pandacss/dev";
-import { preset, reset, theme } from "./src/lib/theme/";
+import { reset, theme } from "./src/lib/theme/";
 
 export default defineConfig({
     // Whether to use css reset
     preflight: false,
-    presets: [preset],
 
     // Where to look for your css declarations
     include: ["./src/**/*.{ts,tsx}"],
@@ -16,15 +15,11 @@ export default defineConfig({
     // The output directory for your css system
     outdir: "src/lib/styled-system",
     watch: true,
-    strictPropertyValues: true,
-    strictTokens: true,
 
     globalCss: reset,
 
     // Useful for theme customization
-    theme: {
-        extend: { ...theme },
-    },
+    theme: theme,
     conditions: {
         extend: {
             dark: '[data-color-scheme="dark"] &',

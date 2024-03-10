@@ -44,7 +44,7 @@ export function ColorSchemeToggle() {
             {themeToggle && (
                 <MdLightMode
                     className={css({
-                        fontSize: "4",
+                        fontSize: "4xl",
                         cursor: "pointer",
                     })}
                 />
@@ -52,7 +52,7 @@ export function ColorSchemeToggle() {
             {!themeToggle && (
                 <MdDarkMode
                     className={css({
-                        fontSize: "4",
+                        fontSize: "4xl",
                         cursor: "pointer",
                     })}
                 />

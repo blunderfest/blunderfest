@@ -1,7 +1,15 @@
-import { colors } from "./colors";
+import { breakpoints } from "./breakpoints";
+import { containerSizes } from "./containers";
+import { keyframes } from "./keyframes";
+import { tokens } from "./tokens";
+import { textStyles } from "./typography";
 
 export const theme = {
-    tokens: { colors: colors },
+    keyframes,
+    breakpoints,
+    tokens,
+    textStyles,
+    containerSizes,
     semanticTokens: {
         colors: {
             surface: {

@@ -1,4 +1,3 @@
-import { defineTokens } from "@pandacss/dev";
 import {
     blue,
     blueDark,
@@ -15,9 +14,13 @@ import {
     yellow,
     yellowDark,
 } from "@radix-ui/colors";
-import { convert } from "./converter";
+import { convert } from ".";
 
-export const colors = defineTokens.colors({
+export const colors = {
+    current: { value: "currentColor" },
+    black: { value: "#000" },
+    white: { value: "#fff" },
+    transparent: { value: "rgb(0 0 0 / 0)" },
     blue: {
         light: convert(blue, "blue"),
         dark: convert(blueDark, "blue"),
@@ -46,4 +49,4 @@ export const colors = defineTokens.colors({
         light: convert(yellow, "yellow"),
         dark: convert(yellowDark, "yellow"),
     },
-});
+};
