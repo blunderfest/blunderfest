@@ -1,5 +1,6 @@
 import { RecipeVariantProps, sva } from "@blunderfest/styled-system/css";
 import { Box } from "@blunderfest/styled-system/jsx";
+import { useSquareViewModel } from "./useSquareViewModel";
 
 const square = sva({
     slots: ["root", "overlay"],
@@ -7,6 +8,7 @@ const square = sva({
         root: {
             aspectRatio: "square",
             position: "relative",
+            outline: "none",
         },
         overlay: {
             position: "absolute",
@@ -41,6 +43,18 @@ const square = sva({
                 },
             },
         },
+        focussed: {
+            true: {
+                root: {
+                    borderWidth: "thick",
+                    borderStyle: "solid",
+                    borderColor: {
+                        _dark: "blue.dark.8",
+                        _light: "blue.light.8",
+                    },
+                },
+            },
+        },
         marked: {
             true: {
                 overlay: {
@@ -57,14 +71,15 @@ const square = sva({
     },
 });
 
-export type SquareVariants = RecipeVariantProps<typeof square>;
+export type SquareVariants = { rank: number; file: number } & RecipeVariantProps<typeof square>;
 
 export function Square(props: SquareVariants) {
-    const classes = square(props);
+    const { ariaProps, isFocused } = useSquareViewModel(props.file, props.rank);
+    const classes = square({ ...props, focussed: isFocused });
 
     return (
-        <Box className={classes.root}>
-            <Box className={classes.overlay}></Box>
+        <Box {...ariaProps} className={classes.root} tabIndex={0} data-rank={props.rank} data-file={props.file}>
+            <Box className={classes.overlay} tabIndex={-1}></Box>
         </Box>
     );
 }

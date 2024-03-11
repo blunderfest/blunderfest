@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@react-aria/landmark':
+    specifier: 3.0.0-beta.10
+    version: 3.0.0-beta.10(react@18.2.0)
   '@reduxjs/toolkit':
     specifier: ^2.2.1
     version: 2.2.1(react-redux@9.1.0)(react@18.2.0)
@@ -1405,6 +1408,18 @@ packages:
       '@react-types/shared': 3.22.1(react@18.2.0)
       '@swc/helpers': 0.5.6
       react: 18.2.0
+    dev: false
+
+  /@react-aria/landmark@3.0.0-beta.10(react@18.2.0):
+    resolution: {integrity: sha512-qFfAVgCUP/d+sFXCYVJHOMA8fD9VGBWcbJIbfz14X0sdyJ1gj5SL/m4o7cX3OsD9tgPz2A33c1FfmO2gN/qOVg==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
+    dependencies:
+      '@react-aria/utils': 3.23.2(react@18.2.0)
+      '@react-types/shared': 3.22.1(react@18.2.0)
+      '@swc/helpers': 0.5.6
+      react: 18.2.0
+      use-sync-external-store: 1.2.0(react@18.2.0)
     dev: false
 
   /@react-aria/link@3.6.5(react@18.2.0):

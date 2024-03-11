@@ -29,12 +29,17 @@ export default defineConfig(({ command }) => {
                 transformMixedEsModules: true,
             },
             emptyOutDir: true,
-            sourcemap: true,
+            sourcemap: false,
             manifest: true,
             outDir: "../priv/static",
             rollupOptions: {
                 input: {
                     main: "./src/main.tsx",
+                },
+                output: {
+                    manualChunks: {
+                        react: ["react", "react-dom"],
+                    },
                 },
             },
         },

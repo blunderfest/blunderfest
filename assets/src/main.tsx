@@ -7,6 +7,9 @@ import "./index.css";
 const userId = document?.querySelector("meta[name='user_id']")?.getAttribute("content");
 
 const roomCode = document?.querySelector("meta[name='room_code']")?.getAttribute("content");
+document.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+});
 
 if (userId && roomCode) {
     store.dispatch(function connectToBackend(dispatch) {

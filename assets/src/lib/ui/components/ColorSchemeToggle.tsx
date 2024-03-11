@@ -31,7 +31,8 @@ export function ColorSchemeToggle() {
     }, [onMediaQueryChanged]);
 
     return (
-        <div
+        <button
+            aria-pressed={themeToggle}
             onClick={() => setColorTheme(!themeToggle)}
             className={css({
                 _dark: {
@@ -57,6 +58,6 @@ export function ColorSchemeToggle() {
                     })}
                 />
             )}
-        </div>
+        </button>
     );
 }

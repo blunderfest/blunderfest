@@ -2,15 +2,21 @@ import { Board } from "@blunderfest/features/board";
 import { css } from "@blunderfest/styled-system/css";
 import { Box, Flex, Grid, GridItem } from "@blunderfest/styled-system/jsx";
 import { ColorSchemeToggle } from "@blunderfest/ui/components/ColorSchemeToggle";
+import { useLandmark } from "@react-aria/landmark";
+import { useRef } from "react";
 
 type AppProps = {
     roomCode: string;
 };
 
 export const App = ({ roomCode }: AppProps) => {
+    const toolbarRef = useRef<HTMLDivElement>(null);
+
+    const { landmarkProps: toolbarProps } = useLandmark({ role: "navigation" }, toolbarRef);
+
     return (
         <Flex direction="column" height="dvh">
-            <Box>
+            <Box ref={toolbarRef} {...toolbarProps}>
                 <ColorSchemeToggle />
             </Box>
             <Grid columns={7} flexGrow={1}>
