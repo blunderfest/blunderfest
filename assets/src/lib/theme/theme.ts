@@ -29,14 +29,14 @@ export const theme = {
             square: {
                 dark: {
                     value: {
-                        _light: "{colors.gray.light.12}",
-                        _dark: "{colors.gray.dark.4}",
+                        _light: "{colors.gray.light.10}",
+                        _dark: "{colors.gray.dark.7}",
                     },
                 },
                 light: {
                     value: {
                         _light: "{colors.gray.light.4}",
-                        _dark: "{colors.gray.dark.12}",
+                        _dark: "{colors.gray.dark.11}",
                     },
                 },
                 focussed: {
