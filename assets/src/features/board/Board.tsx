@@ -1,4 +1,4 @@
-import { grid } from "@blunderfest/styled-system/patterns";
+import { Grid } from "@blunderfest/styled-system/jsx";
 import { Square } from "./Square";
 
 const ranks = [...Array(8).keys()].reverse();
@@ -18,17 +18,15 @@ const squares = ranks.flatMap((rank) =>
 
 export function Board() {
     return (
-        <div
-            className={grid({
-                aspectRatio: "square",
-                gap: "00",
-                columns: 8,
-                borderColor: {
-                    _light: "gray.light.8",
-                    _dark: "gray.dark.8",
-                },
-                borderStyle: "solid",
-            })}>
+        <Grid
+            aspectRatio="square"
+            gap="0"
+            columns={8}
+            borderColor={{
+                _light: "gray.light.8",
+                _dark: "gray.dark.8",
+            }}
+            borderStyle="solid">
             {squares.map((square) => (
                 <Square
                     key={square.index}
@@ -37,6 +35,6 @@ export function Board() {
                     selected={square.index === 43}
                 />
             ))}
-        </div>
+        </Grid>
     );
 }

@@ -1,3 +1,4 @@
+import { Board } from "@blunderfest/features/board";
 import {
     connect,
     decrement,
@@ -13,7 +14,6 @@ import {
     useAppDispatch,
     useAppSelector,
 } from "@blunderfest/redux";
-import { Board } from "@blunderfest/ui/components/Board";
 
 type Props = {
     roomCode: string;

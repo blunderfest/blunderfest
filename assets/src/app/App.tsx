@@ -1,6 +1,6 @@
+import { Board } from "@blunderfest/features/board";
 import { css } from "@blunderfest/styled-system/css";
 import { Box, Flex, Grid, GridItem } from "@blunderfest/styled-system/jsx";
-import { Board } from "@blunderfest/ui/components/Board";
 import { ColorSchemeToggle } from "@blunderfest/ui/components/ColorSchemeToggle";
 
 type AppProps = {
