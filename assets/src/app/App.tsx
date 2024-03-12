@@ -1,6 +1,6 @@
-import { Room } from "@blunderfest/features/room";
-import { useAppSelector } from "@blunderfest/redux";
-import { Box, Flex } from "@blunderfest/styled-system/jsx";
+import { Board } from "@blunderfest/features/board";
+import { css } from "@blunderfest/styled-system/css";
+import { Box, Flex, Grid, GridItem } from "@blunderfest/styled-system/jsx";
 import { ColorSchemeToggle } from "@blunderfest/ui/components/ColorSchemeToggle";
 import { useLandmark } from "@react-aria/landmark";
 import { useRef } from "react";
@@ -13,16 +13,27 @@ export const App = ({ roomCode }: AppProps) => {
     const toolbarRef = useRef<HTMLDivElement>(null);
 
     const { landmarkProps: toolbarProps } = useLandmark({ role: "navigation" }, toolbarRef);
-    const userId = useAppSelector((state) => state.connectivity.userId);
-    const room = useAppSelector((state) => state.rooms.rooms_by_code[roomCode]);
 
     return (
         <Flex direction="column" height="dvh">
             <Box ref={toolbarRef} {...toolbarProps}>
                 <ColorSchemeToggle />
-                {userId}
             </Box>
-            {room && <Room roomCode={roomCode} />}
+            <Grid columns={7} flexGrow={1}>
+                <GridItem colSpan={3}>
+                    <p
+                        className={css({
+                            color: {
+                                _dark: "gray.dark.11",
+                                _light: "gray.light.11",
+                            },
+                        })}>
+                        {roomCode}
+                    </p>
+                    <Board roomCode={roomCode} />
+                </GridItem>
+                <GridItem colSpan={4}></GridItem>
+            </Grid>
         </Flex>
     );
 };

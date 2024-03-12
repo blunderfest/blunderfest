@@ -1,5 +1,4 @@
-import { Square as SquareType } from "@blunderfest/redux/games";
-import { sva } from "@blunderfest/styled-system/css";
+import { RecipeVariantProps, sva } from "@blunderfest/styled-system/css";
 import { Box } from "@blunderfest/styled-system/jsx";
 import { useSquareViewModel } from "./useSquareViewModel";
 
@@ -86,28 +85,21 @@ const square = sva({
     },
 });
 
-export type SquareProps = { roomCode: string; gameCode: string; square: SquareType };
+export type SquareVariants = { roomCode: string; gameCode: string; rank: number; file: number } & RecipeVariantProps<
+    typeof square
+>;
 
-export function Square(props: Readonly<SquareProps>) {
-    const { ariaProps, focussed, ref, rank, file, color, marked, selected } = useSquareViewModel(
-        props.roomCode,
-        props.gameCode,
-        props.square
-    );
-    const classes = square({
-        color,
-        focussed,
-        marked,
-        selected,
-    });
+export function Square(props: SquareVariants) {
+    const { ariaProps, isFocused, ref } = useSquareViewModel(props.roomCode, props.gameCode, props.file, props.rank);
+    const classes = square({ ...props, focussed: isFocused });
 
     return (
-        <Box ref={ref} {...ariaProps} className={classes.root} tabIndex={0} data-rank={rank} data-file={file}>
+        <Box ref={ref} {...ariaProps} className={classes.root} tabIndex={0} data-rank={props.rank} data-file={props.file}>
             <Box className={classes.overlay} tabIndex={-1}></Box>
             <Box className={classes.selected} tabIndex={-1}></Box>
 
             <Box className={classes.piece}>
-                {(file === 4 || file === 1) && rank === 0 && (
+                {(props.file === 4 || props.file === 1) && props.rank === 0 && (
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 45 45"
@@ -141,7 +133,7 @@ export function Square(props: Readonly<SquareProps>) {
                         </g>
                     </svg>
                 )}
-                {(file === 4 || file === 1) && rank === 7 && (
+                {(props.file === 4 || props.file === 1) && props.rank === 7 && (
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 45 45"

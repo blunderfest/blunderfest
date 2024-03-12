@@ -41,5 +41,5 @@ export function isLocalAction(action: unknown): action is LocalAction {
 export function isRoomAction(action: unknown): action is RoomAction {
     const roomAction = action as RoomAction;
 
-    return !!roomAction.meta && !!roomAction.meta.roomCode && !isLocalAction(action) && !isRemoteAction(action);
+    return !!roomAction.meta.roomCode && !isLocalAction(action) && !isRemoteAction(action);
 }

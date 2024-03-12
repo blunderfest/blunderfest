@@ -1,15 +1,10 @@
 import { useAppDispatch } from "@blunderfest/redux";
-import { Square, mark as markAction, select as selectAction } from "@blunderfest/redux/games";
+import { mark as markAction, select as selectAction } from "@blunderfest/redux/games";
 import { useCallback, useEffect, useRef } from "react";
 import { mergeProps, useFocusManager, useFocusRing, useKeyboard, useLongPress, usePress } from "react-aria";
 
-export const useSquareViewModel = (roomCode: string, gameCode: string, square: Square) => {
+export const useSquareViewModel = (roomCode: string, gameCode: string, file: number, rank: number) => {
     const dispatch = useAppDispatch();
-
-    const file = square.square_index % 8;
-    const rank = square.square_index >> 3;
-    const marked = square.marked;
-    const selected = square.selected;
 
     const mark = useCallback(
         () => dispatch(markAction(roomCode, gameCode, file, rank)),
@@ -106,12 +101,7 @@ export const useSquareViewModel = (roomCode: string, gameCode: string, square: S
 
     return {
         ariaProps: mergeProps(focusProps, pressProps, longPressProps, keyboardProps),
-        focussed: isFocused,
+        isFocused,
         ref,
-        color: rank % 2 === file % 2 ? ("dark" as const) : ("light" as const),
-        marked,
-        selected,
-        rank,
-        file,
     };
 };

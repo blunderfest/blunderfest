@@ -66,13 +66,11 @@ defmodule Blunderfest.Core.RoomServer do
   end
 
   @impl true
-  def handle_call({event, %{meta: meta, payload: payload}}, _from, state) do
-    IO.puts("HANDLE #{event}")
-
+  def handle_call({event, params}, _from, state) do
     new_state =
       event
       |> String.split("/")
-      |> Room.handle_event(meta, payload, state)
+      |> Room.handle_event(params, state)
 
     {:reply, {:ok, new_state}, new_state, @timeout}
   end

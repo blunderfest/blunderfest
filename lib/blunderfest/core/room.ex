@@ -26,42 +26,34 @@ defmodule Blunderfest.Core.Room do
     }
   end
 
-  @spec handle_event(list(String.t()), map(), map(), __MODULE__.t()) :: __MODULE__.t()
-  def handle_event(["rooms", "activate_game"], %{"gameCode" => game_code}, _payload, room),
+  @spec handle_event(list(String.t()), map(), __MODULE__.t()) :: __MODULE__.t()
+  def handle_event(["rooms", "activate_game"], %{"game_code" => game_code}, room),
     do: %{room | active_game: game_code}
 
-  def handle_event(["rooms", "increment"], _meta, _payload, room),
+  def handle_event(["rooms", "increment"], _params, room),
     do: %{room | count: room.count + 1}
 
-  def handle_event(["rooms", "incrementByAmount"], _meta, %{"amount" => amount}, room),
+  def handle_event(["rooms", "incrementByAmount"], %{"amount" => amount}, room),
     do: %{room | count: room.count + amount}
 
-  def handle_event(["rooms", "decrement"], _meta, _payload, room),
+  def handle_event(["rooms", "decrement"], _params, room),
     do: %{room | count: room.count - 1}
 
-  def handle_event(["games", _] = event, %{"gameCode" => game_code} = meta, payload, room) do
-    IO.inspect(event)
-
+  def handle_event(["games", _] = event, %{"game_code" => game_code} = params, room) do
     update_in(
       room,
       [Access.key!(:games_by_code), Access.key!(game_code)],
-      fn room -> Game.handle_event(event, meta, payload, room) end
+      &Game.handle_event(event, params, &1)
     )
   end
 
-  def handle_event(event, %{"gameCode" => game_code} = meta, payload, room) do
-    Logger.warning("Unknown room event 1 #{event} - #{game_code}")
-    IO.inspect(meta)
-    IO.inspect(payload)
-
+  def handle_event(event, %{"game_code" => game_code}, room) do
+    Logger.warning("Unknown room event #{event} - #{game_code}")
     room
   end
 
-  def handle_event(event, meta, payload, room) do
-    Logger.warning("Unknown room event 2 #{event}")
-    IO.inspect(meta)
-    IO.inspect(payload)
-
+  def handle_event(event, _params, room) do
+    Logger.warning("Unknown room event #{event}")
     room
   end
 end
