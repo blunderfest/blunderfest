@@ -1,12 +1,16 @@
-import { mark as markAction, select as selectAction, useAppDispatch } from "@blunderfest/redux";
+import { useAppDispatch } from "@blunderfest/redux";
+import { mark as markAction, select as selectAction } from "@blunderfest/redux/games";
 import { useCallback, useEffect, useRef } from "react";
 import { mergeProps, useFocusManager, useFocusRing, useKeyboard, useLongPress, usePress } from "react-aria";
 
-export const useSquareViewModel = (file: number, rank: number) => {
+export const useSquareViewModel = (roomCode: string, gameCode: string, file: number, rank: number) => {
     const dispatch = useAppDispatch();
 
-    const mark = useCallback(() => dispatch(markAction(file, rank)), [file, rank, dispatch]);
-    const select = () => dispatch(selectAction(file, rank));
+    const mark = useCallback(
+        () => dispatch(markAction(roomCode, gameCode, file, rank)),
+        [roomCode, gameCode, file, rank, dispatch]
+    );
+    const select = () => dispatch(selectAction(roomCode, gameCode, file, rank));
 
     const focusManager = useFocusManager();
 

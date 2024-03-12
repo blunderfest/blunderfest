@@ -85,10 +85,12 @@ const square = sva({
     },
 });
 
-export type SquareVariants = { rank: number; file: number } & RecipeVariantProps<typeof square>;
+export type SquareVariants = { roomCode: string; gameCode: string; rank: number; file: number } & RecipeVariantProps<
+    typeof square
+>;
 
 export function Square(props: SquareVariants) {
-    const { ariaProps, isFocused, ref } = useSquareViewModel(props.file, props.rank);
+    const { ariaProps, isFocused, ref } = useSquareViewModel(props.roomCode, props.gameCode, props.file, props.rank);
     const classes = square({ ...props, focussed: isFocused });
 
     return (

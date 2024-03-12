@@ -30,7 +30,7 @@ export const App = ({ roomCode }: AppProps) => {
                         })}>
                         {roomCode}
                     </p>
-                    <Board />
+                    <Board roomCode={roomCode} />
                 </GridItem>
                 <GridItem colSpan={4}></GridItem>
             </Grid>

@@ -1,7 +1,7 @@
 import { AppDispatch } from "@blunderfest/redux";
 import { PayloadAction } from "@reduxjs/toolkit";
 import { Channel, Socket } from "phoenix";
-import { connected, disconnected, joined, leave, left } from "..";
+import { connected, disconnected, joined, leave, left } from ".";
 
 export const createSocket = (dispatch: AppDispatch) => {
     const socket = new Socket("/socket", { params: { token: undefined } });
@@ -84,7 +84,7 @@ export const createSocket = (dispatch: AppDispatch) => {
         const channel = channels[roomCode];
 
         if (channel) {
-            channel.push(action.type, action.payload);
+            channel.push(action.type, action);
         }
     };
 

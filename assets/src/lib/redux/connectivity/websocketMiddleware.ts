@@ -1,26 +1,13 @@
-import { Middleware, PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "../../store";
-import { connect, disconnect, join, leave } from "../actions/actions";
+import { isRoomAction } from "@blunderfest/redux";
+import { Middleware } from "@reduxjs/toolkit";
+import { connect, disconnect, join, leave } from ".";
 import { createSocket } from "./createSocket";
 
-const isLocalAction = (
-    action: unknown
-): action is PayloadAction<object, string, { roomCode: string; remote: boolean }, unknown> => {
-    return (
-        typeof action === "object" &&
-        action !== null &&
-        "meta" in action &&
-        action.meta !== null &&
-        typeof action.meta === "object" &&
-        "roomCode" in action.meta
-    );
-};
-
-export const websocketMiddleware: Middleware<unknown, RootState> = ({ dispatch }) => {
+export const websocketMiddleware: Middleware = ({ dispatch }) => {
     const socket = createSocket(dispatch);
 
     return (next) => {
-        return (action) => {
+        return (action: unknown) => {
             const result = next(action);
 
             if (connect.match(action)) {
@@ -41,8 +28,11 @@ export const websocketMiddleware: Middleware<unknown, RootState> = ({ dispatch }
                 socket.leave(roomCode);
             }
 
-            if (isLocalAction(action) && !action.meta.remote) {
+            if (isRoomAction(action)) {
+                console.log("SEND", action);
                 socket.send(action.meta.roomCode, action);
+            } else {
+                console.log("NO SEND", action);
             }
 
             return result;

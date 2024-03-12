@@ -1,21 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { joined } from "..";
 
-export type Square = {
-    color: "dark" | "light";
-    square_index: number;
-};
-
-export type Game = {
-    game_code: string;
-    position: string;
-    squares: Square[];
-};
-
 export type Room = {
     room_code: string;
     games: string[];
-    games_by_code: Record<string, Game>;
 };
 
 type State = {
@@ -29,7 +17,7 @@ const initialState: State = {
 };
 
 const roomSlice = createSlice({
-    name: "room",
+    name: "rooms",
     initialState,
     reducers: {},
     extraReducers(builder) {

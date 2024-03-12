@@ -13,7 +13,7 @@ document.addEventListener("contextmenu", (event) => {
 
 if (userId && roomCode) {
     const subscription = store.subscribe(() => {
-        if (store.getState().connectivity.online && !store.getState().connectivity.rooms.includes(roomCode)) {
+        if (store.getState().connectivity.status === "online" && !store.getState().connectivity.rooms.includes(roomCode)) {
             subscription();
             store.dispatch(join(userId, roomCode));
         }

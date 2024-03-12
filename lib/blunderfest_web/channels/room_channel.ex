@@ -15,14 +15,20 @@ defmodule BlunderfestWeb.RoomChannel do
   end
 
   @impl true
-  def handle_in(event, payload, %{topic: "room:" <> room_code} = socket) do
-    RoomServer.handle_event(room_code, event, payload)
+  def handle_in(
+        event,
+        %{"meta" => %{"roomCode" => room_code} = meta, "payload" => payload},
+        socket
+      ) do
+    RoomServer.handle_event(room_code, event, %{meta: meta, payload: payload})
+
     {:noreply, socket}
   end
 
   @impl true
   def handle_info(%{event: event, payload: payload}, socket) do
     push(socket, event, payload)
+
     {:noreply, socket}
   end
 end
