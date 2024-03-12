@@ -3,11 +3,13 @@ import { websocketMiddleware } from "./connectivity";
 
 import { useDispatch, useSelector, useStore } from "react-redux";
 import { connectivityReducer } from "./connectivity/connectivityReducer";
+import { gameReducer } from "./games";
 import { roomReducer } from "./rooms";
 
 const rootReducer = combineReducers({
     connectivity: connectivityReducer,
     rooms: roomReducer,
+    games: gameReducer,
 });
 
 export const store = configureStore({

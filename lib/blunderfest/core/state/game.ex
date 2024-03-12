@@ -22,8 +22,15 @@ defmodule Blunderfest.Core.State.Game do
 
   def select(game, _square_index), do: game
 
-  def handle_event(event, %{"game_code" => game_code}, game) do
+  def handle_event(["games", "select"], _meta, %{"file" => file, "rank" => rank}, game) do
+    IO.puts("SELECT #{file} #{rank}")
+    game
+  end
+
+  def handle_event(event, %{"gameCode" => game_code} = meta, payload, game) do
     Logger.warning("Unknown game event #{event} - #{game_code}")
+    IO.inspect(meta)
+    IO.inspect(payload)
     game
   end
 end
