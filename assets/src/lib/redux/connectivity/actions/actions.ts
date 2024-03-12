@@ -1,92 +1,67 @@
-import { createAsyncThunk } from "@reduxjs/toolkit";
-import { Channel, Socket } from "phoenix";
+import { Room } from "@blunderfest/redux/rooms";
+import { createAction } from "@reduxjs/toolkit";
 
-//"window.userToken"
-const socket = new Socket("/socket", { params: { token: undefined } });
+export const connect = createAction("connectivity/connect", () => ({
+    meta: {
+        remote: true,
+    },
+    payload: {},
+}));
 
-const channels: Record<string, Channel> = {};
+export const connected = createAction("connectivity/connected", () => ({
+    meta: {
+        remote: true,
+    },
+    payload: {},
+}));
 
-export const connect = createAsyncThunk("connect", () => {
-    return new Promise<void>((resolve, reject) => {
-        socket.connect();
-        socket.onOpen(() => resolve());
-        socket.onError((e) => {
-            console.error(e);
-            reject();
-        });
-    });
-});
+export const disconnect = createAction("connectivity/disconnect", () => ({
+    meta: {
+        remote: true,
+    },
+    payload: {},
+}));
 
-export const disconnect = createAsyncThunk("disconnect", () => {
-    return new Promise<void>((resolve) => {
-        socket.disconnect();
-        resolve();
-    });
-});
+export const disconnected = createAction("connectivity/disconnected", () => ({
+    meta: {
+        remote: true,
+    },
+    payload: {},
+}));
 
-export const join = createAsyncThunk(
-    "join",
-    (
-        params: {
-            userId: string;
-            roomCode: string;
-        },
-        { dispatch, fulfillWithValue, rejectWithValue }
-    ) => {
-        const { userId, roomCode } = params;
+export const join = createAction("connectivity/join", (userId: string, roomCode: string) => ({
+    meta: {
+        remote: true,
+    },
+    payload: {
+        userId,
+        roomCode,
+    },
+}));
 
-        const channel = socket.channel("room:" + roomCode, {
-            user_id: userId,
-        });
+export const joined = createAction("connectivity/joined", (room: Room) => ({
+    meta: {
+        remote: true,
+    },
+    payload: {
+        room,
+    },
+}));
 
-        channels[roomCode] = channel;
+export const leave = createAction("connectivity/leave", (roomCode: string) => ({
+    meta: {
+        remote: true,
+    },
+    payload: {
+        roomCode,
+    },
+}));
 
-        channel
-            .join()
-            .receive("ok", () => fulfillWithValue(params))
-            .receive("error", (resp) => {
-                console.error(resp);
-
-                rejectWithValue({ message: "Unable to join", resp });
-            });
-
-        channel.onMessage = (event, payload) => {
-            dispatch({
-                type: event,
-                payload,
-                meta: {
-                    remote: true,
-                },
-            });
-
-            return payload;
-        };
-
-        channel.onClose(() => {
-            if (channel.state !== "leaving") {
-                dispatch(leave({ roomCode: roomCode }));
-            }
-        });
-
-        channel.onError((reason) => {
-            rejectWithValue(reason);
-        });
-    }
-);
-
-export const leave = createAsyncThunk("leave", (params: { roomCode: string }, { fulfillWithValue, rejectWithValue }) => {
-    const channel = selectChannel(params.roomCode);
-
-    if (!channel || channel.state !== "joined") {
-        rejectWithValue("Not joined");
-    } else {
-        if (channel.state === "joined") {
-            channel.leave();
-        }
-
-        delete channels[params.roomCode];
-        fulfillWithValue(params);
-    }
-});
-
-export const selectChannel = (roomCode: string) => channels[roomCode];
+export const left = createAction("connectivity/left", (roomCode: string) => ({
+    meta: {
+        remote: true,
+    },
+    payload: {
+        roomCode,
+    },
+}));

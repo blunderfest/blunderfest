@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { connect, disconnect, join, leave } from "./actions/actions";
+import { connected, disconnected, join, joined, left } from "./actions/actions";
 
 type Connectivity = {
     online: boolean;
@@ -17,26 +17,24 @@ const connectivitySlice = createSlice({
     name: "connectivity",
     initialState: initialState,
     reducers: {},
-    extraReducers: (builder) => {
+    extraReducers(builder) {
         builder
-            .addCase(connect.fulfilled, (state) => {
+            .addCase(connected, (state) => {
                 state.online = true;
             })
-            .addCase(connect.rejected, (state) => {
+            .addCase(disconnected, (state) => {
                 state.online = false;
             })
-            .addCase(disconnect.fulfilled, (state) => {
-                state.online = false;
+            .addCase(join, (state, action) => {
+                state.userId = action.payload.userId;
             })
-            .addCase(join.fulfilled, (state, action) => {
-                if (!state.rooms.includes(action.meta.arg.roomCode)) {
-                    state.rooms.push(action.meta.arg.roomCode);
+            .addCase(joined, (state, action) => {
+                if (!state.rooms.includes(action.payload.room.room_code)) {
+                    state.rooms.push(action.payload.room.room_code);
                 }
-
-                state.userId = action.meta.arg.userId;
             })
-            .addCase(leave.fulfilled, (state, action) => {
-                state.rooms = state.rooms.filter((room) => room !== action.meta.arg.roomCode);
+            .addCase(left, (state, action) => {
+                state.rooms = state.rooms.filter((room) => room !== action.payload.roomCode);
             });
     },
     selectors: {

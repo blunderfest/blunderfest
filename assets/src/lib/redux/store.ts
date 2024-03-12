@@ -5,9 +5,8 @@ import { incrementByAmount } from "./actions/incrementByAmount";
 import { websocketMiddleware } from "./connectivity/middlewares/websocketMiddleware";
 
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
-import { FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE, persistReducer, persistStore } from "redux-persist";
-import storage from "redux-persist/lib/storage";
 import { connectivityReducer } from "./connectivity/connectivityReducer";
+import { roomReducer } from "./rooms";
 
 const counterSlice = createSlice({
     name: "counter",
@@ -37,28 +36,15 @@ export const { selectCount } = counterSlice.selectors;
 const rootReducer = combineReducers({
     counter: counterSlice.reducer,
     connectivity: connectivityReducer,
+    rooms: roomReducer,
 });
-
-const persistConfig = {
-    key: "root",
-    storage: storage,
-};
-
-const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-    reducer: persistedReducer,
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
-            serializableCheck: {
-                ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-            },
-        }).concat(websocketMiddleware),
+    reducer: rootReducer,
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(websocketMiddleware),
 });
 
-export const persistor = persistStore(store);
-
-export type RootState = ReturnType<typeof persistedReducer>;
+export type RootState = ReturnType<typeof rootReducer>;
 export type AppDispatch = typeof store.dispatch;
 
 export const useAppDispatch: () => AppDispatch = useDispatch;

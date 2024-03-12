@@ -5,7 +5,6 @@ defmodule Blunderfest.Core.State.Game.Position do
 
   use TypedStruct
 
-  @derive Jason.Encoder
   typedstruct do
     field(:pieces, list(Piece.t() | nil))
     field(:active_color, Piece.color())
@@ -17,7 +16,17 @@ defmodule Blunderfest.Core.State.Game.Position do
 
   @starting_position "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-  def new(), do: parse(@starting_position)
+  def new() do
+    {:ok, position} = parse(@starting_position)
+
+    position
+  end
 
   def parse(fen), do: FenParser.parse(fen)
+
+  defimpl Jason.Encoder, for: __MODULE__ do
+    def encode(value, opts) do
+      FenParser.to_fen(value) |> Jason.Encode.string(opts)
+    end
+  end
 end

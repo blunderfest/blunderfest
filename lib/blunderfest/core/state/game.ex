@@ -10,7 +10,7 @@ defmodule Blunderfest.Core.State.Game do
   typedstruct do
     field(:game_code, String.t())
     field(:squares, list(Square.t()))
-    field(:position, String.t())
+    field(:position, Position.t())
   end
 
   def new(),

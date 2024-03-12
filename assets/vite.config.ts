@@ -29,7 +29,7 @@ export default defineConfig(({ command }) => {
                 transformMixedEsModules: true,
             },
             emptyOutDir: true,
-            sourcemap: false,
+            sourcemap: isDev,
             manifest: true,
             outDir: "../priv/static",
             rollupOptions: {

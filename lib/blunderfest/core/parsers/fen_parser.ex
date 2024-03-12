@@ -2,6 +2,66 @@ defmodule Blunderfest.Core.Parsers.FenParser do
   alias Blunderfest.Core.State.Game.Piece
   alias Blunderfest.Core.State.Game.Position
 
+  @spec to_fen(Position.t()) :: String.t()
+  def to_fen(%Position{
+        active_color: active_color,
+        castling_availability: castling_availability,
+        en_passant: en_passant,
+        fullmove_number: fullmove_number,
+        halfmove_clock: halfmove_clock,
+        pieces: pieces
+      }) do
+    Enum.join(
+      [
+        Enum.chunk_every(pieces, 8)
+        |> Enum.map(&serialize_row/1)
+        |> Enum.join("/"),
+        active_color |> serialize_color,
+        castling_availability |> serialize_castling,
+        en_passant,
+        halfmove_clock,
+        fullmove_number
+      ],
+      " "
+    )
+  end
+
+  def serialize_row(pieces) do
+    pieces
+    |> Enum.map(&serialize_piece/1)
+    |> Enum.join("")
+    |> replace_char_with_count(" ")
+  end
+
+  defp replace_char_with_count(string, char) do
+    Regex.replace(~r/#{char}+/, string, fn x, _ -> String.length(x) |> Integer.to_string() end)
+  end
+
+  defp serialize_piece(nil), do: " "
+
+  defp serialize_piece(%Piece{color: color, type: type}),
+    do: serialize_piece(type) |> serialize_piece(color)
+
+  defp serialize_piece(:pawn), do: "p"
+  defp serialize_piece(:knight), do: "n"
+  defp serialize_piece(:bishop), do: "b"
+  defp serialize_piece(:rook), do: "r"
+  defp serialize_piece(:queen), do: "q"
+  defp serialize_piece(:king), do: "k"
+
+  defp serialize_piece(piece, :black), do: piece
+  defp serialize_piece(piece, :white), do: piece |> String.upcase()
+
+  defp serialize_color(:black), do: "b"
+  defp serialize_color(:white), do: "w"
+
+  defp serialize_castling({:black, :king}), do: "k"
+  defp serialize_castling({:black, :queen}), do: "q"
+  defp serialize_castling({:white, :king}), do: "K"
+  defp serialize_castling({:white, :queen}), do: "Q"
+  defp serialize_castling([]), do: "-"
+  defp serialize_castling(list), do: list |> Enum.map(&serialize_castling/1) |> Enum.join("")
+
   @spec parse(String.t()) ::
           {:error, :invalid_fen} | {:ok, Position.t()}
   def parse(fen) do

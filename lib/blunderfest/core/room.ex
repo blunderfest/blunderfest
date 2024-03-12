@@ -51,4 +51,9 @@ defmodule Blunderfest.Core.Room do
     Logger.warning("Unknown room event #{event} - #{game_code}")
     room
   end
+
+  def handle_event(event, _params, room) do
+    Logger.warning("Unknown room event #{event}")
+    room
+  end
 end

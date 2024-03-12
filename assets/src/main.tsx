@@ -12,16 +12,14 @@ document.addEventListener("contextmenu", (event) => {
 });
 
 if (userId && roomCode) {
-    store.dispatch(function connectToBackend(dispatch) {
-        dispatch(connect()).then(() => {
-            dispatch(
-                join({
-                    userId: userId,
-                    roomCode: roomCode,
-                })
-            );
-        });
+    const subscription = store.subscribe(() => {
+        if (store.getState().connectivity.online && !store.getState().connectivity.rooms.includes(roomCode)) {
+            subscription();
+            store.dispatch(join(userId, roomCode));
+        }
     });
+
+    store.dispatch(connect());
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
