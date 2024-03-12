@@ -6,14 +6,16 @@ export type Room = {
     games: string[];
 };
 
-type State = {
+export type RoomState = {
     rooms: string[];
     rooms_by_code: Record<string, Room>;
+    activeGame: string;
 };
 
-const initialState: State = {
+const initialState: RoomState = {
     rooms: [],
     rooms_by_code: {},
+    activeGame: "",
 };
 
 const roomSlice = createSlice({
@@ -21,9 +23,17 @@ const roomSlice = createSlice({
     initialState,
     reducers: {},
     extraReducers(builder) {
-        builder.addCase(joined, (state, action) => {
-            state.rooms.push(action.payload.room.room_code);
-            state.rooms_by_code[action.payload.room.room_code] = action.payload.room;
+        builder.addCase(joined, (_state, action) => {
+            return {
+                rooms: [action.payload.room_code],
+                rooms_by_code: {
+                    [action.payload.room_code]: {
+                        room_code: action.payload.room_code,
+                        games: action.payload.games,
+                    },
+                },
+                activeGame: action.payload.active_game,
+            };
         });
     },
 });

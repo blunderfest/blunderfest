@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { createLocalAction } from "../actions";
-import { Room } from "../rooms";
+import { Game } from "../games";
 
 type Connectivity = {
     status: "connecting" | "disconnecting" | "online" | "offline";
@@ -58,9 +58,10 @@ const connectivitySlice = createSlice({
         ),
 
         joined: create.preparedReducer(
-            (room: Room) => createLocalAction({ room }),
+            (payload: { room_code: string; active_game: string; games: string[]; games_by_code: Record<string, Game> }) =>
+                createLocalAction(payload),
             (state, action) => {
-                state.rooms.push(action.payload.room.room_code);
+                state.rooms = [action.payload.room_code];
             }
         ),
 

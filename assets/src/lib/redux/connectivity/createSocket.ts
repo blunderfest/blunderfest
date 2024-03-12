@@ -1,4 +1,4 @@
-import { AppDispatch } from "@blunderfest/redux";
+import { AppDispatch, isRoomAction } from "@blunderfest/redux";
 import { PayloadAction } from "@reduxjs/toolkit";
 import { Channel, Socket } from "phoenix";
 import { connected, disconnected, joined, leave, left } from ".";
@@ -43,13 +43,18 @@ export const createSocket = (dispatch: AppDispatch) => {
             });
 
         channel.onMessage = (event, payload) => {
-            dispatch({
-                type: event,
-                payload,
-                meta: {
-                    remote: true,
-                },
-            });
+            if (isRoomAction(payload)) {
+                console.log("RECEIVED", event, payload);
+
+                dispatch({
+                    type: event,
+                    payload: payload.payload,
+                    meta: {
+                        ...payload.meta,
+                        remote: true,
+                    },
+                });
+            }
 
             return payload;
         };
@@ -80,11 +85,11 @@ export const createSocket = (dispatch: AppDispatch) => {
         }
     };
 
-    const send = (roomCode: string, action: PayloadAction<object>) => {
+    const send = (roomCode: string, action: PayloadAction<object, string, object>) => {
         const channel = channels[roomCode];
 
         if (channel) {
-            channel.push(action.type, action);
+            channel.push(action.type, { meta: action.meta, payload: action.payload });
         }
     };
 

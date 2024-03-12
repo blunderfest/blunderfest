@@ -4,34 +4,19 @@ import { FocusScope } from "react-aria";
 import { Square } from "./Square";
 import { useBoardViewModel } from "./useBoardViewModel";
 
-const ranks = [...Array(8).keys()].reverse();
-const files = [...Array(8).keys()];
-
-const squares = ranks.flatMap((rank) =>
-    files.map((file) => {
-        const color = rank % 2 === file % 2 ? "dark" : "light";
-
-        return {
-            rank,
-            file,
-            color,
-        } as const;
-    })
-);
-
 type BoardProps = {
     roomCode: string;
+    gameCode: string;
 };
 
 export function Board(props: Readonly<BoardProps>) {
-    const { roomCode } = props;
+    const { roomCode, gameCode } = props;
 
     const { ref, ariaProps } = useBoardViewModel();
 
-    const games = useAppSelector((state) => state.rooms.rooms_by_code[roomCode]);
+    const game = useAppSelector((state) => state.games.games_by_code[gameCode]);
 
-    if (games?.games?.length) {
-        const gameCode = games.games[0];
+    if (game) {
         return (
             <FocusScope restoreFocus>
                 <Grid
@@ -46,22 +31,13 @@ export function Board(props: Readonly<BoardProps>) {
                         _dark: "gray.dark.8",
                     }}
                     borderStyle="solid">
-                    {squares.map((square) => (
-                        <Square
-                            key={String(square.rank) + String(square.file)}
-                            roomCode={roomCode}
-                            gameCode={gameCode}
-                            rank={square.rank}
-                            file={square.file}
-                            color={square.color}
-                            marked={(square.file === 2 && square.rank === 4) || (square.file === 5 && square.rank === 6)}
-                            selected={square.file === 2 && square.rank === 4}
-                        />
+                    {game.squares.map((square) => (
+                        <Square key={String(square.square_index)} roomCode={roomCode} gameCode={game.game_code} square={square} />
                     ))}
                 </Grid>
             </FocusScope>
         );
     } else {
-        return null;
+        return <p>NO GAME</p>;
     }
 }
