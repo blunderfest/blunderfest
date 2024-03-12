@@ -9,8 +9,9 @@ defmodule BlunderfestWeb.RoomChannel do
       {:error, :room_not_found} ->
         {:error, "room_not_found"}
 
-      {:ok, _room} ->
-        {:ok, socket}
+      {:ok, room} ->
+        IO.inspect(room)
+        {:ok, room, socket}
     end
   end
 

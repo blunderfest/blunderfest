@@ -4,13 +4,14 @@ defmodule Blunderfest.Core.State.Game do
 
   require Logger
 
-  @type t() :: %__MODULE__{
-          game_code: String.t(),
-          squares: list(Square.t()),
-          position: String.t()
-        }
+  use TypedStruct
 
-  defstruct [:game_code, :squares, :position]
+  @derive Jason.Encoder
+  typedstruct do
+    field(:game_code, String.t())
+    field(:squares, list(Square.t()))
+    field(:position, String.t())
+  end
 
   def new(),
     do: %__MODULE__{

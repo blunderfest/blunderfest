@@ -88,11 +88,11 @@ const square = sva({
 export type SquareVariants = { rank: number; file: number } & RecipeVariantProps<typeof square>;
 
 export function Square(props: SquareVariants) {
-    const { ariaProps, isFocused } = useSquareViewModel(props.file, props.rank);
+    const { ariaProps, isFocused, ref } = useSquareViewModel(props.file, props.rank);
     const classes = square({ ...props, focussed: isFocused });
 
     return (
-        <Box {...ariaProps} className={classes.root} tabIndex={0} data-rank={props.rank} data-file={props.file}>
+        <Box ref={ref} {...ariaProps} className={classes.root} tabIndex={0} data-rank={props.rank} data-file={props.file}>
             <Box className={classes.overlay} tabIndex={-1}></Box>
             <Box className={classes.selected} tabIndex={-1}></Box>
 

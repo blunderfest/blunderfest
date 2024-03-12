@@ -1,25 +1,19 @@
 defmodule Blunderfest.Core.State.Game.Position do
-  alias Blunderfest.Core.Parsers.FenParser
   alias Blunderfest.Core.State.Game.Square
   alias Blunderfest.Core.State.Game.Piece
+  alias Blunderfest.Core.Parsers.FenParser
 
-  @type t() :: %__MODULE__{
-          pieces: list(Piece.t() | nil),
-          active_color: Piece.color(),
-          castling_availability: list({Piece.color(), :king | :queen}),
-          en_passant: Square.square_index() | nil,
-          halfmove_clock: integer(),
-          fullmove_number: integer()
-        }
+  use TypedStruct
 
-  defstruct [
-    :pieces,
-    :active_color,
-    :castling_availability,
-    :en_passant,
-    :halfmove_clock,
-    :fullmove_number
-  ]
+  @derive Jason.Encoder
+  typedstruct do
+    field(:pieces, list(Piece.t() | nil))
+    field(:active_color, Piece.color())
+    field(:castling_availability, list({Piece.color(), :king | :queen}))
+    field(:en_passant, Square.square_index() | nil)
+    field(:halfmove_clock, integer())
+    field(:fullmove_number, integer())
+  end
 
   @starting_position "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 

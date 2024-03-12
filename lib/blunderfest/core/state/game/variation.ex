@@ -2,11 +2,12 @@ defmodule Blunderfest.Core.State.Game.Variation do
   alias Blunderfest.Core.State.Game.Position
   alias Blunderfest.Core.State.Game.Move
 
-  @type t() :: %__MODULE__{
-          move: Move.t(),
-          position: Position.t(),
-          variations: list(t())
-        }
+  use TypedStruct
 
-  defstruct [:move, :position, :variations]
+  @derive Jason.Encoder
+  typedstruct do
+    field(:move, Move.t())
+    field(:position, Position.t())
+    field(:variations, list(__MODULE__.t()))
+  end
 end

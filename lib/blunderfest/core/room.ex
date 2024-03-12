@@ -1,17 +1,17 @@
 defmodule Blunderfest.Core.Room do
   alias Blunderfest.Core.State.Game
-
   require Logger
 
-  @type t() :: %__MODULE__{
-          room_code: String.t(),
-          count: integer(),
-          games: list(String.t()),
-          games_by_code: %{String.t() => Game.t()},
-          active_game: String.t()
-        }
+  use TypedStruct
 
-  defstruct [:room_code, :count, :games, :games_by_code, :active_game]
+  @derive Jason.Encoder
+  typedstruct do
+    field(:room_code, String.t())
+    field(:count, integer())
+    field(:games, list(String.t()))
+    field(:games_by_code, %{String.t() => Game.t()})
+    field(:active_game, String.t())
+  end
 
   def new(room_code) do
     game = Game.new()

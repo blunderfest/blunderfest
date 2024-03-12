@@ -56,7 +56,7 @@ config :blunderfest, BlunderfestWeb.Endpoint,
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
-      ~r"lib/blunderfest_web/(controllers|live|components)/.*(ex|heex)$"
+      ~r"lib/blunderfest_web/(controllers|channels|components)/.*(ex|heex)$"
     ]
   ]
 

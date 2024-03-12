@@ -1,8 +1,12 @@
-import { mark, select, useAppDispatch } from "@blunderfest/redux";
+import { mark as markAction, select as selectAction, useAppDispatch } from "@blunderfest/redux";
+import { useCallback, useEffect, useRef } from "react";
 import { mergeProps, useFocusManager, useFocusRing, useKeyboard, useLongPress, usePress } from "react-aria";
 
 export const useSquareViewModel = (file: number, rank: number) => {
     const dispatch = useAppDispatch();
+
+    const mark = useCallback(() => dispatch(markAction(file, rank)), [file, rank, dispatch]);
+    const select = () => dispatch(selectAction(file, rank));
 
     const focusManager = useFocusManager();
 
@@ -69,22 +73,31 @@ export const useSquareViewModel = (file: number, rank: number) => {
     const { pressProps } = usePress({
         onPress: (e) => {
             if (e.pointerType === "keyboard" && e.ctrlKey) {
-                dispatch(mark(file, rank));
+                mark();
             } else {
-                focusSquare(file, rank);
-                dispatch(select(file, rank));
+                select();
             }
         },
     });
 
     const { longPressProps } = useLongPress({
-        onLongPress: () => {
-            dispatch(mark(file, rank));
-        },
+        onLongPress: () => mark(),
     });
+
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const current = ref.current;
+        if (current) {
+            current.addEventListener("contextmenu", mark);
+
+            return () => current?.removeEventListener("contextmenu", mark);
+        }
+    }, [mark]);
 
     return {
         ariaProps: mergeProps(focusProps, pressProps, longPressProps, keyboardProps),
         isFocused,
+        ref,
     };
 };
