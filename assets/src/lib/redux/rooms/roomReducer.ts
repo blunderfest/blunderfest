@@ -1,27 +1,33 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { joined } from "..";
+import { createLocalAction, joined } from "..";
 
 export type Room = {
     room_code: string;
     games: string[];
+    activeGame: string;
 };
 
 export type RoomState = {
     rooms: string[];
     rooms_by_code: Record<string, Room>;
-    activeGame: string;
 };
 
 const initialState: RoomState = {
     rooms: [],
     rooms_by_code: {},
-    activeGame: "",
 };
 
 const roomSlice = createSlice({
     name: "rooms",
     initialState,
-    reducers: {},
+    reducers: (create) => ({
+        select: create.preparedReducer(
+            (roomCode: string, gameCode: string) => createLocalAction({ roomCode, gameCode }),
+            (state, action) => {
+                state.rooms_by_code[action.payload.roomCode].activeGame = action.payload.gameCode;
+            }
+        ),
+    }),
     extraReducers(builder) {
         builder.addCase(joined, (_state, action) => {
             return {
@@ -30,12 +36,13 @@ const roomSlice = createSlice({
                     [action.payload.room_code]: {
                         room_code: action.payload.room_code,
                         games: action.payload.games,
+                        activeGame: action.payload.games.at(0) ?? "",
                     },
                 },
-                activeGame: action.payload.active_game,
             };
         });
     },
 });
 
+export const { select } = roomSlice.actions;
 export const roomReducer = roomSlice.reducer;

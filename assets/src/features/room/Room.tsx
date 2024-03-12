@@ -1,7 +1,7 @@
-import { useAppSelector } from "@blunderfest/redux";
+import { useAppDispatch, useAppSelector } from "@blunderfest/redux";
+import { select } from "@blunderfest/redux/rooms";
 import { css } from "@blunderfest/styled-system/css";
 import { Grid, GridItem } from "@blunderfest/styled-system/jsx";
-import { useState } from "react";
 import { Board } from "../board";
 
 type RoomProps = {
@@ -9,8 +9,9 @@ type RoomProps = {
 };
 
 export function Room({ roomCode }: Readonly<RoomProps>) {
-    const games = useAppSelector((state) => state.rooms.rooms_by_code[roomCode].games);
-    const [game, setGame] = useState<string | undefined>();
+    const dispatch = useAppDispatch();
+    const room = useAppSelector((state) => state.rooms.rooms_by_code[roomCode]);
+    const games = room.games;
 
     return (
         <Grid columns={7} flexGrow={1}>
@@ -24,11 +25,11 @@ export function Room({ roomCode }: Readonly<RoomProps>) {
                     })}>
                     {roomCode}
                 </p>
-                {game && <Board roomCode={roomCode} gameCode={game} />}
+                {room.activeGame && <Board roomCode={roomCode} gameCode={room.activeGame} />}
             </GridItem>
             <GridItem colSpan={4}>
                 {games.map((game) => (
-                    <button key={game} onClick={() => setGame(game)}>
+                    <button key={game} onClick={() => dispatch(select(roomCode, game))}>
                         {game}
                     </button>
                 ))}

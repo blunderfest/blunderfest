@@ -17,6 +17,7 @@ export function Board(props: Readonly<BoardProps>) {
 
     return (
         <FocusScope restoreFocus>
+            <h1>{gameCode}</h1>
             <Grid
                 ref={ref}
                 {...ariaProps}

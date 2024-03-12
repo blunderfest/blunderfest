@@ -58,8 +58,7 @@ const connectivitySlice = createSlice({
         ),
 
         joined: create.preparedReducer(
-            (payload: { room_code: string; active_game: string; games: string[]; games_by_code: Record<string, Game> }) =>
-                createLocalAction(payload),
+            (payload: { room_code: string; games: string[]; games_by_code: Record<string, Game> }) => createLocalAction(payload),
             (state, action) => {
                 state.rooms = [action.payload.room_code];
             }
