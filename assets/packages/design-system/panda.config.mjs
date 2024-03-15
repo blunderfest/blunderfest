@@ -1,4 +1,5 @@
 import { defineConfig } from "@pandacss/dev";
+import { reset, theme } from "./theme/";
 
 if (process.argv.includes("--watch")) {
   // Terminate the watcher when Phoenix quits
@@ -11,29 +12,20 @@ if (process.argv.includes("--watch")) {
 }
 
 export default defineConfig({
-  // Whether to use css reset
-  preflight: true,
-
-  // Where to look for your css declarations
-  include: ["../../apps/blunderfest/src/**/*.{js,jsx}"],
-
-  // Files to exclude
+  preflight: false,
+  include: ["/workspace/blunderfest/assets/apps/blunderfest/src/**/*.{js,jsx}"],
   exclude: [],
+  globalCss: reset,
+  optimize: false,
 
-  // Useful for theme customization
-  theme: {
+  theme: theme,
+  conditions: {
     extend: {
-      tokens: {
-        colors: {
-          primary: {
-            value: "{colors.purple.300}",
-          },
-        },
-      },
+      dark: '[data-color-scheme="dark"] &',
+      light: '[data-color-scheme="light"] &',
     },
   },
 
-  // The output directory for your css system
   outdir: "styled-system",
   jsxFramework: "react",
 });
