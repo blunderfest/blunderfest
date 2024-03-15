@@ -68,7 +68,7 @@ defmodule Blunderfest.MixProject do
     [
       setup: ["deps.get", "cmd --cd assets pnpm install"],
       "assets.deploy": [
-        "cmd --cd assets pnpm build",
+        "cmd --cd assets pnpm -r build",
         "phx.digest"
       ]
     ]

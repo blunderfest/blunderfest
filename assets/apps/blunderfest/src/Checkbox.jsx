@@ -1,4 +1,4 @@
-import { css } from "design-system";
+import { css } from "@blunderfest/design-system/styled-system/css";
 import { checkbox } from "./checkbox.recipe";
 
 export const Checkbox = () => {

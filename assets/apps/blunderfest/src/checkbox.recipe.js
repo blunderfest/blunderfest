@@ -1,4 +1,4 @@
-import { sva } from "design-system";
+import { sva } from "@blunderfest/design-system/styled-system/css";
 
 export const checkbox = sva({
   slots: ["root", "control", "label"],

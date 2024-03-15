@@ -1,4 +1,4 @@
-import { cva } from "design-system";
+import { cva } from "@blunderfest/design-system/styled-system/css";
 
 export const button = cva({
   base: {
@@ -6,12 +6,12 @@ export const button = cva({
   },
   variants: {
     visual: {
-      solid: { bg: "red.200", color: "white" },
+      solid: { bg: "darksalmon", color: "black" },
       outline: { borderWidth: "1px", borderColor: "red.200" },
     },
     size: {
       sm: { padding: "4", fontSize: "12px" },
-      lg: { padding: "8", fontSize: "24px" },
+      lg: { padding: "48", fontSize: "24px" },
     },
   },
 });

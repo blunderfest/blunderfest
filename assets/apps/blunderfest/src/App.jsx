@@ -1,8 +1,7 @@
-import { css } from "design-system";
-import "design-system/styled-system/styles.css";
+import { css } from "@blunderfest/design-system/styled-system/css";
+
+import "@blunderfest/design-system/styled-system/styles.css";
 import { useState } from "react";
-import { Button } from "./Button";
-import { Checkbox } from "./Checkbox";
 import { Square } from "./Square";
 
 function App() {
@@ -13,7 +12,7 @@ function App() {
       <h1>Vite + React</h1>
       <div
         className={css({
-          backgroundColor: "green.dark.1",
+          backgroundColor: "blue.dark.12",
           fontFamily: "monospace",
         })}
       >
@@ -25,8 +24,6 @@ function App() {
         </p>
       </div>
       <Square />
-      <Checkbox />
-      <Button />
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>

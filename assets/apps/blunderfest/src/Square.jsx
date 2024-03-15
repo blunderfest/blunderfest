@@ -1,4 +1,5 @@
-import { css, sva } from "design-system";
+import { Box } from "@blunderfest/design-system/";
+import { sva } from "@blunderfest/design-system/styled-system/css";
 
 const square = sva({
   slots: ["root", "overlay", "piece", "selected"],
@@ -6,8 +7,6 @@ const square = sva({
     root: {
       aspectRatio: "square",
       position: "relative",
-      outline: "none",
-      backgroundBlendMode: "darken",
     },
     overlay: {
       position: "absolute",
@@ -77,7 +76,7 @@ const square = sva({
             _dark: "green.dark.9",
             _light: "green.light.9  ",
           },
-          borderRadius: "full",
+          borderRadius: "3xl",
         },
       },
     },
@@ -94,22 +93,19 @@ export function Square() {
   const rank = 0;
   const file = 1;
 
+  console.log(classes.root);
+
   return (
-    <div
+    <Box
       className={classes.root}
       tabIndex={0}
       data-rank={rank}
       data-file={file}
     >
-      <div
-        className={css({
-          backdropBlur: "base",
-        })}
-      ></div>
-      <div className={classes.overlay} tabIndex={-1}></div>
-      <div className={classes.selected} tabIndex={-1}></div>
+      <Box className={classes.overlay} tabIndex={-1}></Box>
+      <Box className={classes.selected} tabIndex={-1}></Box>
 
-      <div className={classes.piece}>
+      <Box className={classes.piece}>
         {(file === 4 || file === 1) && rank === 0 && (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -221,7 +217,7 @@ export function Square() {
             </g>
           </svg>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
