@@ -17,7 +17,7 @@ export default defineConfig({
   exclude: [],
   globalCss: reset,
   optimize: false,
-  logLevel: process.argv.includes("--watch") ? "debug" : "info",
+  logLevel: "debug",
 
   theme: theme,
   conditions: {
