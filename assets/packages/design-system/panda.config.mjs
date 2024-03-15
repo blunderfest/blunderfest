@@ -13,7 +13,7 @@ if (process.argv.includes("--watch")) {
 
 export default defineConfig({
   preflight: false,
-  include: ["/workspace/blunderfest/assets/apps/blunderfest/src/**/*.{js,jsx}"],
+  include: ["../../apps/blunderfest/src/**/*.{js,jsx}"],
   exclude: [],
   globalCss: reset,
   optimize: false,
