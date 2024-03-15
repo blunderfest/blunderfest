@@ -1,0 +1,17 @@
+{
+  "private": true,
+  "name": "design-system",
+  "description": "",
+  "main": "./index.ts",
+  "scripts": {
+    "prepare": "panda codegen",
+    "build": "panda",
+    "dev": "panda --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@pandacss/dev": "^0.35.0"
+  }
+}

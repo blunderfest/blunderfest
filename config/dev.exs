@@ -15,8 +15,15 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "SMW5GhJBjRhpIjooOdWlhlxyyvXtB7AWvTI+OFChCkOCZ9HpiCKtnq/yjV8wxNLb",
   watchers: [
-    node: [
-      "node_modules/vite/bin/vite",
+    pnpm: [
+      "--filter",
+      "blunderfest",
+      "dev",
+      cd: Path.expand("../assets", __DIR__)
+    ],
+    pnpm: [
+      "--filter",
+      "design-system",
       "dev",
       cd: Path.expand("../assets", __DIR__)
     ]
