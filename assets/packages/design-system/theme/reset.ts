@@ -17,8 +17,8 @@ export const reset = defineGlobalStyles({
   body: {
     margin: 0,
     lineHeight: 1.5,
-    backgroundColor: "{colors.surface.1}",
-    minHeight: "100vh",
+    backgroundColor: "surface.background.1",
+    height: "100vh",
     display: "flex",
     flexDirection: "column",
   },

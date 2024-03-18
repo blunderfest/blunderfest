@@ -18,7 +18,6 @@ export default defineConfig({
   exclude: [],
   globalCss: reset,
   optimize: false,
-  logLevel: "debug",
 
   theme: theme,
   conditions: {

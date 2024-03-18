@@ -12,7 +12,7 @@ const initialPrefersDark =
 export function ColorSchemeToggle() {
   const [darkMode, setDarkMode] = useState(initialPrefersDark);
 
-  const onMediaQueryChanged = useCallback((/**  */ event) => {
+  const onMediaQueryChanged = useCallback((/** @type {MediaQueryListEvent}  */ event) => {
     const matches = event.matches;
     setColorTheme(matches);
   }, []);
@@ -37,7 +37,7 @@ export function ColorSchemeToggle() {
 
   return (
     <label aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
-      <input type="checkbox" onChange={(e) => setColorTheme(e.target.checked)} className={visuallyHidden()} />
+      <input type="checkbox" checked={darkMode} onChange={(e) => setColorTheme(e.target.checked)} className={visuallyHidden()} />
       {darkMode && (
         <MdLightMode
           className={css({

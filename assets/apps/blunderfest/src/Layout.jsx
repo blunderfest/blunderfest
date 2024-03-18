@@ -7,7 +7,6 @@ const layout = sva({
     root: {
       display: "flex",
       flexDirection: "column",
-      minHeight: "100vh",
     },
     main: {
       backgroundColor: "surface.background.1",
@@ -22,9 +21,6 @@ const layout = sva({
     left: {
       backgroundColor: "surface.background.1",
       color: "surface.text.1",
-      flexGrow: 0,
-      flexShrink: 0,
-      flexBasis: "1/4",
       md: {
         width: "half",
       },
@@ -35,9 +31,6 @@ const layout = sva({
     right: {
       backgroundColor: "surface.background.1",
       color: "surface.text.1",
-      flexGrow: 0,
-      flexShrink: 0,
-      flexBasis: "1/4",
       md: {
         width: "half",
       },
@@ -65,7 +58,6 @@ export function Layout(props) {
       <div
         className={css({
           display: "flex",
-          flexGrow: 1,
         })}>
         <aside aria-label="Left side" className={classes.left}>
           {left}

@@ -8,6 +8,7 @@ const square = sva({
     root: {
       aspectRatio: "square",
       position: "relative",
+      maxHeight: "calc((100vh - token(sizes.8)) / 8)",
     },
     overlay: {
       position: "absolute",

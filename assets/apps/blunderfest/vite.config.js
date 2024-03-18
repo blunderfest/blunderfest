@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 import react from "@vitejs/plugin-react";
+import million from "million/compiler";
 import { defineConfig } from "vite";
 import jsconfigPaths from "vite-jsconfig-paths";
 
@@ -23,7 +24,15 @@ export default defineConfig(({ command }) => {
         },
       },
     },
-    plugins: [react(), jsconfigPaths()],
+    plugins: [
+      million.vite({
+        auto: {
+          threshold: 0.05,
+        },
+      }),
+      react(),
+      jsconfigPaths(),
+    ],
     build: {
       reportCompressedSize: true,
       commonjsOptions: {
