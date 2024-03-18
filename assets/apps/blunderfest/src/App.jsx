@@ -1,4 +1,5 @@
 import { Container, Grid } from "@blunderfest/design-system/styled-system/jsx";
+import { visuallyHidden } from "@blunderfest/design-system/styled-system/patterns/visually-hidden";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
 import { Layout } from "./Layout";
 import { Square } from "./Square";
@@ -11,6 +12,7 @@ const squareIndices = ranks.flatMap((rank) => files.map((file) => rank * 8 + fil
 export function App() {
   return (
     <Layout left="Left" right="Right" toolbar={<ColorSchemeToggle />}>
+      <h1 className={visuallyHidden()}>The chessboard</h1>
       <Container>
         <Grid columns={8} gap={0}>
           {squareIndices.flatMap((squareIndex) => (

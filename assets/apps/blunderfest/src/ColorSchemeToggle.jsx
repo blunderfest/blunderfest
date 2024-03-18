@@ -10,7 +10,7 @@ const initialPrefersDark =
   localStorage.getItem(localStorageKey) !== null ? localStorage.getItem(localStorageKey) === "true" : matchMedia.matches;
 
 export function ColorSchemeToggle() {
-  const [themeToggle, setThemeToggle] = useState(initialPrefersDark);
+  const [darkMode, setDarkMode] = useState(initialPrefersDark);
 
   const onMediaQueryChanged = useCallback((/**  */ event) => {
     const matches = event.matches;
@@ -24,7 +24,7 @@ export function ColorSchemeToggle() {
     (dark) => {
       document.documentElement.dataset.colorScheme = dark ? "dark" : "light";
       localStorage.setItem(localStorageKey, String(dark));
-      setThemeToggle(dark);
+      setDarkMode(dark);
     };
 
   useLayoutEffect(() => {
@@ -36,9 +36,9 @@ export function ColorSchemeToggle() {
   }, [onMediaQueryChanged]);
 
   return (
-    <label>
+    <label aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}>
       <input type="checkbox" onChange={(e) => setColorTheme(e.target.checked)} className={visuallyHidden()} />
-      {themeToggle && (
+      {darkMode && (
         <MdLightMode
           className={css({
             fontSize: "3xl",
@@ -47,7 +47,7 @@ export function ColorSchemeToggle() {
           })}
         />
       )}
-      {!themeToggle && (
+      {!darkMode && (
         <MdDarkMode
           className={css({
             fontSize: "3xl",

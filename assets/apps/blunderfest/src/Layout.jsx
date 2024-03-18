@@ -10,15 +10,18 @@ const layout = sva({
       minHeight: "100vh",
     },
     main: {
-      backgroundColor: "surface.1",
+      backgroundColor: "surface.background.1",
+      color: "surface.text.1",
       flex: 1,
     },
     header: {
-      backgroundColor: "surface.2",
+      backgroundColor: "surface.background.2",
+      color: "surface.text.2",
       height: "8",
     },
     left: {
-      backgroundColor: "surface.1",
+      backgroundColor: "surface.background.1",
+      color: "surface.text.1",
       flexGrow: 0,
       flexShrink: 0,
       flexBasis: "1/4",
@@ -30,7 +33,8 @@ const layout = sva({
       },
     },
     right: {
-      backgroundColor: "surface.1",
+      backgroundColor: "surface.background.1",
+      color: "surface.text.1",
       flexGrow: 0,
       flexShrink: 0,
       flexBasis: "1/4",
@@ -63,9 +67,13 @@ export function Layout(props) {
           display: "flex",
           flexGrow: 1,
         })}>
-        <aside className={classes.left}>{left}</aside>
+        <aside aria-label="Left side" className={classes.left}>
+          {left}
+        </aside>
         <main className={classes.main}>{children}</main>
-        <aside className={classes.right}>{right}</aside>
+        <aside aria-label="Right side" className={classes.right}>
+          {right}
+        </aside>
       </div>
     </div>
   );
