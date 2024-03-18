@@ -1,34 +1,23 @@
-import { css } from "@blunderfest/design-system/styled-system/css";
-
-import "@blunderfest/design-system/styled-system/styles.css";
-import { useState } from "react";
+import { Container, Grid } from "@blunderfest/design-system/styled-system/jsx";
+import { ColorSchemeToggle } from "./ColorSchemeToggle";
+import { Layout } from "./Layout";
 import { Square } from "./Square";
 
-function App() {
-  const [count, setCount] = useState(0);
+const ranks = Array.from({ length: 8 }, (_, rank) => 7 - rank);
+const files = Array.from({ length: 8 }, (_, file) => file);
 
+const squareIndices = ranks.flatMap((rank) => files.map((file) => rank * 8 + file));
+
+export function App() {
   return (
-    <>
-      <h1>Vite + React</h1>
-      <div
-        className={css({
-          backgroundColor: "blue.dark.12",
-          fontFamily: "monospace",
-        })}
-      >
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <Square />
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <Layout left="Left" right="Right" toolbar={<ColorSchemeToggle />}>
+      <Container>
+        <Grid columns={8} gap={0}>
+          {squareIndices.flatMap((squareIndex) => (
+            <Square key={squareIndex} squareIndex={squareIndex} />
+          ))}
+        </Grid>
+      </Container>
+    </Layout>
   );
 }
-
-export default App;

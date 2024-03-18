@@ -25,10 +25,11 @@
   "eslint.workingDirectories": ["assets"],
   "javascript.suggest.autoImports": true,
   "javascript.validate.enable": false,
-  "cssVariables.lookupFiles": [
-    "./assets/node_modules/@radix-ui/**/*.css",
-    "./assets/node_modules/open-props/open-props.min.css"
+  "typescript.tsserver.log": "verbose",
+  "cssvar.files": [
+    "./assets/packages/design-system/node_modules/@radix-ui/**/*.css",
+    "./assets/packages/design-system/styled-system/**/*.css"
   ],
-  "cssVariables.blacklistFolders": ["**/.git", "./_build", "./priv/static"],
-  "typescript.tsserver.log": "verbose"
+  "cssvar.ignore": ["**/node_modules/**"],
+  "js/ts.implicitProjectConfig.checkJs": true
 }

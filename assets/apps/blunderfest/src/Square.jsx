@@ -1,5 +1,6 @@
-import { Box } from "@blunderfest/design-system/";
 import { sva } from "@blunderfest/design-system/styled-system/css";
+import { Box } from "@blunderfest/design-system/styled-system/jsx";
+import PropTypes from "prop-types";
 
 const square = sva({
   slots: ["root", "overlay", "piece", "selected"],
@@ -74,39 +75,38 @@ const square = sva({
           borderStyle: "solid",
           borderColor: {
             _dark: "green.dark.9",
-            _light: "green.light.9  ",
+            _light: "green.light.8  ",
           },
-          borderRadius: "3xl",
+          borderRadius: "full",
         },
       },
     },
   },
 });
 
-export function Square() {
+/**
+ *
+ * @param {{
+ *    squareIndex: number
+ * }} props
+ * @returns
+ */
+export function Square(props) {
+  const { squareIndex } = props;
+  const rank = squareIndex >> 3;
+  const file = squareIndex % 8;
+
   const classes = square({
-    color: "dark",
-    focussed: true,
-    marked: true,
+    color: rank % 2 === file % 2 ? "dark" : "light",
   });
 
-  const rank = 0;
-  const file = 1;
-
-  console.log(classes.root);
-
   return (
-    <Box
-      className={classes.root}
-      tabIndex={0}
-      data-rank={rank}
-      data-file={file}
-    >
+    <Box className={classes.root} tabIndex={0} data-rank={rank} data-file={file}>
       <Box className={classes.overlay} tabIndex={-1}></Box>
       <Box className={classes.selected} tabIndex={-1}></Box>
 
       <Box className={classes.piece}>
-        {(file === 4 || file === 1) && rank === 0 && (
+        {(file === 4 || file === 1) && rank === 1 && (
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 45 45"
@@ -116,8 +116,7 @@ export function Square() {
             style={{
               cursor: "pointer",
               pointerEvents: "none",
-            }}
-          >
+            }}>
             <g
               pointerEvents="visible"
               fill="none"
@@ -125,8 +124,7 @@ export function Square() {
               stroke="#000"
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth="1.5"
-            >
+              strokeWidth="1.5">
               <path strokeLinejoin="miter" d="M22.5 11.63V6M20 8h5" />
               <path
                 fill="#fff"
@@ -151,8 +149,7 @@ export function Square() {
             pointerEvents="none"
             style={{
               cursor: "pointer",
-            }}
-          >
+            }}>
             <g
               pointerEvents="visible"
               style={{
@@ -166,8 +163,7 @@ export function Square() {
                 strokeMiterlimit: 4,
                 strokeDasharray: "none",
                 strokeOpacity: 1,
-              }}
-            >
+              }}>
               <path
                 d="M22.5 11.63V6"
                 style={{
@@ -221,3 +217,7 @@ export function Square() {
     </Box>
   );
 }
+
+Square.propTypes = {
+  squareIndex: PropTypes.number.isRequired,
+};

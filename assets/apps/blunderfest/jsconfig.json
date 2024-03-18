@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": "src",
+    "paths": {
+      "@blunderfest/styled-system": ["../../packages/styled-system"],
+      "@blunderfest/*": ["./*"]
+    }
+  }
+}

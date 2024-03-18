@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { defineConfig } from "@pandacss/dev";
 import { reset, theme } from "./theme/";
 
