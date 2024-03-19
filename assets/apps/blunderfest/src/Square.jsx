@@ -89,6 +89,8 @@ const square = sva({
  *
  * @param {{
  *    squareIndex: number
+ *    rank: number,
+ *    file: number
  * }} props
  * @returns
  */
@@ -103,7 +105,9 @@ export function Square(props) {
 
   return (
     <Box className={classes.root} tabIndex={0} data-rank={rank} data-file={file}>
-      <Box className={classes.overlay} tabIndex={-1}></Box>
+      <Box className={classes.overlay} tabIndex={-1}>
+        {String.fromCharCode(65 + file)} {rank + 1}
+      </Box>
       <Box className={classes.selected} tabIndex={-1}></Box>
 
       <Box className={classes.piece}>

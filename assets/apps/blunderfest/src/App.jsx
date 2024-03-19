@@ -1,22 +1,22 @@
 import { Container, Grid } from "@blunderfest/design-system/styled-system/jsx";
-import { visuallyHidden } from "@blunderfest/design-system/styled-system/patterns/visually-hidden";
 import { ColorSchemeToggle } from "./ColorSchemeToggle";
 import { Layout } from "./Layout";
 import { Square } from "./Square";
-
-const ranks = Array.from({ length: 8 }, (_, rank) => 7 - rank);
-const files = Array.from({ length: 8 }, (_, file) => file);
-
-const squareIndices = ranks.flatMap((rank) => files.map((file) => rank * 8 + file));
+import { useBoard } from "./store/board";
+import { incrementBy, useAppDispatch, useAppSelector } from "./store/store";
 
 export function App() {
+  const { squares } = useBoard();
+  const state = useAppSelector((state) => state.counter.count);
+  const dispatch = useAppDispatch();
+
   return (
     <Layout left="Left" right="Right" toolbar={<ColorSchemeToggle />}>
-      <h1 className={visuallyHidden()}>The chessboard</h1>
+      <button onClick={() => dispatch(incrementBy(5))}>The chessboard {state}</button>
       <Container>
         <Grid columns={8} gap={0}>
-          {squareIndices.flatMap((squareIndex) => (
-            <Square key={squareIndex} squareIndex={squareIndex} />
+          {squares.flatMap((square) => (
+            <Square key={square.file + square.rank} {...square} />
           ))}
         </Grid>
       </Container>
