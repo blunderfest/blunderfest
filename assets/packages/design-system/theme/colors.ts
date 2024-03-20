@@ -14,7 +14,7 @@ import {
   yellow,
   yellowDark,
 } from "@radix-ui/colors";
-import { convert } from ".";
+import { convert } from "./converter";
 
 export const colors = {
   current: { value: "currentColor" },

@@ -31,5 +31,7 @@
     "./assets/packages/design-system/styled-system/**/*.css"
   ],
   "cssvar.ignore": ["**/node_modules/**"],
-  "js/ts.implicitProjectConfig.checkJs": true
+  "js/ts.implicitProjectConfig.checkJs": true,
+  "barreler.exclude": ["use*"],
+  "barreler.mode": "multifile-index"
 }

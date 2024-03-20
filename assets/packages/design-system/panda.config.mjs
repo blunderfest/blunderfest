@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 import { defineConfig } from "@pandacss/dev";
-import { reset, theme } from "./theme/";
+import { preset } from "./theme/preset";
 
 if (process.argv.includes("--watch")) {
   // Terminate the watcher when Phoenix quits
@@ -16,16 +16,9 @@ export default defineConfig({
   preflight: false,
   include: ["../../apps/blunderfest/src/**/*.{js,jsx}"],
   exclude: [],
-  globalCss: reset,
   optimize: false,
 
-  theme: theme,
-  conditions: {
-    extend: {
-      dark: '[data-color-scheme="dark"] &',
-      light: '[data-color-scheme="light"] &',
-    },
-  },
+  presets: [preset],
 
   outdir: "styled-system",
   jsxFramework: "react",

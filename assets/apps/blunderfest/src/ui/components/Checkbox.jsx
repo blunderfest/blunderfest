@@ -1,5 +1,5 @@
 import { css } from "@blunderfest/design-system/styled-system/css";
-import { checkbox } from "./checkbox.recipe";
+import { checkbox } from "@blunderfest/ui/recipes";
 
 export const Checkbox = () => {
   const classes = checkbox({ size: "sm" });
