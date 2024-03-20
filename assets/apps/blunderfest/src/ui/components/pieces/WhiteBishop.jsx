@@ -2,14 +2,7 @@ import PropTypes from "prop-types";
 
 // million-ignore
 export const WhiteBishop = ({ title, titleId }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 45 45"
-    aria-labelledby={titleId}
-    width="100%"
-    height="100%"
-    pointerEvents="none"
-    cursor="pointer">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" aria-labelledby={titleId} pointerEvents="none" cursor="pointer">
     {title ? <title id={titleId}>{title}</title> : null}
     <g
       pointerEvents="visible"

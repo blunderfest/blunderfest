@@ -6,7 +6,6 @@ export const square = sva({
     root: {
       aspectRatio: "square",
       position: "relative",
-      maxHeight: "calc((100vh - token(sizes.8)) / 8)",
     },
     overlay: {
       position: "absolute",
@@ -24,10 +23,10 @@ export const square = sva({
     },
     piece: {
       position: "absolute",
-      top: "0",
-      left: "0",
-      bottom: "0",
-      right: "0",
+      top: "1",
+      left: "1",
+      bottom: "1",
+      right: "1",
     },
   },
   variants: {

@@ -26,6 +26,9 @@ export function Square(props) {
 
   const classes = square({
     color: file % 2 === rank % 2 ? "dark" : "light",
+    selected: file === 5 && rank === 5,
+    marked: file === 3 && rank === 2,
+    focussed: file == 4 && rank === 6,
   });
 
   function Piece() {
@@ -84,10 +87,8 @@ export function Square(props) {
 
   return (
     <Box className={classes.root} tabIndex={0} data-file={file} data-rank={rank}>
-      <Box className={classes.overlay} tabIndex={-1}>
-        {String.fromCharCode(65 + file)} {rank + 1}
-      </Box>
-      <Box className={classes.selected} tabIndex={-1}></Box>
+      <Box className={classes.overlay} tabIndex={-1} />
+      <Box className={classes.selected} tabIndex={-1} />
 
       <Box className={classes.piece}>
         <Piece />

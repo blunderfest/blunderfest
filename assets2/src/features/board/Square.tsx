@@ -101,8 +101,6 @@ export function Square(props: Readonly<SquareVariants>) {
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 45 45"
-                        width="100%"
-                        height="100%"
                         pointerEvents="none"
                         style={{
                             cursor: "pointer",
@@ -135,8 +133,6 @@ export function Square(props: Readonly<SquareVariants>) {
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 45 45"
-                        width="100%"
-                        height="100%"
                         pointerEvents="none"
                         style={{
                             cursor: "pointer",
