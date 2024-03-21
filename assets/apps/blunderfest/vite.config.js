@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 import react from "@vitejs/plugin-react";
 import million from "million/compiler";
-import { defineConfig, splitVendorChunkPlugin } from "vite";
+import { defineConfig } from "vite";
 import jsconfigPaths from "vite-jsconfig-paths";
 
 export default defineConfig(({ command }) => {
@@ -32,7 +32,6 @@ export default defineConfig(({ command }) => {
       }),
       react(),
       jsconfigPaths(),
-      splitVendorChunkPlugin(),
     ],
     build: {
       reportCompressedSize: true,
@@ -48,10 +47,8 @@ export default defineConfig(({ command }) => {
           main: "./src/main.jsx",
         },
         output: {
-          manualChunks(id) {
-            if (id.includes("react")) {
-              return "react";
-            }
+          manualChunks: {
+            react: ["react", "react-dom"],
           },
         },
       },
