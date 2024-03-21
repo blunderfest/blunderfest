@@ -20,10 +20,17 @@ defmodule Blunderfest.Core.RoomServer do
   end
 
   def exists?(room_code) do
-    !(room_code
-      |> via_tuple()
-      |> Horde.Registry.whereis()
-      |> Enum.empty?())
+    IO.puts("Check if room exists")
+
+    e =
+      !(room_code
+        |> via_tuple()
+        |> Horde.Registry.whereis()
+        |> Enum.empty?())
+
+    IO.puts("Exists? #{e}")
+
+    e
   end
 
   def get(room_code) do
