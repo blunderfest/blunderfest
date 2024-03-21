@@ -19,7 +19,7 @@ defmodule BlunderfestWeb do
 
   def static_paths,
     do:
-      ~w(assets css js fonts images robots.txt cache_manifest.json android-chrome-192x192.png apple-touch-icon.png favicon-16x16.png favicon.ico mstile-150x150.png site.webmanifest
+      ~w(assets css js fonts images locales robots.txt cache_manifest.json android-chrome-192x192.png apple-touch-icon.png favicon-16x16.png favicon.ico mstile-150x150.png site.webmanifest
 android-chrome-512x512.png browserconfig.xml favicon-32x32.png safari-pinned-tab.svg react_devtools_backend_compact.js.map)
 
   def router do
