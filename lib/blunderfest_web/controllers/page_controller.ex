@@ -9,6 +9,8 @@ defmodule BlunderfestWeb.PageController do
         conn,
         %{"room_code" => room_code} = _params
       ) do
+    IO.puts("index #{room_code}")
+
     if RoomServer.exists?(room_code) do
       conn
       |> assign(:room_code, room_code)
@@ -19,6 +21,8 @@ defmodule BlunderfestWeb.PageController do
   end
 
   def index(conn, _params) do
+    IO.puts("index no room")
+
     case RoomSupervisor.create() do
       {:ok, room_code} -> conn |> redirect(to: ~p"/#{room_code}")
       {:error, error} -> raise error
