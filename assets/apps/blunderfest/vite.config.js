@@ -40,7 +40,7 @@ export default defineConfig(({ command }) => {
         transformMixedEsModules: true,
       },
       emptyOutDir: true,
-      sourcemap: isDev,
+      sourcemap: true,
       manifest: true,
       outDir: "../../../priv/static",
       rollupOptions: {
@@ -51,14 +51,6 @@ export default defineConfig(({ command }) => {
           manualChunks(id) {
             if (id.includes("react")) {
               return "react";
-            }
-
-            if (id.includes("rxjs")) {
-              return "rxjs";
-            }
-
-            if (id.includes("i18next")) {
-              return "i18next";
             }
           },
         },
