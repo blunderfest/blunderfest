@@ -17,7 +17,10 @@ defmodule BlunderfestWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets css js fonts images favicon.ico robots.txt cache_manifest.json)
+  def static_paths,
+    do:
+      ~w(assets locales android-chrome-192x192.png apple-touch-icon.png favicon-16x16.png favicon.ico mstile-150x150.png site.webmanifest
+android-chrome-512x512.png browserconfig.xml favicon-32x32.png safari-pinned-tab.svg react_devtools_backend_compact.js.map)
 
   def router do
     quote do
@@ -43,7 +46,6 @@ defmodule BlunderfestWeb do
         layouts: [html: BlunderfestWeb.Layouts]
 
       import Plug.Conn
-      import BlunderfestWeb.Gettext
 
       unquote(verified_routes())
     end
@@ -82,8 +84,6 @@ defmodule BlunderfestWeb do
     quote do
       # HTML escaping functionality
       import Phoenix.HTML
-      # Core UI components and translation
-      import BlunderfestWeb.Gettext
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())

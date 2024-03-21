@@ -18,8 +18,9 @@ defmodule BlunderfestWeb.Endpoint do
   if Mix.env() == :dev do
     plug Plug.Static,
       at: "/",
-      from: "assets",
-      gzip: false
+      from: "assets/apps/blunderfest/public",
+      gzip: false,
+      only: BlunderfestWeb.static_paths()
   end
 
   # Serve at "/" the static files from "priv/static" directory.

@@ -4,8 +4,8 @@ defmodule BlunderfestWeb.RoomChannel do
   alias Blunderfest.Core.RoomServer
 
   @impl true
-  def join("room:" <> room_code, %{"user_id" => user_id}, socket) do
-    case RoomServer.join(room_code, user_id) do
+  def join("room:" <> room_code, _params, socket) do
+    case RoomServer.join(room_code, socket.assigns[:user_id]) do
       {:error, :room_not_found} ->
         {:error, "room_not_found"}
 

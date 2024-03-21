@@ -1,11 +1,15 @@
-import "@blunderfest/design-system/styled-system/styles.css";
-import { App } from "@blunderfest/ui/App";
 import React from "react";
-import ReactDOM from "react-dom/client";
+import { createRoot } from "react-dom/client";
+
+import "@blunderfest/design-system/styled-system/styles.css";
+import "./i18n";
+import { App } from "./ui/App";
 
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+const root = createRoot(document.getElementById("root"));
+
+root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>

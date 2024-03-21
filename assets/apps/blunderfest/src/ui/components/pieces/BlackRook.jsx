@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 
 // million-ignore
 export const BlackRook = ({ title, titleId }) => (
-  <svg viewBox="0 0 45 45" aria-labelledby={titleId} width="100%" height="100%" pointerEvents="none" cursor="pointer">
+  <svg viewBox="0 0 45 45" aria-labelledby={titleId} width="100%" height="100%" pointerEvents="none" cursor="grab">
     {title ? <title id={titleId}>{title}</title> : null}
     <g
       pointerEvents="visible"

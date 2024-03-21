@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 
 // million-ignore
 export const WhiteRook = ({ title, titleId }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" aria-labelledby={titleId} pointerEvents="none" cursor="pointer">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" aria-labelledby={titleId} pointerEvents="none" cursor="grab">
     {title ? <title id={titleId}>{title}</title> : null}
     <g
       pointerEvents="visible"

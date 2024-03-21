@@ -3,6 +3,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
+    "checkJs": true,
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

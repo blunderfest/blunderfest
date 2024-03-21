@@ -62,7 +62,6 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   live_reload: [
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
-      ~r"priv/gettext/.*(po)$",
       ~r"lib/blunderfest_web/(controllers|channels|components)/.*(ex|heex)$"
     ]
   ]
