@@ -9,14 +9,13 @@ defmodule BlunderfestWeb.PageController do
         conn,
         %{"room_code" => room_code} = _params
       ) do
-    # if RoomServer.exists?(room_code) do
-    conn
-    |> assign(:room_code, room_code)
-    |> render(:index, layout: false)
-
-    # else
-    #   conn |> redirect(to: ~p"/") |> halt()
-    # end
+    if RoomServer.exists?(room_code) do
+      conn
+      |> assign(:room_code, room_code)
+      |> render(:index, layout: false)
+    else
+      conn |> redirect(to: ~p"/") |> halt()
+    end
   end
 
   def index(conn, _params) do

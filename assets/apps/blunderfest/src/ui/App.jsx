@@ -17,6 +17,7 @@ export function App() {
   const { t, i18n } = useTranslation();
   const [count, setCount] = useState(0);
   const x = useConnectivity(userId, roomCode);
+  x.connect();
 
   return (
     <Layout
