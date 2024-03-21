@@ -53,10 +53,6 @@ export default defineConfig(({ command }) => {
               return "react";
             }
 
-            if (id.includes("react")) {
-              return "react";
-            }
-
             if (id.includes("rxjs")) {
               return "rxjs";
             }

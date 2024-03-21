@@ -4,13 +4,10 @@ defmodule BlunderfestWeb.Plugs.UserId do
   def init(options), do: options
 
   def call(conn, _opts) do
-    case conn.assigns[:user_token] do
+    case get_session(conn, :user_id) do
       nil ->
-        user_id = Nanoid.generate()
-        # token = Phoenix.Token.sign(conn, "user socket", user_id)
-
         conn
-        |> assign(:user_token, user_id)
+        |> put_session(:user_id, Nanoid.generate())
 
       _ ->
         conn

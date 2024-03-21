@@ -10,7 +10,10 @@ defmodule BlunderfestWeb.PageController do
         %{"room_code" => room_code} = _params
       ) do
     if RoomServer.exists?(room_code) do
+      user_id = get_session(conn, :user_id)
+
       conn
+      |> assign(:user_id, user_id)
       |> assign(:room_code, room_code)
       |> render(:index, layout: false)
     else
