@@ -19,7 +19,8 @@ defmodule BlunderfestWeb.Endpoint do
     plug Plug.Static,
       at: "/",
       from: "assets/apps/blunderfest/public/assets",
-      gzip: false
+      gzip: false,
+      only: BlunderfestWeb.static_paths()
   end
 
   # Serve at "/" the static files from "priv/static" directory.
