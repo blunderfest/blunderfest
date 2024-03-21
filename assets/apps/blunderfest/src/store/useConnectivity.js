@@ -6,8 +6,10 @@ import { Subject } from "rxjs";
  */
 export const remoteMessages$ = new Subject();
 
+const userToken = document?.querySelector("meta[name='user_token']")?.getAttribute("content");
+
 export function useConnectivity(userId, roomCode) {
-  const socket = new Socket("/socket", { params: { token: window.userToken } });
+  const socket = new Socket("/socket", { params: { token: userToken } });
   /**
    * @type {Record<string, import "phoenix".Channel>}
    */
