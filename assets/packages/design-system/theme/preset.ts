@@ -26,28 +26,28 @@ export const preset = definePreset({
           background: {
             1: {
               value: {
-                _light: "{colors.slate.light.1}",
-                _dark: "{colors.slate.dark.1}",
+                _light: "{colors.radix.slate.1.light}",
+                _dark: "{colors.radix.slate.1.dark}",
               },
             },
             2: {
               value: {
-                _light: "{colors.slate.light.2}",
-                _dark: "{colors.slate.dark.2}",
+                _light: "{colors.radix.slate.2.light}",
+                _dark: "{colors.radix.slate.2.dark}",
               },
             },
           },
           text: {
             1: {
               value: {
-                _light: "{colors.slate.light.11}",
-                _dark: "{colors.slate.dark.11}",
+                _light: "{colors.radix.slate.11.light}",
+                _dark: "{colors.radix.slate.11.dark}",
               },
             },
             2: {
               value: {
-                _light: "{colors.slate.light.12}",
-                _dark: "{colors.slate.dark.12}",
+                _light: "{colors.radix.slate.12.light}",
+                _dark: "{colors.radix.slate.12.dark}",
               },
             },
           },
@@ -55,26 +55,26 @@ export const preset = definePreset({
         square: {
           dark: {
             value: {
-              _light: "{colors.gray.light.10}",
-              _dark: "{colors.gray.dark.7}",
+              _light: "{colors.radix.gray.10.light}",
+              _dark: "{colors.radix.gray.7.dark}",
             },
           },
           light: {
             value: {
-              _light: "{colors.gray.light.4}",
-              _dark: "{colors.gray.dark.11}",
+              _light: "{colors.radix.gray.4.light}",
+              _dark: "{colors.radix.gray.11.dark}",
             },
           },
           focussed: {
             value: {
-              _light: "{colors.blue.light.8}",
-              _dark: "{colors.blue.dark.8}",
+              _light: "{colors.radix.blue.8.light}",
+              _dark: "{colors.radix.blue.8.dark}",
             },
           },
           marked: {
             value: {
-              _light: "{colors.green.light.8}",
-              _dark: "{colors.green.dark.8}",
+              _light: "{colors.radix.green.8.light}",
+              _dark: "{colors.radix.green.8.dark}",
             },
           },
         },

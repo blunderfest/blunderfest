@@ -1,9 +1,6 @@
-import PropTypes from "prop-types";
-
 // million-ignore
-export const WhiteRook = ({ title, titleId }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" aria-labelledby={titleId} pointerEvents="none" cursor="grab">
-    {title ? <title id={titleId}>{title}</title> : null}
+export const WhiteRook = () => {
+  return (
     <g
       pointerEvents="visible"
       opacity={1}
@@ -23,10 +20,5 @@ export const WhiteRook = ({ title, titleId }) => (
       <path d="m31 29.8 1.5 2.5h-20l1.5-2.5" />
       <path d="M11 14h23" fill="none" stroke="#000" strokeLinejoin="miter" transform="translate(0 .3)" />
     </g>
-  </svg>
-);
-
-WhiteRook.propTypes = {
-  title: PropTypes.string.isRequired,
-  titleId: PropTypes.string.isRequired,
+  );
 };

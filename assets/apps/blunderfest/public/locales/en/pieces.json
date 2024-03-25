@@ -1,0 +1,14 @@
+{
+  "black.king": "Black King",
+  "black.queen": "Black Queen",
+  "black.rook": "Black Rook",
+  "black.bishop": "Black Bishop",
+  "black.knight": "Black Knight",
+  "black.pawn": "Black Pawn",
+  "white.king": "White King",
+  "white.queen": "White Queen",
+  "white.rook": "White Rook",
+  "white.bishop": "White Bishop",
+  "white.knight": "White Knight",
+  "white.pawn": "White Pawn"
+}

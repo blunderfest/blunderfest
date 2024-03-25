@@ -48,8 +48,8 @@ export const square = sva({
           borderWidth: "8px",
           borderStyle: "solid",
           borderColor: {
-            _dark: "blue.dark.8",
-            _light: "blue.light.8",
+            _dark: "radix.blue.8.dark",
+            _light: "radix.blue.8.light",
           },
         },
       },
@@ -60,8 +60,8 @@ export const square = sva({
           borderWidth: "8px",
           borderStyle: "solid",
           borderColor: {
-            _dark: "blue.dark.8",
-            _light: "blue.light.8",
+            _dark: "radix.blue.8.dark",
+            _light: "radix.blue.8.light",
           },
         },
       },
@@ -72,10 +72,20 @@ export const square = sva({
           borderWidth: "thick",
           borderStyle: "solid",
           borderColor: {
-            _dark: "green.dark.9",
-            _light: "green.light.8  ",
+            _dark: "radix.green.9.dark",
+            _light: "radix.green.8.light",
           },
           borderRadius: "full",
+        },
+      },
+    },
+    isOver: {
+      true: {
+        piece: {
+          backgroundColor: {
+            _dark: "radix.yellow.10.dark",
+            _light: "radix.yellow.10.light",
+          },
         },
       },
     },

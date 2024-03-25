@@ -1,9 +1,6 @@
-import PropTypes from "prop-types";
-
 // million-ignore
-export const WhiteKnight = ({ title, titleId }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" aria-labelledby={titleId} pointerEvents="none" cursor="grab">
-    {title ? <title id={titleId}>{title}</title> : null}
+export const WhiteKnight = () => {
+  return (
     <g
       pointerEvents="visible"
       opacity={1}
@@ -27,10 +24,5 @@ export const WhiteKnight = ({ title, titleId }) => (
       <path d="M9.5 25.5a.5.5 0 1 1-1 0 .5.5 0 1 1 1 0z" fill="#000" stroke="#000" transform="translate(0 .3)" />
       <path d="M15 15.5a.5 1.5 0 1 1-1 0 .5 1.5 0 1 1 1 0z" fill="#000" stroke="#000" transform="rotate(30 13.94 15.65)" />
     </g>
-  </svg>
-);
-
-WhiteKnight.propTypes = {
-  title: PropTypes.string.isRequired,
-  titleId: PropTypes.string.isRequired,
+  );
 };

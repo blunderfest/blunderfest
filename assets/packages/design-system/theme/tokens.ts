@@ -1,11 +1,11 @@
 import type { Tokens } from "@pandacss/types";
 import { aspectRatios } from "./aspect-ratios";
-import { colors } from "./colors";
 import { animations } from "./keyframes";
 import { shadows } from "./shadows";
 import { sizes } from "./sizes";
 import { spacing } from "./spacing";
 import { fonts, fontSizes, fontWeights, letterSpacings, lineHeights } from "./typography";
+import { zIndex } from "./z-index";
 
 const defineTokens = <T extends Tokens>(v: T) => v;
 
@@ -43,7 +43,6 @@ export const tokens = defineTokens({
   letterSpacings,
   fontSizes,
   shadows,
-  colors,
   blurs: {
     sm: { value: "4px" },
     base: { value: "8px" },
@@ -56,4 +55,5 @@ export const tokens = defineTokens({
   spacing,
   sizes,
   animations,
+  zIndex,
 });

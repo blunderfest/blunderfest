@@ -1,9 +1,6 @@
-import PropTypes from "prop-types";
-
 // million-ignore
-export const WhiteKing = ({ title, titleId }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" aria-labelledby={titleId} pointerEvents="none" cursor="grab">
-    {title ? <title id={titleId}>{title}</title> : null}
+export const WhiteKing = () => {
+  return (
     <g
       pointerEvents="visible"
       fill="none"
@@ -25,10 +22,5 @@ export const WhiteKing = ({ title, titleId }) => (
       />
       <path d="M12.5 30c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0m-20 3.5c5.5-3 14.5-3 20 0" />
     </g>
-  </svg>
-);
-
-WhiteKing.propTypes = {
-  title: PropTypes.string.isRequired,
-  titleId: PropTypes.string.isRequired,
+  );
 };

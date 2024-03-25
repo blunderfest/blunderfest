@@ -1,8 +1,10 @@
 import { Container } from "@blunderfest/design-system/styled-system/jsx";
-import { useConnectivity } from "@blunderfest/store/useConnectivity";
+import { useAppDispatch } from "@blunderfest/store";
+import { connect } from "@blunderfest/store/slices/connectivitySlice";
 import { Board, ColorSchemeToggle } from "@blunderfest/ui/components";
 import { Layout } from "@blunderfest/ui/layouts";
-import { useState } from "react";
+import PropTypes from "prop-types";
+import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 
 const lngs = {
@@ -10,14 +12,25 @@ const lngs = {
   nl: { nativeName: "Nederlands" },
 };
 
-const userId = document?.querySelector("meta[name='user_id']")?.getAttribute("content");
-const roomCode = document?.querySelector("meta[name='room_code']")?.getAttribute("content");
+/**
+ * @param {{ userToken: string, roomCode: string }} props
+ */
 
-export function App() {
+export function App(props) {
+  const { roomCode, userToken } = props;
+
   const { t, i18n } = useTranslation();
   const [count, setCount] = useState(0);
-  const x = useConnectivity(userId, roomCode);
-  x.connect();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(
+      connect({
+        roomCode,
+        userToken,
+      })
+    );
+  }, []);
 
   return (
     <Layout
@@ -59,3 +72,8 @@ export function App() {
     </Layout>
   );
 }
+
+App.propTypes = {
+  userToken: PropTypes.string.isRequired,
+  roomCode: PropTypes.string.isRequired,
+};

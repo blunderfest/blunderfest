@@ -1,7 +1,7 @@
 import { css } from "@blunderfest/design-system/styled-system/css";
 import { visuallyHidden } from "@blunderfest/design-system/styled-system/patterns/visually-hidden";
-import { useColorScheme } from "@blunderfest/store";
 import { MdDarkMode, MdLightMode } from "react-icons/md";
+import { useColorScheme } from "storev2/useColorScheme";
 
 export function ColorSchemeToggle() {
   const { prefersDark, switchScheme } = useColorScheme();

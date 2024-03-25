@@ -41,6 +41,7 @@ export default defineConfig(({ command }) => {
       emptyOutDir: true,
       sourcemap: true,
       manifest: true,
+      minify: false,
       outDir: "../../../priv/static",
       rollupOptions: {
         input: {
@@ -49,6 +50,8 @@ export default defineConfig(({ command }) => {
         output: {
           manualChunks: {
             react: ["react", "react-dom"],
+            store: ["@blunderfest/store"],
+            i18n: ["i18next", "i18next-browser-languagedetector", "i18next-http-backend"],
           },
         },
       },

@@ -1,9 +1,6 @@
-import PropTypes from "prop-types";
-
 // million-ignore
-export const BlackBishop = ({ title, titleId }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" aria-labelledby={titleId} pointerEvents="none" cursor="grab">
-    {title ? <title id={titleId}>{title}</title> : null}
+export const BlackBishop = () => {
+  return (
     <g
       pointerEvents="visible"
       opacity={1}
@@ -30,10 +27,5 @@ export const BlackBishop = ({ title, titleId }) => (
         transform="translate(0 .6)"
       />
     </g>
-  </svg>
-);
-
-BlackBishop.propTypes = {
-  title: PropTypes.string.isRequired,
-  titleId: PropTypes.string.isRequired,
+  );
 };
