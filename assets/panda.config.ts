@@ -13,7 +13,7 @@ export default defineConfig({
   include: ["./src/**/*.{js,jsx,ts,tsx}", "./pages/**/*.{js,jsx,ts,tsx}"],
   exclude: [],
   optimize: false,
-  hash: process.env.NODE_ENV === "development",
+  hash: process.env.NODE_ENV !== "development",
 
   presets: [radixPreset(radixPresetConfig), preset],
 
