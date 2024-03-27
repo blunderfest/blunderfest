@@ -50,7 +50,6 @@ export default defineConfig(({ command }) => {
         output: {
           manualChunks: {
             react: ["react", "react-dom"],
-            store: ["@blunderfest/store"],
             i18n: ["i18next", "i18next-browser-languagedetector"],
           },
         },

@@ -55,6 +55,9 @@ devDependencies:
   '@pandacss/dev':
     specifier: ^0.36.1
     version: 0.36.1(typescript@5.4.3)
+  '@pandacss/types':
+    specifier: ^0.36.1
+    version: 0.36.1
   '@types/node':
     specifier: ^20.11.30
     version: 20.11.30

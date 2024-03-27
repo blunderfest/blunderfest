@@ -31,7 +31,7 @@ export function App(props: Readonly<Props>) {
         userToken: userToken,
       })
     );
-  }, []);
+  }, [dispatch, roomCode, userToken]);
 
   return (
     <Layout

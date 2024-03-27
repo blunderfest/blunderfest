@@ -15,78 +15,78 @@ import { WhiteQueen } from "./pieces/WhiteQueen";
 import { WhiteRook } from "./pieces/WhiteRook";
 
 function usePiece(piece: "k" | "K" | "q" | "Q" | "r" | "R" | "b" | "B" | "n" | "N" | "p" | "P") {
-  const { t } = useTranslation("pieces", { useSuspense: false });
+  const { t } = useTranslation();
 
   switch (piece) {
     case "k": {
       return {
-        title: t("black.king"),
+        title: t("pieces.black.king"),
         Element: <BlackKing />,
       };
     }
     case "K": {
       return {
-        title: t("white.king"),
+        title: t("pieces.white.king"),
         Element: <WhiteKing />,
       };
     }
     case "q": {
       return {
-        title: t("black.queen"),
+        title: t("pieces.black.queen"),
         Element: <BlackQueen />,
       };
     }
     case "Q": {
       return {
-        title: t("white.queen"),
+        title: t("pieces.white.queen"),
         Element: <WhiteQueen />,
       };
     }
     case "r": {
       return {
-        title: t("black.rook"),
+        title: t("pieces.black.rook"),
         Element: <BlackRook />,
       };
     }
     case "R": {
       return {
-        title: t("white.rook"),
+        title: t("pieces.white.rook"),
         Element: <WhiteRook />,
       };
     }
     case "b": {
       return {
-        title: t("black.bishop"),
+        title: t("pieces.black.bishop"),
         Element: <BlackBishop />,
       };
     }
     case "B": {
       return {
-        title: t("white.bishop"),
+        title: t("pieces.white.bishop"),
         Element: <WhiteBishop />,
       };
     }
     case "n": {
       return {
-        title: t("black.knight"),
+        title: t("pieces.black.knight"),
         Element: <BlackKnight />,
       };
     }
     case "N": {
       return {
-        title: t("white.knight"),
+        title: t("pieces.white.knight"),
         Element: <WhiteKnight />,
       };
     }
     case "p": {
       return {
-        title: t("black.pawn"),
+        title: t("pieces.black.pawn"),
         Element: <BlackPawn />,
       };
     }
     case "P": {
       return {
-        title: t("white.pawn"),
+        title: t("pieces.white.pawn"),
         Element: <WhitePawn />,
       };
     }

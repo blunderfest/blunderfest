@@ -6,7 +6,7 @@
   "scripts": {
     "prepare": "panda codegen",
     "dev": "VITE_CJS_TRACE=true vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && touch ../priv/static/.gitkeep",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -29,6 +29,7 @@
   "devDependencies": {
     "@amandaguthrie/panda-preset-color-radix": "^0.1.1",
     "@pandacss/dev": "^0.36.1",
+    "@pandacss/types": "^0.36.1",
     "@types/node": "^20.11.30",
     "@types/phoenix": "^1.6.4",
     "@types/react": "^18.2.66",
