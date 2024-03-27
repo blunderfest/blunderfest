@@ -16,14 +16,6 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   secret_key_base: "SMW5GhJBjRhpIjooOdWlhlxyyvXtB7AWvTI+OFChCkOCZ9HpiCKtnq/yjV8wxNLb",
   watchers: [
     pnpm: [
-      "--filter",
-      "blunderfest",
-      "dev",
-      cd: Path.expand("../assets", __DIR__)
-    ],
-    pnpm: [
-      "--filter",
-      "design-system",
       "dev",
       cd: Path.expand("../assets", __DIR__)
     ]

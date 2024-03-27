@@ -33,5 +33,7 @@
   "cssvar.ignore": ["**/node_modules/**"],
   "js/ts.implicitProjectConfig.checkJs": true,
   "barreler.exclude": ["use*"],
-  "barreler.mode": "multifile-index"
+  "barreler.mode": "multifile-index",
+  "explorer.compactFolders": false,
+  "explorer.autoReveal": false
 }

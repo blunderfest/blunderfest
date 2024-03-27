@@ -18,7 +18,7 @@ defmodule BlunderfestWeb.Endpoint do
   if Mix.env() == :dev do
     plug Plug.Static,
       at: "/",
-      from: "assets/apps/blunderfest/public",
+      from: "assets",
       gzip: false,
       only: BlunderfestWeb.static_paths()
   end

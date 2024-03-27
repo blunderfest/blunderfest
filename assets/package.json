@@ -1,15 +1,49 @@
 {
-  "name": "blunderfest",
-  "version": "1.0.0",
-  "description": "",
+  "name": "assets",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "watch": "node watch.js pnpm --parallel -r dev"
+    "prepare": "panda codegen",
+    "dev": "VITE_CJS_TRACE=true vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
+    "@dnd-kit/core": "^6.1.0",
+    "@reduxjs/toolkit": "^2.2.2",
+    "i18next": "^23.10.1",
+    "i18next-browser-languagedetector": "^7.2.0",
+    "i18next-resources-to-backend": "^1.2.0",
+    "observable-hooks": "^4.2.3",
+    "phoenix": "^1.7.11",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-error-boundary": "^4.0.13",
+    "react-i18next": "^14.1.0",
+    "react-icons": "^5.0.1",
+    "react-redux": "^9.1.0",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@amandaguthrie/panda-preset-color-radix": "^0.1.1",
+    "@pandacss/dev": "^0.36.1",
+    "@types/node": "^20.11.30",
+    "@types/phoenix": "^1.6.4",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "million": "^3.0.6",
+    "open-props": "^1.6.21",
+    "postcss": "^8.4.38",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0",
+    "vite-tsconfig-paths": "^4.3.2"
   }
 }
