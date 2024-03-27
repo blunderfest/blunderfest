@@ -2,12 +2,16 @@ import { definePreset } from "@pandacss/dev";
 import { breakpoints } from "./breakpoints";
 import { containerSizes } from "./containers";
 import { keyframes } from "./keyframes";
-import { reset } from "./reset";
 import { tokens } from "./tokens";
 import { textStyles } from "./typography";
 
 export const preset = definePreset({
-  globalCss: reset,
+  globalCss: {
+    body: {
+      backgroundColor: "surface.background.1",
+      color: "surface.text.1",
+    },
+  },
   conditions: {
     extend: {
       dark: '[data-color-scheme="dark"] &',

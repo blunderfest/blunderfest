@@ -1,4 +1,4 @@
-import { sva } from "../../../styled-system/css";
+import { sva } from "@design-system/css";
 
 export const layout = sva({
   slots: ["root", "main", "header", "left", "right"],
@@ -28,24 +28,18 @@ export const layout = sva({
       },
     },
     header: {
-      backgroundColor: "surface.background.2",
-      color: "surface.text.2",
-      height: "8",
       gridArea: "header",
     },
     left: {
-      backgroundColor: "surface.background.1",
-      color: "surface.text.1",
       gridArea: "left-sidebar",
     },
     main: {
-      backgroundColor: "surface.background.1",
-      color: "surface.text.1",
       gridArea: "main-content",
+      lg: {
+        width: "calc(100vw / 2 - token(sizes.8))",
+      },
     },
     right: {
-      backgroundColor: "surface.background.1",
-      color: "surface.text.1",
       gridArea: "right-sidebar",
     },
   },

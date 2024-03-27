@@ -1,4 +1,4 @@
-import { sva } from "../../../styled-system/css";
+import { sva } from "@design-system/css";
 
 export const square = sva({
   slots: ["root", "overlay", "piece", "selected"],

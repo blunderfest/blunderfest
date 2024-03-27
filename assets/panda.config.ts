@@ -9,7 +9,7 @@ const radixPresetConfig: ColorRadixPresetOptions = {
 };
 
 export default defineConfig({
-  preflight: false,
+  preflight: true,
   include: ["./src/**/*.{js,jsx,ts,tsx}", "./pages/**/*.{js,jsx,ts,tsx}"],
   exclude: [],
   optimize: false,

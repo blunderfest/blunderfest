@@ -1,4 +1,3 @@
-import { Board } from "@/components/Board";
 import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import { Layout } from "@/layouts/Layout";
 import { connect } from "@/store/slices/connectivitySlice";
@@ -6,6 +5,7 @@ import { useAppDispatch } from "@/store/store";
 import { Container } from "@design-system/jsx";
 import { useEffect, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { Board } from "./components/Board";
 
 const lngs = {
   en: { nativeName: "English" },
