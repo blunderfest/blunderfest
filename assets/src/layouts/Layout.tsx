@@ -1,4 +1,4 @@
-import { layout } from "@/theme/recipes/layout.recipe";
+import { layoutRecipe } from "@/components/recipes/layout.recipe";
 import { PropsWithChildren, ReactNode } from "react";
 
 type Props = PropsWithChildren & {
@@ -9,7 +9,7 @@ type Props = PropsWithChildren & {
 
 export function Layout(props: Props) {
   const { toolbar, left, children, right } = props;
-  const classes = layout();
+  const classes = layoutRecipe();
 
   return (
     <div className={classes.root}>

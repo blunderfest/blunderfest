@@ -1,6 +1,7 @@
+import { connected, disconnected, joined, left } from "@/actions/joined";
+import { Game } from "@/types/Piece";
 import { Dispatch, UnknownAction } from "@reduxjs/toolkit";
 import { Channel, Socket } from "phoenix";
-import { connected, joined, left } from "../slices/connectivitySlice";
 
 function changeCase(item: unknown, replace: (key: string) => string): unknown {
   if (Array.isArray(item)) {
@@ -24,6 +25,12 @@ function snakelize(item: unknown): unknown {
   return changeCase(item, (key) => key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`));
 }
 
+type JoinedResponse = {
+  games: string[];
+  activeGame: string;
+  gamesByCode: Record<string, Game>;
+};
+
 export function socketHandler(dispatch: Dispatch<UnknownAction>) {
   let socket: Socket;
   const channels: Record<string, Channel> = {};
@@ -36,55 +43,53 @@ export function socketHandler(dispatch: Dispatch<UnknownAction>) {
     socket = new Socket("/socket", { params: { token: userToken } });
 
     socket.onOpen(() => {
-      dispatch(connected());
+      dispatch(connected(userToken));
     });
+
     socket.onOpen(() => {
-      const room = addRoom(roomCode);
-      join(room);
+      const channel = socket.channel("room:" + roomCode);
+
+      channel.onMessage = (event, payload) => {
+        dispatch({
+          type: event,
+          payload: camelize(payload),
+        });
+
+        channel.onClose(() => {
+          if (channel.state !== "leaving") {
+            dispatch(left(roomCode));
+            delete channels[roomCode];
+          }
+        });
+
+        return payload;
+      };
+
+      channels[roomCode] = channel;
+
+      channel
+        .join()
+        .receive("ok", (game) => {
+          const camelized = camelize(game) as JoinedResponse;
+          dispatch(joined(roomCode, camelized.games, camelized.gamesByCode, camelized.activeGame));
+        })
+        .receive("error", (resp) => {
+          if (resp === "room_not_found") {
+            disconnect();
+            location.href = "/";
+          } else {
+            console.error("channel.join", resp);
+          }
+        });
     });
 
     socket.connect();
   }
 
-  function addRoom(roomCode: string) {
-    const channel = socket.channel("room:" + roomCode);
-
-    channel.onMessage = (event, payload) => {
-      dispatch({
-        type: event,
-        payload: camelize(payload),
-      });
-
-      channel.onClose(() => {
-        if (channel.state !== "leaving") {
-          dispatch(left());
-          delete channels[roomCode];
-        }
-      });
-
-      return payload;
-    };
-
-    channels[roomCode] = channel;
-
-    return channel;
-  }
-
-  function join(channel: Channel) {
-    channel
-      .join()
-      .receive("ok", (game) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        dispatch(joined(camelize(game) as any));
-      })
-      .receive("error", (resp) => {
-        if (resp === "room_not_found") {
-          socket.disconnect();
-          location.href = "/";
-        } else {
-          console.error("channel.join", resp);
-        }
-      });
+  function disconnect() {
+    socket.disconnect(() => {
+      dispatch(disconnected());
+    });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,6 +102,7 @@ export function socketHandler(dispatch: Dispatch<UnknownAction>) {
 
   return {
     connect,
+    disconnect,
     handle,
   };
 }

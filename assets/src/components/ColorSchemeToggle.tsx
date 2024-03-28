@@ -16,7 +16,7 @@ export function ColorSchemeToggle() {
           className={css({
             fontSize: "3xl",
             cursor: "pointer",
-            color: "gray.dark.12",
+            color: "radix.yellow.11.dark",
           })}
         />
       )}
@@ -25,7 +25,7 @@ export function ColorSchemeToggle() {
           className={css({
             fontSize: "3xl",
             cursor: "pointer",
-            color: "gray.light.12",
+            color: "radix.sky.12.light",
           })}
         />
       )}

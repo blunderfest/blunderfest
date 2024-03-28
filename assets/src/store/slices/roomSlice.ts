@@ -1,25 +1,32 @@
+import { joined, left } from "@/actions/joined";
 import { createSlice } from "@reduxjs/toolkit";
-import { joined } from "./connectivitySlice";
 
 type State = {
-    games: string[],
-    active_game?: string;
+  roomCode: string;
+  games: string[];
+  activeGame: string;
 };
 
 const initialState: State = {
-    games: [],
+  roomCode: "",
+  games: [],
+  activeGame: "",
 };
 
 const roomSlice = createSlice({
-    name: "room",
-    initialState,
-    reducers: {},
-    extraReducers(builder) {
-        builder.addCase(joined, (state, action) => {
-            state.games = action.payload.games;
-            state.active_game = action.payload.activeGame;
-        })
-    },
+  name: "room",
+  initialState,
+  reducers: {},
+  extraReducers(builder) {
+    builder.addCase(joined, (state, action) => {
+      state.roomCode = action.payload.roomCode;
+      state.games = action.payload.games;
+      state.activeGame = action.payload.activeGame;
+    });
+    builder.addCase(left, (state) => {
+      state.roomCode = "";
+    });
+  },
 });
 
 export const roomReducer = roomSlice.reducer;

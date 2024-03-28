@@ -1,17 +1,6 @@
+import { joined } from "@/actions/joined";
+import { Piece, Square, SquareIndex } from "@/types/Piece";
 import { createSlice } from "@reduxjs/toolkit";
-import { joined } from "./connectivitySlice";
-
-const knownPieces = ["k", "K", "q", "Q", "r", "R", "b", "B", "n", "N", "p", "P"] as const;
-type KnownPieces = (typeof knownPieces)[number];
-
-function isKnownPiece(piece: string): piece is KnownPieces {
-  return knownPieces.includes(piece as KnownPieces);
-}
-
-type Square = {
-  squareIndex: number;
-  piece: (typeof knownPieces)[number] | null;
-};
 
 type State = {
   squares: Square[];
@@ -29,7 +18,7 @@ function parseFen(fen: string) {
     .reverse()
     .flatMap((row) =>
       row.split("").flatMap((piece) => {
-        if (isNaN(+piece) && isKnownPiece(piece)) {
+        if (isNaN(+piece)) {
           return [piece];
         }
 
@@ -37,10 +26,13 @@ function parseFen(fen: string) {
       })
     );
 
-  return squares.map((piece, index) => ({
-    squareIndex: index,
-    piece: piece,
-  }));
+  return squares.map(
+    (piece, index): Square => ({
+      squareIndex: index as SquareIndex,
+      piece: piece as Piece,
+      color: ((index >> 3) ^ index) & 1 ? "light" : "dark",
+    })
+  );
 }
 
 const boardSlice = createSlice({

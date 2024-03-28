@@ -22,7 +22,7 @@ export function Board() {
       onDragCancel={(e) => console.log("cancel", e)}>
       <Grid columns={8} gap={0}>
         {squares.flatMap((square) => (
-          <Square key={square.squareIndex} {...square} />
+          <Square key={square.squareIndex} square={square} />
         ))}
       </Grid>
     </DndContext>

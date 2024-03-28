@@ -1,6 +1,9 @@
+import { connect, disconnect } from "@/actions/joined";
 import { Middleware } from "@reduxjs/toolkit";
-import { connectivitySlice } from "../slices/connectivitySlice";
 import { socketHandler } from "./socketHandler";
+
+const userToken = document.querySelector("meta[name='user_token']")!.getAttribute("content")!;
+const roomCode = document.querySelector("meta[name='room_code']")!.getAttribute("content")!;
 
 export const websocketMiddleware: Middleware = ({ dispatch }) => {
   const socket = socketHandler(dispatch);
@@ -9,9 +12,10 @@ export const websocketMiddleware: Middleware = ({ dispatch }) => {
     return (action) => {
       const result = next(action);
 
-      if (connectivitySlice.actions.connect.match(action)) {
-        const { roomCode, userToken } = action.payload;
+      if (connect.match(action)) {
         socket.connect(userToken, roomCode);
+      } else if (disconnect.match(action)) {
+        socket.disconnect();
       } else {
         socket.handle(action);
       }

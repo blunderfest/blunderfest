@@ -1,3 +1,4 @@
+import { Piece, SquareIndex } from "@/types/Piece";
 import { css } from "@design-system/css";
 import { useDraggable } from "@dnd-kit/core";
 import { useTranslation } from "react-i18next";
@@ -14,7 +15,7 @@ import { WhitePawn } from "./pieces/WhitePawn";
 import { WhiteQueen } from "./pieces/WhiteQueen";
 import { WhiteRook } from "./pieces/WhiteRook";
 
-function usePiece(piece: "k" | "K" | "q" | "Q" | "r" | "R" | "b" | "B" | "n" | "N" | "p" | "P") {
+function usePiece(piece: Piece) {
   const { t } = useTranslation();
 
   switch (piece) {
@@ -94,10 +95,10 @@ function usePiece(piece: "k" | "K" | "q" | "Q" | "r" | "R" | "b" | "B" | "n" | "
 }
 
 type Props = {
-  squareIndex: number;
-  piece: "k" | "K" | "q" | "Q" | "r" | "R" | "b" | "B" | "n" | "N" | "p" | "P";
+  squareIndex: SquareIndex;
+  piece: Piece;
 };
-export function Piece(props: Readonly<Props>) {
+export function SvgPiece(props: Readonly<Props>) {
   const { squareIndex, piece } = props;
 
   const info = usePiece(piece);

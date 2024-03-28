@@ -1,41 +1,27 @@
-import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
-import { Layout } from "@/layouts/Layout";
-import { connect } from "@/store/slices/connectivitySlice";
-import { useAppDispatch } from "@/store/store";
-import { Container } from "@design-system/jsx";
-import { useEffect, useState } from "react";
+import { Board } from "@/components/Board";
+import { Toolbar } from "@/components/Toolbar";
+import { layoutRecipe } from "@/components/recipes/layout.recipe";
+import { Box, Container } from "@design-system/jsx";
+import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { Board } from "./components/Board";
 
 const lngs = {
   en: { nativeName: "English" },
   nl: { nativeName: "Nederlands" },
 } as const;
 
-type Props = {
-  roomCode: string;
-  userToken: string;
-};
-
-export function App(props: Readonly<Props>) {
-  const { roomCode, userToken } = props;
+export function App() {
+  const classes = layoutRecipe();
 
   const { t, i18n } = useTranslation();
   const [count, setCount] = useState(0);
-  const dispatch = useAppDispatch();
-
-  useEffect(() => {
-    dispatch(
-      connect({
-        roomCode: roomCode,
-        userToken: userToken,
-      })
-    );
-  }, [dispatch, roomCode, userToken]);
 
   return (
-    <Layout
-      left={
+    <Box className={classes.root}>
+      <Box className={classes.header}>
+        <Toolbar />
+      </Box>
+      <Box className={classes.left}>
         <>
           <Trans i18nKey="description.part1">
             Edit <code>src/App.js</code> and save to reload.
@@ -55,8 +41,13 @@ export function App(props: Readonly<Props>) {
             ))}
           </div>
         </>
-      }
-      right={
+      </Box>
+      <Box className={classes.main}>
+        <Container>
+          <Board />
+        </Container>
+      </Box>
+      <Box className={classes.right}>
         <>
           <a className="App-link" href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
             {t("description.part2")}
@@ -65,11 +56,7 @@ export function App(props: Readonly<Props>) {
             <i>{t("counter", { count })}</i>
           </p>
         </>
-      }
-      toolbar={<ColorSchemeToggle />}>
-      <Container>
-        <Board />
-      </Container>
-    </Layout>
+      </Box>
+    </Box>
   );
 }

@@ -8,8 +8,8 @@ import { textStyles } from "./typography";
 export const preset = definePreset({
   globalCss: {
     body: {
-      backgroundColor: "surface.background.1",
-      color: "surface.text.1",
+      backgroundColor: "surface.background.2",
+      color: "surface.text.2",
     },
   },
   conditions: {
