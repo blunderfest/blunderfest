@@ -86,16 +86,6 @@ export function socketHandler(dispatch: Dispatch<UnknownAction>) {
         }
       });
   }
-  // isFSA(action) &&
-  // typeof action.payload === "object" &&
-  // action.payload &&
-  // action &&
-  // typeof action === "object" &&
-  // "meta" in action &&
-  // typeof action.meta === "object" &&
-  // action.meta &&
-  // "roomCode" in action.meta &&
-  // typeof action.meta.roomCode === "string"
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function handle(action: any) {

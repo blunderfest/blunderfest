@@ -48,7 +48,7 @@ export default defineConfig(({ command }) => {
         },
         output: {
           manualChunks: {
-            react: ["react", "react-dom"],
+            react: ["react", "react-dom", "@reduxjs/toolkit", "react-redux"],
             i18n: ["i18next", "i18next-browser-languagedetector"],
           },
         },

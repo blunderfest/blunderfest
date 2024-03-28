@@ -20,9 +20,6 @@ dependencies:
   i18next-resources-to-backend:
     specifier: ^1.2.0
     version: 1.2.0
-  observable-hooks:
-    specifier: ^4.2.3
-    version: 4.2.3(react-dom@18.2.0)(react@18.2.0)(rxjs@7.8.1)
   phoenix:
     specifier: ^1.7.11
     version: 1.7.11
@@ -44,9 +41,6 @@ dependencies:
   react-redux:
     specifier: ^9.1.0
     version: 9.1.0(@types/react@18.2.72)(react@18.2.0)(redux@5.0.1)
-  rxjs:
-    specifier: ^7.8.1
-    version: 7.8.1
 
 devDependencies:
   '@amandaguthrie/panda-preset-color-radix':
@@ -2453,18 +2447,6 @@ packages:
     engines: {node: '>= 10.12.0'}
     dev: true
 
-  /observable-hooks@4.2.3(react-dom@18.2.0)(react@18.2.0)(rxjs@7.8.1):
-    resolution: {integrity: sha512-d6fYTIU+9sg1V+CT0GhgoE/ntjIqcy9DGaYGE6ELGVP4ojaWIEsaLvL/05hLOM+AL7aySN4DCTLvj6dDF9T8XA==}
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-      rxjs: '>=6.0.0'
-    dependencies:
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
-      rxjs: 7.8.1
-    dev: false
-
   /once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
     dependencies:
@@ -2875,12 +2857,6 @@ packages:
     dependencies:
       queue-microtask: 1.2.3
     dev: true
-
-  /rxjs@7.8.1:
-    resolution: {integrity: sha512-AA3TVj+0A2iuIoQkWEK/tqFjBq2j+6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==}
-    dependencies:
-      tslib: 2.6.2
-    dev: false
 
   /scheduler@0.23.0:
     resolution: {integrity: sha512-CtuThmgHNg7zIZWAXi3AsyIzA3n4xx7aNyjwC2VJldO2LMVDhFK+63xGqq6CsJH4rTAt6/M+N4GhZiDYPx9eUw==}
