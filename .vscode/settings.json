@@ -26,14 +26,13 @@
   "javascript.suggest.autoImports": true,
   "javascript.validate.enable": false,
   "typescript.tsserver.log": "verbose",
-  "cssvar.files": [
-    "./assets/packages/design-system/node_modules/@radix-ui/**/*.css",
-    "./assets/packages/design-system/styled-system/**/*.css"
-  ],
-  "cssvar.ignore": ["**/node_modules/**"],
-  "js/ts.implicitProjectConfig.checkJs": true,
-  "barreler.exclude": ["use*"],
-  "barreler.mode": "multifile-index",
   "explorer.compactFolders": false,
-  "explorer.autoReveal": false
+  "explorer.autoReveal": false,
+  "css.validate": false,
+  "editor.inlineSuggest.enabled": true,
+  "tailwindCSS.experimental.classRegex": [
+    ["tv\\((([^()]*|\\([^()]*\\))*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ]
 }
