@@ -1,5 +1,5 @@
-import { selectGame } from "@/actions/joined";
-import { useAppDispatch, useAppSelector } from "@/store/store";
+import { selectGame } from "~/actions/joined";
+import { useAppDispatch, useAppSelector } from "~/store/store";
 
 export function GameSelector() {
   const dispatch = useAppDispatch();

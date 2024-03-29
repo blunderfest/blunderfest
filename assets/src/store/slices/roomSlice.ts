@@ -1,5 +1,5 @@
-import { joined, left, selectGame } from "@/actions/joined";
 import { createSlice } from "@reduxjs/toolkit";
+import { joined, left, selectGame } from "~/actions/joined";
 
 type State = {
   roomCode: string;

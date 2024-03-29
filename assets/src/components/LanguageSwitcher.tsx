@@ -1,4 +1,4 @@
-import { Box } from "@/design-system/jsx";
+import { Box } from "design-system/jsx";
 import { useTranslation } from "react-i18next";
 
 export function LanguageSwitcher() {

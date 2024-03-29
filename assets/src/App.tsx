@@ -1,9 +1,9 @@
-import { Board } from "@/components/Board";
-import { Toolbar } from "@/components/Toolbar";
-import { layoutRecipe } from "@/components/recipes/layout.recipe";
-import { Box, Container } from "@/design-system/jsx";
+import { Box, Container } from "design-system/jsx";
 import { Trans, useTranslation } from "react-i18next";
-import { GameSelector } from "./components/GameSelector";
+import { Board } from "~/components/Board";
+import { GameSelector } from "~/components/GameSelector";
+import { Toolbar } from "~/components/Toolbar";
+import { layoutRecipe } from "~/components/recipes/layout.recipe";
 
 export function App() {
   const classes = layoutRecipe();

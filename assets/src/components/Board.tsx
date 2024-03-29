@@ -1,6 +1,6 @@
-import { Grid } from "@/design-system/jsx";
-import { useAppSelector } from "@/store/store";
 import { DndContext } from "@dnd-kit/core";
+import { Grid } from "design-system/jsx";
+import { useAppSelector } from "~/store/store";
 import { Square } from "./Square";
 
 export function Board() {

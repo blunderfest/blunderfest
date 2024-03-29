@@ -1,5 +1,5 @@
-import { connect, connected, disconnected } from "@/actions/joined";
 import { createSlice } from "@reduxjs/toolkit";
+import { connect, connected, disconnected } from "~/actions/joined";
 
 type State = {
   status: "connected" | "disconnected" | "connecting";

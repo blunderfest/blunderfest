@@ -1,5 +1,5 @@
-import { connect, disconnect } from "@/actions/joined";
 import { Middleware } from "@reduxjs/toolkit";
+import { connect, disconnect } from "~/actions/joined";
 import { socketHandler } from "./socketHandler";
 
 const userToken = document.querySelector("meta[name='user_token']")!.getAttribute("content")!;

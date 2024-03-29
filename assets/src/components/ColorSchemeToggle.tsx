@@ -1,5 +1,5 @@
-import { css } from "@/design-system/css";
-import { visuallyHidden } from "@/design-system/patterns";
+import { css } from "design-system/css";
+import { visuallyHidden } from "design-system/patterns";
 import { useTranslation } from "react-i18next";
 import { MdDarkMode, MdLightMode } from "react-icons/md";
 import { useColorScheme } from "./useColorScheme";

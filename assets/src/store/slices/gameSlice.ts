@@ -1,6 +1,6 @@
-import { joined } from "@/actions/joined";
-import { Game } from "@/types/Piece";
 import { createSlice } from "@reduxjs/toolkit";
+import { joined } from "~/actions/joined";
+import { Game } from "~/types/Piece";
 
 type State = {
   gamesByCode: Record<string, Game>;

@@ -14,7 +14,7 @@ export default defineConfig({
   exclude: [],
   optimize: false,
 
-  presets: [radixPreset(radixPresetConfig), preset],
+  presets: ["@park-ui/panda-preset", radixPreset(radixPresetConfig), preset],
 
   outdir: "styled-system",
   jsxFramework: "react",

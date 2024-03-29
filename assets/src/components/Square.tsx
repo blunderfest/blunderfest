@@ -1,8 +1,8 @@
-import { squareRecipe } from "@/components/recipes/square.recipe";
-import { Box } from "@/design-system/jsx";
-import { Square as S } from "@/types/Piece";
 import { useDroppable } from "@dnd-kit/core";
+import { Box } from "design-system/jsx";
 import { ErrorBoundary } from "react-error-boundary";
+import { squareRecipe } from "~/components/recipes/square.recipe";
+import { Square as S } from "~/types/Piece";
 import { SvgPiece } from "./SvgPiece";
 
 type Props = {

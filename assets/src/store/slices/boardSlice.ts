@@ -1,6 +1,6 @@
-import { joined } from "@/actions/joined";
-import { Piece, Square, SquareIndex } from "@/types/Piece";
 import { createSlice } from "@reduxjs/toolkit";
+import { joined } from "~/actions/joined";
+import { Piece, Square, SquareIndex } from "~/types/Piece";
 
 type State = {
   squares: Square[];

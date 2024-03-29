@@ -20,8 +20,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@/design-system/*": ["./styled-system/*"]
+      "~/*": ["./src/*"],
+      "design-system/*": ["./styled-system/*"]
     }
   },
   "include": ["src", "styled-system", "panda.config.ts"],

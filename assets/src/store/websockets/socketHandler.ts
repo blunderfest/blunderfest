@@ -1,7 +1,7 @@
-import { connected, disconnected, joined, left } from "@/actions/joined";
-import { Game } from "@/types/Piece";
 import { Dispatch, UnknownAction } from "@reduxjs/toolkit";
 import { Channel, Socket } from "phoenix";
+import { connected, disconnected, joined, left } from "~/actions/joined";
+import { Game } from "~/types/Piece";
 
 function changeCase(item: unknown, replace: (key: string) => string): unknown {
   if (Array.isArray(item)) {

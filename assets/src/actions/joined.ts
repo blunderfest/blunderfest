@@ -1,5 +1,5 @@
-import { Game } from "@/types/Piece";
 import { createAction } from "@reduxjs/toolkit";
+import { Game } from "~/types/Piece";
 
 export const joined = createAction(
   "room/joined",
