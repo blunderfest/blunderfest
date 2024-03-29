@@ -1,5 +1,5 @@
-import { css } from "@design-system/css";
-import { visuallyHidden } from "@design-system/patterns/visually-hidden";
+import { css } from "@/design-system/css";
+import { visuallyHidden } from "@/design-system/patterns";
 import { useTranslation } from "react-i18next";
 import { MdDarkMode, MdLightMode } from "react-icons/md";
 import { useColorScheme } from "./useColorScheme";
@@ -16,7 +16,7 @@ export function ColorSchemeToggle() {
           className={css({
             fontSize: "3xl",
             cursor: "pointer",
-            color: "radix.yellow.11.dark",
+            color: "radix.amber.11.dark",
           })}
         />
       )}
@@ -25,7 +25,7 @@ export function ColorSchemeToggle() {
           className={css({
             fontSize: "3xl",
             cursor: "pointer",
-            color: "radix.sky.12.light",
+            color: "radix.sky.11.light",
           })}
         />
       )}

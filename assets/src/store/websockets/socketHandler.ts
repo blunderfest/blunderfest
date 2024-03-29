@@ -31,11 +31,11 @@ type JoinedResponse = {
   gamesByCode: Record<string, Game>;
 };
 
-export function socketHandler(dispatch: Dispatch<UnknownAction>) {
+export function socketHandler(dispatch: Dispatch<UnknownAction>, userToken: string, roomCode: string) {
   let socket: Socket;
   const channels: Record<string, Channel> = {};
 
-  function connect(userToken: string, roomCode: string) {
+  function connect() {
     if (socket && socket.isConnected()) {
       return;
     }
@@ -44,9 +44,7 @@ export function socketHandler(dispatch: Dispatch<UnknownAction>) {
 
     socket.onOpen(() => {
       dispatch(connected(userToken));
-    });
 
-    socket.onOpen(() => {
       const channel = socket.channel("room:" + roomCode);
 
       channel.onMessage = (event, payload) => {
@@ -55,15 +53,15 @@ export function socketHandler(dispatch: Dispatch<UnknownAction>) {
           payload: camelize(payload),
         });
 
-        channel.onClose(() => {
-          if (channel.state !== "leaving") {
-            dispatch(left(roomCode));
-            delete channels[roomCode];
-          }
-        });
-
         return payload;
       };
+
+      channel.onClose(() => {
+        if (channel.state !== "leaving") {
+          dispatch(left(roomCode));
+          delete channels[roomCode];
+        }
+      });
 
       channels[roomCode] = channel;
 

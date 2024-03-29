@@ -13,8 +13,20 @@ export type Square = {
   piece: Piece | null;
 };
 
-export type Game = {
+export type Move = {
+  from: Square;
+  to: Square;
+  promotion: Piece | null;
+};
+
+export type Variation = {
   position: string;
+  move: Move | null;
+  variations: Variation[];
+};
+
+export type Game = {
+  variations: Variation[];
   gameCode: string;
   squares: Square[];
 };

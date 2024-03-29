@@ -1,20 +1,14 @@
 import { Board } from "@/components/Board";
 import { Toolbar } from "@/components/Toolbar";
 import { layoutRecipe } from "@/components/recipes/layout.recipe";
-import { Box, Container } from "@design-system/jsx";
-import { useState } from "react";
+import { Box, Container } from "@/design-system/jsx";
 import { Trans, useTranslation } from "react-i18next";
-
-const lngs = {
-  en: { nativeName: "English" },
-  nl: { nativeName: "Nederlands" },
-} as const;
+import { GameSelector } from "./components/GameSelector";
 
 export function App() {
   const classes = layoutRecipe();
 
-  const { t, i18n } = useTranslation();
-  const [count, setCount] = useState(0);
+  const { t } = useTranslation();
 
   return (
     <Box className={classes.root}>
@@ -22,25 +16,9 @@ export function App() {
         <Toolbar />
       </Box>
       <Box className={classes.left}>
-        <>
-          <Trans i18nKey="description.part1">
-            Edit <code>src/App.js</code> and save to reload.
-          </Trans>
-          <div>
-            {(["en", "nl"] as const).map((lng) => (
-              <button
-                key={lng}
-                style={{ fontWeight: i18n.resolvedLanguage === lng ? "bold" : "normal" }}
-                type="submit"
-                onClick={() => {
-                  i18n.changeLanguage(lng);
-                  setCount(count + 1);
-                }}>
-                {lngs[lng].nativeName}
-              </button>
-            ))}
-          </div>
-        </>
+        <Trans i18nKey="description.part1">
+          Edit <code>src/App.js</code> and save to reload.
+        </Trans>
       </Box>
       <Box className={classes.main}>
         <Container>
@@ -48,14 +26,10 @@ export function App() {
         </Container>
       </Box>
       <Box className={classes.right}>
-        <>
-          <a className="App-link" href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-            {t("description.part2")}
-          </a>
-          <p>
-            <i>{t("counter", { count })}</i>
-          </p>
-        </>
+        <a className="App-link" href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
+          {t("description.part2")}
+        </a>
+        <GameSelector />
       </Box>
     </Box>
   );

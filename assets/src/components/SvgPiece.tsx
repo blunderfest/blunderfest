@@ -1,5 +1,5 @@
+import { css } from "@/design-system/css";
 import { Piece, SquareIndex } from "@/types/Piece";
-import { css } from "@design-system/css";
 import { useDraggable } from "@dnd-kit/core";
 import { useTranslation } from "react-i18next";
 import { BlackBishop } from "./pieces/BlackBishop";

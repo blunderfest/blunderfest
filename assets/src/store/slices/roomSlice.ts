@@ -1,4 +1,4 @@
-import { joined, left } from "@/actions/joined";
+import { joined, left, selectGame } from "@/actions/joined";
 import { createSlice } from "@reduxjs/toolkit";
 
 type State = {
@@ -23,8 +23,13 @@ const roomSlice = createSlice({
       state.games = action.payload.games;
       state.activeGame = action.payload.activeGame;
     });
+
     builder.addCase(left, (state) => {
       state.roomCode = "";
+    });
+
+    builder.addCase(selectGame, (state, action) => {
+      state.activeGame = action.payload.gameCode;
     });
   },
 });

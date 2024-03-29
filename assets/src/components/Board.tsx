@@ -1,5 +1,5 @@
+import { Grid } from "@/design-system/jsx";
 import { useAppSelector } from "@/store/store";
-import { Grid } from "@design-system/jsx";
 import { DndContext } from "@dnd-kit/core";
 import { Square } from "./Square";
 

@@ -3,11 +3,15 @@
     "part1": "Ändere <1>src/App.js</1> und speichere um neu zu laden.",
     "part2": "Lerne React"
   },
-  "counter_one": "Die Sprache wurde erst ein mal gewechselt",
-  "counter_other": "Die Sprache wurde {{count}} mal gewechselt",
   "colorscheme": {
     "switch": "Schakel naar {{color}} modus",
-    "light": "licht"
+    "light": "licht",
+    "dark": "donkere"
+  },
+  "connection": {
+    "connected": "Verbonden",
+    "connecting": "Bezig verbinding te maken...",
+    "disconnected": "Verbinding verbroken"
   },
   "pieces": {
     "black": {

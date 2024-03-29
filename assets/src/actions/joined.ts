@@ -28,3 +28,9 @@ export const connected = createAction("connectivity/connected", (userToken: stri
 export const disconnect = createAction("connectivity/disconnect");
 
 export const disconnected = createAction("connectivity/disconnected");
+
+export const selectGame = createAction("room/selectGame", (gameCode: string) => ({
+  payload: {
+    gameCode,
+  },
+}));

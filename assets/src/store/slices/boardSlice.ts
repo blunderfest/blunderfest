@@ -41,7 +41,7 @@ const boardSlice = createSlice({
   reducers: {},
   extraReducers(builder) {
     builder.addCase(joined, (state, action) => {
-      const squares = parseFen(action.payload.gamesByCode[action.payload.activeGame].position);
+      const squares = parseFen(action.payload.gamesByCode[action.payload.activeGame].variations[0].position);
       state.squares = squares;
     });
   },

@@ -2,12 +2,12 @@ import { connect, connected, disconnected } from "@/actions/joined";
 import { createSlice } from "@reduxjs/toolkit";
 
 type State = {
-  status: "online" | "offline" | "connecting";
+  status: "connected" | "disconnected" | "connecting";
   userToken: string;
 };
 
 const initialState: State = {
-  status: "offline",
+  status: "connected",
   userToken: "",
 };
 
@@ -21,12 +21,12 @@ export const connectivitySlice = createSlice({
     });
 
     builder.addCase(connected, (state, action) => {
-      state.status = "online";
+      state.status = "connected";
       state.userToken = action.payload.userToken;
     });
 
     builder.addCase(disconnected, (state) => {
-      state.status = "offline";
+      state.status = "disconnected";
     });
   },
 });

@@ -1,4 +1,4 @@
-import { sva } from "@design-system/css";
+import { sva } from "@/design-system/css";
 
 export const squareRecipe = sva({
   slots: ["root", "overlay", "piece", "selected"],
