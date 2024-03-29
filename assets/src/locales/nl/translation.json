@@ -1,0 +1,34 @@
+{
+  "description": {
+    "part1": "Ändere <1>src/App.js</1> und speichere um neu zu laden.",
+    "part2": "Lerne React"
+  },
+  "colorscheme": {
+    "switch": "Schakel naar {{color}} modus",
+    "light": "licht",
+    "dark": "donkere"
+  },
+  "connection": {
+    "connected": "Verbonden",
+    "connecting": "Bezig verbinding te maken...",
+    "disconnected": "Verbinding verbroken"
+  },
+  "pieces": {
+    "black": {
+      "king": "Zwarte koning",
+      "queen": "Zwarte dame",
+      "rook": "Zwarte toren",
+      "bishop": "Zwarte loper",
+      "knight": "Zwarte paard",
+      "pawn": "Zwarte pion"
+    },
+    "white": {
+      "king": "Witte koning",
+      "queen": "Witte dame",
+      "rook": "Witte toren",
+      "bishop": "Witte loper",
+      "knight": "Witte paard",
+      "pawn": "Witte pion"
+    }
+  }
+}
