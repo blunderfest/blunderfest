@@ -1,7 +1,7 @@
-import { css } from "design-system/css";
-import { visuallyHidden } from "design-system/patterns";
 import { useTranslation } from "react-i18next";
 import { MdDarkMode, MdLightMode } from "react-icons/md";
+import { css } from "styled-system/css";
+import { visuallyHidden } from "styled-system/patterns";
 import { useColorScheme } from "./useColorScheme";
 
 export function ColorSchemeToggle() {

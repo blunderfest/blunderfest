@@ -19,9 +19,10 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "baseUrl": "./src",
     "paths": {
-      "~/*": ["./src/*"],
-      "design-system/*": ["./styled-system/*"]
+      "~/*": ["./*"],
+      "styled-system/*": ["../styled-system/*"]
     }
   },
   "include": ["src", "styled-system", "panda.config.ts"],

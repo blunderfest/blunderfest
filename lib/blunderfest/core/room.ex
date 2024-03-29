@@ -27,19 +27,10 @@ defmodule Blunderfest.Core.Room do
   end
 
   @spec handle_event(list(String.t()), map(), map(), __MODULE__.t()) :: __MODULE__.t()
-  def handle_event(["rooms", "activate_game"], %{"game_code" => game_code}, _payload, room),
+  def handle_event(["room", "selectGame"], _meta, %{"game_code" => game_code}, room),
     do: %{room | active_game: game_code}
 
-  def handle_event(["rooms", "increment"], _meta, _payload, room),
-    do: %{room | count: room.count + 1}
-
-  def handle_event(["rooms", "incrementByAmount"], _meta, %{"amount" => amount}, room),
-    do: %{room | count: room.count + amount}
-
-  def handle_event(["rooms", "decrement"], _meta, _payload, room),
-    do: %{room | count: room.count - 1}
-
-  def handle_event(["games", _] = event, %{"game_code" => game_code} = meta, payload, room) do
+  def handle_event(["game", _] = event, meta, %{"game_code" => game_code} = payload, room) do
     IO.inspect(event)
 
     update_in(
@@ -49,7 +40,7 @@ defmodule Blunderfest.Core.Room do
     )
   end
 
-  def handle_event(event, %{"game_code" => game_code} = meta, payload, room) do
+  def handle_event(event, meta, %{"game_code" => game_code} = payload, room) do
     Logger.warning("Unknown room event 1 #{event} - #{game_code}")
     IO.inspect(meta)
     IO.inspect(payload)

@@ -1,5 +1,5 @@
-import { Box, Container } from "design-system/jsx";
 import { Trans, useTranslation } from "react-i18next";
+import { Box, Container } from "styled-system/jsx";
 import { Board } from "~/components/Board";
 import { GameSelector } from "~/components/GameSelector";
 import { Toolbar } from "~/components/Toolbar";

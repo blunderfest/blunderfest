@@ -50,7 +50,10 @@ export function socketHandler(dispatch: Dispatch<UnknownAction>, userToken: stri
       channel.onMessage = (event, payload) => {
         dispatch({
           type: event,
-          payload: camelize(payload),
+          payload: camelize(payload?.payload ?? {}),
+          meta: {
+            remote: true,
+          },
         });
 
         return payload;
@@ -92,9 +95,15 @@ export function socketHandler(dispatch: Dispatch<UnknownAction>, userToken: stri
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function handle(action: any) {
-    if (action?.payload && action?.meta?.roomCode) {
-      const room = channels[action.meta.roomCode];
-      room.push(action.type, snakelize(action.payload) as object);
+    if (!action?.meta?.remote) {
+      const room = channels[roomCode];
+      const payload = {
+        meta: {
+          room_code: roomCode,
+        },
+        payload: snakelize(action.payload),
+      };
+      room.push(action.type, payload);
     }
   }
 

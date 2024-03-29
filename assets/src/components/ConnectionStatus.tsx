@@ -1,6 +1,6 @@
-import { css } from "design-system/css";
 import { useTranslation } from "react-i18next";
 import { MdOutlineWifi, MdOutlineWifiOff } from "react-icons/md";
+import { css } from "styled-system/css";
 import { connect, disconnect } from "~/actions/joined";
 import { useAppDispatch, useAppSelector } from "~/store/store";
 

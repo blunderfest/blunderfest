@@ -1,12 +1,4 @@
-import radixPreset, { type ColorRadixPresetOptions } from "@amandaguthrie/panda-preset-color-radix";
 import { defineConfig } from "@pandacss/dev";
-import { preset } from "./src/theme/preset";
-
-const radixPresetConfig: ColorRadixPresetOptions = {
-  colors: "*",
-  colorModeConditions: { default: "dark", light: ["_light"], dark: ["_dark"] },
-  semanticColorMap: { primary: { color: "grass", default: "dark" } },
-};
 
 export default defineConfig({
   preflight: true,
@@ -14,7 +6,66 @@ export default defineConfig({
   exclude: [],
   optimize: false,
 
-  presets: ["@park-ui/panda-preset", radixPreset(radixPresetConfig), preset],
+  presets: ["@pandacss/preset-base", "@park-ui/panda-preset"],
+  globalCss: {
+    body: {
+      backgroundColor: "surface.background.2",
+      color: "surface.text.2",
+    },
+  },
+  conditions: {
+    extend: {
+      dark: '[data-color-scheme="dark"] &',
+      light: '[data-color-scheme="light"] &',
+    },
+  },
+
+  theme: {
+    extend: {
+      semanticTokens: {
+        colors: {
+          surface: {
+            background: {
+              1: {
+                value: "neutral.1",
+              },
+              2: {
+                value: "neutral.2",
+              },
+            },
+            text: {
+              1: {
+                value: "neutral.11",
+              },
+              2: {
+                value: "neutral.12",
+              },
+            },
+          },
+          square: {
+            dark: {
+              value: {
+                _light: "{colors.neutral.light.10}",
+                _dark: "{colors.gray.dark.7}",
+              },
+            },
+            light: {
+              value: {
+                _light: "gray.4",
+                _dark: "gray.11",
+              },
+            },
+            focussed: {
+              value: "blue.8",
+            },
+            marked: {
+              value: "green.8",
+            },
+          },
+        },
+      },
+    },
+  },
 
   outdir: "styled-system",
   jsxFramework: "react",

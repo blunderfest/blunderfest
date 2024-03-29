@@ -27,7 +27,7 @@ defmodule Blunderfest.Core.State.Game do
 
   def select(game, _square_index), do: game
 
-  def handle_event(["games", "select"], _meta, %{"file" => file, "rank" => rank}, game) do
+  def handle_event(["game", "select"], _meta, %{"file" => file, "rank" => rank}, game) do
     IO.puts("SELECT #{file} #{rank}")
     game
   end

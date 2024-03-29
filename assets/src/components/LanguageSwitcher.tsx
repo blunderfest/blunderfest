@@ -1,5 +1,5 @@
-import { Box } from "design-system/jsx";
 import { useTranslation } from "react-i18next";
+import { Box } from "styled-system/jsx";
 
 export function LanguageSwitcher() {
   const { i18n } = useTranslation();
