@@ -18,13 +18,8 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "baseUrl": "./src",
-    "paths": {
-      "~/*": ["./*"],
-      "styled-system/*": ["../styled-system/*"]
-    }
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "styled-system", "panda.config.ts"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -16,7 +16,7 @@
         "RoyalMist.vscode-eex-format",
         "SonarSource.sonarlint-vscode",
         "wix.vscode-import-cost",
-        "phoenisx.cssvar"
+        "bradlc.vscode-tailwindcss"
       ]
     }
   },

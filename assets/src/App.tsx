@@ -1,36 +1,21 @@
-import { Trans, useTranslation } from "react-i18next";
-import { Box, Container } from "styled-system/jsx";
-import { Board } from "~/components/Board";
-import { GameSelector } from "~/components/GameSelector";
-import { Toolbar } from "~/components/Toolbar";
-import { layoutRecipe } from "~/components/recipes/layout.recipe";
+import { useState } from "react";
+import "./App.css";
 
-export function App() {
-  const classes = layoutRecipe();
-
-  const { t } = useTranslation();
+function App() {
+  const [count, setCount] = useState(0);
 
   return (
-    <Box className={classes.root}>
-      <Box className={classes.header}>
-        <Toolbar />
-      </Box>
-      <Box className={classes.left}>
-        <Trans i18nKey="description.part1">
-          Edit <code>src/App.js</code> and save to reload.
-        </Trans>
-      </Box>
-      <Box className={classes.main}>
-        <Container>
-          <Board />
-        </Container>
-      </Box>
-      <Box className={classes.right}>
-        <a className="App-link" href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-          {t("description.part2")}
-        </a>
-        <GameSelector />
-      </Box>
-    </Box>
+    <>
+      <h1>Vite + React</h1>
+      <div className="card">
+        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
+    </>
   );
 }
+
+export default App;
