@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .layout-lg {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-areas:
+      "header header header header"
+      "left-sidebar main-content main-content right-sidebar";
+  }
+
+  .layout-md {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas:
+      "header header"
+      "main-content main-content"
+      "left-sidebar right-sidebar";
+  }
+
+  .layout-sm {
+    grid-template-areas:
+      "header"
+      "main-content"
+      "left-sidebar"
+      "right-sidebar";
+  }
+}
