@@ -44,7 +44,7 @@ export default defineConfig(({ command }) => {
       outDir: "../priv/static",
       rollupOptions: {
         input: {
-          main: "./src/main.tsx",
+          main: "./src/main.jsx",
         },
         output: {
           manualChunks: {
