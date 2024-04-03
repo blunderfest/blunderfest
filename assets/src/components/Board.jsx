@@ -19,7 +19,7 @@ export function Board() {
         }
       }}
       onDragCancel={(e) => console.log("cancel", e)}>
-      <div className="grid grid-cols-8 gap-0 lg:w-[40%]">
+      <div className="grid w-fit grid-cols-8 gap-0">
         {squares.flatMap((square) => (
           <Square key={square.squareIndex} square={square} />
         ))}

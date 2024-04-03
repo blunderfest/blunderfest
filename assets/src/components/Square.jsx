@@ -4,7 +4,7 @@ import { SvgPiece } from "./SvgPiece";
 
 const recipe = tv({
   slots: {
-    root: "z-1 relative aspect-square",
+    root: "z-1 relative aspect-square w-11 lg:w-24",
     overlay: "absolute bottom-2 left-2 right-2 top-2",
     selected: "absolute bottom-0 left-0 right-0 top-0",
     piece: "absolute bottom-0 left-0 right-0 top-0",
@@ -34,11 +34,25 @@ const recipe = tv({
       },
     },
     isOver: {
-      true: {
-        piece: "bg-yellow-300 dark:bg-yellow-400",
-      },
+      true: {},
     },
   },
+  compoundVariants: [
+    {
+      isOver: true,
+      color: "dark",
+      class: {
+        piece: "backdrop-brightness-150",
+      },
+    },
+    {
+      isOver: true,
+      color: "light",
+      class: {
+        piece: "backdrop-brightness-200",
+      },
+    },
+  ],
 });
 
 /**

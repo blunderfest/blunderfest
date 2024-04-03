@@ -17,14 +17,12 @@
     "source.organizeImports": "explicit"
   },
   "scss.validate": false,
-  "editor.quickSuggestions": {
-    "strings": true
-  },
   "editor.autoClosingQuotes": "always",
   "eslint.debug": true,
   "eslint.workingDirectories": ["assets"],
+  "javascript.validate.enable": true,
   "javascript.suggest.autoImports": true,
-  "javascript.validate.enable": false,
+  "javascript.preferences.importModuleSpecifier": "non-relative",
   "typescript.tsserver.log": "verbose",
   "explorer.compactFolders": false,
   "explorer.autoReveal": false,
