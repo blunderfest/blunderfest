@@ -8,7 +8,7 @@ import { tv } from "tailwind-variants";
 
 const layoutRecipe = tv({
   slots: {
-    root: "layout-sm lg:layout-lg md:layout-md bg-surface-1 text-surface-1 grid grow",
+    root: "layout-sm lg:layout-lg md:layout-md grid grow bg-surface-1 text-surface-1",
     header: "flex h-fit flex-row justify-end [grid-area:header]",
     left: "[grid-area:left-sidebar]",
     right: "[grid-area:right-sidebar] ",

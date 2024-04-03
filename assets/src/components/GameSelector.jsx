@@ -10,6 +10,18 @@ export function GameSelector() {
 
   console.log("Active game", activeGame);
 
+  /**
+ *     <Accordion type="single" collapsible onValueChange={(value) => dispatch(selectGame(value))}>
+      {games.map((game) => (
+        <AccordionItem key={game} value={game}>
+          <AccordionTrigger>{game}</AccordionTrigger>
+          <AccordionContent>Yes. It adheres to the WAI-ARIA design pattern.</AccordionContent>
+        </AccordionItem>
+      ))}
+    </Accordion>
+
+ */
+
   return (
     <div>
       {games.map((game) => (

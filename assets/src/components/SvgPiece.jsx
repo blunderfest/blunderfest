@@ -44,11 +44,18 @@ export function SvgPiece(props) {
   }
 
   return (
-    <div ref={(ref) => setNodeRef(ref)} style={style} className={classes} {...attributes} {...listeners}>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" pointerEvents="none">
-        <title>{info.title}</title>
-        {info.Element}
-      </svg>
-    </div>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className={classes}
+      // @ts-ignore
+      ref={(ref) => setNodeRef(ref)}
+      style={style}
+      {...attributes}
+      {...listeners}
+      viewBox="0 0 45 45"
+      pointerEvents="none">
+      <title>{info.title}</title>
+      {info.Element}
+    </svg>
   );
 }
