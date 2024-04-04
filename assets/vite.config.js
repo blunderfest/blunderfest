@@ -38,9 +38,9 @@ export default defineConfig(({ command }) => {
         transformMixedEsModules: true,
       },
       emptyOutDir: true,
-      sourcemap: true,
+      sourcemap: false,
       manifest: true,
-      minify: false,
+      minify: true,
       outDir: "../priv/static",
       rollupOptions: {
         input: {
@@ -48,7 +48,10 @@ export default defineConfig(({ command }) => {
         },
         output: {
           manualChunks: {
-            react: ["react", "react-dom", "@reduxjs/toolkit", "react-redux"],
+            react: ["react", "react-dom", "million"],
+            redux: ["@reduxjs/toolkit", "react-redux"],
+            dnd: ["@dnd-kit/core"],
+            tailwind: ["tailwind-variants", "@headlessui/tailwindcss", "@headlessui/react"],
             i18n: ["i18next", "i18next-browser-languagedetector"],
           },
         },

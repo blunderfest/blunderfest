@@ -1,6 +1,6 @@
+import { Accordion } from "@/components/Accordion";
 import { selectGame } from "@/store/actions/selectGame";
 import { useAppDispatch, useAppSelector } from "@/store/store";
-import { RxChevronDown } from "react-icons/rx";
 
 export function GameSelector() {
   const dispatch = useAppDispatch();
@@ -8,36 +8,52 @@ export function GameSelector() {
   const games = useAppSelector((state) => state.room.games);
   const activeGame = useAppSelector((state) => state.room.activeGame);
 
-  console.log("Active game", activeGame);
-
-  /**
- *     <Accordion type="single" collapsible onValueChange={(value) => dispatch(selectGame(value))}>
-      {games.map((game) => (
-        <AccordionItem key={game} value={game}>
-          <AccordionTrigger>{game}</AccordionTrigger>
-          <AccordionContent>Yes. It adheres to the WAI-ARIA design pattern.</AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
-
- */
-
   return (
-    <div>
+    <section className="flex w-96 flex-col space-y-2 bg-surface-2">
       {games.map((game) => (
-        <div key={game} value={game}>
-          <div onClick={() => dispatch(selectGame(game))}>
-            {game}
-            <div>
-              <RxChevronDown />
-            </div>
-          </div>
-          <div>
-            Pudding donut gummies chupa chups oat cake marzipan biscuit tart. Dessert macaroon ice cream bonbon jelly. Jelly
-            topping tiramisu halvah lollipop.
-          </div>
-        </div>
+        <Accordion
+          key={game}
+          isOpen={activeGame === game}
+          onClick={() => {
+            if (activeGame !== game) {
+              dispatch(selectGame(game));
+            }
+          }}
+          text={game}>
+          <table className="w-full text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
+              <tr>
+                <th className="px-6 py-3" scope="col">
+                  #
+                </th>
+                <th className="px-6 py-3" scope="col">
+                  W
+                </th>
+                <th className="px-6 py-3" scope="col">
+                  B
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1.</td>
+                <td>d4</td>
+                <td>Nf6</td>
+              </tr>
+              <tr>
+                <td>2.</td>
+                <td>c4</td>
+                <td>c5</td>
+              </tr>
+              <tr>
+                <td>3.</td>
+                <td>d5</td>
+                <td>b5</td>
+              </tr>
+            </tbody>
+          </table>
+        </Accordion>
       ))}
-    </div>
+    </section>
   );
 }

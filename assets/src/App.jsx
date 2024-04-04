@@ -3,7 +3,6 @@ import { ColorSchemeToggle } from "@/components/ColorSchemeToggle";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { GameSelector } from "@/components/GameSelector";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Trans, useTranslation } from "react-i18next";
 import { tv } from "tailwind-variants";
 
 const layoutRecipe = tv({
@@ -19,8 +18,6 @@ const layoutRecipe = tv({
 export function App() {
   const classes = layoutRecipe();
 
-  const { t } = useTranslation();
-
   return (
     <div className={classes.root()}>
       <header className={classes.header()}>
@@ -29,14 +26,9 @@ export function App() {
         <ColorSchemeToggle />
       </header>
       <aside className={classes.left()}>
-        <Trans i18nKey="description.part1">
-          Edit <code>src/App.js</code> and save to reload.
-        </Trans>
+        Edit <code>src/App.js</code> and save to reload.
       </aside>
       <aside className={classes.right()}>
-        <a className="App-link" href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-          {t("description.part2")}
-        </a>
         <GameSelector />
       </aside>
       <div className={classes.main()}>

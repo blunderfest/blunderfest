@@ -3,7 +3,7 @@ import { tv } from "tailwind-variants";
 import { usePiece } from "./pieces/usePiece";
 
 const recipe = tv({
-  base: "relative z-0 cursor-grab touch-none",
+  base: "relative z-0 cursor-default",
   variants: {
     isDragging: {
       true: "z-50",
@@ -44,18 +44,18 @@ export function SvgPiece(props) {
   }
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className={classes}
-      // @ts-ignore
-      ref={(ref) => setNodeRef(ref)}
-      style={style}
-      {...attributes}
-      {...listeners}
-      viewBox="0 0 45 45"
-      pointerEvents="none">
-      <title>{info.title}</title>
-      {info.Element}
-    </svg>
+    <div className={classes} style={style} {...attributes}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 45 45"
+        pointerEvents="none"
+        className="cursor-grab touch-none "
+        // @ts-ignore
+        ref={(ref) => setNodeRef(ref)}
+        {...listeners}>
+        <title>{info.title}</title>
+        {info.Element}
+      </svg>
+    </div>
   );
 }
