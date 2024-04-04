@@ -4,8 +4,8 @@ import { SvgPiece } from "./SvgPiece";
 
 const recipe = tv({
   slots: {
-    root: "z-1 relative aspect-square w-11 lg:w-24",
-    overlay: "absolute bottom-2 left-2 right-2 top-2",
+    root: "z-1 relative aspect-square w-11 focus-within:border-8 focus-within:border-solid focus-within:border-blue-700 lg:w-24 focus-within:dark:border-blue-800",
+    overlay: "absolute bottom-1 left-1 right-1 top-1",
     selected: "absolute bottom-0 left-0 right-0 top-0",
     piece: "absolute bottom-0 left-0 right-0 top-0",
   },
@@ -20,17 +20,12 @@ const recipe = tv({
     },
     selected: {
       true: {
-        selected: "border-4 border-solid border-blue-700 dark:border-blue-800",
-      },
-    },
-    focussed: {
-      true: {
-        selected: "border-4 border-solid border-blue-700 dark:border-blue-800",
+        selected: "border-8 border-solid border-blue-600 dark:border-blue-800",
       },
     },
     marked: {
       true: {
-        overlay: "rounded-full border-8 border-solid border-green-600 dark:border-green-800",
+        overlay: "rounded-full border-4 border-solid border-green-600 dark:border-green-800",
       },
     },
     isOver: {
@@ -71,6 +66,8 @@ export function Square(props) {
   const classes = recipe({
     isOver: isOver,
     color: square.color,
+    marked: square.squareIndex === 38 || square.squareIndex === 17,
+    selected: square.squareIndex === 8 || square.squareIndex === 7,
   });
 
   return (
