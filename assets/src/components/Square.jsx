@@ -4,9 +4,11 @@ import { SvgPiece } from "./SvgPiece";
 
 const recipe = tv({
   slots: {
-    root: "z-1 relative aspect-square w-11 focus-within:border-8 focus-within:border-solid focus-within:border-blue-700 lg:w-24 focus-within:dark:border-blue-800",
+    root: "z-1 group relative aspect-square w-11 lg:w-24",
     overlay: "absolute bottom-1 left-1 right-1 top-1",
     selected: "absolute bottom-0 left-0 right-0 top-0",
+    focussed:
+      "absolute bottom-0 left-0 right-0 top-0  group-focus-within:border-8 group-focus-within:border-solid group-focus-within:border-blue-700 lg:w-24 group-focus-within:dark:border-blue-800",
     piece: "absolute bottom-0 left-0 right-0 top-0",
   },
   variants: {
@@ -22,6 +24,12 @@ const recipe = tv({
       true: {
         selected: "border-8 border-solid border-blue-600 dark:border-blue-800",
       },
+    },
+    focussed: {
+      true: {
+        focussed: "border-8 border-solid border-blue-600 dark:border-blue-800",
+      },
+      false: {},
     },
     marked: {
       true: {
@@ -68,15 +76,18 @@ export function Square(props) {
     color: square.color,
     marked: square.squareIndex === 38 || square.squareIndex === 17,
     selected: square.squareIndex === 8 || square.squareIndex === 7,
+    focussed: square.squareIndex === 0,
   });
 
   return (
-    <div className={classes.root()} data-square-index={square.squareIndex}>
+    <div className={classes.root()} data-square-index={square.squareIndex} tabIndex={0} role="button">
       <div className={classes.overlay()} tabIndex={-1} />
       <div className={classes.selected()} tabIndex={-1} />
+      <div className={classes.focussed()} tabIndex={-1} />
 
       <div className={classes.piece()} ref={setNodeRef}>
         {square.piece && <SvgPiece squareIndex={square.squareIndex} piece={square.piece} />}
+        {square.squareIndex}
       </div>
     </div>
   );

@@ -5,10 +5,6 @@ import { Square } from "./Square";
 export function Board() {
   const squares = useAppSelector((state) => state.board.squares);
 
-  if (!squares) {
-    return null;
-  }
-
   return (
     <DndContext
       onDragEnd={(e) => {
