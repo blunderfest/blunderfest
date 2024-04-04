@@ -51,7 +51,6 @@ export default defineConfig(({ command }) => {
             react: ["react", "react-dom", "million"],
             redux: ["@reduxjs/toolkit", "react-redux"],
             dnd: ["@dnd-kit/core"],
-            tailwind: ["tailwind-variants", "@headlessui/tailwindcss", "@headlessui/react"],
             i18n: ["i18next", "i18next-browser-languagedetector"],
           },
         },
