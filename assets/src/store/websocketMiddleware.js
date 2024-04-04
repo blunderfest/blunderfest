@@ -24,8 +24,8 @@ function snakelize(item) {
   return changeCase(item, (key) => key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`));
 }
 
-const userToken = document.querySelector("meta[name='user_token']").getAttribute("content");
-const roomCode = document.querySelector("meta[name='room_code']").getAttribute("content");
+const userToken = document.querySelector("meta[name='user_token']")?.getAttribute("content");
+const roomCode = document.querySelector("meta[name='room_code']")?.getAttribute("content");
 
 const socket = new Socket("/socket", { params: { token: userToken } });
 const channels = {};

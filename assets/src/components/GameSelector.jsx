@@ -11,15 +11,7 @@ export function GameSelector() {
   return (
     <section className="flex w-96 flex-col space-y-2 bg-surface-2">
       {games.map((game) => (
-        <Accordion
-          key={game}
-          isOpen={activeGame === game}
-          onClick={() => {
-            if (activeGame !== game) {
-              dispatch(selectGame(game));
-            }
-          }}
-          text={game}>
+        <Accordion key={game} isOpen={activeGame === game} onClick={() => dispatch(selectGame(game))} text={game}>
           <table className="w-full text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
             <thead className="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
               <tr>

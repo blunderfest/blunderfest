@@ -3,9 +3,9 @@ import { tv } from "tailwind-variants";
 
 const recipe = tv({
   slots: {
-    details: "bg*:cursor-pointer justify- group relative flex w-full items-center",
-    icon: "h-5 w-5 group-open:rotate-180",
-    summary: "flex list-none justify-between *:inline group-open:font-bold [&::-webkit-details-marker]:hidden",
+    details: "justify- group relative flex w-full items-center",
+    icon: "h-5 w-5 group-open:rotate-180 ",
+    summary: "flex cursor-pointer list-none justify-between *:inline group-open:font-bold [&::-webkit-details-marker]:hidden",
   },
   variants: {
     isOpen: {
@@ -26,11 +26,11 @@ export function Accordion(props) {
   return (
     <details open={isOpen} className={classes.details()}>
       <summary
-        onClick={(event) => {
-          event.preventDefault();
+        className={classes.summary()}
+        onClick={(e) => {
+          e.preventDefault();
           onClick();
-        }}
-        className={classes.summary()}>
+        }}>
         <h2>{text}</h2>
         <RxChevronUp className={classes.icon()} />
       </summary>
