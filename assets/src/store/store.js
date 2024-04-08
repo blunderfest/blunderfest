@@ -26,7 +26,24 @@ export const store = configureStore({
 /**
  * @type {() => AppDispatch}
  */
-export const useAppDispatch = useDispatch;
+export const useAppDispatch = () => {
+  const dispatch = useDispatch();
+
+  const dispatchEnhancer =
+    /**
+     * @param {UnknownAction} action
+     */
+    (action) => {
+      const enhancedAction = {
+        ...action,
+        meta: { ...action.meta, userId: window.config.userId, roomCode: window.config.roomCode },
+      };
+
+      dispatch(enhancedAction);
+    };
+
+  return dispatchEnhancer;
+};
 
 /**
  * @type {import("react-redux").UseSelector<RootState>}

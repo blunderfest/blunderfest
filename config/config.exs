@@ -43,7 +43,7 @@ config :phoenix, :json_library, Jason
 
 config :nanoid,
   size: 10,
-  alphabet: "0123456789abcdefghijklmnopqrstuvwxyz"
+  alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 config :vite_phx,
   release_app: :blunderfest,

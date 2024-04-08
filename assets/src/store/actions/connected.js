@@ -6,9 +6,6 @@ export const connected = createAction(
    * @param {string} userToken
    */
   (userToken) => ({
-    meta: {
-      remote: true,
-    },
     payload: {
       userToken,
     },

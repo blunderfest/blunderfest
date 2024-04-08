@@ -17,17 +17,14 @@ function changeCase(item, replace) {
 }
 
 function camelize(item) {
-  return changeCase(item, (key) => key.replace(/([-_][a-z])/gi, (c) => c.toUpperCase().replace(/[-_]/g, "")));
+  return changeCase(item, (key) => key.replace(/([-_][a-z])/g, (c) => c.toUpperCase().replace(/[-_]/g, "")));
 }
 
 function snakelize(item) {
   return changeCase(item, (key) => key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`));
 }
 
-const userToken = document.querySelector("meta[name='user_token']")?.getAttribute("content");
-const roomCode = document.querySelector("meta[name='room_code']")?.getAttribute("content");
-
-const socket = new Socket("/socket", { params: { token: userToken } });
+const socket = new Socket("/socket", { params: { token: window.config.userToken } });
 const channels = {};
 
 /**
@@ -38,27 +35,23 @@ function effect(action, { dispatch }) {
   if (connect.match(action)) {
     socket.connect();
 
-    dispatch(connected(userToken));
+    dispatch(connected());
 
-    const channel = socket.channel("room:" + roomCode);
-    channels[roomCode] = channel;
+    const channel = socket.channel("room:" + window.config.roomCode);
+    channels[window.config.roomCode] = channel;
 
     channel.onMessage = (event, payload) => {
-      dispatch({
-        type: event,
-        payload: camelize(payload?.payload ?? {}),
-        meta: {
-          remote: true,
-        },
-      });
+      const action = { type: event, ...payload };
+
+      dispatch(camelize(action));
 
       return payload;
     };
 
     channel.onClose(() => {
       if (channel.state !== "leaving") {
-        dispatch(left(roomCode));
-        delete channels[roomCode];
+        dispatch(left(window.config.roomCode));
+        delete channels[window.config.roomCode];
       }
     });
 
@@ -66,7 +59,7 @@ function effect(action, { dispatch }) {
       .join()
       .receive("ok", (game) => {
         const camelized = camelize(game);
-        dispatch(joined(roomCode, camelized.games, camelized.gamesByCode, camelized.activeGame));
+        dispatch(joined(window.config.roomCode, camelized.games, camelized.gamesByCode, camelized.activeGame));
       })
       .receive("error", (resp) => {
         if (resp === "room_not_found") {
@@ -80,15 +73,11 @@ function effect(action, { dispatch }) {
     socket.disconnect(() => {
       dispatch(disconnected());
     });
-  } else if (!action?.meta?.remote) {
-    const room = channels[roomCode];
-    const payload = {
-      meta: {
-        room_code: roomCode,
-      },
-      payload: snakelize(action.payload),
-    };
-    room.push(action.type, payload);
+  } else if (action?.meta?.userId === window.config.userId) {
+    const room = channels[window.config.roomCode];
+
+    const { type, ...payload } = action;
+    room.push(type, snakelize(payload));
   }
 }
 

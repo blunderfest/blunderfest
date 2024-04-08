@@ -6,7 +6,6 @@ import { disconnected } from "../actions/disconnected";
 /**
  * @typedef {Object} State
  * @property {"connected" | "disconnected" | "connecting"} status
- * @property {string} userToken
  */
 
 /**
@@ -14,7 +13,6 @@ import { disconnected } from "../actions/disconnected";
  */
 const initialState = {
   status: "connected",
-  userToken: "",
 };
 
 export const connectivitySlice = createSlice({
@@ -26,9 +24,8 @@ export const connectivitySlice = createSlice({
       state.status = "connecting";
     });
 
-    builder.addCase(connected, (state, action) => {
+    builder.addCase(connected, (state) => {
       state.status = "connected";
-      state.userToken = action.payload.userToken;
     });
 
     builder.addCase(disconnected, (state) => {

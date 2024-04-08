@@ -9,9 +9,6 @@ export const joined = createAction(
    * @param {string} activeGame
    */
   (roomCode, games, gamesByCode, activeGame) => ({
-    meta: {
-      remote: true,
-    },
     payload: {
       roomCode,
       games,

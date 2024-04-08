@@ -6,9 +6,6 @@ export const left = createAction(
    * @param {string} roomCode
    */
   (roomCode) => ({
-    meta: {
-      remote: true,
-    },
     payload: { roomCode },
   })
 );
