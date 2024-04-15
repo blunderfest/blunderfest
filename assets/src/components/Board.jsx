@@ -1,9 +1,16 @@
-import { useAppSelector } from "@/store/store";
+import { move } from "@/store/actions/move";
+import { selectCurrentVariation } from "@/store/slices/gameSlice";
+import { selectCurrentGame } from "@/store/slices/roomSlice";
+import { useAppDispatch, useAppSelector } from "@/store/store";
 import { DndContext } from "@dnd-kit/core";
 import { Square } from "./Square";
 
 export function Board() {
   const squares = useAppSelector((state) => state.board.squares);
+  const currentGame = useAppSelector(selectCurrentGame);
+  const currentVariation = useAppSelector(selectCurrentVariation);
+
+  const dispatch = useAppDispatch();
 
   return (
     <DndContext
@@ -11,7 +18,13 @@ export function Board() {
         if (e.over?.data.current?.squareIndex === e.active.data.current?.squareIndex) {
           console.log("skip end", e);
         } else {
-          console.log("end", e);
+          dispatch(
+            move(currentGame, {
+              from: e.active.data.current.squareIndex,
+              to: e.over?.data.current.squareIndex,
+              variationPath: currentVariation,
+            })
+          );
         }
       }}
       onDragCancel={(e) => console.log("cancel", e)}>

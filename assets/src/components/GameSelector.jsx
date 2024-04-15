@@ -1,17 +1,18 @@
 import { Accordion } from "@/components/Accordion";
 import { selectGame } from "@/store/actions/selectGame";
+import { selectCurrentGame } from "@/store/slices/roomSlice";
 import { useAppDispatch, useAppSelector } from "@/store/store";
 
 export function GameSelector() {
   const dispatch = useAppDispatch();
 
   const games = useAppSelector((state) => state.room.games);
-  const activeGame = useAppSelector((state) => state.room.activeGame);
+  const currentGame = useAppSelector(selectCurrentGame);
 
   return (
     <section className="flex w-96 flex-col space-y-2 bg-surface-2">
       {games.map((game) => (
-        <Accordion key={game} isOpen={activeGame === game} onClick={() => dispatch(selectGame(game))} text={game}>
+        <Accordion key={game} isOpen={currentGame === game} onClick={() => dispatch(selectGame(game))} text={game}>
           <table className="w-full text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
             <thead className="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
               <tr>

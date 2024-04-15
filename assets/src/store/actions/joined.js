@@ -6,14 +6,14 @@ export const joined = createAction(
    * @param {string} roomCode
    * @param {string[]} games
    * @param {Record<string, any>} gamesByCode
-   * @param {string} activeGame
+   * @param {string} currentGame
    */
-  (roomCode, games, gamesByCode, activeGame) => ({
+  (roomCode, games, gamesByCode, currentGame) => ({
     payload: {
       roomCode,
       games,
       gamesByCode,
-      activeGame,
+      currentGame,
     },
   })
 );

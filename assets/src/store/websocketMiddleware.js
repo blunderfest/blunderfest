@@ -59,7 +59,7 @@ function effect(action, { dispatch }) {
       .join()
       .receive("ok", (game) => {
         const camelized = camelize(game);
-        dispatch(joined(window.config.roomCode, camelized.games, camelized.gamesByCode, camelized.activeGame));
+        dispatch(joined(window.config.roomCode, camelized.games, camelized.gamesByCode, camelized.currentGame));
       })
       .receive("error", (resp) => {
         if (resp === "room_not_found") {

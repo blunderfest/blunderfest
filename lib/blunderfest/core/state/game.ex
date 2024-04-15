@@ -32,7 +32,12 @@ defmodule Blunderfest.Core.State.Game do
     game
   end
 
-  def handle_event(event, %{"game_code" => game_code} = meta, payload, game) do
+  def handle_event(["game", "move"], _meta, %{"move" => %{"from" => from, "to" => to}}, game) do
+    IO.puts("MOVE #{from} #{to}")
+    game
+  end
+
+  def handle_event(event, meta, %{"game_code" => game_code} = payload, game) do
     Logger.warning("Unknown game event #{event} - #{game_code}")
     IO.inspect(meta)
     IO.inspect(payload)

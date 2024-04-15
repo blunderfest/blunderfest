@@ -9,5 +9,6 @@ defmodule Blunderfest.Core.State.Game.Move do
     field(:from, Square.t())
     field(:to, Square.t())
     field(:promotion, Piece.t() | nil)
+    field(:variation_path, list(integer()))
   end
 end

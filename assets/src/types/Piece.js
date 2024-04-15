@@ -19,9 +19,10 @@
 
 /**
  * @typedef {Object} Move
- * @property {Square} from
- * @property {Square} to
+ * @property {SquareIndex} from
+ * @property {SquareIndex} to
  * @property {Piece | null} promotion
+ * @property {number[]} variationPath
  */
 
 /**

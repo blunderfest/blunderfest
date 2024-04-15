@@ -7,7 +7,7 @@ import { selectGame } from "../actions/selectGame";
  * @typedef {Object} State
  * @property {string} roomCode
  * @property {string[]} games
- * @property {string} activeGame
+ * @property {string} currentGame
  */
 
 /**
@@ -16,7 +16,7 @@ import { selectGame } from "../actions/selectGame";
 const initialState = {
   roomCode: "",
   games: [],
-  activeGame: "",
+  currentGame: "",
 };
 
 const roomSlice = createSlice({
@@ -27,7 +27,7 @@ const roomSlice = createSlice({
     builder.addCase(joined, (state, action) => {
       state.roomCode = action.payload.roomCode;
       state.games = action.payload.games;
-      state.activeGame = action.payload.activeGame;
+      state.currentGame = action.payload.currentGame;
     });
 
     builder.addCase(left, (state) => {
@@ -35,9 +35,13 @@ const roomSlice = createSlice({
     });
 
     builder.addCase(selectGame, (state, action) => {
-      state.activeGame = action.payload.gameCode;
+      state.currentGame = action.payload.gameCode;
     });
+  },
+  selectors: {
+    selectCurrentGame: (state) => state.currentGame,
   },
 });
 
 export const roomReducer = roomSlice.reducer;
+export const { selectCurrentGame } = roomSlice.selectors;
