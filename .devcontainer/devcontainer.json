@@ -1,37 +1,43 @@
 {
-  "name": "Blunderfest",
-  "dockerComposeFile": ["docker-compose.yml"],
-  "workspaceFolder": "/workspace/blunderfest",
-  "service": "blunderfest",
-  // Configure tool-specific properties.
-  "customizations": {
-    // Configure properties specific to VS Code.
-    "vscode": {
-      // Add the IDs of extensions you want installed when the container is created.
-      "extensions": [
-        "esbenp.prettier-vscode",
-        "github.vscode-github-actions",
-        "jakebecker.elixir-ls",
-        "phoenixframework.phoenix",
-        "RoyalMist.vscode-eex-format",
-        "SonarSource.sonarlint-vscode",
-        "wix.vscode-import-cost",
-        "bradlc.vscode-tailwindcss"
-      ]
-    }
-  },
-  // Use 'forwardPorts' to make a list of ports inside the container available locally.
-  "forwardPorts": [5173, 4000],
-  // Use 'postCreateCommand' to run commands after the container is created.
-  // "postCreateCommand": "mix deps.get"
-  // Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
-  "remoteUser": "vscode",
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {},
-    "ghcr.io/devcontainers-contrib/features/mkcert:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/dhoeric/features/flyctl:1": {
-      "version": "0.1.146"
-    }
-  }
+	"name": "Blunderfest",
+	"dockerComposeFile": [
+		"docker-compose.yml"
+	],
+	"workspaceFolder": "/workspace/blunderfest",
+	"service": "blunderfest",
+	// Configure tool-specific properties.
+	"customizations": {
+		// Configure properties specific to VS Code.
+		"vscode": {
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"esbenp.prettier-vscode",
+				"github.vscode-github-actions",
+				"jakebecker.elixir-ls",
+				"phoenixframework.phoenix",
+				"RoyalMist.vscode-eex-format",
+				"SonarSource.sonarlint-vscode",
+				"wix.vscode-import-cost",
+				"bradlc.vscode-tailwindcss",
+				"fabiospampinato.vscode-open-multiple-files"
+			]
+		}
+	},
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [
+		5173,
+		4000
+	],
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "mix deps.get"
+	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
+	"remoteUser": "vscode",
+	"features": {
+		"ghcr.io/devcontainers-contrib/features/mkcert:1": {},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
+		"ghcr.io/dhoeric/features/flyctl:1": {
+			"version": "0.2.39"
+		},
+		"ghcr.io/devcontainers-contrib/features/pnpm:2": {}
+	}
 }

@@ -3,7 +3,7 @@ const { withTV } = require("tailwind-variants/dist/transformer");
 /** @type {import('tailwindcss').Config} */
 const config = {
   darkMode: ["selector", '[data-mode="dark"]'],
-  content: ["./src/**/*.{js,jsx}", "../lib/blunderfest_web/components/layouts/*.html.heex"],
+  content: ["./src/**/*.{ts,tsx}", "../lib/blunderfest_web/components/layouts/*.html.heex"],
   theme: {
     extend: {
       textColor: {

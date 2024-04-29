@@ -1,5 +1,5 @@
 defmodule Blunderfest.Core.State.Game do
-  alias __MODULE__.{Square, Variation, Position}
+  alias __MODULE__.{Variation, Position}
 
   require Logger
 
@@ -8,18 +8,17 @@ defmodule Blunderfest.Core.State.Game do
   @derive Jason.Encoder
   typedstruct do
     field(:game_code, String.t())
-    field(:squares, list(Square.t()))
+    field(:starting_position, Position.t())
     field(:variations, list(Variation.t()))
   end
 
   def new(),
     do: %__MODULE__{
       game_code: Nanoid.generate(),
-      squares: 0..63 |> Enum.map(fn square_index -> Square.new(square_index) end),
+      starting_position: Position.new(),
       variations: [
         %Variation{
           move: nil,
-          position: Position.new(),
           variations: []
         }
       ]

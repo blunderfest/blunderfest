@@ -7,9 +7,7 @@ defmodule Blunderfest.Core.Room do
   @derive Jason.Encoder
   typedstruct do
     field(:room_code, String.t())
-    field(:count, integer())
-    field(:games, list(String.t()))
-    field(:games_by_code, %{String.t() => Game.t()})
+    field(:games, list(Game.t()))
     field(:current_game, String.t())
   end
 
@@ -19,25 +17,23 @@ defmodule Blunderfest.Core.Room do
 
     %__MODULE__{
       room_code: room_code,
-      count: 0,
-      games: [game.game_code, other_game.game_code],
-      games_by_code: %{game.game_code => game, other_game.game_code => other_game},
+      games: [game, other_game],
       current_game: game.game_code
     }
   end
 
   @spec handle_event(list(String.t()), map(), map(), __MODULE__.t()) :: __MODULE__.t()
-  def handle_event(["room", "selectGame"], _meta, %{"game_code" => game_code}, room),
+  def handle_event(["room", "switchGame"], _meta, %{"game_code" => game_code}, room),
     do: %{room | current_game: game_code}
 
   def handle_event(["game", _] = event, meta, %{"game_code" => game_code} = payload, room) do
     IO.inspect(event)
 
-    update_in(
-      room,
-      [Access.key!(:games_by_code), Access.key!(game_code)],
-      fn game -> Game.handle_event(event, meta, payload, game) end
-    )
+    Enum.map(room.games, fn game ->
+      if game.game_code == game_code,
+        do: Game.handle_event(event, meta, payload, game),
+        else: game
+    end)
   end
 
   def handle_event(event, meta, %{"game_code" => game_code} = payload, room) do

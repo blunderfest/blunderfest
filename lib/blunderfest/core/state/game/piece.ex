@@ -1,18 +1,13 @@
 defmodule Blunderfest.Core.State.Game.Piece do
-  @type color() :: :black | :white
-  @type type() :: :pawn | :knight | :bishop | :rook | :queen | :king
-
   use TypedStruct
 
   @derive Jason.Encoder
   typedstruct do
-    field(:color, color)
-    field(:type, type)
+    field(:symbol, :k | :K | :q | :Q | :r | :R | :b | :B | :n | :N | :p | :P)
   end
 
-  def new(color, type),
+  def new(symbol),
     do: %__MODULE__{
-      color: color,
-      type: type
+      symbol: symbol
     }
 end

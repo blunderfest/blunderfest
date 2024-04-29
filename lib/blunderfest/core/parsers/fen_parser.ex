@@ -17,7 +17,7 @@ defmodule Blunderfest.Core.Parsers.FenParser do
         |> Enum.map(&serialize_row/1)
         |> Enum.join("/"),
         active_color |> serialize_color,
-        castling_availability |> serialize_castling,
+        castling_availability |> Enum.join(castling_availability),
         en_passant,
         halfmove_clock,
         fullmove_number
@@ -39,28 +39,11 @@ defmodule Blunderfest.Core.Parsers.FenParser do
 
   defp serialize_piece(nil), do: " "
 
-  defp serialize_piece(%Piece{color: color, type: type}),
-    do: serialize_piece(type) |> serialize_piece(color)
-
-  defp serialize_piece(:pawn), do: "p"
-  defp serialize_piece(:knight), do: "n"
-  defp serialize_piece(:bishop), do: "b"
-  defp serialize_piece(:rook), do: "r"
-  defp serialize_piece(:queen), do: "q"
-  defp serialize_piece(:king), do: "k"
-
-  defp serialize_piece(piece, :black), do: piece
-  defp serialize_piece(piece, :white), do: piece |> String.upcase()
+  defp serialize_piece(%Piece{symbol: symbol}),
+    do: symbol
 
   defp serialize_color(:black), do: "b"
   defp serialize_color(:white), do: "w"
-
-  defp serialize_castling({:black, :king}), do: "k"
-  defp serialize_castling({:black, :queen}), do: "q"
-  defp serialize_castling({:white, :king}), do: "K"
-  defp serialize_castling({:white, :queen}), do: "Q"
-  defp serialize_castling([]), do: "-"
-  defp serialize_castling(list), do: list |> Enum.map(&serialize_castling/1) |> Enum.join("")
 
   @spec parse(String.t()) ::
           {:error, :invalid_fen} | {:ok, Position.t()}
@@ -105,19 +88,19 @@ defmodule Blunderfest.Core.Parsers.FenParser do
       |> Enum.map(fn c -> c |> to_charlist() |> hd() end)
       |> Enum.map(&parse_piece/1)
 
-  defp parse_piece(?K), do: Piece.new(:white, :king)
-  defp parse_piece(?Q), do: Piece.new(:white, :queen)
-  defp parse_piece(?R), do: Piece.new(:white, :rook)
-  defp parse_piece(?B), do: Piece.new(:white, :bishop)
-  defp parse_piece(?N), do: Piece.new(:white, :knight)
-  defp parse_piece(?P), do: Piece.new(:white, :pawn)
+  defp parse_piece(?K), do: Piece.new(:K)
+  defp parse_piece(?Q), do: Piece.new(:Q)
+  defp parse_piece(?R), do: Piece.new(:R)
+  defp parse_piece(?B), do: Piece.new(:B)
+  defp parse_piece(?N), do: Piece.new(:N)
+  defp parse_piece(?P), do: Piece.new(:P)
 
-  defp parse_piece(?k), do: Piece.new(:black, :king)
-  defp parse_piece(?q), do: Piece.new(:black, :queen)
-  defp parse_piece(?r), do: Piece.new(:black, :rook)
-  defp parse_piece(?b), do: Piece.new(:black, :bishop)
-  defp parse_piece(?n), do: Piece.new(:black, :knight)
-  defp parse_piece(?p), do: Piece.new(:black, :pawn)
+  defp parse_piece(?k), do: Piece.new(:k)
+  defp parse_piece(?q), do: Piece.new(:q)
+  defp parse_piece(?r), do: Piece.new(:r)
+  defp parse_piece(?b), do: Piece.new(:b)
+  defp parse_piece(?n), do: Piece.new(:n)
+  defp parse_piece(?p), do: Piece.new(:p)
 
   defp parse_piece(n) when n in ?2..?8, do: [nil, parse_piece(n - 1)]
   defp parse_piece(?1), do: [nil]
@@ -125,10 +108,10 @@ defmodule Blunderfest.Core.Parsers.FenParser do
   defp parse_active_color(~c"w"), do: :white
   defp parse_active_color(~c"b"), do: :black
 
-  defp parse_castling_availability(?K), do: {:white, :king}
-  defp parse_castling_availability(?Q), do: {:white, :queen}
-  defp parse_castling_availability(?k), do: {:black, :king}
-  defp parse_castling_availability(?q), do: {:black, :queen}
+  defp parse_castling_availability(?K), do: :K
+  defp parse_castling_availability(?Q), do: :Q
+  defp parse_castling_availability(?k), do: :k
+  defp parse_castling_availability(?q), do: :q
   defp parse_castling_availability(_any), do: nil
 
   defp parse_en_passant([?-]), do: nil

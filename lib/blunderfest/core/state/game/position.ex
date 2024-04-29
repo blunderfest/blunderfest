@@ -5,10 +5,11 @@ defmodule Blunderfest.Core.State.Game.Position do
 
   use TypedStruct
 
+  @derive Jason.Encoder
   typedstruct do
     field(:pieces, list(Piece.t() | nil))
     field(:active_color, Piece.color())
-    field(:castling_availability, list({Piece.color(), :king | :queen}))
+    field(:castling_availability, list(:K | :Q | :k | :q))
     field(:en_passant, Square.square_index() | nil)
     field(:halfmove_clock, integer())
     field(:fullmove_number, integer())
@@ -24,9 +25,9 @@ defmodule Blunderfest.Core.State.Game.Position do
 
   def parse(fen), do: FenParser.parse(fen)
 
-  defimpl Jason.Encoder, for: __MODULE__ do
-    def encode(value, opts) do
-      FenParser.to_fen(value) |> Jason.Encode.string(opts)
-    end
-  end
+  # defimpl Jason.Encoder, for: Tuple do
+  #   def encode(value, opts) do
+  #     FenParser.to_fen(value) |> Jason.Encode.string(opts)
+  #   end
+  # end
 end
