@@ -30,7 +30,7 @@ export function Board() {
   const ranks = [...Array(8).keys()];
   const files = [...Array(8).keys()];
 
-  const squareIndexes: SquareIndex[] = (flipped ? ranks.reverse() : ranks).flatMap((rank) =>
+  const squareIndexes: SquareIndex[] = (flipped ? ranks : ranks.reverse()).flatMap((rank) =>
     files.map((file) => (8 * rank + file) as SquareIndex)
   );
   const squares = squareIndexes.map((squareIndex) => ({

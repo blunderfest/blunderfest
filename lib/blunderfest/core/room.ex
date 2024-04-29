@@ -29,11 +29,14 @@ defmodule Blunderfest.Core.Room do
   def handle_event(["game", _] = event, meta, %{"game_code" => game_code} = payload, room) do
     IO.inspect(event)
 
-    Enum.map(room.games, fn game ->
-      if game.game_code == game_code,
-        do: Game.handle_event(event, meta, payload, game),
-        else: game
-    end)
+    games =
+      Enum.map(room.games, fn game ->
+        if game.game_code == game_code,
+          do: Game.handle_event(event, meta, payload, game),
+          else: game
+      end)
+
+    %{room | games: games}
   end
 
   def handle_event(event, meta, %{"game_code" => game_code} = payload, room) do

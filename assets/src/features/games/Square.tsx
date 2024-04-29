@@ -6,8 +6,9 @@ import { SvgPiece } from "./SvgPiece";
 const recipe = tv({
   slots: {
     root: "z-1 group relative aspect-square w-11 lg:w-24",
-    overlay: "absolute bottom-1 left-1 right-1 top-1",
-    selected: "absolute bottom-0 left-0 right-0 top-0",
+    highlighting: "absolute bottom-0 left-0 right-0 top-0",
+    marking: "absolute bottom-1 left-1 right-1 top-1",
+    selection: "absolute bottom-0 left-0 right-0 top-0",
     piece: "absolute bottom-0 left-0 right-0 top-0",
   },
   variants: {
@@ -21,12 +22,12 @@ const recipe = tv({
     },
     selected: {
       true: {
-        selected: "border-8 border-solid border-blue-600 dark:border-blue-800",
+        selection: "border-8 border-solid border-blue-600 dark:border-blue-800",
       },
     },
     marked: {
       true: {
-        overlay: "rounded-full border-4 border-solid border-green-600 dark:border-green-800",
+        marking: "rounded-full border-4 border-solid border-green-600 dark:border-green-800",
       },
     },
     isOver: {
@@ -38,14 +39,14 @@ const recipe = tv({
       isOver: true,
       color: "dark",
       class: {
-        piece: "backdrop-brightness-150",
+        highlighting: "backdrop-brightness-150",
       },
     },
     {
       isOver: true,
       color: "light",
       class: {
-        piece: "backdrop-brightness-200",
+        highlighting: "backdrop-brightness-200",
       },
     },
   ],
@@ -70,8 +71,9 @@ export function Square(props: Readonly<{ squareIndex: SquareIndex; piece?: Piece
 
   return (
     <button className={classes.root()} data-square-index={props.squareIndex} aria-label="Some label" aria-pressed="false">
-      <div className={classes.overlay()} tabIndex={-1} />
-      <div className={classes.selected()} tabIndex={-1} />
+      <div className={classes.highlighting()} tabIndex={-1} />
+      <div className={classes.marking()} tabIndex={-1} />
+      <div className={classes.selection()} tabIndex={-1} />
       <div className={classes.piece()} ref={setNodeRef}>
         {props.piece && <SvgPiece squareIndex={props.squareIndex} piece={props.piece} />}
         {props.squareIndex}
