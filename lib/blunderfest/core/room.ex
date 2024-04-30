@@ -39,16 +39,9 @@ defmodule Blunderfest.Core.Room do
     %{room | games: games}
   end
 
-  def handle_event(event, meta, %{"game_code" => game_code} = payload, room) do
-    Logger.warning("Unknown room event 1 #{event} - #{game_code}")
-    IO.inspect(meta)
-    IO.inspect(payload)
-
-    room
-  end
-
-  def handle_event(event, meta, payload, room) do
-    Logger.warning("Unknown room event 2 #{event}")
+  @spec handle_event(list(String.t()), map(), map(), __MODULE__.t()) :: __MODULE__.t()
+  def handle_event(event, meta, payload, %__MODULE__{room_code: room_code} = room) do
+    Logger.warning("Unknown room event #{event} #{meta} #{payload} #{room_code}")
     IO.inspect(meta)
     IO.inspect(payload)
 

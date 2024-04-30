@@ -27,7 +27,7 @@ const recipe = tv({
     },
     marked: {
       true: {
-        marking: "rounded-full border-4 border-solid border-green-600 dark:border-green-800",
+        marking: "rounded-full border-8 border-solid border-green-600 dark:border-green-800",
       },
     },
     isOver: {
@@ -76,7 +76,6 @@ export function Square(props: Readonly<{ squareIndex: SquareIndex; piece?: Piece
       <div className={classes.selection()} tabIndex={-1} />
       <div className={classes.piece()} ref={setNodeRef}>
         {props.piece && <SvgPiece squareIndex={props.squareIndex} piece={props.piece} />}
-        {props.squareIndex}
       </div>
     </button>
   );
