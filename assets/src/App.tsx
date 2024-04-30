@@ -1,26 +1,35 @@
-import { ColorSchemeToggle } from "@/features/colorScheme/ColorSchemeToggle";
-import { ConnectionStatus } from "@/features/connectivity/ConnectionStatus";
-import { Board } from "@/features/games/Board";
-import { GameSelector } from "@/features/games/GameSelector";
-import { LanguageSwitcher } from "@/features/i18n/LanguateSwitcher";
+import { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
+import './App.css'
 
-export function App() {
+function App() {
+  const [count, setCount] = useState(0)
+
   return (
-    <div className="layout-sm lg:layout-lg md:layout-md grid grow bg-surface-1 text-surface-1">
-      <header className="flex h-fit flex-row justify-end [grid-area:header]">
-        <LanguageSwitcher />,
-        <ConnectionStatus />
-        <ColorSchemeToggle />
-      </header>
-      <aside className="[grid-area:left-sidebar]">
-        Edit <code>src/App.js</code> and save to reload.
-      </aside>
-      <aside className="[grid-area:right-sidebar]">
-        <GameSelector />
-      </aside>
-      <div className="[grid-area:main-content]">
-        <Board />
+    <>
+      <div>
+        <a href="https://vitejs.dev" target="_blank">
+          <img src={viteLogo} className="logo" alt="Vite logo" />
+        </a>
+        <a href="https://react.dev" target="_blank">
+          <img src={reactLogo} className="logo react" alt="React logo" />
+        </a>
       </div>
-    </div>
-  );
+      <h1>Vite + React</h1>
+      <div className="card">
+        <button onClick={() => setCount((count) => count + 1)}>
+          count is {count}
+        </button>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+      <p className="read-the-docs">
+        Click on the Vite and React logos to learn more
+      </p>
+    </>
+  )
 }
+
+export default App

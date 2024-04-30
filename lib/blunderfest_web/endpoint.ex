@@ -7,20 +7,19 @@ defmodule BlunderfestWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_blunderfest_key",
-    signing_salt: "tK9XDOhY",
+    signing_salt: "JVxCTip3",
     same_site: "Lax"
   ]
 
-  socket "/socket", BlunderfestWeb.UserSocket,
-    websocket: true,
-    longpoll: false
+  socket "/live", Phoenix.LiveView.Socket,
+    websocket: [connect_info: [session: @session_options]],
+    longpoll: [connect_info: [session: @session_options]]
 
   if Mix.env() == :dev do
     plug Plug.Static,
       at: "/",
       from: "assets",
-      gzip: false,
-      only: BlunderfestWeb.static_paths()
+      gzip: false
   end
 
   # Serve at "/" the static files from "priv/static" directory.
@@ -30,7 +29,7 @@ defmodule BlunderfestWeb.Endpoint do
   plug Plug.Static,
     at: "/",
     from: :blunderfest,
-    gzip: true,
+    gzip: false,
     only: BlunderfestWeb.static_paths()
 
   # Code reloading can be explicitly enabled under the

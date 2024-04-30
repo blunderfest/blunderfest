@@ -9,22 +9,17 @@ import Config
 config :blunderfest, BlunderfestWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
+  http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "SMW5GhJBjRhpIjooOdWlhlxyyvXtB7AWvTI+OFChCkOCZ9HpiCKtnq/yjV8wxNLb",
+  secret_key_base: "3bWupgpoN0qpGf7Yg8NaPk6l2ygrJ0JlS1mPOnfBdu/6fHGKtV+90y7eBiIB7ABb",
   watchers: [
     pnpm: [
       "dev",
       cd: Path.expand("../assets", __DIR__)
     ]
   ]
-
-config :cors_plug,
-  origin: ["*"],
-  max_age: 86400,
-  methods: ["GET", "POST"]
 
 # ## SSL Support
 #
@@ -49,20 +44,11 @@ config :cors_plug,
 # configured to run both http and https servers on
 # different ports.
 
-# Watch static and templates for browser reloading.
-config :blunderfest, BlunderfestWeb.Endpoint,
-  live_reload: [
-    patterns: [
-      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
-      ~r"lib/blunderfest_web/(controllers|channels|components)/.*(ex|heex)$"
-    ]
-  ]
-
 # Enable dev routes for dashboard and mailbox
 config :blunderfest, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
-# config :logger, :console, format: "[$level] $message\n"
+config :logger, :console, format: "[$level] $message\n"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
@@ -71,8 +57,7 @@ config :phoenix, :stacktrace_depth, 20
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 
-# Include HEEx debug annotations as HTML comments in rendered markup
-config :phoenix_live_view, :debug_heex_annotations, true
-
-# Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false
+config :cors_plug,
+  origin: ["*"],
+  max_age: 86400,
+  methods: ["GET", "POST"]

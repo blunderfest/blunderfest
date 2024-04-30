@@ -25,16 +25,4 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 blunderfest-*.tar
 
-# Ignore assets that are produced by build tools.
-/priv/static/*
-
-# Ignore digested assets cache.
-/priv/static/cache_manifest.json
-
-# In case you use Node.js/npm, you want to ignore these.
-npm-debug.log
-
-.elixir_ls/
-.pnpm-store/
-assets2
-assets3
+.pnpm-store

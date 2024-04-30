@@ -17,9 +17,7 @@ defmodule BlunderfestWeb do
   those modules here.
   """
 
-  def static_paths,
-    do:
-      ~w(assets locales css js fonts images favicon.ico robots.txt cache_manifest.json locales android-chrome-192x192.png apple-touch-icon.png favicon-16x16.png favicon.ico mstile-150x150.png site.webmanifest android-chrome-512x512.png browserconfig.xml favicon-32x32.png safari-pinned-tab.svg)
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
 
   def router do
     quote do
@@ -28,7 +26,6 @@ defmodule BlunderfestWeb do
       # Import common connection and controller functions to use in pipelines
       import Plug.Conn
       import Phoenix.Controller
-      import Phoenix.LiveView.Router
     end
   end
 
@@ -41,28 +38,11 @@ defmodule BlunderfestWeb do
   def controller do
     quote do
       use Phoenix.Controller,
-        formats: [:html, :json],
-        layouts: [html: BlunderfestWeb.Layouts]
+        formats: [:html, :json]
 
       import Plug.Conn
 
       unquote(verified_routes())
-    end
-  end
-
-  def live_view do
-    quote do
-      use Phoenix.LiveView
-
-      unquote(html_helpers())
-    end
-  end
-
-  def live_component do
-    quote do
-      use Phoenix.LiveComponent
-
-      unquote(html_helpers())
     end
   end
 
@@ -99,7 +79,7 @@ defmodule BlunderfestWeb do
   end
 
   @doc """
-  When used, dispatch to the appropriate controller/view/etc.
+  When used, dispatch to the appropriate controller/live_view/etc.
   """
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])

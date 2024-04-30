@@ -8,7 +8,6 @@ defmodule Blunderfest.MixProject do
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      compilers: Mix.compilers(),
       aliases: aliases(),
       deps: deps()
     ]
@@ -26,8 +25,6 @@ defmodule Blunderfest.MixProject do
 
   # Specifies which paths to compile per environment.
   defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(:dev), do: ["lib", "test/support"]
-
   defp elixirc_paths(_), do: ["lib"]
 
   # Specifies your project dependencies.
@@ -35,23 +32,16 @@ defmodule Blunderfest.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.7.10"},
-      {:phoenix_html, "~> 4.0"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:floki, ">= 0.30.0", only: :test},
-      {:phoenix_live_dashboard, "~> 0.8.2"},
-      {:swoosh, "~> 1.3"},
-      {:finch, "~> 0.13"},
-      {:telemetry_metrics, "~> 0.6"},
+      {:phoenix, "~> 1.7.12"},
+      {:phoenix_live_dashboard, "~> 0.8.3"},
+      {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:plug_cowboy, "~> 2.5"},
+      {:bandit, "~> 1.2"},
+      {:broadway, "~> 1.0"},
+      {:broadway_dashboard, "~> 0.4.0"},
       {:nanoid, "~> 2.1"},
-      {:libcluster, "~> 3.3"},
-      {:horde, "~> 0.8.7"},
-      {:typedstruct, "~> 0.5", runtime: false},
-      {:recase, "~> 0.5"},
       {:cors_plug, "~> 3.0", only: :dev},
       {:vite_phx, "~> 0.2"}
     ]

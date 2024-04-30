@@ -13,25 +13,13 @@ config :blunderfest,
 # Configures the endpoint
 config :blunderfest, BlunderfestWeb.Endpoint,
   url: [host: "localhost"],
-  adapter: Phoenix.Endpoint.Cowboy2Adapter,
+  adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: BlunderfestWeb.ErrorHTML, json: BlunderfestWeb.ErrorJSON],
+    formats: [json: BlunderfestWeb.ErrorJSON],
     layout: false
   ],
   pubsub_server: Blunderfest.PubSub,
-  live_view: [signing_salt: "u99BYFHy"],
-  server: true
-
-config :blunderfest, :environment, Mix.env()
-
-# Configures the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
-config :blunderfest, Blunderfest.Mailer, adapter: Swoosh.Adapters.Local
+  live_view: [signing_salt: "nCxsbKBL"]
 
 # Configures Elixir's Logger
 config :logger, :console,
