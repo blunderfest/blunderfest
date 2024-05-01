@@ -33,7 +33,6 @@ defmodule Blunderfest.MixProject do
   defp deps do
     [
       {:bandit, "~> 1.2"},
-      {:cors_plug, "~> 3.0"},
       {:dns_cluster, "~> 0.1.1"},
       {:jason, "~> 1.2"},
       {:nanoid, "~> 2.1"},
