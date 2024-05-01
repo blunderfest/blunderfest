@@ -10,5 +10,9 @@ defmodule Blunderfest.Rooms do
     end
   end
 
+  defdelegate destroy(room_code), to: RoomServer
+
   defdelegate exists?(room_code), to: RoomServer
+
+  defdelegate get_events(room_code), to: RoomServer
 end

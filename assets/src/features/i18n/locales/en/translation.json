@@ -1,0 +1,30 @@
+{
+  "colorscheme": {
+    "switch": "Switch to {{color}} mode",
+    "light": "light",
+    "dark": "dark"
+  },
+  "connection": {
+    "connected": "Connected",
+    "connecting": "Connecting...",
+    "disconnected": "Disconnected"
+  },
+  "pieces": {
+    "black": {
+      "king": "Black king",
+      "queen": "Black queen",
+      "rook": "Black rook",
+      "bishop": "Black bishop",
+      "knight": "Black knight",
+      "pawn": "Black pawn"
+    },
+    "white": {
+      "king": "White king",
+      "queen": "White queen",
+      "rook": "White rook",
+      "bishop": "White bishop",
+      "knight": "White knight",
+      "pawn": "White pawn"
+    }
+  }
+}

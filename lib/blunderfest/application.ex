@@ -16,7 +16,8 @@ defmodule Blunderfest.Application do
       # Start to serve requests, typically the last entry
       BlunderfestWeb.Endpoint,
       {Registry, keys: :unique, name: Blunderfest.RoomRegistry},
-      {Blunderfest.Rooms.RoomSupervisor, []}
+      {Blunderfest.Rooms.RoomSupervisor, []},
+      BlunderfestWeb.Presence
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

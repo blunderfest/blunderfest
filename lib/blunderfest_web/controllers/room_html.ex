@@ -11,9 +11,11 @@ defmodule BlunderfestWeb.RoomHTML do
         <meta name="csrf-token" content={get_csrf_token()} />
 
         <script>
-          window.userToken = "<%= assigns[:user_token] %>";
-          window.userId = "<%= assigns[:user_id] %>";
-          window.roomCode = "<%= assigns[:room_code] %>";
+          window.config = {
+            userToken: "<%= assigns[:user_token] %>",
+            userId: "<%= assigns[:user_id] %>",
+            roomCode: "<%= assigns[:room_code] %>",
+          };
         </script>
 
         <title>Blunderfest</title>
