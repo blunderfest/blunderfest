@@ -39,10 +39,8 @@ defmodule Blunderfest.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.2"},
-      {:broadway, "~> 1.0"},
-      {:broadway_dashboard, "~> 0.4.0"},
       {:nanoid, "~> 2.1"},
-      {:cors_plug, "~> 3.0", only: :dev},
+      {:cors_plug, "~> 3.0"},
       {:vite_phx, "~> 0.2"}
     ]
   end

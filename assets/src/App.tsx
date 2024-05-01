@@ -1,17 +1,33 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import reactLogo from "./assets/react.svg";
+import { Socket } from "phoenix";
+import "./App.css";
+
+const socket = new Socket("/socket", { params: { token: window.userToken } });
+socket.connect();
+
+const channel = socket.channel("room:42", {});
+channel
+  .join()
+  .receive("ok", (resp) => {
+    console.log("Joined successfully", resp);
+    channel.push("Some event", {});
+
+    setTimeout(() => {
+      channel.push("Again", {});
+      console.log(channel.state);
+    }, 2000);
+  })
+  .receive("error", (resp) => {
+    console.log("Unable to join", resp);
+  });
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
 
   return (
     <>
       <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
         <a href="https://react.dev" target="_blank">
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
@@ -29,7 +45,7 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

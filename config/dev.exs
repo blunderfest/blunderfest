@@ -21,6 +21,12 @@ config :blunderfest, BlunderfestWeb.Endpoint,
     ]
   ]
 
+config :os_mon,
+  disk_space_check_interval: 1,
+  memory_check_interval: 5,
+  disk_almost_full_threshold: 0.90,
+  start_cpu_sup: true
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

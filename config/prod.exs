@@ -1,5 +1,7 @@
 import Config
 
+config :blunderfest, dev_routes: true
+
 # Do not print debug messages in production
 config :logger, level: :info
 
