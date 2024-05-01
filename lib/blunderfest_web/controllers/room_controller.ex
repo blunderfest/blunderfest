@@ -1,22 +1,35 @@
 defmodule BlunderfestWeb.RoomController do
+  alias Blunderfest.Rooms
   use BlunderfestWeb, :controller
 
   def index(
         conn,
         %{"room_code" => room_code} = _params
       ) do
-    user_id = Nanoid.generate()
-
-    conn
-    |> assign(:user_token, generate_user_token(conn, user_id))
-    |> assign(:user_id, user_id)
-    |> assign(:room_code, room_code)
-    |> render(:index, layout: false)
+    if Rooms.exists?(room_code) do
+      conn
+      |> ensure_user()
+      |> assign(:room_code, room_code)
+      |> render(:index, layout: false)
+    else
+      conn
+      |> redirect(to: ~p"/")
+    end
   end
 
   def index(conn, _params) do
-    room_code = Nanoid.generate()
-    conn |> redirect(to: ~p"/#{room_code}")
+    with {:ok, room_code} <- Rooms.create(), do: conn |> redirect(to: ~p"/#{room_code}")
+  end
+
+  defp ensure_user(%{assigns: %{user_token: _user_token}} = conn), do: conn
+
+  defp ensure_user(conn) do
+    user_id = Nanoid.generate()
+    token = conn |> generate_user_token(user_id)
+
+    conn
+    |> assign(:user_token, token)
+    |> assign(:user_id, user_id)
   end
 
   defp generate_user_token(conn, user_id) do

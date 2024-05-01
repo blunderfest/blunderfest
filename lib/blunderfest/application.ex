@@ -14,7 +14,9 @@ defmodule Blunderfest.Application do
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)
       # {Blunderfest.Worker, arg},
       # Start to serve requests, typically the last entry
-      BlunderfestWeb.Endpoint
+      BlunderfestWeb.Endpoint,
+      {Registry, keys: :unique, name: Blunderfest.RoomRegistry},
+      {Blunderfest.Rooms.RoomSupervisor, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

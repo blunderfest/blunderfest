@@ -32,15 +32,16 @@ defmodule Blunderfest.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.7.12"},
+      {:bandit, "~> 1.2"},
+      {:cors_plug, "~> 3.0"},
+      {:dns_cluster, "~> 0.1.1"},
+      {:jason, "~> 1.2"},
+      {:nanoid, "~> 2.1"},
       {:phoenix_live_dashboard, "~> 0.8.3"},
+      {:phoenix, "~> 1.7.12"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
-      {:jason, "~> 1.2"},
-      {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.2"},
-      {:nanoid, "~> 2.1"},
-      {:cors_plug, "~> 3.0"},
+      {:typedstruct, "~> 0.5"},
       {:vite_phx, "~> 0.2"}
     ]
   end
