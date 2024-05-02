@@ -1,7 +1,6 @@
 import { Game, Move, Variation } from "@/types";
 import { createAppSlice } from "../createAppSlice";
 import { prepareAction } from "../prepareAction";
-import { join } from "./socketSlice";
 
 const initialState: {
   gamesByCode: Record<string, Game>;
@@ -14,6 +13,7 @@ const initialState: {
 export const gameSlice = createAppSlice({
   name: "game",
   initialState,
+  
   reducers: (create) => ({
     move: create.preparedReducer(prepareAction<{ gameCode: string; move: Move }>, (state, action) => {
       const game = state.gamesByCode[action.payload.gameCode];
@@ -41,8 +41,6 @@ export const gameSlice = createAppSlice({
       state.variationsByGame[action.payload.gameCode] = variation;
     }),
   }),
-  extraReducers(builder) {
-  },
 });
 
 export const { move } = gameSlice.actions;

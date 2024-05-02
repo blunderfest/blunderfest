@@ -52,6 +52,8 @@ RUN mkdir config
 COPY config/config.exs config/${MIX_ENV}.exs config/
 RUN mix deps.compile
 
+RUN mkdir -p priv/static
+
 COPY priv priv
 
 COPY lib lib

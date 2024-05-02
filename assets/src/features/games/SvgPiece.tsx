@@ -36,11 +36,13 @@ export function SvgPiece(props: Readonly<{ squareIndex: SquareIndex; piece: Piec
   }
 
   return (
-    <svg
+    (<svg
       xmlns="http://www.w3.org/2000/svg"
       className={classes}
       // @ts-ignore
-      ref={(ref) => setNodeRef(ref)}
+      ref={ref => {
+        setNodeRef(ref as unknown as HTMLElement);
+      }}
       style={style}
       {...attributes}
       {...listeners}
@@ -48,6 +50,6 @@ export function SvgPiece(props: Readonly<{ squareIndex: SquareIndex; piece: Piec
       pointerEvents="none">
       <title>{info.title}</title>
       {info.Element}
-    </svg>
+    </svg>)
   );
 }

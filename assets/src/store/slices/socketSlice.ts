@@ -38,6 +38,7 @@ const initialState: {
 export const socketSlice = createAppSlice({
   name: "socket",
   initialState,
+  
   reducers: (create) => ({
     connect: create.asyncThunk(
       (_: void) => {
@@ -55,6 +56,7 @@ export const socketSlice = createAppSlice({
         },
       }
     ),
+
     disconnect: create.asyncThunk(
       (_: void) => {
         return new Promise<void>((resolve) => {
@@ -68,6 +70,7 @@ export const socketSlice = createAppSlice({
         },
       }
     ),
+
     join: create.asyncThunk((roomCode: string, { dispatch }) => {
       return new Promise<void>((resolve, reject) => {
         const channel = socket.channel("room:" + roomCode);

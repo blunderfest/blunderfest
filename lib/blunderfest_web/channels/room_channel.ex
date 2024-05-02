@@ -6,6 +6,8 @@ defmodule BlunderfestWeb.RoomChannel do
 
   require Logger
 
+  intercept ["presence_diff"]
+
   @impl true
   def join("room:" <> room_code, _payload, socket) do
     if Rooms.exists?(room_code) do
@@ -24,15 +26,22 @@ defmodule BlunderfestWeb.RoomChannel do
 
   @impl true
   def handle_info({:after_join, room_code}, %{assigns: %{user_id: user_id}} = socket) do
+    room_code
+    |> Rooms.get_events()
+    |> Enum.each(fn event -> push(socket, event.type, event.payload) end)
+
+    push(socket, "room/presenceState", %{"payload" => Presence.list(socket)})
+
     {:ok, _} = Presence.track(socket, user_id, %{
       online_at: inspect(System.system_time(:second))
     })
 
-    push(socket, "presence_state", Presence.list(socket))
+    {:noreply, socket}
+  end
 
-    room_code
-    |> Rooms.get_events()
-    |> Enum.each(fn event -> push(socket, event.type, event.payload) end)
+  @impl true
+  def handle_out("presence_diff", payload, socket) do
+    push(socket, "room/presenceDiff", %{ "payload" => payload })
 
     {:noreply, socket}
   end
