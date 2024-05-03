@@ -1,7 +1,7 @@
 defmodule Blunderfest.Rooms.RoomServer do
   alias Blunderfest.Rooms.Room
 
-  @timeout 24 * 60 * 60 * 1000
+  @timeout 60 * 60 * 1000
 
   use GenServer, restart: :transient
 

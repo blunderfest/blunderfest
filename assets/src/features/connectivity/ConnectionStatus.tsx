@@ -1,10 +1,10 @@
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { connect, disconnect } from "@/store/slices/socketSlice";
+import { connect, disconnect } from "@/store/slices/connectivitySlice";
 import { useTranslation } from "react-i18next";
 import { MdOutlineWifi, MdOutlineWifiOff } from "react-icons/md";
 
 export function ConnectionStatus() {
-  const connectionStatus = useAppSelector((state) => state.socket.status);
+  const connectionStatus = useAppSelector((state) => state.connectivity.status);
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
 

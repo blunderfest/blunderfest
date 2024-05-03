@@ -1,7 +1,9 @@
 import { createAppSlice } from "@/store/createAppSlice";
 import { prepareAction } from "../prepareAction";
 import { RootState } from "../store";
-import { join } from "./socketSlice";
+import { createAsyncThunk } from "@reduxjs/toolkit";
+import camelcaseKeys from "camelcase-keys";
+import { userSocket } from "@/features/connectivity/socket";
 
 const initialState: {
   currentGame: string;
@@ -31,10 +33,28 @@ type PresenceDiff = {
   joins: PresenceState;
 };
 
+export const join = createAsyncThunk("room/join", async (roomCode: string, { dispatch }) => {
+  const onMessage = (type: string, payload: Record<string, unknown>) => {
+    if (!type.includes("/")) {
+      return;
+    }
+
+    const action = { type, ...payload };
+
+    dispatch(
+      camelcaseKeys(action, {
+        deep: true,
+      })
+    );
+  };
+
+  await userSocket.joinAsync(`room:${roomCode}`, onMessage);
+});
+
 export const roomSlice = createAppSlice({
   name: "room",
   initialState,
-  
+
   reducers: (create) => ({
     switchGame: create.preparedReducer(prepareAction<{ gameCode: string }>, (state, action) => {
       state.currentGame = action.payload.gameCode;
