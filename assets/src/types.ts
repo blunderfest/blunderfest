@@ -27,7 +27,7 @@ export type Position = {
     | undefined
   >;
   activeColor: PieceColor;
-  castlingAvailability: Array<[PieceColor, Piece]>;
+  castlingAvailability: Array<Piece>;
   enPassant?: SquareIndex;
   halfmoveClock: number;
   fullmoveNumber: number;

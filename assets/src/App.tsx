@@ -11,7 +11,7 @@ export function App() {
   const { t } = useTranslation();
   const users = useAppSelector((state) => state.room.users);
   const currentUser = useAppSelector((state) => state.room.userId);
-  
+
   return (
     <div className="layout-sm lg:layout-lg md:layout-md grid grow bg-surface-1 text-surface-1">
       <header className="flex h-fit flex-row justify-end [grid-area:header]">
@@ -25,7 +25,7 @@ export function App() {
         <ul>
           {Object.keys(users).map((userId) => (
             <li key={userId} className={clsx({ "font-bold": userId === currentUser })}>
-              {userId}
+              {userId} ({users[userId].length})
             </li>
           ))}
         </ul>

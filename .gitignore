@@ -26,3 +26,5 @@ erl_crash.dump
 blunderfest-*.tar
 
 .pnpm-store
+
+/priv/

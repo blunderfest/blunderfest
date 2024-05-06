@@ -1,19 +1,13 @@
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectCurrentPosition } from "@/store/slices/boardSlice";
-import { move } from "@/store/slices/gameSlice";
-import { selectCurrentGame } from "@/store/slices/roomSlice";
 import { SquareIndex } from "@/types";
-import { DndContext } from "@dnd-kit/core";
 import { useEffect, useState } from "react";
 import { Square } from "./Square";
+import { useAppSelector } from "@/store/hooks";
 
 export function Board() {
   const [flipped, setFlipped] = useState(false);
 
   const position = useAppSelector((state) => selectCurrentPosition(state));
-  const currentGame = useAppSelector((state) => selectCurrentGame(state));
-
-  const dispatch = useAppDispatch();
 
   function flip(e: KeyboardEvent) {
     if (e.key === "f" || e.key === "F") {
@@ -30,7 +24,7 @@ export function Board() {
   const ranks = [...Array(8).keys()];
   const files = [...Array(8).keys()];
 
-  const squareIndexes: SquareIndex[] = (flipped ? ranks : ranks.reverse()).flatMap((rank) =>
+  const squareIndexes: SquareIndex[] = (flipped ? ranks : ranks.toReversed()).flatMap((rank) =>
     files.map((file) => (8 * rank + file) as SquareIndex)
   );
   const squares = squareIndexes.map((squareIndex) => ({
@@ -39,30 +33,10 @@ export function Board() {
   }));
 
   return (
-    <DndContext
-      onDragEnd={(e) => {
-        if (e.over?.data.current?.squareIndex === e.active.data.current?.squareIndex) {
-          console.log("skip end", e);
-        } else {
-          dispatch(
-            move({
-              gameCode: currentGame,
-              move: {
-                from: e.active.data.current!.squareIndex,
-                to: e.over!.data.current!.squareIndex,
-                variationPath: [],
-                promotion: undefined,
-              },
-            })
-          );
-        }
-      }}
-      onDragCancel={(e) => console.log("cancel", e)}>
-      <div className="grid w-fit grid-cols-8 gap-0">
-        {squares.flatMap((square) => (
-          <Square key={square.squareIndex} squareIndex={square.squareIndex} piece={square.piece?.symbol} />
-        ))}
-      </div>
-    </DndContext>
+    <div className="grid w-2/3 grid-cols-8 gap-0 lg:w-4/5">
+      {squares.flatMap((square) => (
+        <Square key={square.squareIndex} squareIndex={square.squareIndex} piece={square.piece?.symbol} />
+      ))}
+    </div>
   );
 }

@@ -6,5 +6,5 @@
   "trailingComma": "es5",
   "bracketSameLine": true,
   "plugins": ["prettier-plugin-tailwindcss"],
-  "tailwindFunctions": ["tv"]
+  "tailwindFunctions": ["tv", "clsx"]
 }

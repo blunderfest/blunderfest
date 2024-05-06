@@ -1,4 +1,8 @@
 {
-    "workbench.editor.enablePreview": false,
-    "explorer.autoReveal": false
+  "workbench.editor.enablePreview": false,
+  "explorer.autoReveal": false,
+  "tailwindCSS.experimental.classRegex": [
+    ["tv\\((([^()]*|\\([^()]*\\))*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ],
+  "editor.formatOnSave": true
 }
