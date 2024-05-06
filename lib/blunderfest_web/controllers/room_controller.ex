@@ -4,11 +4,10 @@ defmodule BlunderfestWeb.RoomController do
 
   def index(
         conn,
-        %{"room_code" => room_code} = _params
+        %{"room_code" => room_code}
       ) do
     if Rooms.exists?(room_code) do
       conn
-      |> ensure_user()
       |> assign(:room_code, room_code)
       |> render(:index, layout: false)
     else
@@ -17,22 +16,12 @@ defmodule BlunderfestWeb.RoomController do
     end
   end
 
-  def index(conn, _params) do
+  def index(conn, params) when params == %{} do
     with {:ok, room_code} <- Rooms.create(), do: conn |> redirect(to: ~p"/#{room_code}")
   end
 
-  defp ensure_user(%{assigns: %{user_token: _user_token}} = conn), do: conn
-
-  defp ensure_user(conn) do
-    user_id = Nanoid.generate()
-    token = conn |> generate_user_token(user_id)
-
+  def index(conn, %{"room_code" => _dummy}) do
     conn
-    |> assign(:user_token, token)
-    |> assign(:user_id, user_id)
-  end
-
-  defp generate_user_token(conn, user_id) do
-    Phoenix.Token.sign(conn, Application.fetch_env!(:blunderfest, :token_salt), user_id)
+    |> resp(404, "Not Found")
   end
 end

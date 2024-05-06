@@ -9,6 +9,9 @@
     "connecting": "Bezig verbinding te maken...",
     "disconnected": "Verbinding verbroken"
   },
+  "room": {
+    "online_users": "Online gebruikers"
+  },
   "pieces": {
     "black": {
       "king": "Zwarte koning",

@@ -9,6 +9,9 @@
     "connecting": "Connecting...",
     "disconnected": "Disconnected"
   },
+  "room": {
+    "online_users": "Online users"
+  },
   "pieces": {
     "black": {
       "king": "Black king",

@@ -39,8 +39,7 @@ defmodule BlunderfestWeb.UserSocket do
   def connect(%{"token" => token}, socket) do
     case verify(socket, token) do
       {:ok, user_id} ->
-        socket = assign(socket, :user_id, user_id)
-        {:ok, socket}
+        {:ok, socket |> assign(:user_id, user_id) |> assign(:user_token, token)}
 
       {:error, err} ->
         Logger.error("#{__MODULE__} connect error #{inspect(err)}")
@@ -53,6 +52,7 @@ defmodule BlunderfestWeb.UserSocket do
     :error
   end
 
+  @impl true
   def id(%{assigns: %{user_id: user_id}}),
     do: "user_socket:#{user_id}"
 
@@ -66,7 +66,6 @@ defmodule BlunderfestWeb.UserSocket do
   #     Elixir.BlunderfestWeb.Endpoint.broadcast("user_socket:#{user.id}", "disconnect", %{})
   #
   # Returning `nil` makes this socket anonymous.
-  @impl true
   def id(_socket), do: nil
 
   @one_day 86400

@@ -2,7 +2,6 @@ import { createAppSlice } from "@/store/createAppSlice";
 import { prepareAction } from "../prepareAction";
 import { RootState } from "../store";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import camelcaseKeys from "camelcase-keys";
 import { userSocket } from "@/features/connectivity/socket";
 
 const initialState: {
@@ -13,11 +12,9 @@ const initialState: {
   users: Record<
     string,
     {
-      metas: {
-        phxRef: string;
-        onlineAt: number;
-      }[];
-    }
+      phxRef: string;
+      onlineAt: number;
+    }[]
   >;
 } = {
   currentGame: "",
@@ -27,28 +24,9 @@ const initialState: {
   users: {},
 };
 
-type PresenceState = (typeof initialState)["users"];
-type PresenceDiff = {
-  leaves: PresenceState;
-  joins: PresenceState;
-};
 
-export const join = createAsyncThunk("room/join", async (roomCode: string, { dispatch }) => {
-  const onMessage = (type: string, payload: Record<string, unknown>) => {
-    if (!type.includes("/")) {
-      return;
-    }
-
-    const action = { type, ...payload };
-
-    dispatch(
-      camelcaseKeys(action, {
-        deep: true,
-      })
-    );
-  };
-
-  await userSocket.joinAsync(`room:${roomCode}`, onMessage);
+export const join = createAsyncThunk("room/join", async (roomCode: string, thunkAPI) => {
+  await userSocket.joinAsync(`room:${roomCode}`, thunkAPI.dispatch);
 });
 
 export const roomSlice = createAppSlice({
@@ -60,39 +38,46 @@ export const roomSlice = createAppSlice({
       state.currentGame = action.payload.gameCode;
     }),
 
-    presenceState: create.reducer<PresenceState>((state, action) => {
-      Object.entries(action.payload).forEach(([userId, metas]) => {
-        state.users[userId.toUpperCase()] = metas;
+    joins: create.reducer<{
+      userId: string;
+      phxRef: string;
+      onlineAt: number;
+    }>((state, action) => {
+      if (!(action.payload.userId in state.users)) {
+        state.users[action.payload.userId] = [];
+      }
+
+      const user = state.users[action.payload.userId];
+
+      if (user.find((meta) => meta.phxRef === action.payload.phxRef)) {
+        return;
+      }
+
+      user.push({
+        phxRef: action.payload.phxRef,
+        onlineAt: action.payload.onlineAt,
       });
     }),
 
-    presenceDiff: create.reducer<PresenceDiff>((state, action) => {
-      Object.keys(action.payload.leaves).forEach((userId) => {
-        const uppercasedUserId = userId.toUpperCase();
-        const leaves = action.payload.leaves[userId].metas.map((meta) => meta.phxRef);
-        const user = state.users[uppercasedUserId];
+    leaves: create.reducer<{
+      userId: string;
+      phxRef: string;
+      onlineAt: number;
+    }>((state, action) => {
+      if (!(action.payload.userId in state.users)) {
+        return;
+      }
 
-        user.metas = user.metas.filter((meta) => !leaves.includes(meta.phxRef));
+      const user = state.users[action.payload.userId];
+      const index = user.findIndex((meta) => meta.phxRef === action.payload.phxRef);
+      if (index === -1) {
+        return;
+      }
 
-        if (user.metas.length === 0) {
-          delete state.users[uppercasedUserId];
-        }
-      });
-
-      Object.keys(action.payload.joins).forEach((userId) => {
-        const uppercasedUserId = userId.toUpperCase();
-        const joins = action.payload.joins[userId].metas;
-
-        if (!state.users[uppercasedUserId]) {
-          state.users[uppercasedUserId] = {
-            metas: [],
-          };
-        }
-
-        const user = state.users[uppercasedUserId];
-
-        joins.forEach((join) => user.metas.push(join));
-      });
+      user.splice(index, 1);
+      if (user.length === 0) {
+        delete state.users[action.payload.userId];
+      }
     }),
   }),
 
@@ -104,5 +89,5 @@ export const roomSlice = createAppSlice({
   },
 });
 
-export const { switchGame } = roomSlice.actions;
+export const { switchGame, joins, leaves } = roomSlice.actions;
 export const selectCurrentGame = (state: RootState) => state.room.currentGame;

@@ -43,5 +43,11 @@ defmodule Blunderfest.Rooms.RoomServer do
     {:reply, [%{type: "room/created", payload: %{}}], state, @timeout}
   end
 
+  @impl true
+  def handle_info(:timeout, state) do
+    IO.inspect(state)
+    {:stop, :normal, state}
+  end
+
   defp via_tuple(room_code), do: {:via, Registry, {Blunderfest.RoomRegistry, room_code}}
 end
