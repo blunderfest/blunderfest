@@ -27,4 +27,4 @@ blunderfest-*.tar
 
 .pnpm-store
 
-/priv/
+/priv/static
