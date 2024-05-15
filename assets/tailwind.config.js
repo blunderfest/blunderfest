@@ -1,4 +1,5 @@
 const { withTV } = require("tailwind-variants/dist/transformer");
+const colors = require("tailwindcss/colors");
 
 /** @type {import('tailwindcss').Config} */
 const config = {
@@ -6,25 +7,8 @@ const config = {
   content: ["./src/**/*.{ts,tsx}", "../lib/blunderfest_web/controllers/room_html.ex"],
   theme: {
     extend: {
-      textColor: {
-        surface: {
-          1: "rgb(var(--color-neutral-900) / <alpha-value>)",
-          2: "rgb(var(--color-neutral-800) / <alpha-value>)",
-          3: "rgb(var(--color-neutral-700) / <alpha-value>)",
-          4: "rgb(var(--color-neutral-600) / <alpha-value>)",
-          5: "rgb(var(--color-neutral-500) / <alpha-value>)",
-          6: "rgb(var(--color-neutral-400) / <alpha-value>)",
-        },
-      },
-      backgroundColor: {
-        surface: {
-          1: "rgb(var(--color-neutral-50) / <alpha-value>)",
-          2: "rgb(var(--color-neutral-100) / <alpha-value>)",
-          3: "rgb(var(--color-neutral-200) / <alpha-value>)",
-          4: "rgb(var(--color-neutral-300) / <alpha-value>)",
-          5: "rgb(var(--color-neutral-400) / <alpha-value>)",
-          6: "rgb(var(--color-neutral-500) / <alpha-value>)",
-        },
+      colors: {
+        surface: colors.neutral,
       },
     },
   },

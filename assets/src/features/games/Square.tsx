@@ -4,7 +4,7 @@ import { SvgPiece } from "./SvgPiece";
 
 const recipe = tv({
   slots: {
-    root: "z-1 group relative aspect-square w-full",
+    root: "z-1 group relative size-6 md:size-7 lg:size-28",
     highlighting: "absolute bottom-0 left-0 right-0 top-0",
     marking: "absolute bottom-1 left-1 right-1 top-1",
     selection: "absolute bottom-0 left-0 right-0 top-0",
@@ -21,12 +21,12 @@ const recipe = tv({
     },
     selected: {
       true: {
-        selection: "border-8 border-solid border-blue-600 dark:border-blue-800",
+        selection: "border-2 border-solid border-blue-600 md:border-4 lg:border-8 dark:border-blue-800",
       },
     },
     marked: {
       true: {
-        marking: "rounded-full border-8 border-solid border-green-600 dark:border-green-800",
+        marking: "rounded-full border-2 border-solid border-green-600 md:border-4 lg:border-8 dark:border-green-800",
       },
     },
     isOver: {

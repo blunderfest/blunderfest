@@ -9,7 +9,7 @@ export function GameSelector() {
   const currentGame = useAppSelector(selectCurrentGame);
 
   return (
-    <section className="flex w-96 flex-col space-y-2 bg-surface-2">
+    <section className="bg-surface-2 flex flex-col">
       {games.map((game) => (
         <Accordion
           key={game}
@@ -25,13 +25,13 @@ export function GameSelector() {
           <table className="w-full text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
             <thead className="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th className="px-6 py-3" scope="col">
+                <th className="py-3 px-6" scope="col">
                   #
                 </th>
-                <th className="px-6 py-3" scope="col">
+                <th className="py-3 px-6" scope="col">
                   W
                 </th>
-                <th className="px-6 py-3" scope="col">
+                <th className="py-3 px-6" scope="col">
                   B
                 </th>
               </tr>

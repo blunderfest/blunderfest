@@ -13,14 +13,18 @@ export function App() {
   const currentUser = useAppSelector((state) => state.room.userId);
 
   return (
-    <div className="layout-sm lg:layout-lg md:layout-md grid grow bg-surface-1 text-surface-1">
-      <header className="flex h-fit flex-row justify-end [grid-area:header]">
-        {window.config.userId}
+    <div className="flex w-screen flex-wrap gap-2 lg:flex-nowrap">
+      <main className="w-full lg:order-2 lg:w-[50%]">
+        <Board />
+      </main>
+
+      <aside className="w-full md:w-[50%] lg:order-1 lg:w-[25%]">
         <LanguageSwitcher />,
         <ConnectionStatus />
         <ColorSchemeToggle />
-      </header>
-      <aside className="[grid-area:left-sidebar]">
+      </aside>
+
+      <aside className="w-full md:w-[50%] lg:order-3 lg:w-[25%]">
         <h2>{t("room.online_users")}</h2>
         <ul>
           {Object.keys(users).map((userId) => (
@@ -29,13 +33,8 @@ export function App() {
             </li>
           ))}
         </ul>
-      </aside>
-      <aside className="[grid-area:right-sidebar]">
         <GameSelector />
       </aside>
-      <div className="[grid-area:main-content]">
-        <Board />
-      </div>
     </div>
   );
 }

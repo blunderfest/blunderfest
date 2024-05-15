@@ -33,7 +33,7 @@ export function Board() {
   }));
 
   return (
-    <div className="grid w-2/3 grid-cols-8 gap-0 lg:w-4/5">
+    <div className="lg:w-3xl grid w-fit grid-cols-8 gap-0">
       {squares.flatMap((square) => (
         <Square key={square.squareIndex} squareIndex={square.squareIndex} piece={square.piece?.symbol} />
       ))}

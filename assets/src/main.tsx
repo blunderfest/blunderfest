@@ -8,11 +8,17 @@ import { defaultConfig } from "tailwind-variants";
 import { App } from "./App";
 import "./index.css";
 import { join } from "@/store/slices/roomSlice";
+import { flip } from "./store/slices/boardSlice";
 
 defaultConfig.responsiveVariants = true;
 store.dispatch(connect()).then(() => store.dispatch(join(window.config.roomCode)));
 
 document.addEventListener("contextmenu", (e) => e.preventDefault());
+window.addEventListener("keydown", (e) => {
+  if (e.key === "f" || e.key === "F") {
+    store.dispatch(flip());
+  }
+});
 
 const rootElement = document.getElementById("root");
 if (rootElement) {

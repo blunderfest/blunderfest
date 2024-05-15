@@ -22,10 +22,7 @@ export default defineConfig(({ command }) => {
         },
       },
     },
-    plugins: [
-      react(),
-      tsconfigPaths(),
-    ],
+    plugins: [react(), tsconfigPaths()],
     build: {
       reportCompressedSize: true,
       commonjsOptions: {

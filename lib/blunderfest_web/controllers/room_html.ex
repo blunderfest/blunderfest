@@ -4,7 +4,7 @@ defmodule BlunderfestWeb.RoomHTML do
   def index(assigns) do
     ~H"""
     <!DOCTYPE html>
-    <html lang="en" data-mode="dark" class="h-screen">
+    <html lang="en" data-mode="dark">
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -26,8 +26,8 @@ defmodule BlunderfestWeb.RoomHTML do
         <%= Vite.vite_snippet("src/main.tsx") %>
       </head>
 
-      <body class="flex min-h-full">
-        <div id="root" class="flex grow bg-surface-1 text-surface-1"></div>
+      <body>
+        <div id="root" class="flex grow bg-surface-50 text-surface-900 dark:bg-surface-950 dark:text-surface-300"></div>
       </body>
     </html>
     """
