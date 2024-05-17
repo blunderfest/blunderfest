@@ -13,12 +13,10 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "3bWupgpoN0qpGf7Yg8NaPk6l2ygrJ0JlS1mPOnfBdu/6fHGKtV+90y7eBiIB7ABb",
+  secret_key_base: "l+VAilsMWYDq5RcV3Yr4h8KaS1d7V8xptMxASVqXNH2wKbxpPUN4m6tNq++f5ZfT",
   watchers: [
-    pnpm: [
-      "dev",
-      cd: Path.expand("../assets", __DIR__)
-    ]
+    esbuild: {Esbuild, :install_and_run, [:blunderfest, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:blunderfest, ~w(--watch)]}
   ]
 
 # ## SSL Support
@@ -44,6 +42,16 @@ config :blunderfest, BlunderfestWeb.Endpoint,
 # configured to run both http and https servers on
 # different ports.
 
+# Watch static and templates for browser reloading.
+config :blunderfest, BlunderfestWeb.Endpoint,
+  live_reload: [
+    patterns: [
+      ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
+      ~r"priv/gettext/.*(po)$",
+      ~r"lib/blunderfest_web/(controllers|live|components)/.*(ex|heex)$"
+    ]
+  ]
+
 # Enable dev routes for dashboard and mailbox
 config :blunderfest, dev_routes: true
 
@@ -56,3 +64,12 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+config :phoenix_live_view,
+  # Include HEEx debug annotations as HTML comments in rendered markup
+  debug_heex_annotations: true,
+  # Enable helpful, but potentially expensive runtime checks
+  enable_expensive_runtime_checks: true
+
+# Disable swoosh api client as it is only required for production adapters.
+config :swoosh, :api_client, false

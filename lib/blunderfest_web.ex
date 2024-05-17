@@ -26,6 +26,7 @@ defmodule BlunderfestWeb do
       # Import common connection and controller functions to use in pipelines
       import Plug.Conn
       import Phoenix.Controller
+      import Phoenix.LiveView.Router
     end
   end
 
@@ -38,11 +39,30 @@ defmodule BlunderfestWeb do
   def controller do
     quote do
       use Phoenix.Controller,
-        formats: [:html, :json]
+        formats: [:html, :json],
+        layouts: [html: BlunderfestWeb.Layouts]
 
       import Plug.Conn
+      import BlunderfestWeb.Gettext
 
       unquote(verified_routes())
+    end
+  end
+
+  def live_view do
+    quote do
+      use Phoenix.LiveView,
+        layout: {BlunderfestWeb.Layouts, :app}
+
+      unquote(html_helpers())
+    end
+  end
+
+  def live_component do
+    quote do
+      use Phoenix.LiveComponent
+
+      unquote(html_helpers())
     end
   end
 
@@ -63,6 +83,12 @@ defmodule BlunderfestWeb do
     quote do
       # HTML escaping functionality
       import Phoenix.HTML
+      # Core UI components and translation
+      import BlunderfestWeb.CoreComponents
+      import BlunderfestWeb.Gettext
+
+      # Shortcut for generating JS commands
+      alias Phoenix.LiveView.JS
 
       # Routes generation with the ~p sigil
       unquote(verified_routes())

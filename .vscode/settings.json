@@ -12,6 +12,7 @@
     "strings": "on"
   },
   "tailwindCSS.includeLanguages": {
-    "phoenix-heex": "html"
+    "phoenix-heex": "html",
+    "elixir": "html"
   }
 }

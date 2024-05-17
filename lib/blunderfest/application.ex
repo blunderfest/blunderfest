@@ -11,13 +11,12 @@ defmodule Blunderfest.Application do
       BlunderfestWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
+      # Start the Finch HTTP client for sending emails
+      {Finch, name: Blunderfest.Finch},
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)
       # {Blunderfest.Worker, arg},
       # Start to serve requests, typically the last entry
-      BlunderfestWeb.Endpoint,
-      {Registry, keys: :unique, name: Blunderfest.RoomRegistry},
-      {Blunderfest.Rooms.RoomSupervisor, []},
-      BlunderfestWeb.Presence
+      BlunderfestWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
