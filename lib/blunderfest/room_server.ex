@@ -23,7 +23,7 @@ defmodule Blunderfest.RoomServer do
         :ignore
 
       {:error, reason} ->
-        Logger.info("Could not start GenServer, because #{reason}")
+        Logger.info("Could not start GenServer, because #{inspect(reason)}")
         :ignore
     end
   end
