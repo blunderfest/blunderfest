@@ -29,7 +29,11 @@ defmodule Blunderfest.RoomServer do
   end
 
   def exists?(name) do
-    Horde.Registry.lookup(Blunderfest.Registry, name)
+    instances = Horde.Registry.lookup(Blunderfest.Registry, name)
+
+    Logger.info("Found #{inspect(instances)} for #{name}")
+
+    instances
     |> Enum.empty?()
     |> Kernel.not()
   end
