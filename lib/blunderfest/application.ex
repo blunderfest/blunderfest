@@ -16,13 +16,15 @@ defmodule Blunderfest.Application do
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)
       # {Blunderfest.Worker, arg},
       # Start to serve requests, typically the last entry
+      {Horde.Registry, [name: Blunderfest.Registry, keys: :unique, members: :auto]},
+      {Horde.DynamicSupervisor,
+       [name: Blunderfest.Supervisor, strategy: :one_for_one, members: :auto]},
       BlunderfestWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: Blunderfest.Supervisor]
-    Supervisor.start_link(children, opts)
+    Supervisor.start_link(children, strategy: :one_for_one)
   end
 
   # Tell Phoenix to update the endpoint configuration
