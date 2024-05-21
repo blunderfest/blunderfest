@@ -21,6 +21,10 @@ defmodule Blunderfest.RoomServer do
       {:error, {:already_started, pid}} ->
         Logger.info("already started at #{inspect(pid)}, returning :ignore")
         :ignore
+
+      {:error, reason} ->
+        Logger.info("Could not start GenServer, because #{reason}")
+        :ignore
     end
   end
 
