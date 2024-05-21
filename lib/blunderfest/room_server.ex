@@ -24,6 +24,12 @@ defmodule Blunderfest.RoomServer do
     end
   end
 
+  def exists?(name) do
+    Horde.Registry.lookup(Blunderfest.Registry, name)
+    |> Enum.empty?()
+    |> Kernel.not()
+  end
+
   def init(_args) do
     {:ok, nil}
   end

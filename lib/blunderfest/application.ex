@@ -7,10 +7,12 @@ defmodule Blunderfest.Application do
 
   @impl true
   def start(_type, _args) do
+    topologies = Application.get_env(:libcluster, :topologies) || []
+
     children = [
       BlunderfestWeb.Telemetry,
-      {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
+      {Cluster.Supervisor, [topologies, [name: Blunderfest.ClusterSupervisor]]},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Blunderfest.Finch},
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)
@@ -24,7 +26,8 @@ defmodule Blunderfest.Application do
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    Supervisor.start_link(children, strategy: :one_for_one)
+    opts = [strategy: :one_for_one]
+    Supervisor.start_link(children, opts)
   end
 
   # Tell Phoenix to update the endpoint configuration

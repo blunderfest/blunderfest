@@ -33,10 +33,12 @@ if config_env() == :prod do
       You can generate one by calling: mix phx.gen.secret
       """
 
-  host = System.get_env("PHX_HOST") || "example.com"
-  port = String.to_integer(System.get_env("PORT") || "4000")
+  app_name =
+    System.get_env("FLY_APP_NAME") ||
+      raise "FLY_APP_NAME not available"
 
-  config :blunderfest, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  host = "#{app_name}.fly.dev"
+  port = String.to_integer(System.get_env("PORT") || "4000")
 
   config :blunderfest, BlunderfestWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
@@ -49,6 +51,19 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base
+
+  config :libcluster,
+    debug: true,
+    topologies: [
+      fly6pn: [
+        strategy: Cluster.Strategy.DNSPoll,
+        config: [
+          polling_interval: 5_000,
+          query: "#{app_name}.internal",
+          node_basename: app_name
+        ]
+      ]
+    ]
 
   # ## SSL Support
   #

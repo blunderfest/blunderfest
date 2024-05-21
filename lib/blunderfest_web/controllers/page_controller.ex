@@ -4,14 +4,18 @@ defmodule BlunderfestWeb.PageController do
   def index(conn, _params) do
     room_code = Nanoid.generate()
 
-    Horde.DynamicSupervisor.start_child(Blunderfest.Supervisor, Blunderfest.RoomServer)
+    Blunderfest.RoomServer.start_link(room_code)
 
     conn |> redirect(to: ~p"/#{room_code}")
   end
 
   def join(conn, %{"room_code" => room_code}) do
-    IO.puts("Joining #{room_code}")
+    if Blunderfest.RoomServer.exists?(room_code) do
+      IO.puts("Joining #{room_code}")
 
-    conn |> assign(:page_title, room_code) |> render(:index)
+      conn |> assign(:page_title, room_code) |> render(:index)
+    else
+      redirect(conn, to: ~p"/")
+    end
   end
 end
