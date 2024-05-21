@@ -1,12 +1,13 @@
 defmodule Blunderfest.RoomServer do
+  @timeout 60 * 60 * 1000
+
   use GenServer
+
   require Logger
 
-  def child_spec(opts) do
-    name = Keyword.get(opts, :name, __MODULE__)
-
+  def child_spec(name) do
     %{
-      id: "#{__MODULE__}_#{name}",
+      id: name,
       start: {__MODULE__, :start_link, [name]},
       shutdown: 10_000,
       restart: :transient
@@ -40,6 +41,11 @@ defmodule Blunderfest.RoomServer do
 
   def init(_args) do
     {:ok, nil}
+  end
+
+  def terminate(reason, _state) do
+    Logger.info("terminating: #{inspect(self())}: #{inspect(reason)}")
+    :ok
   end
 
   def via_tuple(name), do: {:via, Horde.Registry, {Blunderfest.Registry, name}}
