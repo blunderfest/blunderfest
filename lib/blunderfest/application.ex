@@ -21,6 +21,7 @@ defmodule Blunderfest.Application do
       {Horde.Registry, [name: Blunderfest.Registry, keys: :unique, members: :auto]},
       {Horde.DynamicSupervisor,
        [name: Blunderfest.Supervisor, strategy: :one_for_one, members: :auto]},
+      BlunderfestWeb.RoomPresence,
       BlunderfestWeb.Endpoint
     ]
 
