@@ -19,8 +19,7 @@ defmodule Blunderfest.Application do
       # {Blunderfest.Worker, arg},
       # Start to serve requests, typically the last entry
       {Horde.Registry, [name: Blunderfest.Registry, keys: :unique, members: :auto]},
-      {Horde.DynamicSupervisor,
-       [name: Blunderfest.Supervisor, strategy: :one_for_one, members: :auto]},
+      Blunderfest.RoomSupervisor,
       BlunderfestWeb.RoomPresence,
       BlunderfestWeb.Endpoint
     ]

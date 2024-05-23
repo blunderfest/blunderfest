@@ -16,11 +16,11 @@ defmodule BlunderfestWeb.Router do
   end
 
   scope "/", BlunderfestWeb do
-    import Phoenix.LiveDashboard.Router
+    # import Phoenix.LiveDashboard.Router
 
     pipe_through :browser
 
-    live_dashboard "/dashboard", metrics: BlunderfestWeb.Telemetry
+    # live_dashboard "/dashboard", metrics: BlunderfestWeb.Telemetry
     live "/", PageLive
     live "/:room_code", PageLive
   end

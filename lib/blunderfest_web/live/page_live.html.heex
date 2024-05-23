@@ -1,6 +1,6 @@
 page live
-<p><%= @user_id %></p>
-<p><%= @room_code %></p>
+<p>User id: <%= @user_id %></p>
+<p>Room code: <%= @room_code %></p>
 <ul>
   <li :for={user <- @users}>
     <%= user.phx_ref %> - <%= user.user_id %>

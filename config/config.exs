@@ -61,8 +61,8 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 config :nanoid,
-  size: 21,
-  alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  size: 10,
+  alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
