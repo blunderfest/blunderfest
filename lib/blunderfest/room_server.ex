@@ -5,44 +5,44 @@ defmodule Blunderfest.RoomServer do
 
   require Logger
 
-  def child_spec(name) do
+  def child_spec(room_code) do
     %{
-      id: name,
-      start: {__MODULE__, :start_link, [name]},
+      id: room_code,
+      start: {__MODULE__, :start_link, [room_code]},
       shutdown: 10_000,
       restart: :transient
     }
   end
 
-  def start_link(name) do
-    case GenServer.start_link(__MODULE__, [], name: via_tuple(name)) do
-      {:ok, pid} ->
-        {:ok, pid}
-
-      {:error, {:already_started, pid}} ->
-        Logger.info("already started at #{inspect(pid)}, returning :ignore")
-        :ignore
-
-      {:error, reason} ->
-        Logger.info("Could not start GenServer, because #{inspect(reason)}")
-        :ignore
+  def start_link(room_code) do
+    case GenServer.start_link(__MODULE__, [room_code], name: via_tuple(room_code)) do
+      {:ok, pid} -> {:ok, pid}
+      {:error, {:already_started, pid}} -> {:ok, pid}
+      result -> result
     end
   end
 
-  def exists?(name),
+  def exists?(room_code),
     do:
-      Horde.Registry.lookup(Blunderfest.Registry, name)
+      Horde.Registry.lookup(Blunderfest.Registry, room_code)
       |> Enum.empty?()
       |> Kernel.not()
 
-  def init(_args) do
-    {:ok, nil}
+  @impl true
+  def init(room_code) do
+    {:ok, room_code, @timeout}
   end
 
+  @impl true
   def terminate(reason, _state) do
     Logger.info("terminating: #{inspect(self())}: #{inspect(reason)}")
     :ok
   end
 
-  def via_tuple(name), do: {:via, Horde.Registry, {Blunderfest.Registry, name}}
+  @impl true
+  def handle_info(:timeout, state) do
+    {:stop, :normal, state}
+  end
+
+  def via_tuple(room_code), do: {:via, Horde.Registry, {Blunderfest.Registry, room_code}}
 end

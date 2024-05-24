@@ -21,8 +21,8 @@ defmodule BlunderfestWeb.Router do
     pipe_through :browser
 
     # live_dashboard "/dashboard", metrics: BlunderfestWeb.Telemetry
-    live "/", PageLive
-    live "/:room_code", PageLive
+    live "/", IndexLive
+    live "/:room_code", RoomLive
   end
 
   # Other scopes may use custom stacks.
