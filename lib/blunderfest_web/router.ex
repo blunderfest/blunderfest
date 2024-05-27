@@ -21,7 +21,7 @@ defmodule BlunderfestWeb.Router do
     pipe_through :browser
 
     # live_dashboard "/dashboard", metrics: BlunderfestWeb.Telemetry
-    live "/", IndexLive
+    get "/", RoomController, :index
     live "/:room_code", RoomLive
   end
 
