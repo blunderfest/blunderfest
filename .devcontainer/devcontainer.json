@@ -13,10 +13,10 @@
         "dejmedus.tailwind-sorter",
         "esbenp.prettier-vscode",
         "fabiospampinato.vscode-open-multiple-files",
-        "github.vscode-github-actions",
         "jakebecker.elixir-ls",
         "phoenixframework.phoenix",
-        "SonarSource.sonarlint-vscode"
+        "SonarSource.sonarlint-vscode",
+        "pantajoe.vscode-elixir-credo"
       ]
     }
   },

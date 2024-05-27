@@ -1,4 +1,7 @@
 defmodule Blunderfest.RoomSupervisor do
+  @moduledoc """
+  Supervises RoomServers.
+  """
   alias Blunderfest.RoomServer
 
   use Horde.DynamicSupervisor

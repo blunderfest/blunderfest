@@ -6,3 +6,19 @@ page live
     <%= user.phx_ref %> - <%= user.user_id %>
   </li>
 </ul>
+
+<.header>
+  Titel
+  <:subtitle>Subtitel</:subtitle>
+  <:actions>Some actions</:actions>
+</.header>
+<.button>
+  Dit is een knop
+</.button>
+
+<.back navigate={~p"/posts"}>Back to posts</.back>
+<.icon name="hero-x-mark-solid" />
+<.icon name="hero-arrow-path" class="ml-1 w-3 h-3 animate-spin" />
+<.modal id="confirm-modal" show>
+  This is a modal.
+</.modal>

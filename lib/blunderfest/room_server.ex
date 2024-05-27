@@ -1,4 +1,8 @@
 defmodule Blunderfest.RoomServer do
+  @moduledoc """
+  GenServer for rooms.
+  """
+
   @timeout 60 * 60 * 1000
 
   use GenServer

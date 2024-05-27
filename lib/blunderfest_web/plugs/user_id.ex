@@ -1,4 +1,7 @@
 defmodule BlunderfestWeb.UserId do
+  @moduledoc """
+  Ensures the user has an id.
+  """
   import Plug.Conn
 
   def init(options), do: options
