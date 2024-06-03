@@ -1,21 +1,59 @@
-<.header>
-  <%= @room_code %>
-  <:subtitle>Subtitel</:subtitle>
-  <:actions>
-    <.button phx-click="copy_link" title={gettext("Copy to clipboard")}>
-      <.icon name="hero-share" />
-    </.button>
-  </:actions>
-</.header>
-page live
-<p>User id: <%= @user_id %></p>
-<p>Room code: <%= @room_code %></p>
-<ul>
-  <li :for={user <- @users}>
-    <%= user.phx_ref %> - <%= user.user_id %>
-  </li>
-</ul>
-<.list>
-  <:item title="Title">title</:item>
-  <:item title="Views">views</:item>
-</.list>
+<div class="bg-gray-100">
+  <div class="flex bg-gray-200 h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <div
+      class="absolute bg-gray-800 w-56 min-h-screen text-white transform transition-transform -translate-x-full duration-300 overflow-y-auto ease-in-out"
+      id="sidebar"
+      phx-click-away={JS.toggle_class("-translate-x-full", to: "#sidebar")}
+    >
+      <!-- Your Sidebar Content -->
+      <div class="p-4">
+        <h1 class="font-semibold text-2xl">Sidebar</h1>
+        <ul class="mt-4">
+          <li class="mb-2"><a href="#" class="block hover:text-indigo-400">Home</a></li>
+          <li class="mb-2"><a href="#" class="block hover:text-indigo-400">About</a></li>
+          <li class="mb-2"><a href="#" class="block hover:text-indigo-400">Services</a></li>
+          <li class="mb-2"><a href="#" class="block hover:text-indigo-400">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <!-- Content -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <!-- Navbar -->
+      <div class="bg-white shadow">
+        <div class="mx-auto container">
+          <div class="flex justify-between items-center px-2 py-4">
+            <h1 class="font-semibold text-xl">Animated Drawer</h1>
+
+            <button
+              class="text-gray-500 hover:text-gray-600"
+              phx-click={JS.toggle_class("-translate-x-full", to: "#sidebar")}
+              id="open-sidebar"
+            >
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                >
+                </path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Content Body -->
+      <div class="flex-1 p-4 overflow-auto">
+        <h1 class="font-semibold text-2xl">Welcome to our website</h1>
+        <p>... Content goes here ...</p>
+      </div>
+    </div>
+  </div>
+</div>
