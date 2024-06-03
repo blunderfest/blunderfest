@@ -1,3 +1,12 @@
+<.header>
+  <%= @room_code %>
+  <:subtitle>Subtitel</:subtitle>
+  <:actions>
+    <.button phx-click="copy_link" title={gettext("Copy to clipboard")}>
+      <.icon name="hero-share" />
+    </.button>
+  </:actions>
+</.header>
 page live
 <p>User id: <%= @user_id %></p>
 <p>Room code: <%= @room_code %></p>
@@ -6,16 +15,7 @@ page live
     <%= user.phx_ref %> - <%= user.user_id %>
   </li>
 </ul>
-
-<.header>
-  Titel
-  <:subtitle>Subtitel</:subtitle>
-  <:actions>Some actions</:actions>
-</.header>
-<.button>
-  Dit is een knop
-</.button>
-
-<.back navigate={~p"/posts"}>Back to posts</.back>
-
-<.icon name="hero-x-mark-solid" />
+<.list>
+  <:item title="Title">title</:item>
+  <:item title="Views">views</:item>
+</.list>

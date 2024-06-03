@@ -1,6 +1,6 @@
 // https://fly.io/phoenix-files/saving-and-restoring-liveview-state/
 
-export const localStateStore = {
+export const localStateStoreHook = {
   mounted() {
     this.handleEvent("store", (event) => this.store(event));
     this.handleEvent("clear", (event) => this.clear(event));

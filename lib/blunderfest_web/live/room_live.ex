@@ -12,7 +12,7 @@ defmodule BlunderfestWeb.RoomLive do
   end
 
   @impl true
-  def handle_params(%{"room_code" => room_code}, _uri, socket) do
+  def handle_params(%{"room_code" => room_code}, uri, socket) do
     if connected?(socket) do
       if Blunderfest.RoomServer.exists?(room_code) do
         Phoenix.PubSub.subscribe(Blunderfest.PubSub, RoomPresence.topic(room_code))
@@ -21,8 +21,9 @@ defmodule BlunderfestWeb.RoomLive do
         {:noreply,
          socket
          |> assign_room(room_code)
+         |> assign(:current_uri, uri)
          |> assign_users()
-         |> push_event("restore", %{key: "state", event: "restoreState"})}
+         |> push_event("restore", %{key: "state", event: "restore_state"})}
       else
         {:noreply, socket |> push_navigate(to: ~p"/")}
       end
@@ -38,8 +39,14 @@ defmodule BlunderfestWeb.RoomLive do
   end
 
   @impl true
-  def handle_event("restoreState", _params, socket) do
+  def handle_event("restore_state", _params, socket) do
     {:noreply, socket}
+  end
+
+  def handle_event("copy_link", _params, %{assigns: %{current_uri: current_uri}} = socket) do
+    {:noreply,
+     socket
+     |> push_event("copy-to-clipboard", %{text: current_uri})}
   end
 
   @impl true

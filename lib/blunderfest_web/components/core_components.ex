@@ -431,10 +431,10 @@ defmodule BlunderfestWeb.CoreComponents do
     ~H"""
     <header class={[@actions != [] && "flex items-center justify-between gap-6", @class]}>
       <div>
-        <h1 class="font-semibold text-lg text-zinc-800 leading-8">
+        <h1 class="font-semibold text-lg text-zinc-800 dark:text-zinc-200 leading-8">
           <%= render_slot(@inner_block) %>
         </h1>
-        <p :if={@subtitle != []} class="mt-2 text-sm text-zinc-600 leading-6">
+        <p :if={@subtitle != []} class="mt-2 text-sm text-zinc-600 dark:text-zinc-200 leading-6">
           <%= render_slot(@subtitle) %>
         </p>
       </div>
@@ -544,30 +544,6 @@ defmodule BlunderfestWeb.CoreComponents do
           <dd class="text-zinc-700"><%= render_slot(item) %></dd>
         </div>
       </dl>
-    </div>
-    """
-  end
-
-  @doc """
-  Renders a back navigation link.
-
-  ## Examples
-
-      <.back navigate={~p"/posts"}>Back to posts</.back>
-  """
-  attr :navigate, :any, required: true
-  slot :inner_block, required: true
-
-  def back(assigns) do
-    ~H"""
-    <div class="mt-16">
-      <.link
-        navigate={@navigate}
-        class="font-semibold text-sm text-zinc-900 hover:text-zinc-700 leading-6"
-      >
-        <.icon name="hero-arrow-left-solid" class="w-3 h-3" />
-        <%= render_slot(@inner_block) %>
-      </.link>
     </div>
     """
   end

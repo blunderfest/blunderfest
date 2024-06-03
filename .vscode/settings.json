@@ -12,14 +12,13 @@
     "strings": "on"
   },
   "tailwindCSS.includeLanguages": {
-    "phoenix-heex": "html",
     "elixir": "html"
   },
   "[phoenix-heex]": {
-    "editor.defaultFormatter": "animus-coop.vscode-elixir-mix-formatter"
+    "editor.defaultFormatter": "JakeBecker.elixir-ls"
   },
   "[elixir]": {
-    "editor.defaultFormatter": "animus-coop.vscode-elixir-mix-formatter",
+    "editor.defaultFormatter": "JakeBecker.elixir-ls",
     "editor.insertSpaces": true,
     "editor.tabSize": 2,
     "editor.wordBasedSuggestions": "off",
