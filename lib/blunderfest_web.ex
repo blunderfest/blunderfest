@@ -85,6 +85,7 @@ defmodule BlunderfestWeb do
       import Phoenix.HTML
       # Core UI components and translation
       import BlunderfestWeb.CoreComponents
+      import BlunderfestWeb.Components
       import BlunderfestWeb.Gettext
 
       # Shortcut for generating JS commands

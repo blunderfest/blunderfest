@@ -4,11 +4,13 @@ defmodule BlunderfestWeb.RoomLive do
 
   use BlunderfestWeb, :live_view
 
+  import BlunderfestWeb.Board
+
   require Logger
 
   @impl true
   def mount(_params, %{"user_id" => user_id}, socket) do
-    {:ok, socket |> assign(:user_id, user_id)}
+    {:ok, socket |> assign(:user_id, user_id) |> assign(:room_code, "")}
   end
 
   @impl true

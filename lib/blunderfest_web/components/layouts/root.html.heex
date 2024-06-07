@@ -8,10 +8,39 @@
       <%= assigns[:page_title] %>
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <script>
+      const key = "colorScheme";
+
+      function setColorScheme(scheme) {
+        if (!["dark", "light"].includes(scheme)) {
+          scheme = "light";
+        }
+
+        document.documentElement.dataset[key] = scheme;
+        localStorage.setItem(key, scheme);
+      }
+
+      (() => {
+        const matcher = window.matchMedia("(prefers-color-scheme: dark)");
+        matcher.addEventListener("change", (event) =>
+          setColorScheme(event.matches ? "dark" : "light")
+        );
+
+        window.addEventListener("toggle-scheme", (event) =>
+          setColorScheme(event.detail)
+        );
+
+        if (localStorage.getItem(key) === "dark" || (!(key in localStorage) && matcher.matches)) {
+          setColorScheme("dark");
+        } else {
+          setColorScheme("light");
+        }
+      })();
+    </script>
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
   </head>
-  <body class="bg-neutral-200 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 antialiased">
+  <body class="bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-400 antialiased">
     <%= @inner_content %>
   </body>
 </html>
