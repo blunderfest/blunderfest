@@ -1,4 +1,8 @@
 <h1 class="font-semibold text-2xl">Welcome to our website</h1>
 <p>... Content goes <.icon name="hero-lock-closed" /> here ...</p>
 
-<.square color={:dark} />
+<div class="gap-0 grid grid-cols-8 grid-rows-8">
+  <%= for square <- @squares do %>
+    <.square square_index={square.square_index} selected={square.selected} color={square.color} />
+  <% end %>
+</div>

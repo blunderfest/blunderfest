@@ -20,7 +20,7 @@ defmodule BlunderfestWeb.Components do
     ~H"""
     <%= @room_code %>
 
-    <.button :if={String.length(@room_code) > 0} phx-click="copy_link">
+    <.button phx-click="copy_link">
       <.icon name="hero-clipboard" class="size-5" />
     </.button>
     """

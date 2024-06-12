@@ -9,20 +9,19 @@
     </.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script>
-      const key = "colorScheme";
+      (() => {
+        const key = "colorScheme";
 
-      function setColorScheme(scheme) {
-        if (!["dark", "light"].includes(scheme)) {
-          scheme = "light";
+        function setColorScheme(scheme) {
+          if (!["dark", "light"].includes(scheme)) {
+            scheme = "dark";
+          }
+
+          document.documentElement.dataset[key] = scheme;
+          localStorage.setItem(key, scheme);
         }
 
-        document.documentElement.dataset[key] = scheme;
-        localStorage.setItem(key, scheme);
-      }
-
-      (() => {
-        const matcher = window.matchMedia("(prefers-color-scheme: dark)");
-        matcher.addEventListener("change", (event) =>
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (event) =>
           setColorScheme(event.matches ? "dark" : "light")
         );
 
@@ -30,11 +29,7 @@
           setColorScheme(event.detail)
         );
 
-        if (localStorage.getItem(key) === "dark" || (!(key in localStorage) && matcher.matches)) {
-          setColorScheme("dark");
-        } else {
-          setColorScheme("light");
-        }
+        setColorScheme(localStorage.getItem(key));
       })();
     </script>
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>

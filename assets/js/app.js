@@ -29,7 +29,8 @@ window.addEventListener("phx:copy-to-clipboard", (event) => {
 liveSocket.connect();
 
 // expose liveSocket on window for web console debug logs and latency simulation:
-// >> liveSocket.enableDebug()
+liveSocket.enableDebug();
+liveSocket.enableProfiling();
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket;

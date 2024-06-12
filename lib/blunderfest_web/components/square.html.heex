@@ -1,0 +1,15 @@
+<div
+  class={[
+    "aspect-square flex",
+    @color == :dark && "bg-neutral-700 dark:bg-neutral-700",
+    @color == :light && "bg-neutral-300 dark:bg-neutral-300"
+  ]}
+  phx-click="select_square"
+  phx-value-square-index={@square_index}
+>
+  <div class={[
+    @selected &&
+      "border-8 border-blue-800 h-full w-full"
+  ]}>
+  </div>
+</div>
