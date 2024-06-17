@@ -8,7 +8,8 @@
 import Config
 
 config :blunderfest,
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  token_salt: "dNtV2qfw"
 
 # Configures the endpoint
 config :blunderfest, BlunderfestWeb.Endpoint,
