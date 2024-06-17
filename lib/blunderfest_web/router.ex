@@ -8,6 +8,7 @@ defmodule BlunderfestWeb.Router do
     plug :put_root_layout, html: {BlunderfestWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug BlunderfestWeb.UserId
   end
 
   pipeline :api do

@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Counter } from "./features/counter/Counter";
 import { tv } from "tailwind-variants";
+import { cn } from "./cn";
 
 const button = tv({
   base: "rounded-full bg-blue-500 font-medium text-white active:opacity-80",
@@ -34,6 +36,7 @@ function App() {
       <div></div>
       <h1 className="font-bold text-lg text-red-600">Vite + React</h1>
       <div className="card">
+        <Counter />
         <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
         <p>
           Edit <code>src/App.jsx</code> and save to test HMR
@@ -41,7 +44,7 @@ function App() {
       </div>
       <button className={button({ size: "sm", color: "secondary" })}>Click me</button>
       <button className={button({ size: "sm", color: "primary" })}>Click me</button>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
+      <p className={cn("h-10", "size-5", "bg-blue-50", "border", "w-10")}>Click on the Vite and React logos to learn more</p>
     </>
   );
 }

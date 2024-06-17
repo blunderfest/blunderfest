@@ -10,7 +10,6 @@
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
         "bradlc.vscode-tailwindcss",
-        "dejmedus.tailwind-sorter",
         "esbenp.prettier-vscode",
         "fabiospampinato.vscode-open-multiple-files",
         "jakebecker.elixir-ls",
