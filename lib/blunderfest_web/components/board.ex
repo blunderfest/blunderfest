@@ -9,6 +9,8 @@ defmodule BlunderfestWeb.Components.Board do
   attr :selected, :boolean, required: true
   attr :color, :atom, values: [:dark, :light], required: true
 
+  attr :rest, :global
+
   def square(assigns) do
     ~H"""
     <div
@@ -19,6 +21,7 @@ defmodule BlunderfestWeb.Components.Board do
       ]}
       phx-click="select_square"
       phx-value-square-index={@square_index}
+      {@rest}
     >
       <div class={[
         @selected &&

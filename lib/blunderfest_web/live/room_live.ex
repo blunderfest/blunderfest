@@ -16,7 +16,7 @@ defmodule BlunderfestWeb.RoomLive do
      socket
      |> assign(:user_id, user_id)
      |> assign(:room_code, "")
-     |> assign(:squares, 0..63 |> Enum.map(&Square.new/1))}
+     |> stream(:squares, 0..63 |> Enum.map(&Square.new/1))}
   end
 
   @impl true
@@ -66,17 +66,9 @@ defmodule BlunderfestWeb.RoomLive do
 
     {:noreply,
      socket
-     |> update(
+     |> stream_insert(
        :squares,
-       fn squares ->
-         Enum.map(squares, fn
-           %Square{square_index: ^index, selected: selected} = square ->
-             %{square | selected: !selected}
-
-           square ->
-             square
-         end)
-       end
+       %Square{Square.new(index) | selected: true}
      )
      |> dbg()}
   end
