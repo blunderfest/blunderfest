@@ -17,7 +17,6 @@ defmodule BlunderfestWeb.UserId do
 
         conn
         |> assign(:user_token, token)
-        |> assign(:user_id, user_id)
 
       _ ->
         conn

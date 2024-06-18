@@ -39,8 +39,7 @@ defmodule BlunderfestWeb do
   def controller do
     quote do
       use Phoenix.Controller,
-        formats: [:html, :json],
-        layouts: [html: BlunderfestWeb.Layouts]
+        formats: [:html, :json]
 
       import Plug.Conn
 

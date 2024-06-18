@@ -5,6 +5,6 @@ import { twMerge } from "tailwind-merge";
  * @param  {...import("clsx").ClassValue} inputs
  * @returns
  */
-export const cn = (...inputs) => {
+export const classnames = (...inputs) => {
   return twMerge(clsx(inputs));
 };

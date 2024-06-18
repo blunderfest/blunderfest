@@ -15,10 +15,14 @@ defmodule BlunderfestWeb.Endpoint do
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]
 
+  socket "/socket", BlunderfestWeb.UserSocket,
+    websocket: true,
+    longpoll: false
+
   if Mix.env() == :dev do
     plug Plug.Static,
       at: "/",
-      from: "assets",
+      from: "assets/public",
       gzip: false
   end
 

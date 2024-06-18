@@ -1,10 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const ReactCompilerConfig = {
-  /* ... */
-};
-
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
   if (isDev) {
@@ -16,7 +12,8 @@ export default defineConfig(({ command }) => {
     process.stdin.resume();
   }
 
-  return {
+  /** @type {import('vite').UserConfig} */
+  const config = {
     server: {
       proxy: {
         "/socket": {
@@ -29,10 +26,15 @@ export default defineConfig(({ command }) => {
     plugins: [
       react({
         babel: {
-          plugins: [["babel-plugin-react-compiler", ReactCompilerConfig]],
+          plugins: [["babel-plugin-react-compiler"]],
         },
       }),
     ],
+    resolve: {
+      alias: {
+        "@": "src",
+      },
+    },
     build: {
       reportCompressedSize: true,
       commonjsOptions: {
@@ -49,11 +51,18 @@ export default defineConfig(({ command }) => {
           main: "./src/main.jsx",
         },
         output: {
-          entryFileNames: "assets/[name].js", // remove hash
-          chunkFileNames: "assets/[name].js",
-          assetFileNames: "assets/[name][extname]",
+          manualChunks: (id) => {
+            if (id.includes("redux")) {
+              return "redux";
+            }
+
+            if (id.includes("react") || id.includes("scheduler.production")) {
+              return "react";
+            }
+          },
         },
       },
     },
   };
+  return config;
 });

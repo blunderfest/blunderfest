@@ -54,7 +54,7 @@ defmodule Blunderfest.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.2"},
       {:nanoid, "~> 2.1"},
-      {:horde, "~> 0.8.5"},
+      {:horde, "~> 0.9.0"},
       {:libcluster, "~> 3.3"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
