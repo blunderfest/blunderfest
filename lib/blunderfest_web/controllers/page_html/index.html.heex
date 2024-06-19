@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
     <script>
-      window.userToken = "<%= assigns[:user_token] %>";
+      window.userToken = "<%= @user_token %>";
     </script>
-    <title><%= assigns[:page_title] || "Blunderfest" %></title>
+    <title><%= @room_code %> - Blunderfest</title>
 
     <%= Vite.vite_client() %>
     <%= Vite.react_refresh_snippet() %>

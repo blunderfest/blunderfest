@@ -33,7 +33,7 @@ config :blunderfest, Blunderfest.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configures Elixir's Logger
 config :logger, :console,
-  format: "$time $metadata[$level] $message\n",
+  format: "$date $time\t$node\t[$level]\t$message\n",
   metadata: [:request_id]
 
 # Use Jason for JSON parsing in Phoenix
