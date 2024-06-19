@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -32,7 +33,7 @@ export default defineConfig(({ command }) => {
     ],
     resolve: {
       alias: {
-        "@": "src",
+        "@": path.resolve(__dirname, "./src"),
       },
     },
     build: {
@@ -64,5 +65,6 @@ export default defineConfig(({ command }) => {
       },
     },
   };
+
   return config;
 });

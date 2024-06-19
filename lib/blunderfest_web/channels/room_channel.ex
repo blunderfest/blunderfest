@@ -5,7 +5,8 @@ defmodule BlunderfestWeb.RoomChannel do
 
   @impl true
   def join("room:" <> _room_code, _payload, socket) do
-    {:ok, socket}
+    Process.flag(:trap_exit, true)
+    {:ok, %{user_id: socket.assigns.user_id}, socket}
   end
 
   # Channels can be used in a request/response fashion
@@ -21,5 +22,14 @@ defmodule BlunderfestWeb.RoomChannel do
   def handle_in("shout", payload, socket) do
     broadcast(socket, "shout", payload)
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_in("counter/increment", _payload, socket) do
+    {:reply, {:ok, %{type: "server/some_server_event", payload: socket.assigns}}, socket}
+  end
+
+  def handle_in(_event, _payload, socket) do
+    {:stop, :invalid_event, socket}
   end
 end

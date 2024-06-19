@@ -2,10 +2,11 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App.jsx";
 import { Provider } from "react-redux";
-import { store } from "./store.js";
 import "./index.css";
+import { store } from "@/store";
+import { connect } from "./store/actions.js";
 
-import { socket } from "./user_socket.js";
+store.dispatch(connect());
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
