@@ -7,12 +7,6 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   secret_key_base: "/+/HG6oCWDL6MrT8coCLmOclCwzmFj9AFWAL1UsaDqB6DhGaYr39+Yz9FWziY2sS",
   server: false
 
-# In test we don't send emails.
-config :blunderfest, Blunderfest.Mailer, adapter: Swoosh.Adapters.Test
-
-# Disable swoosh api client as it is only required for production adapters.
-config :swoosh, :api_client, false
-
 # Print only warnings and errors during test
 config :logger, level: :warning
 

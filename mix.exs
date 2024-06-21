@@ -43,9 +43,7 @@ defmodule Blunderfest.MixProject do
       {:bandit, "~> 1.2"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:dns_cluster, "~> 0.1.1"},
       {:excoveralls, "~> 0.18", only: :test},
-      {:finch, "~> 0.13"},
       {:floki, ">= 0.30.0", only: :test},
       {:horde, "~> 0.9.0"},
       {:jason, "~> 1.2"},
@@ -56,7 +54,6 @@ defmodule Blunderfest.MixProject do
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 0.20.2"},
       {:phoenix, "~> 1.7.12"},
-      {:swoosh, "~> 1.5"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:vite_phx, "~> 0.3.1"}

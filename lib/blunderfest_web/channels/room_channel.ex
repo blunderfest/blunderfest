@@ -1,11 +1,23 @@
 defmodule BlunderfestWeb.RoomChannel do
   @moduledoc false
+  alias Blunderfest.RoomServer
 
   use BlunderfestWeb, :channel
 
+  require Logger
+
   @impl true
-  def join("room:" <> _room_code, _payload, socket) do
+  def join("room:" <> room_code, _payload, socket) do
     Process.flag(:trap_exit, true)
+
+    case RoomServer.start(room_code) do
+      {:ok, pid} ->
+        Logger.info("Started room #{room_code}: #{inspect(pid)}")
+
+      {:error, {:already_started, pid}} ->
+        Logger.info("Room already started #{room_code}: #{inspect(pid)}")
+    end
+
     {:ok, %{user_id: socket.assigns.user_id}, socket}
   end
 

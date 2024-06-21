@@ -36,7 +36,21 @@ if config_env() == :prod do
   host = System.get_env("PHX_HOST") || "blunderfest.org"
   port = String.to_integer(System.get_env("PORT") || "4000")
 
-  config :blunderfest, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  app_name =
+    System.get_env("FLY_APP_NAME") ||
+      raise "FLY_APP_NAME not available"
+
+  config :libcluster,
+    topologies: [
+      fly6pn: [
+        strategy: Cluster.Strategy.DNSPoll,
+        config: [
+          polling_interval: 5_000,
+          query: "#{app_name}.internal",
+          node_basename: app_name
+        ]
+      ]
+    ]
 
   config :blunderfest, BlunderfestWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
