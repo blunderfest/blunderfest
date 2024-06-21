@@ -35,7 +35,7 @@ defmodule Blunderfest.RoomServer do
     {:noreply, state}
   end
 
-  def start(room_code) do
+  def start_room(room_code) do
     Horde.DynamicSupervisor.start_child(
       Blunderfest.DynamicSupervisor,
       {Blunderfest.RoomServer, [room_code: room_code]}
