@@ -2,10 +2,12 @@ import { configureStore } from "@reduxjs/toolkit";
 import { counterSlice } from "@/features/counter/counterSlice";
 import { socketMiddleware } from "@/features/connectivity/socketMiddleware";
 import { useDispatch, useSelector } from "react-redux";
+import { connectivitySlice } from "@/features/connectivity/connectivitySlice";
 
 export const store = configureStore({
   reducer: {
     counter: counterSlice.reducer,
+    connectivity: connectivitySlice.reducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(socketMiddleware),
 });

@@ -6,17 +6,13 @@ import { connect, connected } from "@/store/actions";
 const socket = new Socket("/socket", { params: { token: window["userToken"] } });
 const channel = socket.channel("room:" + window["roomCode"], {});
 
-function withSource(action) {
-  if (!("meta" in action)) {
-    action = { ...action, meta: {} };
-  }
-
-  if (!("source" in action.meta)) {
+function withSource(action, userId) {
+  if (!("meta" in action) || !("source" in action.meta)) {
     action = {
       ...action,
       meta: {
         ...action.meta,
-        source: window["userId"],
+        source: userId,
       },
     };
   }
@@ -25,17 +21,17 @@ function withSource(action) {
 }
 
 /**
- * @type {import("@reduxjs/toolkit").Middleware}
+ * @type {import("@reduxjs/toolkit").Middleware<{}, import("@/store").RootState, import("@/store").AppDispatch>}
  */
 export const socketMiddleware = (api) => {
   channel.onMessage = (event, payload, _ref) => {
-    const action = {
-      type: event,
-      meta: {
-        source: "server",
+    const action = withSource(
+      {
+        type: event,
+        payload,
       },
-      ...payload,
-    };
+      "server"
+    );
 
     api.dispatch(
       camelcaseKeys(action, {
@@ -53,23 +49,24 @@ export const socketMiddleware = (api) => {
       }
 
       if (channel.state === "closed" || channel.state === "errored") {
-        channel.join().receive("ok", (response) => (window["userId"] = response.user_id));
+        channel.join().receive("ok", (response) => {
+          next(connected(response.user_id));
+        });
+      }
+    } else {
+      const userId = api.getState().connectivity.userId;
+      const actionWithSource = withSource(action, userId);
+      const result = next(actionWithSource);
+
+      if (actionWithSource.meta.source === userId) {
+        const payload = snakecaseKeys(actionWithSource["payload"] ?? {}, {
+          shouldRecurse: () => true,
+        });
+
+        channel.push(actionWithSource.type, payload);
       }
 
-      return next(connected());
+      return result;
     }
-
-    const actionWithSource = withSource(action);
-    const result = next(actionWithSource);
-
-    if (actionWithSource.meta.source === window["userId"]) {
-      const payload = snakecaseKeys(actionWithSource["payload"] ?? {}, {
-        shouldRecurse: () => true,
-      });
-
-      channel.push(actionWithSource.type, payload);
-    }
-
-    return result;
   };
 };

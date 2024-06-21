@@ -18,30 +18,15 @@ defmodule BlunderfestWeb.RoomChannel do
         Logger.info("Room already started #{room_code}: #{inspect(pid)}")
     end
 
-    {:ok, %{user_id: socket.assigns.user_id}, socket}
+    {:ok, %{user_id: socket.assigns.user_id}, socket |> assign(:room_code, room_code)}
   end
 
-  # Channels can be used in a request/response fashion
-  # by sending replies to requests from the client
   @impl true
-  def handle_in("ping", payload, socket) do
-    {:reply, {:ok, payload}, socket}
-  end
+  def handle_in(event, payload, %{assigns: %{user_id: user_id, room_code: room_code}} = socket) do
+    with {:ok} <- RoomServer.handle_event(user_id, room_code, event, payload) do
+      broadcast_from(socket, event, payload)
+    end
 
-  # It is also common to receive messages from the client and
-  # broadcast to everyone in the current topic (room:lobby).
-  @impl true
-  def handle_in("shout", payload, socket) do
-    broadcast(socket, "shout", payload)
     {:noreply, socket}
-  end
-
-  @impl true
-  def handle_in("counter/increment", _payload, socket) do
-    {:reply, {:ok, %{type: "server/some_server_event", payload: socket.assigns}}, socket}
-  end
-
-  def handle_in(_event, _payload, socket) do
-    {:stop, :invalid_event, socket}
   end
 end

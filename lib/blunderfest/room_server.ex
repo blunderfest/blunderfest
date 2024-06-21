@@ -42,12 +42,6 @@ defmodule Blunderfest.RoomServer do
     )
   end
 
-  def terminate(room_code) do
-    pid = whereis(room_code)
-
-    Horde.DynamicSupervisor.terminate_child(Blunderfest.DynamicSupervisor, pid)
-  end
-
   def child_spec(opts) do
     room_code = Keyword.get(opts, :room_code)
 
@@ -76,6 +70,14 @@ defmodule Blunderfest.RoomServer do
     room_code
     |> Blunderfest.Registry.via_tuple()
     |> GenServer.whereis()
+  end
+
+  def handle_event(user_id, room_code, event, payload) do
+    Logger.info(
+      "Handling #{inspect(event)} for #{room_code} for #{user_id} with #{inspect(payload)}"
+    )
+
+    {:ok}
   end
 
   defp get_state_from_store(nil, old_state), do: old_state
