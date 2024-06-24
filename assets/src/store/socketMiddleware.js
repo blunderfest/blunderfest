@@ -2,38 +2,31 @@ import { connect, connected, disconnected } from "@/store/actions";
 import { isAction } from "@reduxjs/toolkit";
 import { Socket } from "phoenix";
 
-function toCamelCase(str) {
-  return str.replace(/_./g, (match) => match.charAt(1).toUpperCase());
+/**
+ * @param {any} obj
+ * @param {(str: string) => string} converter
+ */
+function iterate(obj, converter) {
+  if (Array.isArray(obj)) {
+    return obj.map((value) => iterate(value, converter));
+  } else if (obj !== null && typeof obj === "object") {
+    return Object.keys(obj).reduce((acc, key) => {
+      const convertedKey = converter(key);
+      acc[convertedKey] = iterate(obj[key], converter);
+
+      return acc;
+    }, {});
+  }
+
+  return obj;
 }
 
 function convertKeysToCamelCase(obj) {
-  if (Array.isArray(obj)) {
-    return obj.map(convertKeysToCamelCase);
-  } else if (obj !== null && typeof obj === "object") {
-    return Object.keys(obj).reduce((acc, key) => {
-      const camelCaseKey = toCamelCase(key);
-      acc[camelCaseKey] = convertKeysToCamelCase(obj[key]);
-      return acc;
-    }, {});
-  }
-  return obj;
-}
-
-function toSnakeCase(str) {
-  return str.replace(/([A-Z])/g, "_$1").toLowerCase();
+  return iterate(obj, (str) => str.replace(/_./g, (match) => match.charAt(1).toUpperCase()));
 }
 
 function convertKeysToSnakeCase(obj) {
-  if (Array.isArray(obj)) {
-    return obj.map(convertKeysToSnakeCase);
-  } else if (obj !== null && typeof obj === "object") {
-    return Object.keys(obj).reduce((acc, key) => {
-      const snakeCaseKey = toSnakeCase(key);
-      acc[snakeCaseKey] = convertKeysToSnakeCase(obj[key]);
-      return acc;
-    }, {});
-  }
-  return obj;
+  return iterate(obj, (str) => str.replace(/([A-Z])/g, "_$1").toLowerCase());
 }
 
 export const socket = new Socket("/socket", { params: { token: window["userToken"] } });
@@ -53,15 +46,16 @@ export const socketMiddleware = (api) => {
         source: "server",
       },
       ...payload
-    } = originalPayload;
+    } = originalPayload ?? {};
 
     const action = {
       type: event,
       meta: meta,
-      payload: payload,
+      payload: payload.payload ?? payload,
     };
 
-    api.dispatch(convertKeysToCamelCase(action));
+    const message = convertKeysToCamelCase(action);
+    api.dispatch(message);
 
     return originalPayload;
   };
@@ -86,8 +80,8 @@ export const socketMiddleware = (api) => {
       "source" in action.meta &&
       action.meta.source === api.getState().connectivity.userId
     ) {
-      const { type, ...payload } = action;
-      channel.push(type, convertKeysToSnakeCase(payload));
+      const { type, ...rest } = action;
+      channel.push(type, convertKeysToSnakeCase(rest));
     }
 
     return result;
