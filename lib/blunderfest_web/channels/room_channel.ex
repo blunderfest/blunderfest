@@ -1,5 +1,6 @@
 defmodule BlunderfestWeb.RoomChannel do
   @moduledoc false
+  alias Blunderfest.Core.Room
   alias Blunderfest.RoomServer
   alias BlunderfestWeb.Presence
 
@@ -11,7 +12,14 @@ defmodule BlunderfestWeb.RoomChannel do
   def join("room:" <> room_code, _payload, socket) do
     send(self(), :after_join)
 
-    {:ok, %{user_id: socket.assigns.user_id}, socket |> assign(:room_code, room_code)}
+    {:ok,
+     %{
+       user_id: socket.assigns.user_id,
+       room: %Room{
+         room_code: room_code,
+         timestamp: System.system_time(:second)
+       }
+     }, socket |> assign(:room_code, room_code)}
   end
 
   @impl Phoenix.Channel

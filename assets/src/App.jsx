@@ -2,6 +2,7 @@ import { useState } from "react";
 import { tv } from "tailwind-variants";
 import { Counter } from "./features/counter/Counter";
 import { classnames } from "./classnames";
+import { Room } from "./features/room/Room";
 
 const button = tv({
   base: "rounded-full bg-blue-500 font-medium text-white active:opacity-80",
@@ -41,6 +42,7 @@ export function App() {
           Edit <code>src/App.jsx</code> and save to test HMR
         </p>
       </div>
+      <Room />
       <button className={button({ size: "sm", color: "secondary" })}>Click me</button>
       <button className={button({ size: "sm", color: "primary" })}>Click me</button>
       <p className={classnames("h-10", "size-5", "bg-blue-50", "border", "w-10")}>
