@@ -4,7 +4,6 @@ import { counterSlice } from "@/features/counter/counterSlice";
 import { socketMiddleware } from "./socketMiddleware";
 import { connectivitySlice } from "@/features/connectivity/connectivitySlice";
 import { roomSlice } from "@/features/room/roomSlice";
-import { appendUserIdMiddleware } from "./appendUserIdMiddleware";
 
 const rootReducer = combineReducers({
   [counterSlice.reducerPath]: counterSlice.reducer,
@@ -14,7 +13,7 @@ const rootReducer = combineReducers({
 
 export const store = configureStore({
   reducer: rootReducer,
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat([appendUserIdMiddleware, socketMiddleware]),
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat([socketMiddleware]),
 });
 
 /**
@@ -22,10 +21,20 @@ export const store = configureStore({
  * @typedef {typeof store.dispatch} AppDispatch
  */
 
-/**
- * @type {import("react-redux").UseDispatch<AppDispatch>}
- */
-export const useAppDispatch = useDispatch;
+export const useAppDispatch = () => {
+  const dispatch = useDispatch();
+
+  return function d(/** @type {import("@reduxjs/toolkit").UnknownAction} */ action) {
+    const userId = store.getState().connectivity.userId;
+
+    return dispatch({
+      ...action,
+      meta: {
+        source: userId,
+      },
+    });
+  };
+};
 
 /**
  * @type {import("react-redux").UseSelector<RootState>}

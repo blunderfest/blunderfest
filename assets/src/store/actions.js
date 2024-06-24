@@ -1,22 +1,14 @@
 import { createAction } from "@reduxjs/toolkit";
 
-export const connect = createAction("room/connect", () => ({
-  meta: {
-    source: "server",
-  },
-  payload: {},
-}));
+export const connect = createAction("connect");
 
 export const connected = createAction(
-  "room/connected",
+  "connected",
   /**
    * @param {string} userId
    * @param {Room} room
    */
   (userId, room) => ({
-    meta: {
-      source: "server",
-    },
     payload: {
       userId: userId,
       room: room,
@@ -24,43 +16,34 @@ export const connected = createAction(
   })
 );
 
-export const disconnected = createAction("room/disconnected", () => ({
-  meta: {
-    source: "server",
-  },
-  payload: {},
-}));
+export const disconnected = createAction("disconnected");
 
-export const joined = createAction(
-  "room/joined",
+export const presenceState = createAction(
+  "presence_state",
   /**
-   * @param {string} userId
-   * @param {Meta} meta
+   * @param {Record<string, {
+   *   metas: Meta[]
+   * }>} presences
    */
-  (userId, meta) => ({
-    meta: {
-      source: "server",
-    },
-    payload: {
-      userId,
-      meta,
-    },
+  (presences) => ({
+    payload: presences,
   })
 );
 
-export const left = createAction(
-  "room/left",
+export const presenceDiff = createAction(
+  "presence_diff",
   /**
-   * @param {string} userId
-   * @param {Meta} meta
+   * @param {Record<string, {
+   *   metas: Meta[]
+   * }>} joins
+   * @param {Record<string, {
+   *   metas: Meta[]
+   * }>} leaves
    */
-  (userId, meta) => ({
-    meta: {
-      source: "server",
-    },
+  (joins, leaves) => ({
     payload: {
-      userId,
-      meta,
+      joins,
+      leaves,
     },
   })
 );

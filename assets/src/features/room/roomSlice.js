@@ -1,4 +1,4 @@
-import { connected, joined, left } from "@/store/actions";
+import { connected, presenceDiff, presenceState } from "@/store/actions";
 import { createSelector, createSlice } from "@reduxjs/toolkit";
 
 /**
@@ -20,22 +20,32 @@ export const roomSlice = createSlice({
         state.roomCode = action.payload.room.roomCode;
         state.timestamp = action.payload.room.timestamp;
       })
-      .addCase(joined, (state, action) => {
-        const { userId, meta } = action.payload;
+      .addCase(presenceState, (state, action) => {
+        state.users = action.payload;
+      })
+      .addCase(presenceDiff, (state, action) => {
+        const { joins, leaves } = action.payload;
 
-        if (!state.users[userId]) {
-          state.users[userId] = {};
+        for (const userId in joins) {
+          if (!(userId in state.users)) {
+            state.users[userId] = { metas: [] };
+          }
+
+          joins[userId].metas.forEach((meta) => state.users[userId].metas.push(meta));
         }
 
-        state.users[userId][meta.phxRef] = meta;
-      })
-      .addCase(left, (state, action) => {
-        const { userId, meta } = action.payload;
+        for (const userId in leaves) {
+          if (userId in state.users) {
+            const metas = state.users[userId].metas.filter((meta) =>
+              leaves[userId].metas.find((leave) => leave.phxRef !== meta.phxRef)
+            );
 
-        delete state.users[userId][meta.phxRef];
-
-        if (Object.keys(state.users[userId]).length === 0) {
-          delete state.users[userId];
+            if (metas.length) {
+              state.users[userId].metas = metas;
+            } else {
+              delete state.users[userId];
+            }
+          }
         }
       });
   },

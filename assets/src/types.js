@@ -11,5 +11,5 @@
  * @typedef {Object} Room
  * @property {string} roomCode
  * @property {number} timestamp
- * @property {Record<string, Record<string, Meta>>} users
+ * @property {Record<string, {metas: Meta[]}>} users
  */
