@@ -52,7 +52,7 @@ export default defineConfig(({ command }) => {
           main: "./src/main.jsx",
         },
         output: {
-          manualChunks: (id) => {
+          manualChunks: (id: string) => {
             if (id.includes("redux")) {
               return "redux";
             }

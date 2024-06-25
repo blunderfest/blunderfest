@@ -1,10 +1,9 @@
+import { RootState } from "@/store";
 import { connected, presenceDiff, presenceState } from "@/store/actions";
+import { Room } from "@/types";
 import { createSelector, createSlice } from "@reduxjs/toolkit";
 
-/**
- * @type {Room}
- */
-const intialState = {
+const intialState: Room = {
   roomCode: "",
   timestamp: 0,
   users: [],
@@ -58,10 +57,6 @@ export const roomSlice = createSlice({
   },
 });
 
-const selectUsers =
-  /**
-   * @param {import("@/store").RootState} state
-   */
-  (state) => state.room.users;
+const selectUsers = (state: RootState) => state.room.users;
 
 export const selectActiveUsers = createSelector(selectUsers, (users) => users.map((user) => user.id));

@@ -1,5 +1,5 @@
 import { decrement, increment, incrementByAmount } from "@/store/actions";
-import { useAppDispatch, useAppSelector } from "@/store";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
 
 export function Counter() {
   const count = useAppSelector((state) => state.counter.value);

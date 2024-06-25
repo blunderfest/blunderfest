@@ -3,7 +3,7 @@ import { tv } from "tailwind-variants";
 import { Counter } from "./features/counter/Counter";
 import { classnames } from "./classnames";
 import { Room } from "./features/room/Room";
-import { useAppSelector } from "./store";
+import { useAppSelector } from "./store/hooks";
 
 const button = tv({
   base: "rounded-full bg-blue-500 font-medium text-white active:opacity-80",
