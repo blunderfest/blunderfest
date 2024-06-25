@@ -1,5 +1,4 @@
-import { configureStore, combineReducers, UnknownAction } from "@reduxjs/toolkit";
-import { UseSelector, useDispatch, useSelector } from "react-redux";
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { counterSlice } from "@/features/counter/counterSlice";
 import { socketMiddleware } from "./socketMiddleware";
 import { connectivitySlice } from "@/features/connectivity/connectivitySlice";

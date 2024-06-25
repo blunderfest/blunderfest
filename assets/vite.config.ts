@@ -49,7 +49,7 @@ export default defineConfig(({ command }) => {
       target: "esnext", // build for recent browsers
       rollupOptions: {
         input: {
-          main: "./src/main.jsx",
+          main: "./src/main.tsx",
         },
         output: {
           manualChunks: (id: string) => {
