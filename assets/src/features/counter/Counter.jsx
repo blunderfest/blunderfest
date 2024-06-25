@@ -7,7 +7,7 @@ export function Counter() {
 
   return (
     <div>
-      <div>
+      <div className="flex gap-2">
         <button aria-label="Increment value" onClick={() => dispatch(increment())}>
           Increment
         </button>

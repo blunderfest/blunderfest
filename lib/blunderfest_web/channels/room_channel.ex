@@ -34,9 +34,13 @@ defmodule BlunderfestWeb.RoomChannel do
   end
 
   @impl Phoenix.Channel
-  def handle_in(event, payload, %{assigns: %{user_id: user_id, room_code: room_code}} = socket) do
+  def handle_in(
+        event,
+        %{"meta" => meta} = payload,
+        %{assigns: %{user_id: user_id, room_code: room_code}} = socket
+      ) do
     with {:ok} <- RoomServer.handle_event(user_id, room_code, event, payload) do
-      broadcast_from(socket, event, payload)
+      broadcast_from(socket, event, %{payload | "meta" => Map.put(meta, "source", "server")})
     end
 
     {:noreply, socket}

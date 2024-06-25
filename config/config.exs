@@ -24,7 +24,7 @@ config :blunderfest, BlunderfestWeb.Endpoint,
 
 # Configures Elixir's Logger
 config :logger, :console,
-  format: "$date $time\t$node\t[$level]\t$message\n",
+  format: "$node\t[$level]\t$message\n",
   metadata: [:request_id]
 
 # Use Jason for JSON parsing in Phoenix

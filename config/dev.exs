@@ -21,6 +21,9 @@ config :blunderfest, BlunderfestWeb.Endpoint,
     ]
   ]
 
+# Configures Elixir's Logger
+config :logger, :console, format: "$date $time\t$node\t[$level]\t$message\n"
+
 # ## SSL Support
 #
 # In order to use HTTPS in development, a self-signed

@@ -10,7 +10,7 @@ store.dispatch(connect());
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <Provider store={store}>
+    <Provider store={store} stabilityCheck="once" identityFunctionCheck="once">
       <App />
     </Provider>
   </React.StrictMode>

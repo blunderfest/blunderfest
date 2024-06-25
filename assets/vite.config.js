@@ -42,7 +42,7 @@ export default defineConfig(({ command }) => {
         transformMixedEsModules: true,
       },
       emptyOutDir: true,
-      sourcemap: false,
+      sourcemap: true,
       manifest: true,
       minify: true,
       outDir: "../priv/static",

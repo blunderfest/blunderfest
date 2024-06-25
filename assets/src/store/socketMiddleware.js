@@ -1,33 +1,6 @@
 import { connect, connected, disconnected } from "@/store/actions";
-import { isAction } from "@reduxjs/toolkit";
+import { convertKeysToCamelCase, deepGet, convertKeysToSnakeCase } from "@/utils";
 import { Socket } from "phoenix";
-
-/**
- * @param {any} obj
- * @param {(str: string) => string} converter
- */
-function iterate(obj, converter) {
-  if (Array.isArray(obj)) {
-    return obj.map((value) => iterate(value, converter));
-  } else if (obj !== null && typeof obj === "object") {
-    return Object.keys(obj).reduce((acc, key) => {
-      const convertedKey = converter(key);
-      acc[convertedKey] = iterate(obj[key], converter);
-
-      return acc;
-    }, {});
-  }
-
-  return obj;
-}
-
-function convertKeysToCamelCase(obj) {
-  return iterate(obj, (str) => str.replace(/_./g, (match) => match.charAt(1).toUpperCase()));
-}
-
-function convertKeysToSnakeCase(obj) {
-  return iterate(obj, (str) => str.replace(/([A-Z])/g, "_$1").toLowerCase());
-}
 
 export const socket = new Socket("/socket", { params: { token: window["userToken"] } });
 export const channel = socket.channel("room:" + window["roomCode"], {});
@@ -60,30 +33,30 @@ export const socketMiddleware = (api) => {
     return originalPayload;
   };
 
-  return (next) => (action) => {
-    if (connect.match(action)) {
-      socket.connect();
-      channel.join().receive("ok", (response) => {
-        next(connected(response.user_id, response.room));
-      });
+  return (next) =>
+    /**
+     * @param {import ("@reduxjs/toolkit").UnknownAction} action
+     */
+    (action) => {
+      if (connect.match(action)) {
+        socket.connect();
+        channel.join().receive("ok", (response) => {
+          next(connected(response.user_id, response.room));
+        });
 
-      return;
-    }
+        return;
+      }
 
-    const result = next(action);
+      const result = next(action);
 
-    if (
-      isAction(action) &&
-      "meta" in action &&
-      typeof action.meta === "object" &&
-      action.meta !== null &&
-      "source" in action.meta &&
-      action.meta.source === api.getState().connectivity.userId
-    ) {
-      const { type, ...rest } = action;
-      channel.push(type, convertKeysToSnakeCase(rest));
-    }
+      if (
+        deepGet(action, ["meta", "source"]) === "local" &&
+        deepGet(action, ["meta", "triggeredBy"]) === api.getState().connectivity.userId
+      ) {
+        const { type, ...rest } = action;
+        channel.push(type, convertKeysToSnakeCase(rest));
+      }
 
-    return result;
-  };
+      return result;
+    };
 };

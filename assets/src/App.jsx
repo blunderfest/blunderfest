@@ -3,6 +3,7 @@ import { tv } from "tailwind-variants";
 import { Counter } from "./features/counter/Counter";
 import { classnames } from "./classnames";
 import { Room } from "./features/room/Room";
+import { useAppSelector } from "./store";
 
 const button = tv({
   base: "rounded-full bg-blue-500 font-medium text-white active:opacity-80",
@@ -31,11 +32,12 @@ const button = tv({
 
 export function App() {
   const [count, setCount] = useState(0);
+  const userId = useAppSelector((state) => state.connectivity.userId);
 
   return (
     <div className="h-screen w-screen bg-background text-text antialiased">
-      <h1 className="text-lg font-bold text-red-600">Vite + React</h1>
-      <div className="card">
+      <h1 className="text-lg font-bold text-red-600">{userId}</h1>
+      <div className="card flex gap-5">
         <Counter />
         <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
         <p>

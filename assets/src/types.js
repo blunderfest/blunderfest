@@ -2,8 +2,11 @@
  * @typedef {Object} Meta
  * @property {string} phxRef
  * @property {string} onlineAt
- *
- * @typedef {Object} Presence
+ */
+
+/**
+ * @typedef {Object} User
+ * @property {string} id
  * @property {Meta[]} metas
  */
 
@@ -11,5 +14,5 @@
  * @typedef {Object} Room
  * @property {string} roomCode
  * @property {number} timestamp
- * @property {Record<string, {metas: Meta[]}>} users
+ * @property {User[]} users
  */

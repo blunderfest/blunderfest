@@ -7,7 +7,7 @@ import { createSelector, createSlice } from "@reduxjs/toolkit";
 const intialState = {
   roomCode: "",
   timestamp: 0,
-  users: {},
+  users: [],
 };
 
 export const roomSlice = createSlice({
@@ -21,40 +21,47 @@ export const roomSlice = createSlice({
         state.timestamp = action.payload.room.timestamp;
       })
       .addCase(presenceState, (state, action) => {
-        state.users = action.payload;
+        state.users = Object.keys(action.payload).map((userId) => ({
+          id: userId,
+          metas: action.payload[userId].metas,
+        }));
       })
       .addCase(presenceDiff, (state, action) => {
         const { joins, leaves } = action.payload;
 
         for (const userId in joins) {
-          if (!(userId in state.users)) {
-            state.users[userId] = { metas: [] };
-          }
+          const user = state.users.find((user) => user.id === userId);
 
-          joins[userId].metas.forEach((meta) => state.users[userId].metas.push(meta));
+          if (user) {
+            joins[userId].metas.forEach((meta) => {
+              user.metas.push(meta);
+            });
+          } else {
+            state.users.push({
+              id: userId,
+              metas: joins[userId].metas,
+            });
+          }
         }
 
         for (const userId in leaves) {
-          if (userId in state.users) {
-            const metas = state.users[userId].metas.filter((meta) =>
-              leaves[userId].metas.find((leave) => leave.phxRef !== meta.phxRef)
-            );
+          const user = state.users.find((user) => user.id === userId);
 
-            if (metas.length) {
-              state.users[userId].metas = metas;
-            } else {
-              delete state.users[userId];
-            }
+          if (user) {
+            const metas = user.metas.filter((meta) => leaves[userId].metas.find((leave) => leave.phxRef !== meta.phxRef));
+            user.metas = metas;
           }
         }
+
+        state.users = state.users.filter((user) => user.metas.length > 0);
       });
   },
 });
 
-export const selectActiveUsers = createSelector(
+const selectUsers =
   /**
    * @param {import("@/store").RootState} state
    */
-  (state) => state.room.users,
-  (users) => Object.keys(users)
-);
+  (state) => state.room.users;
+
+export const selectActiveUsers = createSelector(selectUsers, (users) => users.map((user) => user.id));
