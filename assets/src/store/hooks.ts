@@ -5,7 +5,7 @@ import { UnknownAction } from "@reduxjs/toolkit";
 export const useAppDispatch = () => {
   const dispatch = useDispatch();
 
-  return function d(action: UnknownAction) {
+  return function (action: UnknownAction) {
     const userId = store.getState().connectivity.userId;
 
     return dispatch({

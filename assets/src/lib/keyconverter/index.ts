@@ -1,8 +1,4 @@
-export function deepGet(obj: Record<string, any>, keys: string[]): any {
-  return keys.reduce((xs: any, x: string) => xs?.[x] ?? null, obj);
-}
-
-export function convert(obj: any, converter: (str: string) => string): any {
+function convert(obj: any, converter: (str: string) => string): any {
   if (Array.isArray(obj)) {
     return obj.map((value) => convert(value, converter));
   } else if (obj !== null && typeof obj === "object") {
