@@ -3,7 +3,6 @@ import { MdOutlineLightMode, MdDarkMode } from "react-icons/md";
 
 export function ColorSchemeSwitcher() {
   const [scheme, setScheme] = useLocalStorage("color-scheme", "dark", { raw: true });
-  console.log(scheme);
   const isDarkMode = scheme === "dark";
 
   const handleClick = () => {
