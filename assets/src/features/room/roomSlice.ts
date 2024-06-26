@@ -5,7 +5,6 @@ import { createSelector, createSlice } from "@reduxjs/toolkit";
 
 const intialState: Room = {
   roomCode: "",
-  timestamp: 0,
   users: [],
 };
 
@@ -17,7 +16,6 @@ export const roomSlice = createSlice({
     builder
       .addCase(connected, (state, action) => {
         state.roomCode = action.payload.room.roomCode;
-        state.timestamp = action.payload.room.timestamp;
       })
       .addCase(presenceState, (state, action) => {
         state.users = Object.keys(action.payload).map((userId) => ({
@@ -57,6 +55,7 @@ export const roomSlice = createSlice({
   },
 });
 
-const selectUsers = (state: RootState) => state.room.users;
-
-export const selectActiveUsers = createSelector(selectUsers, (users) => users.map((user) => user.id));
+export const selectActiveUsers = createSelector(
+  (state: RootState) => state.room.users,
+  (users) => users.map((user) => user.id)
+);

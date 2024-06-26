@@ -10,6 +10,5 @@ export interface User {
 
 export interface Room {
   roomCode: string;
-  timestamp: number;
   users: User[];
 }

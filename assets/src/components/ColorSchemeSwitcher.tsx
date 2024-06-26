@@ -1,5 +1,6 @@
 import { useLocalStorage } from "react-use";
 import { MdOutlineLightMode, MdDarkMode } from "react-icons/md";
+import { Button } from "./Button";
 
 export function ColorSchemeSwitcher() {
   const [scheme, setScheme] = useLocalStorage("color-scheme", "dark", { raw: true });
@@ -17,11 +18,8 @@ export function ColorSchemeSwitcher() {
   };
 
   return (
-    <button
-      className="flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-      onClick={handleClick}
-      aria-label={`Toggle ${isDarkMode ? "light" : "dark"} mode`}>
+    <Button onClick={handleClick} color="secondary" size="md" aria-label={`Toggle ${isDarkMode ? "light" : "dark"} mode`}>
       {isDarkMode ? <MdOutlineLightMode /> : <MdDarkMode />}
-    </button>
+    </Button>
   );
 }

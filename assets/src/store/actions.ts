@@ -48,11 +48,3 @@ export const presenceDiff = createAction(
     },
   })
 );
-
-export const increment = createAction("counter/increment");
-export const decrement = createAction("counter/decrement");
-export const incrementByAmount = createAction("counter/incrementByAmount", (amount: number) => ({
-  payload: {
-    amount: amount,
-  },
-}));

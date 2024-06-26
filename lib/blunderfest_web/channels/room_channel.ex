@@ -16,8 +16,7 @@ defmodule BlunderfestWeb.RoomChannel do
      %{
        user_id: socket.assigns.user_id,
        room: %Room{
-         room_code: room_code,
-         timestamp: System.system_time(:second)
+         room_code: room_code
        }
      }, socket |> assign(:room_code, room_code)}
   end
