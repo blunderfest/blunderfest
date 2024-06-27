@@ -2,10 +2,12 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { socketMiddleware } from "../features/connectivity/socketMiddleware";
 import { connectivitySlice } from "@/features/connectivity/connectivitySlice";
 import { roomSlice } from "@/features/room/roomSlice";
+import { boardSlice } from "@/features/board/boardSlice";
 
 const rootReducer = combineReducers({
   [connectivitySlice.reducerPath]: connectivitySlice.reducer,
   [roomSlice.reducerPath]: roomSlice.reducer,
+  [boardSlice.reducerPath]: boardSlice.reducer,
 });
 
 export const store = configureStore({

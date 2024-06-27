@@ -1,6 +1,7 @@
 import { Room } from "./features/room/Room";
 import { useAppSelector } from "./store/hooks";
 import { ColorSchemeSwitcher } from "./components/ColorSchemeSwitcher";
+import { Board } from "./features/board/Board";
 
 export function App() {
   const userId = useAppSelector((state) => state.connectivity.userId);
@@ -12,6 +13,7 @@ export function App() {
       </div>
       <h1 className="text-lg font-bold text-red-600">{userId}</h1>
       <Room />
+      <Board />
     </div>
   );
 }

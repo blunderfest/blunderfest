@@ -27,4 +27,4 @@ blunderfest-*.tar
 
 /priv/static
 .pnpm-store
-assets2
+.elixir_ls
