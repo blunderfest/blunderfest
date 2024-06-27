@@ -24,13 +24,7 @@ export default defineConfig(({ command }) => {
       },
     },
     publicDir: "static",
-    plugins: [
-      react({
-        babel: {
-          plugins: [["babel-plugin-react-compiler"]],
-        },
-      }),
-    ],
+    plugins: [react()],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
