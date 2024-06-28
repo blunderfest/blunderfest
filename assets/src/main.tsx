@@ -4,6 +4,7 @@ import { App } from "./App.tsx";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import { connect } from "./store/actions";
+import "@/features/i18n/i18n";
 import "./index.css";
 
 store.dispatch(connect());

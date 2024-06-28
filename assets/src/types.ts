@@ -1,14 +1,20 @@
-export interface Meta {
+export type Meta = {
   phxRef: string;
   onlineAt: string;
-}
+};
 
-export interface User {
+export type User = {
   id: string;
   metas: Meta[];
-}
+};
 
-export interface Room {
+export type Room = {
   roomCode: string;
   users: User[];
-}
+};
+
+export type Square = {
+  squareIndex: number;
+  color: "dark" | "light";
+  piece: "k" | "K" | "q" | "Q" | "r" | "R" | "b" | "B" | "n" | "N" | "p" | "P" | null;
+};

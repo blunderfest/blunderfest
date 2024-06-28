@@ -48,3 +48,5 @@ export const presenceDiff = createAction(
     },
   })
 );
+
+export const flipBoard = createAction("flip_board");

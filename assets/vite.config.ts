@@ -1,11 +1,10 @@
-import { defineConfig } from "vite";
+import { UserConfig, defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
   if (isDev) {
-    // Terminate the watcher when Phoenix quits
     process.stdin.on("close", () => {
       process.exit(0);
     });
@@ -13,8 +12,7 @@ export default defineConfig(({ command }) => {
     process.stdin.resume();
   }
 
-  /** @type {import('vite').UserConfig} */
-  const config = {
+  const config: UserConfig = {
     server: {
       proxy: {
         "/socket": {
@@ -36,17 +34,25 @@ export default defineConfig(({ command }) => {
         transformMixedEsModules: true,
       },
       emptyOutDir: true,
-      sourcemap: true,
+      sourcemap: false,
       manifest: true,
       minify: true,
-      outDir: "../priv/static",
-      target: "esnext", // build for recent browsers
+      outDir: path.resolve(__dirname, "../priv/static"),
+      target: "esnext",
       rollupOptions: {
         input: {
           main: "./src/main.tsx",
         },
         output: {
           manualChunks: (id: string) => {
+            if (id.includes("i18n")) {
+              return "i18n";
+            }
+
+            if (id.includes("framer-motion")) {
+              return "framer-motion";
+            }
+
             if (id.includes("redux")) {
               return "redux";
             }

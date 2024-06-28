@@ -1,9 +1,8 @@
 import { useAppSelector } from "@/store/hooks";
 import { selectActiveUsers } from "./roomSlice";
-import { shallowEqual } from "react-redux";
 
 export function Room() {
-  const activeUsers = useAppSelector(selectActiveUsers, shallowEqual);
+  const activeUsers = useAppSelector(selectActiveUsers);
   const userId = useAppSelector((state) => state.connectivity.userId);
 
   return (

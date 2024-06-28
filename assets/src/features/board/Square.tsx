@@ -1,7 +1,9 @@
-import { ComponentProps } from "react";
-import { VariantProps, tv } from "tailwind-variants";
+import { useAppSelector } from "@/store/hooks";
+import { tv } from "tailwind-variants";
+import { SvgPiece } from "./pieces/SvgPiece";
+import { motion } from "framer-motion";
 
-const square = tv({
+const recipe = tv({
   base: "relative aspect-square",
   slots: {
     piece: "absolute h-full w-full cursor-pointer",
@@ -40,16 +42,17 @@ const square = tv({
   ],
 });
 
-type SquareVariants = VariantProps<typeof square>;
-
-export function Square(props: SquareVariants & ComponentProps<"div">) {
-  const { base, piece, selected, highlighted } = square(props);
+export function Square(props: Readonly<{ squareIndex: number }>) {
+  const square = useAppSelector((state) => state.board.squares[props.squareIndex]);
+  const styles = recipe(square);
 
   return (
-    <div className={base()} {...props}>
-      <div className={highlighted()}></div>
-      <div className={selected()}></div>
-      <div className={piece()}></div>
-    </div>
+    <motion.div className={styles.base()} onDragOver={() => console.log(props.squareIndex)}>
+      <div className={styles.highlighted()}></div>
+      <div className={styles.selected()}></div>
+      <div className={styles.piece()}>
+        <SvgPiece piece={square.piece} />
+      </div>
+    </motion.div>
   );
 }

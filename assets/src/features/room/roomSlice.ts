@@ -2,6 +2,7 @@ import { RootState } from "@/store";
 import { connected, presenceDiff, presenceState } from "@/store/actions";
 import { Room } from "@/types";
 import { createSelector, createSlice } from "@reduxjs/toolkit";
+import { shallowEqual } from "react-redux";
 
 const intialState: Room = {
   roomCode: "",
@@ -57,5 +58,10 @@ export const roomSlice = createSlice({
 
 export const selectActiveUsers = createSelector(
   (state: RootState) => state.room.users,
-  (users) => users.map((user) => user.id)
+  (users) => users.map((user) => user.id),
+  {
+    memoizeOptions: {
+      resultEqualityCheck: shallowEqual,
+    },
+  }
 );
