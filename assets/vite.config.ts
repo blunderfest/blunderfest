@@ -37,7 +37,7 @@ export default defineConfig(({ command }) => {
       emptyOutDir: true,
       sourcemap: true,
       manifest: true,
-      minify: true,
+      minify: false,
       outDir: "../priv/static",
       target: "esnext", // build for recent browsers
       rollupOptions: {
@@ -45,13 +45,21 @@ export default defineConfig(({ command }) => {
           main: "./src/main.tsx",
         },
         output: {
-          manualChunks: (id: string) => {
+          manualChunks: (id) => {
+            if (id.includes("dnd-kit")) {
+              return "dnd-kit";
+            }
+
             if (id.includes("redux")) {
               return "redux";
             }
 
-            if (id.includes("react") || id.includes("scheduler.production")) {
-              return "react";
+            if (id.includes("i18n")) {
+              return "i18n";
+            }
+
+            if (id.includes("node_modules")) {
+              return "vendor";
             }
           },
         },

@@ -1,7 +1,7 @@
 import { useAppSelector } from "@/store/hooks";
 import { tv } from "tailwind-variants";
 import { SvgPiece } from "./pieces/SvgPiece";
-import { motion } from "framer-motion";
+import { useDroppable } from "@dnd-kit/core";
 
 const recipe = tv({
   base: "relative aspect-square",
@@ -32,27 +32,38 @@ const recipe = tv({
     {
       highlighted: true,
       color: "dark",
-      className: "bg-blue-400/50 dark:bg-blue-400/25",
+      className: {
+        highlighted: "bg-yellow-400/80 dark:bg-yellow-400/70",
+      },
     },
     {
       highlighted: true,
       color: "light",
-      className: "bg-blue-400/50 dark:bg-blue-400/15",
+      className: {
+        highlighted: "bg-yellow-400/50 dark:bg-yellow-400/50",
+      },
     },
   ],
 });
 
 export function Square(props: Readonly<{ squareIndex: number }>) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `${props.squareIndex}`,
+  });
+
   const square = useAppSelector((state) => state.board.squares[props.squareIndex]);
-  const styles = recipe(square);
+  const styles = recipe({
+    color: square.color,
+    highlighted: isOver,
+  });
 
   return (
-    <motion.div className={styles.base()} onDragOver={() => console.log(props.squareIndex)}>
+    <div ref={setNodeRef} className={styles.base()}>
       <div className={styles.highlighted()}></div>
       <div className={styles.selected()}></div>
       <div className={styles.piece()}>
-        <SvgPiece piece={square.piece} />
+        <SvgPiece id={`${props.squareIndex}`} piece={square.piece} />
       </div>
-    </motion.div>
+    </div>
   );
 }
