@@ -1,24 +1,8 @@
 import { connect, connected } from "@/store/actions";
-import { Action, Middleware, isAction } from "@reduxjs/toolkit";
+import { Middleware, isAction } from "@reduxjs/toolkit";
 import { createSocket } from "./createSocket";
 import { convertKeysToCamelCase } from "@/lib/keyconverter";
 import { RootState } from "@/store";
-
-function isCustomAction(action: unknown): action is Action & {
-  meta: {
-    source: "local" | "server";
-    triggeredBy: string;
-  };
-} {
-  return (
-    isAction(action) &&
-    "meta" in action &&
-    typeof action.meta === "object" &&
-    action.meta !== null &&
-    "source" in action.meta &&
-    "triggeredBy" in action.meta
-  );
-}
 
 export const socketMiddleware: Middleware<RootState> = (api) => {
   const { socket, channel } = createSocket(api.dispatch);
@@ -37,13 +21,17 @@ export const socketMiddleware: Middleware<RootState> = (api) => {
 
     const result = next(action);
 
-    if (
-      isCustomAction(action) &&
-      action.meta.source === "local" &&
-      action.meta.triggeredBy === api.getState().connectivity.userId
-    ) {
+    if (isAction(action) && !("meta" in action)) {
       const { type, ...payload } = action;
-      channel.push(type, payload);
+      const userId = api.getState().connectivity.userId;
+
+      channel.push(type, {
+        ...payload,
+        meta: {
+          triggeredBy: userId,
+          source: "local",
+        },
+      });
     }
 
     return result;

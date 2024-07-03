@@ -1,12 +1,11 @@
 import { RootState } from "@/store";
-import { flipBoard, move } from "@/store/actions";
+import { move } from "@/store/actions";
 import type { Game } from "@/types";
 import { createSelector, createSlice } from "@reduxjs/toolkit";
 import { shallowEqual } from "react-redux";
 
 type State = {
   games: Record<string, Game>;
-  flipped: boolean;
 };
 
 const defaultSquares = (
@@ -23,7 +22,6 @@ const defaultSquares = (
 ).flat();
 
 const initialState: State = {
-  flipped: false,
   games: {
     some_game: {
       gameCode: "some_game",
@@ -41,18 +39,14 @@ export const boardSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers(builder) {
-    builder
-      .addCase(flipBoard, (state) => {
-        state.flipped = !state.flipped;
-      })
-      .addCase(move, (state, action) => {
-        const game = state.games[action.payload.gameCode];
-        const from = game.squares[action.payload.from];
-        const to = game.squares[action.payload.to];
+    builder.addCase(move, (state, action) => {
+      const game = state.games[action.payload.gameCode];
+      const from = game.squares[action.payload.from];
+      const to = game.squares[action.payload.to];
 
-        to.piece = from.piece;
-        from.piece = null;
-      });
+      to.piece = from.piece;
+      from.piece = null;
+    });
   },
 });
 
@@ -61,20 +55,11 @@ const selectGame = createSelector(
   (games, gameCode) => games[gameCode]
 );
 
-export const selectSquares = createSelector(
-  [selectGame, (state: RootState, _gameCode: string) => state.board.flipped],
-  (game, flipped) => {
-    const ranks = flipped ? [...Array(8).keys()] : [...Array(8).keys()].reverse();
-    const files = flipped ? [...Array(8).keys()].reverse() : [...Array(8).keys()];
-
-    return ranks.flatMap((rank) => files.map((file) => game.squares[rank * 8 + file]));
+export const selectSquares = createSelector(selectGame, (game) => game.squares, {
+  memoizeOptions: {
+    resultEqualityCheck: shallowEqual,
   },
-  {
-    memoizeOptions: {
-      resultEqualityCheck: shallowEqual,
-    },
-  }
-);
+});
 
 export const selectSquare = createSelector(
   [selectGame, selectSquares, (_state: RootState, _gameCode: string, squareIndex: number) => squareIndex],

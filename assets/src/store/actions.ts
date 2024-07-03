@@ -49,8 +49,6 @@ export const presenceDiff = createAction(
   })
 );
 
-export const flipBoard = createAction("flip_board");
-
 export const move = createAction("move", (gameCode: string, from: number, to: number) => ({
   payload: {
     gameCode,
