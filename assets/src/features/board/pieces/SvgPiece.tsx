@@ -2,7 +2,7 @@ import { pieces } from "./pieces";
 import { tv } from "tailwind-variants";
 import { useTranslation } from "react-i18next";
 import { UseDroppableArguments, useDraggable } from "@dnd-kit/core";
-import { useId } from "react";
+import { memo, useId } from "react";
 
 const recipe = tv({
   base: "relative z-0 cursor-grab touch-none outline-none hover:scale-110",
@@ -13,7 +13,7 @@ const recipe = tv({
   },
 });
 
-export function SvgPiece(props: Readonly<{ data: UseDroppableArguments["data"]; piece: string | null }>) {
+export const SvgPiece = memo((props: Readonly<{ data: UseDroppableArguments["data"]; piece: string | null }>) => {
   const info = pieces.get(props.piece);
   const { t } = useTranslation();
 
@@ -52,4 +52,4 @@ export function SvgPiece(props: Readonly<{ data: UseDroppableArguments["data"]; 
       {info.Element}
     </svg>
   );
-}
+});

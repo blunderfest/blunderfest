@@ -3,6 +3,7 @@ import { tv } from "tailwind-variants";
 import { SvgPiece } from "./pieces/SvgPiece";
 import { useDroppable } from "@dnd-kit/core";
 import { selectSquare } from "./boardSlice";
+import { memo } from "react";
 
 const recipe = tv({
   base: "relative aspect-square",
@@ -47,7 +48,7 @@ const recipe = tv({
   ],
 });
 
-export function Square(props: Readonly<{ squareIndex: number }>) {
+export const Square = memo((props: Readonly<{ squareIndex: number }>) => {
   const square = useAppSelector((state) => selectSquare(state, "some_game", props.squareIndex));
 
   const { isOver, setNodeRef } = useDroppable({
@@ -76,4 +77,4 @@ export function Square(props: Readonly<{ squareIndex: number }>) {
       </div>
     </div>
   );
-}
+});

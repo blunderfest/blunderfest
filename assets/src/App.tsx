@@ -13,7 +13,7 @@ export function App() {
       </div>
       <h1 className="text-lg font-bold text-red-600">{userId}</h1>
       <Room />
-      <Board />
+      <Board gameCode="some_game" />
     </div>
   );
 }

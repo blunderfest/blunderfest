@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App.tsx";
 import { Provider } from "react-redux";
@@ -9,10 +9,12 @@ import "./index.css";
 
 store.dispatch(connect());
 
+const MemoizedApp = memo(App);
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Provider store={store} stabilityCheck="once" identityFunctionCheck="once">
-      <App />
+      <MemoizedApp />
     </Provider>
   </React.StrictMode>
 );
