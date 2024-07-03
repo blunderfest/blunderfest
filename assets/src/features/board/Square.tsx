@@ -2,6 +2,7 @@ import { useAppSelector } from "@/store/hooks";
 import { tv } from "tailwind-variants";
 import { SvgPiece } from "./pieces/SvgPiece";
 import { useDroppable } from "@dnd-kit/core";
+import { selectSquare } from "./boardSlice";
 
 const recipe = tv({
   base: "relative aspect-square",
@@ -47,11 +48,15 @@ const recipe = tv({
 });
 
 export function Square(props: Readonly<{ squareIndex: number }>) {
+  const square = useAppSelector((state) => selectSquare(state, "some_game", props.squareIndex));
+
   const { isOver, setNodeRef } = useDroppable({
-    id: `${props.squareIndex}`,
+    id: String(props.squareIndex),
+    data: {
+      squareIndex: props.squareIndex,
+    },
   });
 
-  const square = useAppSelector((state) => state.board.squares[props.squareIndex]);
   const styles = recipe({
     color: square.color,
     highlighted: isOver,
@@ -62,7 +67,12 @@ export function Square(props: Readonly<{ squareIndex: number }>) {
       <div className={styles.highlighted()}></div>
       <div className={styles.selected()}></div>
       <div className={styles.piece()}>
-        <SvgPiece id={`${props.squareIndex}`} piece={square.piece} />
+        <SvgPiece
+          data={{
+            squareIndex: props.squareIndex,
+          }}
+          piece={square.piece}
+        />
       </div>
     </div>
   );

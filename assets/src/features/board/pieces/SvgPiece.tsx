@@ -1,7 +1,8 @@
 import { pieces } from "./pieces";
 import { tv } from "tailwind-variants";
 import { useTranslation } from "react-i18next";
-import { useDraggable } from "@dnd-kit/core";
+import { UseDroppableArguments, useDraggable } from "@dnd-kit/core";
+import { useId } from "react";
 
 const recipe = tv({
   base: "relative z-0 cursor-grab touch-none outline-none hover:scale-110",
@@ -12,12 +13,15 @@ const recipe = tv({
   },
 });
 
-export function SvgPiece(props: Readonly<{ id: string; piece: string | null }>) {
+export function SvgPiece(props: Readonly<{ data: UseDroppableArguments["data"]; piece: string | null }>) {
   const info = pieces.get(props.piece);
   const { t } = useTranslation();
 
+  const id = useId();
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: props.id,
+    id: id,
+    data: props.data,
   });
 
   const style = transform
