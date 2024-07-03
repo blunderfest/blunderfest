@@ -13,21 +13,17 @@
     "online_users": "Online gebruikers"
   },
   "pieces": {
-    "black": {
-      "king": "Zwarte koning",
-      "queen": "Zwarte dame",
-      "rook": "Zwarte toren",
-      "bishop": "Zwarte loper",
-      "knight": "Zwarte paard",
-      "pawn": "Zwarte pion"
-    },
-    "white": {
-      "king": "Witte koning",
-      "queen": "Witte dame",
-      "rook": "Witte toren",
-      "bishop": "Witte loper",
-      "knight": "Witte paard",
-      "pawn": "Witte pion"
-    }
+    "k": "Zwarte koning",
+    "q": "Zwarte dame",
+    "r": "Zwarte toren",
+    "b": "Zwarte loper",
+    "n": "Zwarte paard",
+    "p": "Zwarte pion",
+    "K": "Witte koning",
+    "Q": "Witte dame",
+    "R": "Witte toren",
+    "B": "Witte loper",
+    "N": "Witte paard",
+    "P": "Witte pion"
   }
 }

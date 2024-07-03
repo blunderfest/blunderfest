@@ -1,20 +1,26 @@
-import { pieces } from "./pieces";
-import { tv } from "tailwind-variants";
+import * as pieceComponents from "./pieces";
 import { useTranslation } from "react-i18next";
 import { UseDroppableArguments, useDraggable } from "@dnd-kit/core";
 import { memo, useId } from "react";
+import { pieceRecipe } from "./pieceRecipe";
 
-const recipe = tv({
-  base: "relative z-0 cursor-grab touch-none outline-none hover:scale-110",
-  variants: {
-    dragging: {
-      true: "z-50",
-    },
-  },
-});
+const pieces: Record<string, () => JSX.Element> = {
+  k: pieceComponents.BlackKing,
+  K: pieceComponents.WhiteKing,
+  q: pieceComponents.BlackQueen,
+  Q: pieceComponents.WhiteQueen,
+  r: pieceComponents.BlackRook,
+  R: pieceComponents.WhiteRook,
+  b: pieceComponents.BlackBishop,
+  B: pieceComponents.WhiteBishop,
+  n: pieceComponents.BlackKnight,
+  N: pieceComponents.WhiteKnight,
+  p: pieceComponents.BlackPawn,
+  P: pieceComponents.WhitePawn,
+};
 
-export const SvgPiece = memo((props: Readonly<{ data: UseDroppableArguments["data"]; piece: string | null }>) => {
-  const info = pieces.get(props.piece);
+export const Piece = memo((props: Readonly<{ data: UseDroppableArguments["data"]; piece: string }>) => {
+  const element = pieces[props.piece];
   const { t } = useTranslation();
 
   const id = useId();
@@ -30,13 +36,9 @@ export const SvgPiece = memo((props: Readonly<{ data: UseDroppableArguments["dat
       }
     : undefined;
 
-  const className = recipe({
+  const className = pieceRecipe({
     dragging: isDragging,
   });
-
-  if (!info) {
-    return null;
-  }
 
   return (
     <svg
@@ -48,8 +50,8 @@ export const SvgPiece = memo((props: Readonly<{ data: UseDroppableArguments["dat
       className={className}
       viewBox="0 0 45 45"
       pointerEvents="none">
-      <title>{t(info.title)}</title>
-      {info.Element}
+      <title>{t(`pieces.${props.piece}`)}</title>
+      {element()}
     </svg>
   );
 });

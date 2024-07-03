@@ -8,7 +8,11 @@ export const Board = (props: Readonly<{ gameCode: string }>) => {
   function handleDragEnd(e: DragEndEvent, gameCode: string) {
     const { active, over } = e;
 
-    if (over?.data.current?.squareIndex && active.data.current?.squareIndex) {
+    if (
+      over?.data.current?.squareIndex &&
+      active.data.current?.squareIndex &&
+      over.data.current.squareIndex !== active.data.current.squareIndex
+    ) {
       actions.move(gameCode, active.data.current.squareIndex, over.data.current.squareIndex);
     }
   }
