@@ -1,8 +1,8 @@
 import { RootState } from "@/store";
-import { connected, presenceDiff, presenceState } from "@/store/actions";
-import { Room } from "@/types";
 import { createSelector, createSlice } from "@reduxjs/toolkit";
 import { shallowEqual } from "react-redux";
+import { Room } from "@/types";
+import { connected, presenceDiff, presenceState } from "@/store/actions";
 
 const intialState: Room = {
   roomCode: "",

@@ -23,10 +23,10 @@ export function ColorSchemeSwitcher() {
 
   return (
     <Button
-      onClick={handleClick}
+      aria-label={t("colorscheme.switch", { color: isDarkMode ? t("colorscheme.light") : t("colorscheme.dark") })}
       color="secondary"
-      size="md"
-      aria-label={t("colorscheme.switch", { color: isDarkMode ? t("colorscheme.light") : t("colorscheme.dark") })}>
+      onClick={handleClick}
+      size="md">
       {isDarkMode ? <MdOutlineLightMode /> : <MdDarkMode />}
     </Button>
   );

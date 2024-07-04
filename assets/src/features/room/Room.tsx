@@ -1,4 +1,4 @@
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector } from "@/store";
 import { selectActiveUsers } from "./roomSlice";
 
 export function Room() {
@@ -8,7 +8,7 @@ export function Room() {
   return (
     <ul className="bg-black/5 dark:bg-white/10">
       {activeUsers.map((user) => (
-        <li key={user} className={user === userId ? "font-extrabold" : ""}>
+        <li className={user === userId ? "font-extrabold" : ""} key={user}>
           {user}
         </li>
       ))}

@@ -1,4 +1,4 @@
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector } from "@/store";
 import { Piece } from "./Piece";
 import { useDroppable } from "@dnd-kit/core";
 import { selectSquare } from "./boardSlice";
@@ -21,11 +21,11 @@ export const Square = memo((props: Readonly<{ squareIndex: number }>) => {
   });
 
   return (
-    <div ref={setNodeRef} className={styles.base()}>
-      <div className={styles.highlighted()}></div>
-      <div className={styles.selected()}></div>
+    <div className={styles.base()} ref={setNodeRef}>
+      <div className={styles.highlighted()} />
+      <div className={styles.selected()} />
       <div className={styles.piece()}>
-        {square.piece && (
+        {!!square.piece && (
           <Piece
             data={{
               squareIndex: props.squareIndex,

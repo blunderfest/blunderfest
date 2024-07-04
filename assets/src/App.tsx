@@ -1,9 +1,10 @@
 import { Room } from "./features/room/Room";
-import { useAppSelector } from "./store/hooks";
+import { useAppSelector } from "./store";
 import { ColorSchemeSwitcher } from "./components/ColorSchemeSwitcher";
 import { Board } from "./features/board/Board";
+import { memo } from "react";
 
-export function App() {
+export const App = memo(() => {
   const userId = useAppSelector((state) => state.connectivity.userId);
 
   return (
@@ -16,4 +17,4 @@ export function App() {
       <Board gameCode="some_game" />
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 import { convertKeysToCamelCase, convertKeysToSnakeCase } from "@/lib/keyconverter";
 import { disconnected } from "@/store/actions";
-import { Dispatch } from "@reduxjs/toolkit";
+import { Dispatch, UnknownAction } from "@reduxjs/toolkit";
 import { Socket } from "phoenix";
 
 export function createSocket(dispatch: Dispatch) {
@@ -21,16 +21,16 @@ export function createSocket(dispatch: Dispatch) {
     };
 
     const message = convertKeysToCamelCase(action);
-    dispatch(message);
+    dispatch(message as UnknownAction);
 
     return originalPayload;
   };
 
   return {
     socket: {
-      connect: (params?: any) => {
+      connect: () => {
         if (socket.connectionState() === "closed") {
-          socket.connect(params);
+          socket.connect();
         }
       },
     },
@@ -44,7 +44,8 @@ export function createSocket(dispatch: Dispatch) {
 
         return channel.join(timeout);
       },
-      push: (event: string, payload: object, timeout?: number) => channel.push(event, convertKeysToSnakeCase(payload), timeout),
+      push: (event: string, payload: object, timeout?: number) =>
+        channel.push(event, convertKeysToSnakeCase(payload) as object, timeout),
     },
   };
 }

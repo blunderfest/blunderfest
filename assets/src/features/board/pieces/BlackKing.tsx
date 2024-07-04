@@ -2,17 +2,17 @@
 export const BlackKing = () => {
   return (
     <g
-      pointerEvents="visible"
       fill="none"
       fillOpacity={1}
       fillRule="evenodd"
+      pointerEvents="visible"
       stroke="#000"
-      strokeWidth={1.5}
+      strokeDasharray="none"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeMiterlimit={4}
-      strokeDasharray="none"
-      strokeOpacity={1}>
+      strokeOpacity={1}
+      strokeWidth={1.5}>
       <path d="M22.5 11.63V6" fill="none" stroke="#000" strokeLinejoin="miter" />
       <path
         d="M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5"

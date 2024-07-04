@@ -1,8 +1,8 @@
-import { connect, connected } from "@/store/actions";
 import { Middleware, isAction } from "@reduxjs/toolkit";
 import { createSocket } from "./createSocket";
 import { convertKeysToCamelCase } from "@/lib/keyconverter";
 import { RootState } from "@/store";
+import { connect, connected } from "@/store/actions";
 
 export const socketMiddleware: Middleware<RootState> = (api) => {
   const { socket, channel } = createSocket(api.dispatch);
@@ -11,7 +11,8 @@ export const socketMiddleware: Middleware<RootState> = (api) => {
     if (connect.match(action)) {
       socket.connect();
       channel.join().receive("ok", (response) => {
-        const converted = convertKeysToCamelCase(response);
+        type T = ReturnType<typeof connected>["payload"];
+        const converted = convertKeysToCamelCase(response) as T;
 
         next(connected(converted.userId, converted.room));
       });

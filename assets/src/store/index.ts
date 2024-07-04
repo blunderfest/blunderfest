@@ -1,9 +1,9 @@
-import { configureStore, combineReducers, bindActionCreators } from "@reduxjs/toolkit";
-import { socketMiddleware } from "../features/connectivity/socketMiddleware";
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import { socketMiddleware } from "@/features/connectivity/socketMiddleware";
 import { connectivitySlice } from "@/features/connectivity/connectivitySlice";
 import { roomSlice } from "@/features/room/roomSlice";
 import { boardSlice } from "@/features/board/boardSlice";
-import * as allActions from "./actions";
+import { UseSelector, useDispatch, useSelector } from "react-redux";
 
 const rootReducer = combineReducers({
   [connectivitySlice.reducerPath]: connectivitySlice.reducer,
@@ -19,4 +19,5 @@ export const store = configureStore({
 export type RootState = ReturnType<typeof rootReducer>;
 export type AppDispatch = typeof store.dispatch;
 
-export const actions = bindActionCreators(allActions, store.dispatch);
+export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
+export const useAppSelector: UseSelector<RootState> = useSelector;

@@ -1,8 +1,8 @@
+import { Game } from "@/types";
 import { RootState } from "@/store";
-import { move } from "@/store/actions";
-import type { Game } from "@/types";
 import { createSelector, createSlice } from "@reduxjs/toolkit";
 import { shallowEqual } from "react-redux";
+import { move } from "@/store/actions";
 
 type State = {
   games: Record<string, Game>;

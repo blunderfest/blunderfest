@@ -2,18 +2,18 @@
 export const WhiteBishop = () => {
   return (
     <g
-      pointerEvents="visible"
-      opacity={1}
       fill="none"
-      fillRule="evenodd"
       fillOpacity={1}
+      fillRule="evenodd"
+      opacity={1}
+      pointerEvents="visible"
       stroke="#000"
-      strokeWidth={1.5}
+      strokeDasharray="none"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeMiterlimit={4}
-      strokeDasharray="none"
-      strokeOpacity={1}>
+      strokeOpacity={1}
+      strokeWidth={1.5}>
       <g fill="#fff" stroke="#000" strokeLinecap="butt">
         <path d="M9 36.6c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.35.49-2.32.47-3-.5 1.35-1.46 3-2 3-2z" />
         <path d="M15 32.6c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2z" />

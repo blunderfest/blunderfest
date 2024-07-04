@@ -42,14 +42,14 @@ export const Piece = memo((props: Readonly<{ data: UseDroppableArguments["data"]
 
   return (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
       ref={(e) => setNodeRef(e as unknown as HTMLElement)}
       style={style}
+      xmlns="http://www.w3.org/2000/svg"
       {...listeners}
       {...attributes}
       className={className}
-      viewBox="0 0 45 45"
-      pointerEvents="none">
+      pointerEvents="none"
+      viewBox="0 0 45 45">
       <title>{t(`pieces.${props.piece}`)}</title>
       {element()}
     </svg>

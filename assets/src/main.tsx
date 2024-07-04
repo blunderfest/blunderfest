@@ -1,20 +1,18 @@
-import React, { memo } from "react";
-import ReactDOM from "react-dom/client";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { Provider } from "react-redux";
-import { store } from "@/store";
-import { connect } from "./store/actions";
-import "@/features/i18n/i18n";
+import { store } from "./store";
+import "./features/i18n/i18n";
 import "./index.css";
+import { connect } from "./store/actions.ts";
 
 store.dispatch(connect());
 
-const MemoizedApp = memo(App);
-
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <Provider store={store} stabilityCheck="once" identityFunctionCheck="once">
-      <MemoizedApp />
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <Provider identityFunctionCheck="once" stabilityCheck="once" store={store}>
+      <App />
     </Provider>
-  </React.StrictMode>
+  </StrictMode>
 );

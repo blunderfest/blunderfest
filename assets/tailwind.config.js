@@ -1,5 +1,5 @@
-const { withTV } = require("tailwind-variants/transformer");
-const defaultTheme = require("tailwindcss/defaultTheme");
+import { withTV } from "tailwind-variants/transformer";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 /** @type {import('tailwindcss').Config} */
 export default withTV({
