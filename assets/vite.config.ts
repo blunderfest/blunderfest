@@ -1,6 +1,7 @@
 import { UserConfig, defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -23,12 +24,7 @@ export default defineConfig(({ command }) => {
       },
     },
     publicDir: "static",
-    plugins: [react()],
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
-      },
-    },
+    plugins: [react(), tsconfigPaths()],
     build: {
       reportCompressedSize: true,
       commonjsOptions: {

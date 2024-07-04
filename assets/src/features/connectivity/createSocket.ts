@@ -11,7 +11,7 @@ export function createSocket(dispatch: Dispatch) {
     dispatch(disconnected());
   });
 
-  channel.onMessage = (event, originalPayload, _ref) => {
+  channel.onMessage = (event, originalPayload) => {
     const { meta, ...payload } = originalPayload ?? {};
 
     const action = {
@@ -28,10 +28,22 @@ export function createSocket(dispatch: Dispatch) {
 
   return {
     socket: {
-      connect: (params?: any) => socket.connect(params),
+      connect: (params?: any) => {
+        if (socket.connectionState() === "closed") {
+          socket.connect(params);
+        }
+      },
     },
     channel: {
-      join: (timeout?: number) => channel.join(timeout),
+      join: (timeout?: number) => {
+        if (channel.state === "joined") {
+          return {
+            receive: () => {},
+          };
+        }
+
+        return channel.join(timeout);
+      },
       push: (event: string, payload: object, timeout?: number) => channel.push(event, convertKeysToSnakeCase(payload), timeout),
     },
   };

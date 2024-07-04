@@ -10,12 +10,13 @@
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
         "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "fabiospampinato.vscode-open-multiple-files",
         "jakebecker.elixir-ls",
+        "pantajoe.vscode-elixir-credo",
         "phoenixframework.phoenix",
-        "SonarSource.sonarlint-vscode",
-        "pantajoe.vscode-elixir-credo"
+        "SonarSource.sonarlint-vscode"
       ]
     }
   },
