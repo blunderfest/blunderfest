@@ -1,22 +1,9 @@
 defmodule BlunderfestWeb.PageController do
-  alias Blunderfest.RoomServer
   use BlunderfestWeb, :controller
 
-  def index(conn, %{"room_code" => room_code}) do
-    if RoomServer.whereis(room_code) do
-      conn
-      |> put_layout(false)
-      |> assign(:room_code, room_code)
-      |> render(:index)
-    else
-      redirect(conn, to: ~p"/")
-    end
-  end
-
-  def index(conn, %{}) do
-    room_code = Nanoid.generate()
-    RoomServer.start_room(room_code)
-
-    redirect(conn, to: ~p"/#{room_code}")
+  def index(conn, _params) do
+    conn
+    |> put_resp_content_type("text/html")
+    |> Plug.Conn.send_file(200, Path.join(:code.priv_dir(:blunderfest), "static/index.html"))
   end
 end

@@ -1,4 +1,4 @@
-defmodule BlunderfestWeb.UserSocket do
+defmodule BlunderfestWeb.RoomSocket do
   use Phoenix.Socket
 
   # A Socket handler
@@ -7,8 +7,18 @@ defmodule BlunderfestWeb.UserSocket do
   # assign values that can be accessed by your channel topics.
 
   ## Channels
-
+  # Uncomment the following line to define a "room:*" topic
+  # pointing to the `BlunderfestWeb.RoomChannel`:
+  #
   channel "room:*", BlunderfestWeb.RoomChannel
+  #
+  # To create a channel file, use the mix task:
+  #
+  #     mix phx.gen.channel Room
+  #
+  # See the [`Channels guide`](https://hexdocs.pm/phoenix/channels.html)
+  # for further details.
+
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After
@@ -25,16 +35,8 @@ defmodule BlunderfestWeb.UserSocket do
   # See `Phoenix.Token` documentation for examples in
   # performing token verification on connect.
   @impl true
-  def connect(%{"token" => token}, socket, _connect_info) do
-    case Phoenix.Token.verify(socket, Application.fetch_env!(:blunderfest, :token_salt), token,
-           max_age: 1_209_600
-         ) do
-      {:ok, user_id} ->
-        {:ok, assign(socket, :user_id, user_id)}
-
-      {:error, _reason} ->
-        :error
-    end
+  def connect(_params, socket, _connect_info) do
+    {:ok, socket}
   end
 
   # Socket IDs are topics that allow you to identify all sockets for a given user:
@@ -48,5 +50,5 @@ defmodule BlunderfestWeb.UserSocket do
   #
   # Returning `nil` makes this socket anonymous.
   @impl true
-  def id(socket), do: "user_socket:#{socket.assigns.user_id}"
+  def id(_socket), do: nil
 end

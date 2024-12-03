@@ -9,15 +9,7 @@ defmodule Blunderfest.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps(),
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.detail": :test,
-        "coveralls.post": :test,
-        "coveralls.html": :test,
-        "coveralls.cobertura": :test
-      ]
+      deps: deps()
     ]
   end
 
@@ -40,23 +32,17 @@ defmodule Blunderfest.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:bandit, "~> 1.2"},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:excoveralls, "~> 0.18", only: :test},
-      {:floki, ">= 0.30.0", only: :test},
-      {:horde, "~> 0.9.0"},
-      {:jason, "~> 1.2"},
-      {:libcluster, "~> 3.3"},
-      {:nanoid, "~> 2.1"},
-      {:phoenix_html, "~> 4.0"},
+      {:phoenix, "~> 1.7.14"},
       {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 0.20.2"},
-      {:phoenix, "~> 1.7.12"},
+      {:swoosh, "~> 1.5"},
+      {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
-      {:vite_phx, "~> 0.3.1"}
+      {:gettext, "~> 0.20"},
+      {:jason, "~> 1.2"},
+      {:dns_cluster, "~> 0.1.1"},
+      {:bandit, "~> 1.5"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -70,7 +56,8 @@ defmodule Blunderfest.MixProject do
     [
       setup: ["deps.get", "cmd --cd assets pnpm install"],
       "assets.deploy": [
-        "cmd --cd assets pnpm -r build",
+        "cmd --cd assets pnpm --frozen-lockfile install",
+        "cmd --cd assets pnpm build",
         "phx.digest"
       ]
     ]

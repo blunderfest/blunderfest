@@ -7,30 +7,33 @@
 # This file is based on these images:
 #
 #   - https://hub.docker.com/r/hexpm/elixir/tags - for the build image
-#   - https://hub.docker.com/_/debian?tab=tags&page=1&name=bullseye-20230522-slim - for the release image
+#   - https://hub.docker.com/_/debian?tab=tags&page=1&name=bullseye-20241111-slim - for the release image
 #   - https://pkgs.org/ - resource for finding needed packages
-#   - Ex: hexpm/elixir:1.14.5-erlang-26.0.1-debian-bullseye-20230522-slim
+#   - Ex: hexpm/elixir:1.17.3-erlang-27.1.2-debian-bullseye-20241111-slim
 #
-ARG ELIXIR_VERSION=1.15.8
-ARG OTP_VERSION=26.2.4
-ARG ALPINE_VERSION=3.19.1
+ARG ELIXIR_VERSION=1.17.3
+ARG OTP_VERSION=27.1.2
+ARG DEBIAN_VERSION=bullseye-20241111-slim
 
-ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-alpine-${ALPINE_VERSION}"
-ARG RUNNER_IMAGE="alpine:${ALPINE_VERSION}"
+ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
+ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 
 FROM ${BUILDER_IMAGE} AS builder
+ADD https://deb.nodesource.com/setup_22.x nodesource_setup.sh
 
 # install build dependencies
-RUN apk update && apk add build-base git gnupg ca-certificates nodejs npm \
-  && npm install -g pnpm \
-  && apk cache clean
+RUN apt-get update -y && apt-get install -y build-essential git \
+    && bash nodesource_setup.sh \
+    && apt-get install nodejs -y \
+    && npm install -g pnpm \
+    && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # prepare build dir
 WORKDIR /app
 
 # install hex + rebar
 RUN mix local.hex --force && \
-  mix local.rebar --force
+    mix local.rebar --force
 
 # set build ENV
 ENV MIX_ENV="prod"
@@ -71,13 +74,12 @@ RUN mix release
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE}
 
+RUN apt-get update -y && \
+  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates \
+  && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
 # Set the locale
-ENV MUSL_LOCPATH=/usr/local/share/i18n/locales/musl
-WORKDIR /tmp
-RUN apk add --update git cmake make musl-dev gcc gettext-dev libintl && apk cache clean && \
-  git clone https://gitlab.com/rilian-la-te/musl-locales.git && \
-  cd /tmp/musl-locales && cmake . \
-  && make && make install
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
@@ -93,6 +95,11 @@ ENV MIX_ENV="prod"
 COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/blunderfest ./
 
 USER nobody
+
+# If using an environment that doesn't automatically reap zombie processes, it is
+# advised to add an init process such as tini via `apt-get install`
+# above and adding an entrypoint. See https://github.com/krallin/tini for details
+# ENTRYPOINT ["/tini", "--"]
 
 CMD ["/app/bin/server"]
 

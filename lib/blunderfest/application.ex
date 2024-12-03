@@ -7,30 +7,16 @@ defmodule Blunderfest.Application do
 
   @impl true
   def start(_type, _args) do
-    topologies = Application.get_env(:libcluster, :topologies) || []
-
     children = [
       BlunderfestWeb.Telemetry,
+      {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
-
-      # setup for clustering
-      {Cluster.Supervisor, [topologies, [name: Blunderfest.ClusterSupervisor]]},
-      # Start the registry for tracking running games
-      {Horde.Registry, [name: Blunderfest.Registry, keys: :unique]},
-      {Horde.DynamicSupervisor,
-       [
-         name: Blunderfest.DynamicSupervisor,
-         shutdown: 10_000,
-         strategy: :one_for_one
-       ]},
-      {Blunderfest.NodeListener, []},
-      {Blunderfest.StateHandoff, []},
-
+      # Start the Finch HTTP client for sending emails
+      {Finch, name: Blunderfest.Finch},
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)
       # {Blunderfest.Worker, arg},
       # Start to serve requests, typically the last entry
-      BlunderfestWeb.Endpoint,
-      BlunderfestWeb.Presence
+      BlunderfestWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

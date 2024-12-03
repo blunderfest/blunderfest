@@ -1,33 +1,3 @@
 {
-  "workbench.editor.enablePreview": false,
-  "explorer.autoReveal": false,
-  "tailwindCSS.experimental.classRegex": [
-    ["tv\\((([^()]*|\\([^()]*\\))*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
-  ],
-  "editor.formatOnSave": true,
-  "files.associations": {
-    "*.css": "tailwindcss"
-  },
-  "editor.quickSuggestions": {
-    "strings": "on"
-  },
-  "tailwindCSS.includeLanguages": {
-    "elixir": "html",
-    "phoenix-heex": "html"
-  },
-  "[phoenix-heex]": {
-    "editor.defaultFormatter": "JakeBecker.elixir-ls"
-  },
-  "[elixir]": {
-    "editor.defaultFormatter": "JakeBecker.elixir-ls",
-    "editor.insertSpaces": true,
-    "editor.tabSize": 2,
-    "editor.wordBasedSuggestions": "off",
-    "editor.formatOnType": true,
-    "editor.trimAutoWhitespace": false,
-    "editor.snippetSuggestions": "inline",
-    "files.trimTrailingWhitespace": true,
-    "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true
-  }
+  "workbench.editor.enablePreview": false
 }

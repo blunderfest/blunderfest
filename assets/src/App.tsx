@@ -1,20 +1,43 @@
-import { Room } from "./features/room/Room";
-import { useAppSelector } from "./store";
-import { ColorSchemeSwitcher } from "./components/ColorSchemeSwitcher";
-import { Board } from "./features/board/Board";
-import { memo } from "react";
+import { useEffect, useState } from "react";
+import reactLogo from "./assets/react.svg";
+import viteLogo from "/vite.svg";
+import ExampleChannel from "./ExampleChannel";
 
-export const App = memo(() => {
-  const userId = useAppSelector((state) => state.connectivity.userId);
+function App() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/example");
+  });
 
   return (
-    <div className="h-screen w-screen bg-background text-text antialiased">
-      <div className="flex w-screen justify-end bg-black/5 dark:bg-white/10">
-        <ColorSchemeSwitcher />
+    <>
+      <div>
+        <a href="https://vite.dev" target="_blank">
+          <img src={viteLogo} className="logo" alt="Vite logo" />
+        </a>
+        <a href="https://react.dev" target="_blank">
+          <img src={reactLogo} className="logo react" alt="React logo" />
+        </a>
       </div>
-      <h1 className="text-lg font-bold text-red-600">{userId}</h1>
-      <Room />
-      <Board gameCode="some_game" />
-    </div>
+      <h1>Vite + React</h1>
+      <div className="bg-linear-to-r/oklch from-indigo-500 to-teal-400">
+        CCCC
+      </div>
+      <div className="card">
+        <ExampleChannel />
+        <button onClick={() => setCount((count) => count + 1)}>
+          count is {count}
+        </button>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+      <p className="read-the-docs">
+        Click on the Vite and React logos to learn more
+      </p>
+    </>
   );
-});
+}
+
+export default App;

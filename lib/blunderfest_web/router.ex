@@ -2,31 +2,26 @@ defmodule BlunderfestWeb.Router do
   use BlunderfestWeb, :router
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
-    plug BlunderfestWeb.UserId
+    plug :accepts, ["html"]       # Accept HTML requests
+    plug :fetch_session           # Fetch the session for the request
+    plug :put_root_layout, {BlunderfestWeb.LayoutView, :root}  # Set the root layout
+    plug :protect_from_forgery    # Protect against CSRF attacks
+    plug :put_secure_browser_headers  # Set security-related HTTP headers
   end
+
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
-  scope "/", BlunderfestWeb do
-    pipe_through :browser
+  scope "/api", BlunderfestWeb do
+    pipe_through :api
 
-    get "/", PageController, :index
-    get "/:room_code", PageController, :index
+    get "/example", ExampleController, :index
+    post "/example", ExampleController, :create
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", BlunderfestWeb do
-  #   pipe_through :api
-  # end
-
-  # Enable LiveDashboard in development
+  # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:blunderfest, :dev_routes) do
     # If you want to use the LiveDashboard in production, you should put
     # it behind authentication and allow only admins to access it.
@@ -36,9 +31,16 @@ defmodule BlunderfestWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through :browser
+      pipe_through [:fetch_session, :protect_from_forgery]
 
       live_dashboard "/dashboard", metrics: BlunderfestWeb.Telemetry
+      forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
+  end
+
+  scope "/", BlunderfestWeb do
+    pipe_through :browser
+
+    get "/*path", PageController, :index
   end
 end
