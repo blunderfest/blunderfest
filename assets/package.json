@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tailwindcss/vite": "4.0.0-beta.4",
+    "@tailwindcss/vite": "4.0.0-beta.6",
     "jotai": "^2.10.3",
     "phoenix": "^1.7.16",
     "react": "19.0.0-rc.1",
