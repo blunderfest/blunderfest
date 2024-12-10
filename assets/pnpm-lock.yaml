@@ -24,8 +24,8 @@ importers:
         specifier: 19.0.0-rc.1
         version: 19.0.0-rc.1(react@19.0.0-rc.1)
       tailwindcss:
-        specifier: 4.0.0-beta.4
-        version: 4.0.0-beta.4
+        specifier: 4.0.0-beta.6
+        version: 4.0.0-beta.6
     devDependencies:
       '@eslint/js':
         specifier: ^9.15.0
