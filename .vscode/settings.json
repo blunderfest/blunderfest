@@ -1,3 +1,5 @@
 {
-  "workbench.editor.enablePreview": false
+  "workbench.editor.enablePreview": false,
+  "editor.fontFamily": "'Monaspace Argon', monospace",
+  "editor.fontLigatures": "'calt',  'ss04', 'ss05', 'ss06', 'ss07', 'ss08', 'ss09', 'liga'",
 }

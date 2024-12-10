@@ -1,5 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Socket } from 'phoenix';
+import React, { useEffect, useState } from "react";
+import { Channel, Socket } from "phoenix";
+
+import { webSocket } from "rxjs/webSocket";
+
+const socket = webSocket("ws://socket");
+socket.subscribe((message) => console.log(message));
 
 interface Message {
   message: string;
@@ -7,36 +12,36 @@ interface Message {
 
 const ExampleChannel: React.FC = () => {
   const [messages, setMessages] = useState<string[]>([]);
-  const [input, setInput] = useState<string>('');
-  const [channel, setChannel] = useState<any>(null);
+  const [input, setInput] = useState<string>("");
+  const [channel, setChannel] = useState<Channel | null>(null);
 
   useEffect(() => {
     // Connect to the Phoenix socket
-    const socket = new Socket('/socket', { params: { user_token: '123' } });
+    const socket = new Socket("/socket", { params: { user_token: "123" } });
     socket.connect();
 
     // Join the "example:lobby" channel
-    const newChannel = socket.channel('room:lobby', {});
+    const newChannel = socket.channel("room:lobby", {});
     setChannel(newChannel);
 
     // Handle the 'welcome' event when joining the channel
-    newChannel.on('welcome', (payload: Message) => {
+    newChannel.on("welcome", (payload: Message) => {
       setMessages((prevMessages) => [...prevMessages, payload.message]);
     });
 
     // Handle the 'shout' event when a message is broadcasted
-    newChannel.on('shout', (payload: Message) => {
+    newChannel.on("shout", (payload: Message) => {
       setMessages((prevMessages) => [...prevMessages, payload.message]);
     });
 
     // Join the channel and handle success or error
     newChannel
       .join()
-      .receive('ok', (resp: any) => {
-        console.log('Joined successfully', resp);
+      .receive("ok", (resp: unknown) => {
+        console.log("Joined successfully", resp);
       })
-      .receive('error', (resp: any) => {
-        console.log('Unable to join', resp);
+      .receive("error", (resp: unknown) => {
+        console.log("Unable to join", resp);
       });
 
     // Clean up when the component unmounts
@@ -49,14 +54,14 @@ const ExampleChannel: React.FC = () => {
   // Send a message to the channel
   const sendShout = () => {
     if (input && channel) {
-      channel.push('shout', { message: input });
-      setInput(''); // Clear input after sending
+      channel.push("shout", { message: input });
+      setInput(""); // Clear input after sending
     }
   };
 
   return (
     <div>
-      <h1>Example Channel</h1>
+      <h1>Example Channel === </h1>
       <div>
         {messages.map((msg, idx) => (
           <div key={idx}>{msg}</div>
