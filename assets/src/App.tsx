@@ -20,7 +20,9 @@ export function App() {
 
   return (
     <div>
-      <pre>{JSON.stringify(board)}</pre>
+      <pre className="bg-blue-800 text-white font-bold">
+        {JSON.stringify(board)}
+      </pre>
       <pre>{turn}</pre>
       <pre>{castling}</pre>
       <pre>{enPassant}</pre>
