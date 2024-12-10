@@ -10,7 +10,7 @@ import wn from "./assets/white_knight.svg";
 import wp from "./assets/white_pawn.svg";
 import wq from "./assets/white_queen.svg";
 import wr from "./assets/white_rook.svg";
-import "./ExampleChannel";
+
 export function App() {
   const fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   const [configuration, turn, castling, enPassant, half, full] = fen.split(" ");
@@ -28,18 +28,18 @@ export function App() {
       <pre>{enPassant}</pre>
       <pre>{half}</pre>
       <pre>{full}</pre>
-      <img src={bb} />
-      <img src={bk} />
-      <img src={bn} />
-      <img src={bp} />
-      <img src={bq} />
-      <img src={br} />
-      <img src={wb} />
-      <img src={wk} />
-      <img src={wn} />
-      <img src={wp} />
-      <img src={wq} />
-      <img src={wr} />
+      <img alt="Some text" src={bb} />
+      <img alt="Some text" src={bk} />
+      <img alt="Some text" src={bn} />
+      <img alt="Some text" src={bp} />
+      <img alt="Some text" src={bq} />
+      <img alt="Some text" src={br} />
+      <img alt="Some text" src={wb} />
+      <img alt="Some text" src={wk} />
+      <img alt="Some text" src={wn} />
+      <img alt="Some text" src={wp} />
+      <img alt="Some text" src={wq} />
+      <img alt="Some text" src={wr} />
     </div>
   );
 }
