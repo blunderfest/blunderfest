@@ -16,7 +16,8 @@
         "jakebecker.elixir-ls",
         "pantajoe.vscode-elixir-credo",
         "phoenixframework.phoenix",
-        "SonarSource.sonarlint-vscode"
+        "SonarSource.sonarlint-vscode",
+        "yash-singh.stylex"
       ]
     }
   },

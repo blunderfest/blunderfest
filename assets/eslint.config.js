@@ -4,6 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 import reactCompiler from "eslint-plugin-react-compiler";
+import stylex from "@stylexjs/eslint-plugin";
 
 export default tseslint.config(
   { ignores: ["dist"] },
@@ -18,6 +19,7 @@ export default tseslint.config(
       "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
       "react-compiler": reactCompiler,
+      "@stylexjs": stylex,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -26,6 +28,7 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       "react-compiler/react-compiler": "error",
+      "@stylexjs/valid-styles": "error",
     },
   }
 );
