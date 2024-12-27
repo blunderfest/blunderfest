@@ -1,4 +1,3 @@
-import stylex from "@stylexjs/stylex";
 import bb from "./assets/black_bishop.svg";
 import bk from "./assets/black_king.svg";
 import bn from "./assets/black_knight.svg";
@@ -12,13 +11,6 @@ import wp from "./assets/white_pawn.svg";
 import wq from "./assets/white_queen.svg";
 import wr from "./assets/white_rook.svg";
 
-const styles = stylex.create({
-  base: {
-    color: "blue",
-    fontSize: 30,
-  },
-});
-
 export function App() {
   const fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   const [configuration, turn, castling, enPassant, half, full] = fen.split(" ");
@@ -28,7 +20,7 @@ export function App() {
 
   return (
     <div>
-      <h1 {...stylex.props(styles.base)}>I am a heading text</h1>;
+      <h1 className="bg-blue-800">I am a heading text</h1>;
       <pre className="bg-blue-800 text-white font-bold">
         {JSON.stringify(board)}
       </pre>

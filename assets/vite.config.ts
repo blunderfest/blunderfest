@@ -1,6 +1,6 @@
 import { defineConfig, UserConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import styleX from "vite-plugin-stylex" 
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -19,7 +19,7 @@ export default defineConfig(({ command }) => {
           plugins: [["babel-plugin-react-compiler"]],
         },
       }),
-      styleX(),
+      tailwindcss(),
     ],
     server: {
       proxy: {
