@@ -16,7 +16,7 @@
         "jakebecker.elixir-ls",
         "pantajoe.vscode-elixir-credo",
         "phoenixframework.phoenix",
-        "yash-singh.stylex"
+        "Lokalise.i18n-ally"
       ]
     }
   },

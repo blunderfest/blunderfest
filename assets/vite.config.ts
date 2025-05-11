@@ -1,6 +1,6 @@
-import { defineConfig, UserConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig, type UserConfig } from "vite";
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -35,5 +35,6 @@ export default defineConfig(({ command }) => {
       emptyOutDir: true,
     },
   };
+
   return config;
 });

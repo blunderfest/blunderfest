@@ -14,16 +14,12 @@ import wr from "./assets/white_rook.svg";
 export function App() {
   const fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   const [configuration, turn, castling, enPassant, half, full] = fen.split(" ");
-  const board = configuration
-    .split("/")
-    .map((rank) => rank.replace(/\d+/g, (match) => " ".repeat(Number(match))));
+  const board = configuration.split("/").map((rank) => rank.replace(/\d+/g, (match) => " ".repeat(Number(match))));
 
   return (
     <div>
       <h1 className="bg-blue-800">I am a heading text</h1>;
-      <pre className="bg-blue-800 text-white font-bold">
-        {JSON.stringify(board)}
-      </pre>
+      <pre className="bg-blue-800 font-bold text-white">{JSON.stringify(board)}</pre>
       <pre>{turn}</pre>
       <pre>{castling}</pre>
       <pre>{enPassant}</pre>
