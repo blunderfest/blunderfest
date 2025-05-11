@@ -1,2 +1,7 @@
 {
+  "translation": {
+    "app": {
+      "title": "Hello, world!"
+    }
+  }
 }

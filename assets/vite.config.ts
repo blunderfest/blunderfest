@@ -1,6 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type UserConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ command }) => {
   const isDev = command !== "build";
@@ -13,14 +14,7 @@ export default defineConfig(({ command }) => {
   }
 
   const config: UserConfig = {
-    plugins: [
-      react({
-        babel: {
-          plugins: [["babel-plugin-react-compiler"]],
-        },
-      }),
-      tailwindcss(),
-    ],
+    plugins: [tsconfigPaths(), react(), tailwindcss()],
     server: {
       proxy: {
         "/api": "http://localhost:4000",

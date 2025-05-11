@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 import bb from "./assets/black_bishop.svg";
 import bk from "./assets/black_king.svg";
 import bn from "./assets/black_knight.svg";
@@ -12,13 +14,15 @@ import wq from "./assets/white_queen.svg";
 import wr from "./assets/white_rook.svg";
 
 export function App() {
+  const { t } = useTranslation();
+
   const fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   const [configuration, turn, castling, enPassant, half, full] = fen.split(" ");
   const board = configuration.split("/").map((rank) => rank.replace(/\d+/g, (match) => " ".repeat(Number(match))));
 
   return (
     <div>
-      <h1 className="bg-blue-800">I am a heading text</h1>;
+      <h1 className="bg-blue-800 text-white">{t("app.title")}</h1>;
       <pre className="bg-blue-800 font-bold text-white">{JSON.stringify(board)}</pre>
       <pre>{turn}</pre>
       <pre>{castling}</pre>
