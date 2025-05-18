@@ -32,19 +32,17 @@ defmodule Blunderfest.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.7.3"},
-      {:phoenix_html, "~> 3.0"},
-      {:phoenix_live_dashboard, "~> 0.8.0"},
-      {:phoenix_pubsub, "~> 2.1"},
-      {:swoosh, "~> 1.11"},
+      {:phoenix, "~> 1.7.14"},
+      {:phoenix_live_dashboard, "~> 0.8.3"},
+      {:swoosh, "~> 1.5"},
       {:finch, "~> 0.13"},
-      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
+      {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
-      {:plug_cowboy, "~> 2.5"},
-      {:nanoid, "~> 2.0.5"},
-      {:horde, "~> 0.8.7"},
-      {:cors_plug, "~> 3.0", only: :dev}
+      {:dns_cluster, "~> 0.2.0"},
+      {:bandit, "~> 1.5"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -56,9 +54,10 @@ defmodule Blunderfest.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "cmd --cd assets npm install"],
+      setup: ["deps.get", "cmd --cd assets pnpm install"],
       "assets.deploy": [
-        "cmd --cd assets npm ci && npm run build",
+        "cmd --cd assets pnpm --frozen-lockfile install",
+        "cmd --cd assets pnpm build",
         "phx.digest"
       ]
     ]

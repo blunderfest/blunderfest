@@ -13,18 +13,15 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "tVR10EUJDR+nLcOf/KSR0ghJC7lalgiUTUL81X7ktVPomMk11U7c8XAUDE4yosux",
+  secret_key_base: "B6EL0sg5epDinsUMLcZrlddPhuXOBsj0+u0gtclsc+6+hL98SoZHebTCy9+Dc+A3",
   watchers: [
-    yarn: [
-      "dev",
-      cd: Path.expand("../assets", __DIR__)
+    pnpm: ["run", "dev", "--host", cd: "assets", into: IO.stream(:stdio, :line)]    # Start the Vite development server
+  ],
+  live_reload: [
+    patterns: [
+      ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$"
     ]
   ]
-
-config :cors_plug,
-  origin: ["http://localhost:5173"],
-  max_age: 86400,
-  methods: ["GET", "POST"]
 
 # ## SSL Support
 #

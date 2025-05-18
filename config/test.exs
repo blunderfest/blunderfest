@@ -4,13 +4,13 @@ import Config
 # you can enable the server option below.
 config :blunderfest, BlunderfestWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "MnVmJBEulW7xgumMp8V6n9DZcH0BCkYAaV5mSQUaB5EKzXAU/9rFj42uNPPQeq0i",
+  secret_key_base: "zuVJyrqeQ1y+HHr71pQvFMiMYsMvwonr/+zx84SW+xa/wylo2ALlG19EqGh7oMpj",
   server: false
 
-# In test we don't send emails.
+# In test we don't send emails
 config :blunderfest, Blunderfest.Mailer, adapter: Swoosh.Adapters.Test
 
-# Disable swoosh api client as it is only required for production adapters.
+# Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 
 # Print only warnings and errors during test

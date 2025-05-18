@@ -7,15 +7,19 @@
 # General application configuration
 import Config
 
+config :blunderfest,
+  generators: [timestamp_type: :utc_datetime]
+
 # Configures the endpoint
 config :blunderfest, BlunderfestWeb.Endpoint,
   url: [host: "localhost"],
+  adapter: Bandit.PhoenixAdapter,
   render_errors: [
     formats: [json: BlunderfestWeb.ErrorJSON],
     layout: false
   ],
   pubsub_server: Blunderfest.PubSub,
-  live_view: [signing_salt: "6Ix183ef"]
+  live_view: [signing_salt: "pkNe43Ge"]
 
 # Configures the mailer
 #
@@ -33,10 +37,6 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
-
-config :nanoid,
-  size: 10,
-  alphabet: "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

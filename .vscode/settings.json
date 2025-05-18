@@ -1,40 +1,17 @@
 {
   "workbench.editor.enablePreview": false,
-  "files.associations": {
-    "*.heex": "phoenix-heex"
-  },
-  "[elixir]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "JakeBecker.elixir-ls"
-  },
-  "[phoenix-heex]": {
-    "editor.formatOnSave": true,
-    "editor.defaultFormatter": "RoyalMist.vscode-eex-format"
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "editor.formatOnPaste": true,
+  "editor.fontFamily": "'Monaspace Argon', monospace",
+  "editor.fontLigatures": "'calt',  'ss04', 'ss05', 'ss06', 'ss07', 'ss08', 'ss09', 'liga'",
+  "editor.tabSize": 2,
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "always"
   },
-  "prettier.prettierPath": "./assets/node_modules/prettier",
-  "scss.validate": false,
-  "editor.quickSuggestions": {
-    "strings": true
-  },
-  "editor.autoClosingQuotes": "always",
-  "cssvar.files": ["./assets/node_modules/open-props/open-props.min.css"],
-  // Do not ignore node_modules css files, which is ignored by default
-  "cssvar.ignore": [],
-  "cssvar.extensions": ["css", "postcss", "tsx"],
-  "exportall.config.folderListener": ["/assets/src/styles"],
-  "autoBarrel.defaultLanguage": "JavaScript",
-  "autoBarrel.quoteStyle": "Double",
-  "autoBarrel.disableRecursiveBarrelling": true
+  "explorer.compactFolders": false,
+  "i18n-ally.localesPaths": ["assets/src/translations", "assets/lib/i18n"],
+  "i18n-ally.enabledFrameworks": ["react-i18next"],
+  "i18n-ally.namespace": true,
+  "i18n-ally.pathMatcher": "{locale}.json",
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.defaultNamespace": "translation"
 }

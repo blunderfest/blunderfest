@@ -7,18 +7,17 @@ defmodule BlunderfestWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_blunderfest_key",
-    signing_salt: "cA5AMKXP",
+    signing_salt: "CVWFWorL",
     same_site: "Lax"
   ]
 
-  socket "/socket", BlunderfestWeb.UserSocket, websocket: true, longpoll: false
+  socket "/socket", BlunderfestWeb.RoomSocket,
+    websocket: true,
+    longpoll: false
 
-  if Mix.env() == :dev do
-    plug Plug.Static,
-      at: "/",
-      from: "assets",
-      gzip: false
-  end
+  socket "/live", Phoenix.LiveView.Socket,
+    websocket: [connect_info: [session: @session_options]],
+    longpoll: [connect_info: [session: @session_options]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #

@@ -8,19 +8,15 @@ defmodule Blunderfest.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Start the Telemetry supervisor
       BlunderfestWeb.Telemetry,
-      # Start the PubSub system
+      {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
-      # Start Finch
+      # Start the Finch HTTP client for sending emails
       {Finch, name: Blunderfest.Finch},
-      # Start the Endpoint (http/https)
-      BlunderfestWeb.Endpoint,
-      BlunderfestWeb.Presence,
-      {Horde.Registry, keys: :unique, name: Blunderfest.GameRegistry},
-      {Horde.DynamicSupervisor, strategy: :one_for_one, name: Blunderfest.GameSupervisor}
       # Start a worker by calling: Blunderfest.Worker.start_link(arg)
-      # {Blunderfest.Worker, arg}
+      # {Blunderfest.Worker, arg},
+      # Start to serve requests, typically the last entry
+      BlunderfestWeb.Endpoint
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

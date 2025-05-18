@@ -9,33 +9,27 @@
     "vscode": {
       // Add the IDs of extensions you want installed when the container is created.
       "extensions": [
-		"jakebecker.elixir-ls",
-		"phoenixframework.phoenix",
-		"RoyalMist.vscode-eex-format",
-		"dbaeumer.vscode-eslint",
-		"ms-vscode.vscode-typescript-next",
-		"esbenp.prettier-vscode",
-		"wix.vscode-import-cost",
-		"github.vscode-github-actions",
-		"ko-dev.vscode-open-files-in-directory",
-		"mikehanson.auto-barrel",
-		"statelyai.stately-vscode"
-	]
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "fabiospampinato.vscode-open-multiple-files",
+        "jakebecker.elixir-ls",
+        "pantajoe.vscode-elixir-credo",
+        "phoenixframework.phoenix",
+        "Lokalise.i18n-ally"
+      ]
     }
   },
-
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   "forwardPorts": [4000],
-
   // Use 'postCreateCommand' to run commands after the container is created.
   // "postCreateCommand": "mix deps.get"
-
   // Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
   "features": {
-    "ghcr.io/devcontainers/features/node:1": {},
     "ghcr.io/devcontainers-contrib/features/mkcert:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-    // "ghcr.io/dhoeric/features/flyctl:1": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers-contrib/features/pnpm:2": {},
+    "ghcr.io/audacioustux/devcontainers/flyctl:1": {}
   }
 }

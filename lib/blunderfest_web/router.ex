@@ -2,10 +2,15 @@ defmodule BlunderfestWeb.Router do
   use BlunderfestWeb, :router
 
   pipeline :browser do
+    # Accept HTML requests
     plug :accepts, ["html"]
+    # Fetch the session for the request
     plug :fetch_session
-    plug :put_root_layout, html: {BlunderfestWeb.Layouts, :root}
+    # Set the root layout
+    plug :put_root_layout, {BlunderfestWeb.LayoutView, :root}
+    # Protect against CSRF attacks
     plug :protect_from_forgery
+    # Set security-related HTTP headers
     plug :put_secure_browser_headers
   end
 
@@ -16,14 +21,8 @@ defmodule BlunderfestWeb.Router do
   scope "/api", BlunderfestWeb do
     pipe_through :api
 
-    get "/", ApiController, :index
-  end
-
-  scope "/", BlunderfestWeb do
-    pipe_through :browser
-
-    get "/", PageController, :index
-    get "/:code", PageController, :join
+    get "/example", ExampleController, :index
+    post "/example", ExampleController, :create
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
@@ -41,5 +40,11 @@ defmodule BlunderfestWeb.Router do
       live_dashboard "/dashboard", metrics: BlunderfestWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
+  end
+
+  scope "/", BlunderfestWeb do
+    pipe_through :browser
+
+    get "/*path", PageController, :index
   end
 end

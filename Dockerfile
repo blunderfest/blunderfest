@@ -7,47 +7,48 @@
 # This file is based on these images:
 #
 #   - https://hub.docker.com/r/hexpm/elixir/tags - for the build image
-#   - https://hub.docker.com/_/debian?tab=tags&page=1&name=bullseye-20230522-slim - for the release image
+#   - https://hub.docker.com/_/debian?tab=tags&page=1&name=bullseye-20241111-slim - for the release image
 #   - https://pkgs.org/ - resource for finding needed packages
-#   - Ex: hexpm/elixir:1.14.5-erlang-26.0.1-debian-bullseye-20230522-slim
+#   - Ex: hexpm/elixir:1.17.3-erlang-27.1.2-debian-bullseye-20241111-slim
 #
-ARG ELIXIR_VERSION=1.14.5
-ARG OTP_VERSION=26.0.1
-ARG DEBIAN_VERSION=bullseye-20230522-slim
-ARG NODE_VERSION 18.16.0
+ARG ELIXIR_VERSION=1.17.3
+ARG OTP_VERSION=27.1.2
+ARG DEBIAN_VERSION=bullseye-20241111-slim
 
 ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
 ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
 
-FROM ${BUILDER_IMAGE} as builder
+FROM ${BUILDER_IMAGE} AS builder
+ADD https://deb.nodesource.com/setup_22.x nodesource_setup.sh
 
 # install build dependencies
-RUN apt-get update -y && apt-get install -y build-essential git curl gnupg2 \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | sh \
-    && apt-get install -y nodejs \
-    && npm install -g yarn \
-    && apt-get clean && rm -f /var/lib/apt/lists/*_*
+RUN apt-get update -y && apt-get install -y build-essential git \
+  && bash nodesource_setup.sh \
+  && apt-get install nodejs -y \
+  && npm install -g pnpm \
+  && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # prepare build dir
 WORKDIR /app
 
 # install hex + rebar
 RUN mix local.hex --force && \
-    mix local.rebar --force
+  mix local.rebar --force
 
 # set build ENV
 ENV MIX_ENV="prod"
 
 # install mix dependencies
 COPY mix.exs mix.lock ./
-RUN mix deps.get --only $MIX_ENV
-RUN mkdir config
+RUN mix deps.get --only "$MIX_ENV" \
+  && mkdir config
 
 # copy compile-time config files before we compile dependencies
 # to ensure any relevant config change will trigger the dependencies
 # to be re-compiled.
 COPY config/config.exs config/${MIX_ENV}.exs config/
-RUN mix deps.compile
+RUN mix deps.compile \
+  && mkdir -p priv/static
 
 COPY priv priv
 
@@ -56,10 +57,9 @@ COPY lib lib
 COPY assets assets
 
 # compile assets
-RUN mix assets.deploy
-
-# Compile the release
-RUN mix compile
+RUN mix setup \
+  && mix assets.deploy \
+  && mix compile
 
 # Changes to config/runtime.exs don't require recompiling the code
 COPY config/runtime.exs config/
@@ -71,11 +71,10 @@ RUN mix release
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE}
 
-RUN apt-get update -y && apt-get install -y libstdc++6 openssl libncurses5 locales \
-  && apt-get clean && rm -f /var/lib/apt/lists/*_*
-
-# Set the locale
-RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
+RUN apt-get update -y && \
+  apt-get install -y ca-certificates libncurses5 libstdc++6 locales openssl \
+  && apt-get clean && rm -f /var/lib/apt/lists/*_* \
+  && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
 
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
@@ -91,6 +90,11 @@ ENV MIX_ENV="prod"
 COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/blunderfest ./
 
 USER nobody
+
+# If using an environment that doesn't automatically reap zombie processes, it is
+# advised to add an init process such as tini via `apt-get install`
+# above and adding an entrypoint. See https://github.com/krallin/tini for details
+# ENTRYPOINT ["/tini", "--"]
 
 CMD ["/app/bin/server"]
 

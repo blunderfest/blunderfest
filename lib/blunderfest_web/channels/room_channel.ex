@@ -1,17 +1,10 @@
 defmodule BlunderfestWeb.RoomChannel do
+  @moduledoc false
   use BlunderfestWeb, :channel
-  alias BlunderfestWeb.Presence
-  alias Nanoid
 
   @impl true
-  def join("room:" <> _roomCode, _payload, socket) do
-    user_id =
-      Nanoid.generate(12, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-    IO.puts(user_id)
-
-    send(self(), :after_join)
-    {:ok, assign(socket, :user_id, user_id)}
+  def join("room:" <> _room_code, _payload, socket) do
+    {:ok, socket}
   end
 
   # Channels can be used in a request/response fashion
@@ -30,14 +23,7 @@ defmodule BlunderfestWeb.RoomChannel do
   end
 
   @impl true
-  def handle_info(:after_join, socket) do
-    {:ok, _} =
-      Presence.track(socket, socket.assigns.user_id, %{
-        online_at: inspect(System.system_time(:millisecond)),
-        user_id: socket.assigns.user_id
-      })
-
-    push(socket, "presence_state", Presence.list(socket))
+  def handle_in(_event, _payload, socket) do
     {:noreply, socket}
   end
 end
