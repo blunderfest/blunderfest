@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USERNAME: vscode
+    volumes:
+      - ..:/workspace:cached
+      - cline-data:/home/vscode/.local/share/Cline
+      - vscode-data:/home/vscode/.vscode
+      - vscode-server:/home/vscode/.vscode-server
+    command: sleep infinity
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/blunderfest_dev
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: blunderfest_dev
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+volumes:
+  postgres-data:
+  cline-data:
+  vscode-server:
+  vscode-data:

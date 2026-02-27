@@ -1,0 +1,57 @@
+{
+  "name": "Blunderfest Elixir Dev",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "configureZshAsDefaultShell": false,
+      "installOhMyZsh": true,
+      "upgradePackages": false
+    }
+  },
+  "forwardPorts": [
+    4000,
+    5432,
+    5050
+  ],
+  "portsAttributes": {
+    "4000": {
+      "label": "Phoenix Server",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
+    },
+    "5050": {
+      "label": "pgAdmin",
+      "onAutoForward": "notify"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "JakeBecker.elixir-ls",
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ckolkman.vscode-postgres",
+        "saoudrizwan.claude-dev"
+      ],
+      "settings": {
+        "elixirLS.dialyzerEnabled": true,
+        "elixirLS.fetchDeps": true,
+        "editor.formatOnSave": true,
+        "files.watcherExclude": {
+          "**/_build/**": true,
+          "**/deps/**": true,
+          "**/node_modules/**": true
+        }
+      }
+    }
+  },
+  "postCreateCommand": "mix deps.get",
+  "remoteUser": "vscode"
+}
