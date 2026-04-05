@@ -25,13 +25,10 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "Npbn666kKiSsuYXCenvflIwLuPh1oBZR5iIrmJiAxie7He0iiYB5SbuBVFOY6plX",
   watchers: [
-    node: [
-      "vite",
-      "--host",
-      "127.0.0.1",
-      "--port",
-      "5173",
-      cwd: Path.expand("../assets", __DIR__)
+    cmd: [
+      "pnpm",
+      ["dev", "--host", "127.0.0.1", "--port", "5173"],
+      cd: Path.expand("../assets", __DIR__)
     ]
   ]
 
