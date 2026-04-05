@@ -1,0 +1,109 @@
+import { jsx as _jsx } from "react/jsx-runtime";
+import { Fragment } from "react";
+/**
+ * React adapter for Paraglide messages with markup.
+ *
+ * Uses `message.parts()` when available and falls back to `message()` for plain
+ * messages without markup.
+ */
+export function ParaglideMessage(props) {
+    const { message, inputs, options: messageOptions } = props;
+    const markup = props.markup;
+    const callableMessage = message;
+    if (typeof callableMessage.parts !== "function") {
+        return callableMessage(inputs, messageOptions);
+    }
+    const parts = callableMessage.parts(inputs, messageOptions);
+    const nodes = renderParts(parts, {
+        inputs,
+        messageOptions,
+        markup: markup,
+    });
+    return toChildren(nodes);
+}
+function renderParts(parts, args) {
+    const rootChildren = [];
+    const stack = [];
+    const appendNode = (node) => {
+        const target = stack[stack.length - 1];
+        if (target) {
+            target.children.push(node);
+        }
+        else {
+            rootChildren.push(node);
+        }
+    };
+    for (const part of parts) {
+        switch (part.type) {
+            case "text":
+                appendNode(part.value);
+                break;
+            case "markup-start":
+                stack.push({
+                    name: part.name,
+                    children: [],
+                    options: part.options,
+                    attributes: part.attributes,
+                });
+                break;
+            case "markup-end": {
+                const frame = stack.pop();
+                if (!frame) {
+                    throw new Error(`Unexpected closing markup "${part.name}"`);
+                }
+                if (frame.name !== part.name) {
+                    throw new Error(`Mismatched markup. Expected closing "${frame.name}" but received "${part.name}"`);
+                }
+                appendNode(renderMarkup({
+                    name: frame.name,
+                    children: frame.children,
+                    options: frame.options,
+                    attributes: frame.attributes,
+                    ...args,
+                }));
+                break;
+            }
+            case "markup-standalone":
+                appendNode(renderMarkup({
+                    name: part.name,
+                    children: [],
+                    options: part.options,
+                    attributes: part.attributes,
+                    ...args,
+                }));
+                break;
+        }
+    }
+    if (stack.length > 0) {
+        const stillOpen = stack[stack.length - 1];
+        if (stillOpen) {
+            throw new Error(`Unclosed markup "${stillOpen.name}"`);
+        }
+    }
+    return rootChildren;
+}
+function renderMarkup(args) {
+    const renderer = args.markup?.[args.name];
+    const children = toChildren(args.children);
+    if (renderer) {
+        return renderer({
+            name: args.name,
+            children: children === null ? undefined : children,
+            inputs: args.inputs,
+            messageOptions: args.messageOptions,
+            options: args.options,
+            attributes: args.attributes,
+        });
+    }
+    return children;
+}
+function toChildren(nodes) {
+    if (nodes.length === 0) {
+        return null;
+    }
+    if (nodes.length === 1) {
+        return nodes[0] ?? null;
+    }
+    return nodes.map((node, index) => _jsx(Fragment, { children: node }, index));
+}
+//# sourceMappingURL=message.js.map

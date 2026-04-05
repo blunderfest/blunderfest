@@ -1,5 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/react,phoenix,elixir
-# Edit at https://www.toptal.com/developers/gitignore?templates=react,phoenix,elixir
+# Created by https://www.toptal.com/developers/gitignore/api/react,elixir,phoenix
+# Edit at https://www.toptal.com/developers/gitignore?templates=react,elixir,phoenix
 
 ### Elixir ###
 /_build
@@ -55,4 +55,4 @@ psd
 thumb
 sketch
 
-# End of https://www.toptal.com/developers/gitignore/api/react,phoenix,elixir
+# End of https://www.toptal.com/developers/gitignore/api/react,elixir,phoenix

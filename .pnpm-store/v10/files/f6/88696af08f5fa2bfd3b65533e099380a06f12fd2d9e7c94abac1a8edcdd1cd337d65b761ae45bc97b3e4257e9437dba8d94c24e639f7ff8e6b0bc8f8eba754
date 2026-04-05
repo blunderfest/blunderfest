@@ -1,0 +1,2 @@
+export { ParaglideMessage } from "./message.js";
+//# sourceMappingURL=index.js.map
