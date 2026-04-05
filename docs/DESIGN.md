@@ -252,6 +252,42 @@ Configure in `.vscode/settings.json`:
 
 ---
 
+## MVP Decisions
+
+### Database Seeding
+
+**Decision:** Start empty. No pre-seeding.
+
+- Users create positions as they analyze
+- Later, we can import PGN files from Lichess or similar
+- Pre-seeding adds complexity and storage costs before we have users
+
+### Import/Export
+
+**Decision:** Minimal MVP support.
+
+- **Export**: Copy FEN to clipboard (simple)
+- **Import**: Paste PGN/FEN into room
+- Full PGN parsing deferred - users can use lichess.org for now
+
+### Testing
+
+**Decision:** Standard tools.
+
+- **Elixir**: ExUnit + doctests for chess core functions
+- **React**: Vitest for components + hooks
+- Manual testing is acceptable during MVP phase
+
+### Cost
+
+**Decision:** Free tier to start.
+
+- Start with Fly.io free tier (includes)
+- Scale up only when needed
+- PostgreSQL: Neon free tier or cheap Postgres host
+
+---
+
 ## Alternative Database Approach (Future Consideration)
 
 _This section documents a potential future alternative to the PostgreSQL + AGE approach._
@@ -401,7 +437,7 @@ lib/blunderfest/
 │   └── annotation.ex     # Position annotations
 └── web/
     ├── channels/        # Phoenix Channels
-    ├── controllers/   # REST API controllers
+    ├─ controllers/   # REST API controllers
     └── routers/      # Router
 ```
 
@@ -513,23 +549,20 @@ PostgreSQL + AGE
 
 ---
 
-## Open Questions / Topics Not Yet Discussed
+## Future Topics (Deferred)
 
-1. **Database Population**: How to seed with master games for position search?
-2. **Import/Export**: PGN import, game sharing, export formats?
-3. **Performance**: Caching strategies, background workers for similarity edge building?
-4. **Mobile**: Responsive design priorities, touch interactions?
-5. **Rate Limiting**: Anonymous user limits, resource management?
-6. **Analytics**: Usage tracking, popular positions?
-7. **AI Features**: Beyond Stockfish - LLM-powered analysis notes?
-8. **Tournaments**: Live analysis sessions with multiple participants?
-9. **Version History**: Undo/redo for annotations?
-10. **Accessibility**: Screen reader support, keyboard navigation?
-11. **Moderation**: Content moderation for shared rooms?
-12. **Data Retention**: How long to keep anonymous sessions?
-13. **Cost**: Fly.io resource estimation and budget?
-14. **Testing**: Chess logic test suite strategy?
-15. **Security**: Input sanitization, room access controls?
+These topics are not required for MVP and can be revisited later:
+
+- **Mobile**: Responsive design, touch interactions
+- **Rate Limiting**: Anonymous user limits
+- **Analytics**: Usage tracking, popular positions
+- **AI Features**: LLM-powered analysis notes
+- **Tournaments**: Live analysis sessions
+- **Version History**: Undo/redo for annotations
+- **Accessibility**: Screen reader support, keyboard navigation
+- **Moderation**: Content moderation for shared rooms
+- **Data Retention**: How long to keep anonymous sessions
+- **Performance**: Caching, background workers
 
 ---
 
