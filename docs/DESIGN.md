@@ -151,6 +151,109 @@ Users can still:
 
 ---
 
+## Technology Stack
+
+### Backend
+
+| Component      | Technology       | Version | Notes                |
+| -------------- | ---------------- | ------- | -------------------- |
+| Language       | Elixir           | 1.16+   | Latest stable        |
+| Web Framework  | Phoenix          | 1.7+    | Latest stable        |
+| Database       | PostgreSQL       | 15+     | With AGE extension   |
+| Graph DB       | Apache AGE       | 1.5+    | PostgreSQL extension |
+| ORM            | Ecto             | 3.10+   | Ships with Phoenix   |
+| Real-time      | Phoenix Channels | 1.7+    | Built into Phoenix   |
+| Authentication | Ueberauth        | 0.10+   | OAuth strategy       |
+
+### Frontend
+
+| Component        | Technology   | Version | Notes                  |
+| ---------------- | ------------ | ------- | ---------------------- |
+| Language         | TypeScript   | 5.3+    | Latest stable          |
+| UI Framework     | React        | 18+     | Latest stable          |
+| Build Tool       | Vite         | 5+      | Fast builds            |
+| State Management | Zustand      | 4+      | Simple, React-friendly |
+| HTTP Client      | Fetch API    | Native  | No library needed      |
+| Chess Display    | Custom SVG   | -       | Built from scratch     |
+| Stockfish        | stockfish.js | Latest  | WASM chess engine      |
+| Styling          | Tailwind CSS | 3+      | Already configured     |
+
+### Development Tools
+
+| Component           | Technology | Version  | Notes             |
+| ------------------- | ---------- | -------- | ----------------- |
+| Container           | Docker     | Latest   | For deployment    |
+| Hosting             | Fly.io     | -        | Config exists     |
+| Linting (Elixir)    | Credo      | 1.7+     | Elixir standard   |
+| Formatting (Elixir) | Elixir fmt | Built-in | -                 |
+| Linting (JS/TS)     | ESLint     | 8+       | -                 |
+| Formatting (JS/TS)  | Prettier   | 3+       | Already in VSCode |
+| Testing (Elixir)    | ExUnit     | Built-in | -                 |
+| Testing (JS/TS)     | Vitest     | Latest   | Fast, Vite-native |
+
+---
+
+## Developer Experience
+
+### Local Development
+
+```bash
+# Start dev environment (existing)
+docker-compose up -d
+
+# Start Phoenix backend
+mix deps.get
+mix phx.server
+
+# Start React frontend (in separate terminal)
+cd assets
+npm install
+npm run dev
+```
+
+**Hot Reloading:** Both Phoenix (Elixir) and Vite (React) support hot reloading for rapid development.
+
+### Code Generation
+
+| Command                | Description               |
+| ---------------------- | ------------------------- |
+| `mix phx.gen.json`     | Generate JSON API context |
+| `mix phx.gen.channels` | Generate Channels         |
+| `npx create-react-app` | Not needed (use Vite)     |
+| `npx vitest`           | Run tests                 |
+
+### Debugging
+
+- **Elixir:** `IEx.pry`, :debugger, :observer
+- **React:** Browser DevTools, React Developer Tools
+- **Phoenix:** `mix phx.routes`, Phoenix Inspector
+
+### Code Quality
+
+```bash
+# Elixir
+mix credo --strict    # Linting
+mix format           # Formatting
+
+# JavaScript/TypeScript
+npm run lint         # ESLint
+npm run format       # Prettier
+
+# Tests
+mix test             # Elixir
+npm run test         # Vitest
+```
+
+### Pre-commit Hooks
+
+Recommend configuring:
+
+- `mix format` on save (Elixir)
+- Prettier on save (TypeScript)
+- ESLint before commit (TypeScript)
+
+---
+
 ## Alternative Database Approach (Future Consideration)
 
 _This section documents a potential future alternative to the PostgreSQL + AGE approach._
