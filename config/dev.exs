@@ -24,7 +24,16 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "Npbn666kKiSsuYXCenvflIwLuPh1oBZR5iIrmJiAxie7He0iiYB5SbuBVFOY6plX",
-  watchers: []
+  watchers: [
+    node: [
+      "vite",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "5173",
+      cwd: Path.expand("../assets", __DIR__)
+    ]
+  ]
 
 # ## SSL Support
 #
