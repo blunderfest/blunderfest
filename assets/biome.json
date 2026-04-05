@@ -5,11 +5,11 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noExplicitAny": "off"
+        "noExplicitAny": "error"
       },
       "style": {
-        "useImportType": "off",
-        "noNonNullAssertion": "off"
+        "useImportType": "error",
+        "noNonNullAssertion": "error"
       }
     }
   },
