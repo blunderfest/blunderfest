@@ -4,11 +4,11 @@
 
 A collaborative chess analysis platform where users can analyze chess games alone or with others. The application supports flexible, unstructured analysis without enforcing strict chess rules.
 
-**Stack:**
+### Stack
 
-- Backend: Elixir + Phoenix (WebSocket for real-time)
+- Backend: Elixir + Phoenix
 - Frontend: React + TypeScript
-- Database: PostgreSQL + Apache AGE (graph extension)
+- Database: PostgreSQL + Apache AGE
 - Deployment: Docker + Fly.io
 
 ---
@@ -19,15 +19,23 @@ A collaborative chess analysis platform where users can analyze chess games alon
 
 ```
 React Frontend (TypeScript)
-        │
+        |
    Phoenix Channels (WebSocket)
-        │
+        |
 Elixir/Phoenix Backend
-        │
+        |
    PostgreSQL + Apache AGE (Graph)
 ```
 
-### 2. No Standard Chess Libraries
+### 2. REST API + WebSockets
+
+Both REST API and Phoenix Channels are used:
+
+- **REST API**: CRUD operations for users, rooms, positions, annotations
+- **WebSockets**: Real-time collaboration in analysis rooms
+- Rationale: Clean separation of concerns, better caching, SEO-friendly
+
+### 3. No Standard Chess Libraries
 
 The core analysis is built from scratch using custom Elixir modules:
 
@@ -42,7 +50,7 @@ This allows:
 - Custom annotations (text, arrows, highlights)
 - Non-standard positions for discussion
 
-### 3. Bitboards
+### 4. Bitboards
 
 Bitboards are used for:
 
@@ -59,7 +67,7 @@ Bitboards are used for:
 }
 ```
 
-### 4. Apache AGE (Graph Database)
+### 5. Apache AGE (Graph Database)
 
 **PostgreSQL with Apache AGE extension** provides graph capabilities without extra infrastructure:
 
@@ -86,17 +94,17 @@ Bitboards are used for:
 (:Position)-[:COLOR_REVERSED {weight}]->(:Position)
 ```
 
-### 5. Similarity Search
+### 6. Similarity Search
 
 Multiple search modes using graph edges:
 
-| Mode               | Edge Type         | Description                      |
-| ------------------ | ----------------- | -------------------------------- |
-| **Exact**          | (exact match)     | Traditional FEN matching         |
-| **Color Reversed** | COLOR_REVERSED    | White ↔ Black swapped            |
-| **Pawn Structure** | SIMILAR_TO (pawn) | Only pawn positions compared     |
-| **Fuzzy Match**    | SIMILAR_TO        | Piece displacement tolerance     |
-| **Pattern**        | SIMILAR_TO        | Abstract patterns (e.g., K+Q vs) |
+| Mode               | Edge Type      | Description                      |
+| ------------------ | -------------- | -------------------------------- |
+| **Exact**          | (exact match)  | Traditional FEN matching         |
+| **Color Reversed** | COLOR_REVERSED | White ↔ Black swapped            |
+| **Pawn Structure** | SIMILAR_TO     | Only pawn positions compared     |
+| **Fuzzy Match**    | SIMILAR_TO     | Piece displacement tolerance     |
+| **Pattern**        | SIMILAR_TO     | Abstract patterns (e.g., K+Q vs) |
 
 **Similarity Metrics:**
 
@@ -105,17 +113,7 @@ Multiple search modes using graph edges:
 - Cosine similarity for material counts
 - Weighted scoring (pawns: 30%, pieces: 30%, position: 40%)
 
-**Query Example:**
-
-```cypher
-MATCH (p:Position {fen: $fen})-[s:SIMILAR_TO]-(related)
-WHERE s.weight > 0.7
-RETURN related.fen, s.weight
-ORDER BY s.weight DESC
-LIMIT 20
-```
-
-### 6. Stockfish Integration
+### 7. Stockfish Integration
 
 Stockfish WASM is **optional**, not core:
 
@@ -131,23 +129,24 @@ Users can still:
 - Search similar positions (via AGE graph)
 - Collaborate in real-time
 
-### 7. Collaboration Features
+### 8. Collaboration Features
 
 **Room System:**
 
 - Create/join analysis rooms with unique codes
-- Real-time board synchronization
+- Real-time board synchronization via WebSockets
 - Cursor/selection presence indicators
 - In-room chat
 - Spectator mode
 
 **Technology:** Phoenix Channels + Presence
 
-### 8. User Access
+### 9. User Access
 
 - **Anonymous access**: Full functionality without login
 - **Optional Google OAuth**: Via Ueberauth
 - **Guest identifier**: Random or user-provided name
+- **No sensitive data**: No email stored; OAuth tokens handled server-side only
 
 ---
 
@@ -155,41 +154,42 @@ Users can still:
 
 ### Backend
 
-| Component      | Technology       | Version | Notes                |
-| -------------- | ---------------- | ------- | -------------------- |
-| Language       | Elixir           | 1.16+   | Latest stable        |
-| Web Framework  | Phoenix          | 1.7+    | Latest stable        |
-| Database       | PostgreSQL       | 15+     | With AGE extension   |
-| Graph DB       | Apache AGE       | 1.5+    | PostgreSQL extension |
-| ORM            | Ecto             | 3.10+   | Ships with Phoenix   |
-| Real-time      | Phoenix Channels | 1.7+    | Built into Phoenix   |
-| Authentication | Ueberauth        | 0.10+   | OAuth strategy       |
+| Component     | Technology | Version | Notes               |
+| ------------- | ---------- | ------- | ------------------- |
+| Language      | Elixir     | latest  | Verify on implement |
+| Web Framework | Phoenix    | latest  | Verify on implement |
+| Database      | PostgreSQL | latest  | With AGE extension  |
+| Graph DB      | Apache AGE | latest  | Verify on implement |
+| ORM           | Ecto       | latest  | Ships with Phoenix  |
+| REST API      | Phoenix    | latest  | Built into Phoenix  |
+| Real-time     | Phoenix    | latest  | Channels, built-in  |
+| Auth          | Ueberauth  | latest  | OAuth strategy      |
 
 ### Frontend
 
-| Component        | Technology   | Version | Notes                  |
-| ---------------- | ------------ | ------- | ---------------------- |
-| Language         | TypeScript   | 5.3+    | Latest stable          |
-| UI Framework     | React        | 18+     | Latest stable          |
-| Build Tool       | Vite         | 5+      | Fast builds            |
-| State Management | Zustand      | 4+      | Simple, React-friendly |
-| HTTP Client      | Fetch API    | Native  | No library needed      |
-| Chess Display    | Custom SVG   | -       | Built from scratch     |
-| Stockfish        | stockfish.js | Latest  | WASM chess engine      |
-| Styling          | Tailwind CSS | 3+      | Already configured     |
+| Component        | Technology      | Version | Notes               |
+| ---------------- | --------------- | ------- | ------------------- |
+| Language         | TypeScript      | latest  | Verify on implement |
+| UI Framework     | React           | latest  | Verify on implement |
+| Build Tool       | Vite            | latest  | Verify on implement |
+| Package Manager  | pnpm            | latest  | Verify on implement |
+| State Management | Zustand         | latest  | Verify on implement |
+| HTTP Client      | Fetch API       | native  | No library needed   |
+| Chess Display    | Custom SVG      | -       | Built from scratch  |
+| Stockfish        | stockfish.js    | latest  | WASM chess engine   |
+| Styling          | Vanilla Extract | latest  | Type-safe CSS       |
 
 ### Development Tools
 
-| Component           | Technology | Version  | Notes             |
-| ------------------- | ---------- | -------- | ----------------- |
-| Container           | Docker     | Latest   | For deployment    |
-| Hosting             | Fly.io     | -        | Config exists     |
-| Linting (Elixir)    | Credo      | 1.7+     | Elixir standard   |
-| Formatting (Elixir) | Elixir fmt | Built-in | -                 |
-| Linting (JS/TS)     | ESLint     | 8+       | -                 |
-| Formatting (JS/TS)  | Prettier   | 3+       | Already in VSCode |
-| Testing (Elixir)    | ExUnit     | Built-in | -                 |
-| Testing (JS/TS)     | Vitest     | Latest   | Fast, Vite-native |
+| Component        | Technology   | Version              | Notes             |
+| ---------------- | ------------ | -------------------- | ----------------- |
+| Container        | Docker       | Latest, devcontainer |
+| Dev Environment  | devcontainer | -                    | Config exists     |
+| Linting (Elixir) | Credo        | latest               | Elixir standard   |
+| Formatting       | Elixir fmt   | Built-in             | -                 |
+| Linting (JS/TS)  | Biome        | latest               | All-in-one        |
+| Formatting       | Biome        | latest               | Built-in Biome    |
+| Testing (JS/TS)  | Vitest       | latest               | Fast, Vite-native |
 
 ---
 
@@ -197,9 +197,12 @@ Users can still:
 
 ### Local Development
 
+All development takes place inside a **devcontainer**. This ensures consistency across team members.
+
 ```bash
-# Start dev environment (existing)
-docker-compose up -d
+# Open in VS Code
+# Press F1 → "Reopen in Container"
+# Wait for container to build
 
 # Start Phoenix backend
 mix deps.get
@@ -207,20 +210,20 @@ mix phx.server
 
 # Start React frontend (in separate terminal)
 cd assets
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 **Hot Reloading:** Both Phoenix (Elixir) and Vite (React) support hot reloading for rapid development.
 
 ### Code Generation
 
-| Command                | Description               |
-| ---------------------- | ------------------------- |
-| `mix phx.gen.json`     | Generate JSON API context |
-| `mix phx.gen.channels` | Generate Channels         |
-| `npx create-react-app` | Not needed (use Vite)     |
-| `npx vitest`           | Run tests                 |
+| Command               | Description               |
+| --------------------- | ------------------------- |
+| `mix phx.gen.json`    | Generate JSON API context |
+| `mix phx.gen.html`    | Generate HTML controller  |
+| `mix phx.gen.channel` | Generate Channel          |
+| `pnpm create vite`    | Create Vite project       |
 
 ### Debugging
 
@@ -232,25 +235,20 @@ npm run dev
 
 ```bash
 # Elixir
-mix credo --strict    # Linting
-mix format           # Formatting
+mix credo --strict
+mix format
 
 # JavaScript/TypeScript
-npm run lint         # ESLint
-npm run format       # Prettier
-
-# Tests
-mix test             # Elixir
-npm run test         # Vitest
+biome check --write    # Lint + format
+biome check          # Check only
 ```
 
 ### Pre-commit Hooks
 
-Recommend configuring:
+Configure in `.vscode/settings.json`:
 
+- Biome format on save (TypeScript)
 - `mix format` on save (Elixir)
-- Prettier on save (TypeScript)
-- ESLint before commit (TypeScript)
 
 ---
 
@@ -271,51 +269,51 @@ For scenarios requiring maximum performance and custom indexing:
 **Architecture:**
 
 ```
-┌─────────────────────────────────────────────────────┐
-│           Blunderfest Position Cluster              │
-│                                                     │
-│  ┌─────────┐   ┌─────────┐   ┌─────────┐         │
-│  │ Node 1  │   │ Node 2  │   │ Node 3  │   ...   │
-│  │ (ETS)   │   │ (ETS)   │   │ (ETS)   │         │
-│  └────┬────┘   └────┬────┘   └────┬────┘         │
-│       │             │             │                │
-│       └─────────────┼─────────────┘               │
-│                     │                             │
-│            ┌────────┴────────┐                    │
-│            │  gossip protcol │                    │
-│            │  (libcluster)   │                    │
-│            └─────────────────┘                    │
-└─────────────────────────────────────────────────────┘
++=====================================================+
+|           Blunderfest Position Cluster              |
+|                                                     |
+|  +---------+   +---------+   +---------+         |
+|  | Node 1 |   | Node 2 |   | Node 3 |   ...   |
+|  | (ETS)  |   | (ETS)  |   | (ETS)  |         |
+|  +----+----+   +----+----+   +----+----+         |
+|       |             |             |                |
+|       +-------------+-------------+               |
+|                     |                             |
+|            +--------+--------+                    |
+|            |  gossip protocol |                    |
+|            |  (libcluster)   |                    |
+|            +-----------------+                    |
++=====================================================+
 ```
 
 **Components:**
 
-| Component            | Implementation      | Purpose                 |
-| -------------------- | ------------------- | ----------------------- |
-| **Position Store**   | ETS (in-memory)     | O(1) lookup by FEN      |
-| **Similarity Index** | VP-Tree             | O(log n) fuzzy search   |
-| **Move Graph**       | ETS with edges      | From → to connections   |
-| **Persistence**      | WAL + Snapshots     | Durability without DB   |
-| **Clustering**       | libcluster (gossip) | Multi-node coordination |
+| Component            | Implementation  | Purpose                 |
+| -------------------- | --------------- | ----------------------- |
+| **Position Store**   | ETS (in-memory) | O(1) lookup by FEN      |
+| **Similarity Index** | VP-Tree         | O(log n) fuzzy search   |
+| **Move Graph**       | ETS with edges  | From → to connections   |
+| **Persistence**      | WAL + Snapshots | Durability without DB   |
+| **Clustering**       | libcluster      | Multi-node coordination |
 
 **Persistence Strategy:**
 
 ```
-┌───────────────────────────────────────┐
-│         Custom In-Memory Store        │
-│                                        │
-│  ┌─────────┐    ┌─────────────────┐  │
-│  │  ETS    │───▶│  Write-Ahead    │  │
-│  │ (fast)  │    │  Log (durable)  │  │
-│  └─────────┘    └─────────────────┘  │
-│       │                 │            │
-│       │        ┌────────┴────────┐    │
-│       │        ▼                 │    │
-│       │  Periodic Snapshot      │    │
-│       │        │                 │    │
-│       └────────┴─────────────────┘    │
-│              (recover from log)        │
-└───────────────────────────────────────┘
++---------------------------------------+
+|         Custom In-Memory Store        |
+|                                        |
+|  +---------+    +-----------------+    |
+|  |  ETS   |--> |  Write-Ahead    |    |
+|  |(fast) |    |  Log (durable) |    |
+|  +-------+    +-----------------+    |
+|       |                 |            |
+|       |        +--------+--------+    |
+|       |        ▼                 |    |
+|       |  Periodic Snapshot      |    |
+|       |        │                 |    |
+|       +--------+-----------------+    |
+|              (recover from log)        |
++---------------------------------------+
 ```
 
 **Pros:**
@@ -339,38 +337,39 @@ For scenarios requiring maximum performance and custom indexing:
 
 ### Phase 1: Foundation
 
-1. Set up React frontend with Vite + TypeScript
-2. Create custom chess board component (SVG-based)
-3. Implement Elixir chess core (position, bitboards)
-4. Add FEN serialization/deserialization
-5. Configure PostgreSQL + Apache AGE
+1. Set up React frontend with Vite + TypeScript + pnpm + Vanilla Extract
+2. Set up devcontainer for consistent dev experience
+3. Create custom chess board component (SVG-based)
+4. Implement Elixir chess core (position, bitboards)
+5. Add FEN serialization/deserialization
+6. Configure PostgreSQL + Apache AGE
 
 ### Phase 2: Analysis Features
 
-6. Custom move generation (with optional validation)
-7. Pawn structure analysis (bitboard functions)
-8. Fingerprint generation for positions
-9. AGE vertex creation for positions
+7. Custom move generation (with optional validation)
+8. Pawn structure analysis (bitboard functions)
+9. Fingerprint generation for positions
+10. AGE vertex creation for positions
 
 ### Phase 3: Graph Search
 
-10. Create MOVE edges between positions
-11. Build SIMILARITY edge generation (background job)
-12. Cypher query API for position search
-13. Color reversal and fuzzy matching via edges
+11. Create MOVE edges between positions
+12. Build SIMILARITY edge generation (background job)
+13. Cypher query API for position search
+14. Color reversal and fuzzy matching via edges
 
 ### Phase 4: Collaboration
 
-14. Phoenix Channels for rooms
-15. Real-time board sync
-16. Presence indicators
-17. Chat and spectator mode
+15. Phoenix Channels for rooms
+16. Real-time board sync
+17. Presence indicators
+18. Chat and spectator mode
 
 ### Phase 5: Enhancements
 
-18. Stockfish WASM integration (optional)
-19. Google OAuth authentication
-20. UI polish and responsive design
+19. Stockfish WASM integration (optional)
+20. Google OAuth authentication (no email storage)
+21. UI polish and responsive design
 
 ---
 
@@ -381,28 +380,29 @@ For scenarios requiring maximum performance and custom indexing:
 ```
 lib/blunderfest/
 ├── chess/
-│   ├── position.ex        # Position struct and representation
-│   ├── bitboards.ex       # Bitboard operations
-│   ├── moves.ex           # Move generation
-│   ├── validation.ex      # Optional move validation
+│   ├── position.ex          # Position struct and representation
+│   ├── bitboards.ex        # Bitboard operations
+│   ├── moves.ex            # Move generation
+│   ├── validation.ex     # Optional move validation
 │   ├── fen.ex             # FEN serialization
-│   ├── fingerprint.ex     # Position fingerprints for search
-│   ├── similarity.ex      # Similarity scoring algorithms
-│   └── pawns.ex           # Pawn structure analysis
+│   ├── fingerprint.ex    # Position fingerprints for search
+│   ├── similarity.ex     # Similarity scoring algorithms
+│   └── pawns.ex          # Pawn structure analysis
 ├── graph/
 │   ├── age.ex             # AGE Cypher query wrapper
 │   ├── position.ex        # Graph vertex operations
 │   ├── edge_builder.ex   # Similarity edge generation
 │   └── queries.ex        # Common Cypher queries
 ├── accounts/
-│   ├── user.ex            # User schema
-│   └── auth.ex            # Authentication (OAuth)
+│   ├── user.ex           # User schema (no email)
+│   └── auth.ex           # Authentication (OAuth)
 ├── analysis/
-│   ├── room.ex            # Analysis room
-│   └── annotation.ex      # Position annotations
+│   ├── room.ex           # Analysis room
+│   └── annotation.ex     # Position annotations
 └── web/
-    ├── channels/         # Phoenix Channels
-    └── controllers/      # HTTP controllers
+    ├── channels/        # Phoenix Channels
+    ├── controllers/   # REST API controllers
+    └── routers/      # Router
 ```
 
 ### Frontend (React)
@@ -410,17 +410,19 @@ lib/blunderfest/
 ```
 assets/src/
 ├── components/
-│   ├── ChessBoard/       # Custom SVG board
+│   ├── ChessBoard/      # Custom SVG board
 │   ├── AnalysisPanel/    # Move list, annotations
-│   └── Room/             # Collaboration UI
+│   └── Room/           # Collaboration UI
 ├── hooks/
-│   ├── useChess/         # Chess logic hook
-│   └── useStockfish.ts  # Optional engine hook
+│   ├── useChess/       # Chess logic hook
+│   └── useStockfish.ts# Optional engine hook
 ├── lib/
-│   ├── chess.ts          # Frontend position logic
-│   └── similarity.ts     # Similarity calculations
+│   ├── chess.ts        # Frontend position logic
+│   └── similarity.ts   # Similarity calculations
+├── styles/
+│   └── *.css.ts       # Vanilla Extract styles
 └── stores/
-    └── gameStore.ts      # State management (Zustand)
+    └── gameStore.ts    # Zustand store
 ```
 
 ---
@@ -431,12 +433,13 @@ assets/src/
 
 #### users
 
-| Column     | Type      | Description         |
-| ---------- | --------- | ------------------- |
-| id         | UUID      | Primary key         |
-| email      | string    | For OAuth           |
-| guest_name | string    | For anonymous users |
-| created_at | timestamp |                     |
+| Column       | Type      | Description             |
+| ------------ | --------- | ----------------------- |
+| id           | UUID      | Primary key             |
+| guest_name   | string    | For anonymous users     |
+| provider     | string    | "anonymous" or "google" |
+| provider_uid | string    | OAuth provider ID       |
+| created_at   | timestamp |                         |
 
 #### rooms
 
@@ -460,7 +463,7 @@ assets/src/
 
 ### Apache AGE Graph
 
-#### Vertices: :Position
+#### Vertices: Position
 
 | Property          | Type     | Description                |
 | ----------------- | -------- | -------------------------- |
@@ -487,23 +490,23 @@ assets/src/
 
 ```
 User Analysis
-       │
-       ▼
-┌──────────────────┐
-│   React Frontend │
-└────────┬─────────┘
-         │ HTTP/WebSocket
-         ▼
-┌────────────────────────────┐
-│    Phoenix Backend         │
-│  ┌──────────┐ ┌──────────┐ │
-│  │  Ecto    │ │  AGE     │ │
-│  │  Tables  │ │  Graph   │ │
-│  └──────────┘ └──────────┘ │
-└────────┬───────────────────┘
-         │
-    ┌────┴────┐
-    ▼         ▼
+       |
+       v
++--------------+
+| React Frontend|
++--------------+
+       | HTTP/WebSocket
+       v
++----------------------------+
+|    Phoenix Backend         |
+|  +----------+ +----------+ |
+|  |  Ecto    | |  AGE     | |
+|  |  Tables | |  Graph  | |
+|  +----------+ +----------+ |
++----------------------------+
+       |
+   +---+---+
+   |       |
 PostgreSQL + AGE
 (One database!)
 ```
