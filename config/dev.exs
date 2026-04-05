@@ -4,7 +4,7 @@ import Config
 config :blunderfest, Blunderfest.Repo,
   username: "postgres",
   password: "postgres",
-  hostname: "localhost",
+  hostname: System.get_env("PGHOST") || "localhost",
   database: "blunderfest_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
@@ -24,11 +24,7 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "Npbn666kKiSsuYXCenvflIwLuPh1oBZR5iIrmJiAxie7He0iiYB5SbuBVFOY6plX",
-  watchers: [
-    cmd: "pnpm",
-    args: ["dev", "--host", "127.0.0.1", "--port", "5173"],
-    cd: Path.expand("../assets", __DIR__)
-  ]
+  watchers: []
 
 # ## SSL Support
 #
