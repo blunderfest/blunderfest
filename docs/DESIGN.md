@@ -216,6 +216,47 @@ pnpm dev
 
 **Hot Reloading:** Both Phoenix (Elixir) and Vite (React) support hot reloading for rapid development.
 
+### Vite Configuration
+
+Vite is started automatically by Phoenix when using the dev.exs watcher config. To ensure Vite exits when Phoenix exits, use this `vite.config.ts`:
+
+```typescript
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+
+export default defineConfig(({ command }) => {
+	const isDev = command !== "build";
+	if (isDev) {
+		// Terminate the watcher when Phoenix quits
+		process.stdin.on("close", () => {
+			process.exit(0);
+		});
+
+		process.stdin.resume();
+	}
+
+	return {
+		plugins: [react()],
+		build: {
+			outDir: "../priv/static",
+			emptyOutDir: true,
+		},
+	};
+});
+```
+
+Add to `config/dev.exs` watchers:
+
+```elixir
+watchers: [
+  node: [
+    "node_modules/.bin/vite",
+    "--host",
+    cd: Path.expand("../assets", __DIR__)
+  ]
+]
+```
+
 ### Code Generation
 
 | Command               | Description               |
