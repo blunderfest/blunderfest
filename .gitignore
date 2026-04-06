@@ -1,5 +1,5 @@
-# Created by https://www.toptal.com/developers/gitignore/api/react,phoenix,elixir
-# Edit at https://www.toptal.com/developers/gitignore?templates=react,phoenix,elixir
+# Created by https://www.toptal.com/developers/gitignore/api/react,elixir,phoenix
+# Edit at https://www.toptal.com/developers/gitignore?templates=react,elixir,phoenix
 
 ### Elixir ###
 /_build
@@ -27,6 +27,7 @@ erl_crash.dump
 # Static artifacts
 /node_modules
 /assets/node_modules
+/assets/dist
 
 # Since we are building assets from web/static,
 # we ignore priv/static. You may want to comment
@@ -55,4 +56,5 @@ psd
 thumb
 sketch
 
-# End of https://www.toptal.com/developers/gitignore/api/react,phoenix,elixir
+# End of https://www.toptal.com/developers/gitignore/api/react,elixir,phoenix
+.pnpm-store

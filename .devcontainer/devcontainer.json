@@ -35,10 +35,9 @@
       "extensions": [
         "JakeBecker.elixir-ls",
         "ms-azuretools.vscode-docker",
-        "esbenp.prettier-vscode",
-        "bradlc.vscode-tailwindcss",
         "ckolkman.vscode-postgres",
-        "saoudrizwan.claude-dev"
+        "saoudrizwan.claude-dev",
+        "biomejs.biome"
       ],
       "settings": {
         "elixirLS.dialyzerEnabled": true,
