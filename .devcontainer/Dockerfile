@@ -1,9 +1,9 @@
 # Devcontainer Dockerfile for Elixir/Phoenix development
 # Based on the project's production Dockerfile versions
 
-ARG ELIXIR_VERSION=1.17.3
-ARG OTP_VERSION=27.1.2
-ARG DEBIAN_VERSION=bullseye-20241111-slim
+ARG ELIXIR_VERSION=1.19.5
+ARG OTP_VERSION=28.3.1
+ARG DEBIAN_VERSION=bookworm-20260316-slim
 
 FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}
 
@@ -36,6 +36,9 @@ RUN bash nodesource_setup.sh && apt-get install -y nodejs && rm nodesource_setup
 # Install pnpm for asset management
 RUN npm install -g pnpm
 
+# Install Biome for code formatting/linting
+RUN npm install -g @biomejs/biome
+
 # Install hex and rebar
 RUN mix local.hex --force && mix local.rebar --force
 
@@ -54,6 +57,8 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     && mkdir -p /home/$USERNAME/.local/share/Cline \
     && mkdir -p /home/$USERNAME/.vscode-server/bin \
+    && mkdir -p /home/$USERNAME/.ssh \
+    && chmod 700 /home/$USERNAME/.ssh \
     && chown -R $USERNAME:$USERNAME /home/$USERNAME
 
 # Set the default user
