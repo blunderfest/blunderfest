@@ -15,10 +15,41 @@ Blunderfest is a high-performance, distributed chess database engine built with 
 ### Frontend
 - **Framework**: React 19 with TypeScript
 - **Build Tool**: Vite
+- **Package Manager**: PNPM
 - **Styling**: Vanilla Extract (type-safe CSS-in-JS)
 - **State Management**: Zustand
 - **Data Fetching**: TanStack Query with ky HTTP client
 - **Import Aliases**: `@/` path alias (no relative imports)
+
+## Project Structure (Umbrella)
+
+```
+blunderfest/
+├── apps/
+│   ├── blunderfest_core/     # Pure Elixir library
+│   ├── blunderfest_api/      # Phoenix server (serves built React app)
+│   └── blunderfest_ui/       # React app (built output goes to blunderfest_api/priv/static)
+├── mix.exs
+├── package.json              # Root package.json for PNPM workspace
+└── pnpm-workspace.yaml       # PNPM workspace configuration
+```
+
+### Development Workflow
+
+```bash
+# Start Phoenix API server
+cd apps/blunderfest_api && mix phx.server
+
+# Start React dev server (in another terminal)
+cd apps/blunderfest_ui && pnpm run dev
+```
+
+### Build Process
+
+```bash
+# Build React app (outputs to blunderfest_api/priv/static)
+cd apps/blunderfest_ui && pnpm run build
+```
 
 ## Development Guidelines
 
