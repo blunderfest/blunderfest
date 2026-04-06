@@ -12,23 +12,22 @@ Blunderfest provides two API layers:
 ### Database Lifecycle
 
 ```elixir
-# Create a new database
-{:ok, db} = Blunderfest.Database.create("my_database.bchess", options)
+# Initialize the shared database (deployment/admin only)
+# This is typically done once during system setup
+{:ok, db} = Blunderfest.Database.initialize("s3://blunderfest-db/main.bchess", options)
 
-# Open an existing database
-{:ok, db} = Blunderfest.Database.open("my_database.bchess")
-
-# Open with options
-{:ok, db} = Blunderfest.Database.open("my_database.bchess", 
+# Connect to the shared database (API nodes)
+# All API nodes connect to the same database
+{:ok, db} = Blunderfest.Database.connect("s3://blunderfest-db/main.bchess", 
   read_only: true,
   cache_size: 100_000,
   lazy_load: true
 )
 
-# Close the database
-:ok = Blunderfest.Database.close(db)
+# Disconnect from the database
+:ok = Blunderfest.Database.disconnect(db)
 
-# Get database info
+# Get database info (all nodes see the same database)
 {:ok, info} = Blunderfest.Database.info(db)
 # => %{
 #   game_count: 1000000,
@@ -37,8 +36,34 @@ Blunderfest provides two API layers:
 #   file_size: 630000000,
 #   version: "1.0",
 #   created_at: ~U[2024-01-01 00:00:00Z],
-#   modified_at: ~U[2024-01-15 12:30:00Z]
+#   modified_at: ~U[2024-01-15 12:30:00Z],
+#   storage_backend: :s3,
+#   replication_factor: 3,
+#   active_nodes: 5
 # }
+```
+
+### Database Architecture
+
+**Single Shared Database Model:**
+
+- **One primary database** stored on shared storage (S3/MinIO or network filesystem)
+- **Multiple API nodes** connect to the same database
+- **Read replicas** for scaling read operations
+- **Write coordination** through distributed locking
+
+```elixir
+# Deployment configuration
+config :blunderfest, :database,
+  storage: :s3,
+  bucket: "blunderfest-db",
+  path: "main.bchess",
+  region: "us-east-1",
+  replication: [
+    enabled: true,
+    factor: 3,
+    regions: ["us-east-1", "eu-west-1", "ap-southeast-1"]
+  ]
 ```
 
 ### Game Operations
