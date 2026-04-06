@@ -213,13 +213,23 @@ Phase 6: Polish & Scale (2-4 weeks)
 **Deliverables:**
 - React project structure
 - Chessboard component
+- Vanilla Extract design system
 
 **Tasks:**
-1. Set up React + TypeScript + Vite
-2. Create component structure
-3. Implement chessboard component
-4. Implement piece rendering
-5. Add drag-and-drop support
+1. Set up React 19 + TypeScript + Vite with PNPM workspace
+2. Install and configure:
+   - Vanilla Extract for type-safe styling
+   - Sprinkles for atomic CSS utilities
+   - Recipes for component variants
+   - Biome for linting/formatting
+   - Zustand for state management
+   - TanStack Query + ky for data fetching
+3. Create component structure using kebab-case filenames
+4. Set up `~/` path alias for absolute imports (not `@`)
+5. Create Vanilla Extract design tokens (colors, spacing, typography)
+6. Implement chessboard component
+7. Implement piece rendering
+8. Add drag-and-drop support with react-dnd
 
 ### Week 23-24: Game Viewer and Search
 
