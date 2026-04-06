@@ -176,6 +176,22 @@ game_data = %{
   limit: 50
 )
 
+# Find position with colors reversed
+{:ok, flipped} = Blunderfest.Position.search_flipped(db, fen_string)
+# => %{
+#   original_position: %{fen: "...", hash: 123},
+#   flipped_position: %{fen: "...", hash: 456},
+#   games_with_original: 1500,
+#   games_with_flipped: 1200,
+#   combined_stats: %{...}
+# }
+
+# Search with flipped positions included
+{:ok, positions} = Blunderfest.Position.find(db,
+  fen: fen_string,
+  include_flipped: true
+)
+
 # Get transpositions (different move orders to same position)
 {:ok, transpositions} = Blunderfest.Position.transpositions(db, fen_string)
 # => [
@@ -358,7 +374,9 @@ GET    /games/:id/positions    # Get all positions in game
 GET    /positions/:fen         # Get position statistics
 POST   /positions/search       # Search positions
 GET    /positions/:fen/similar # Find similar positions
+GET    /positions/:fen/flipped # Find position with colors reversed
 GET    /positions/:fen/games   # Get games with this position
+GET    /positions/:fen/transpositions # Get transpositions
 ```
 
 #### Players
