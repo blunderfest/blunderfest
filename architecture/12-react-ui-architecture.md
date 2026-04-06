@@ -32,7 +32,487 @@ We'll use **Vanilla Extract** for type-safe, zero-runtime CSS-in-JS styling.
 - No opinionated design system to override
 - Perfect for custom chess-specific UI components
 
-**Note**: No component library is selected at this time. Components will be built from scratch using Vanilla Extract for styling.
+### Vanilla Extract Design System
+
+We use **Vanilla Extract** as our design system for consistent theming and component styling.
+
+```typescript
+// src/styles/design-tokens.css.ts
+import { createGlobalTheme, createThemeContract } from '@vanilla-extract/css';
+
+export const vars = createThemeContract({
+  color: {
+    primary: null,
+    secondary: null,
+    background: null,
+    surface: null,
+    text: null,
+    textMuted: null,
+    border: null,
+    board: {
+      light: null,
+      dark: null,
+      highlight: null,
+      selected: null
+    },
+    piece: {
+      white: null,
+      black: null
+    }
+  },
+  spacing: {
+    xs: null,
+    sm: null,
+    md: null,
+    lg: null,
+    xl: null
+  },
+  font: {
+    family: null,
+    size: {
+      xs: null,
+      sm: null,
+      md: null,
+      lg: null,
+      xl: null
+    },
+    weight: {
+      normal: null,
+      bold: null
+    }
+  },
+  borderRadius: {
+    sm: null,
+    md: null,
+    lg: null
+  },
+  shadow: {
+    sm: null,
+    md: null,
+    lg: null
+  }
+});
+
+createGlobalTheme(':root', vars, {
+  color: {
+    primary: '#4a90d9',
+    secondary: '#6c757d',
+    background: '#f8f9fa',
+    surface: '#ffffff',
+    text: '#212529',
+    textMuted: '#6c757d',
+    border: '#dee2e6',
+    board: {
+      light: '#f0d9b5',
+      dark: '#b58863',
+      highlight: '#ffff00',
+      selected: '#4a90d9'
+    },
+    piece: {
+      white: '#ffffff',
+      black: '#000000'
+    }
+  },
+  spacing: {
+    xs: '4px',
+    sm: '8px',
+    md: '16px',
+    lg: '24px',
+    xl: '32px'
+  },
+  font: {
+    family: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    size: {
+      xs: '12px',
+      sm: '14px',
+      md: '16px',
+      lg: '18px',
+      xl: '24px'
+    },
+    weight: {
+      normal: '400',
+      bold: '700'
+    }
+  },
+  borderRadius: {
+    sm: '4px',
+    md: '8px',
+    lg: '12px'
+  },
+  shadow: {
+    sm: '0 1px 2px rgba(0, 0, 0, 0.1)',
+    md: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    lg: '0 10px 15px rgba(0, 0, 0, 0.1)'
+  }
+});
+```
+
+**Component Theme Styles**:
+
+```typescript
+// src/styles/components/button.css.ts
+import { style } from '@vanilla-extract/css';
+import { vars } from '../design-tokens.css.ts';
+
+export const button = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: `${vars.spacing.sm} ${vars.spacing.md}`,
+  fontFamily: vars.font.family,
+  fontSize: vars.font.size.md,
+  fontWeight: vars.font.weight.bold,
+  borderRadius: vars.borderRadius.md,
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  selectors: {
+    '&:hover': {
+      opacity: 0.9
+    },
+    '&:disabled': {
+      opacity: 0.5,
+      cursor: 'not-allowed'
+    }
+  }
+});
+
+export const buttonPrimary = style([button, {
+  backgroundColor: vars.color.primary,
+  color: vars.color.surface
+}]);
+
+export const buttonSecondary = style([button, {
+  backgroundColor: vars.color.secondary,
+  color: vars.color.surface
+}]);
+```
+
+**Chess Board Theme Styles**:
+
+```typescript
+// src/styles/components/chess-board.css.ts
+import { style } from '@vanilla-extract/css';
+import { vars } from '../design-tokens.css.ts';
+
+export const board = style({
+  display: 'flex',
+  flexDirection: 'column',
+  border: `2px solid ${vars.color.border}`,
+  borderRadius: vars.borderRadius.md,
+  overflow: 'hidden',
+  boxShadow: vars.shadow.md
+});
+
+export const boardRow = style({
+  display: 'flex'
+});
+
+export const square = style({
+  width: '64px',
+  height: '64px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  selectors: {
+    '&.light': {
+      backgroundColor: vars.color.board.light
+    },
+    '&.dark': {
+      backgroundColor: vars.color.board.dark
+    },
+    '&.highlighted': {
+      backgroundColor: vars.color.board.highlight
+    },
+    '&.selected': {
+      boxShadow: `inset 0 0 0 4px ${vars.color.board.selected}`
+    }
+  }
+});
+```
+
+### Vanilla Extract Sprinkles (Atomic CSS)
+
+We use **Sprinkles** for type-safe atomic CSS utilities - perfect for quick layout and styling without creating new stylesheets.
+
+```typescript
+// src/styles/sprinkles.css.ts
+import { createSprinkles, defineConfig } from '@vanilla-extract/sprinkles';
+import { vars } from './design-tokens.css.ts';
+
+const responsiveConfig = defineConfig({
+  breakpoints: {
+    mobile: '(min-width: 640px)',
+    tablet: '(min-width: 768px)',
+    desktop: '(min-width: 1024px)'
+  },
+  conditions: {
+    hover: '@hover',
+    focus: '@focus'
+  }
+});
+
+export const sprinkles = createSprinkles(
+  // Layout properties
+  responsiveConfig,
+  {
+    display: {
+      none: { condition: 'hover' },
+      flex: true,
+      block: true,
+      inline: true,
+      grid: true
+    },
+    flexDirection: {
+      row: true,
+      column: true,
+      'row-reverse': true,
+      'column-reverse': true
+    },
+    justifyContent: {
+      center: true,
+      start: true,
+      end: true,
+      'space-between': true,
+      'space-around': true
+    },
+    alignItems: {
+      center: true,
+      start: true,
+      end: true,
+      stretch: true,
+      baseline: true
+    },
+    gap: {
+      xs: vars.spacing.xs,
+      sm: vars.spacing.sm,
+      md: vars.spacing.md,
+      lg: vars.spacing.lg,
+      xl: vars.spacing.xl
+    },
+    padding: {
+      xs: vars.spacing.xs,
+      sm: vars.spacing.sm,
+      md: vars.spacing.md,
+      lg: vars.spacing.lg,
+      xl: vars.spacing.xl
+    },
+    margin: {
+      xs: vars.spacing.xs,
+      sm: vars.spacing.sm,
+      md: vars.spacing.md,
+      lg: vars.spacing.lg,
+      xl: vars.spacing.xl
+    },
+    // Color properties
+    color: {
+      primary: vars.color.primary,
+      secondary: vars.color.secondary,
+      text: vars.color.text,
+      'text-muted': vars.color.textMuted
+    },
+    backgroundColor: {
+      primary: vars.color.primary,
+      secondary: vars.color.secondary,
+      surface: vars.color.surface,
+      background: vars.color.background
+    },
+    // Typography
+    fontSize: {
+      xs: vars.font.size.xs,
+      sm: vars.font.size.sm,
+      md: vars.font.size.md,
+      lg: vars.font.size.lg,
+      xl: vars.font.size.xl
+    },
+    fontWeight: {
+      normal: vars.font.weight.normal,
+      bold: vars.font.weight.bold
+    },
+    // Border radius
+    borderRadius: {
+      sm: vars.borderRadius.sm,
+      md: vars.borderRadius.md,
+      lg: vars.borderRadius.lg,
+      full: '9999px'
+    },
+    // Shadows
+    boxShadow: {
+      sm: vars.shadow.sm,
+      md: vars.shadow.md,
+      lg: vars.shadow.lg
+    }
+  }
+);
+
+// Type exports for Sprinkles
+export type SprinklesArgs = Parameters<typeof sprinkles>[0];
+```
+
+**Using Sprinkles in Components**:
+
+```typescript
+// src/components/common/card.tsx
+import { sprinkles } from '~/styles/sprinkles.css';
+
+interface CardProps {
+  children: React.ReactNode;
+  elevated?: boolean;
+}
+
+export const Card = ({ children, elevated = false }: CardProps) => (
+  <div
+    className={sprinkles({
+      padding: 'md',
+      borderRadius: 'md',
+      backgroundColor: 'surface',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 'md',
+      boxShadow: elevated ? 'md' : 'sm'
+    })}
+  >
+    {children}
+  </div>
+);
+```
+
+### Vanilla Extract Recipes
+
+We use **Recipes** for reusable component patterns with variants - perfect for buttons, inputs, and other interactive elements.
+
+```typescript
+// src/styles/recipes/button.recipe.css.ts
+import { defineRecipe } from '@vanilla-extract/recipes';
+
+export const buttonRecipe = defineRecipe({
+  base: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    border: 'none',
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+  },
+  variants: {
+    variant: {
+      primary: {
+        backgroundColor: '#4a90d9',
+        color: '#ffffff',
+        ':hover': { opacity: 0.9 },
+        ':disabled': { opacity: 0.5, cursor: 'not-allowed' }
+      },
+      secondary: {
+        backgroundColor: '#6c757d',
+        color: '#ffffff',
+        ':hover': { opacity: 0.9 },
+        ':disabled': { opacity: 0.5, cursor: 'not-allowed' }
+      },
+      ghost: {
+        backgroundColor: 'transparent',
+        color: '#4a90d9',
+        ':hover': { backgroundColor: 'rgba(74, 144, 217, 0.1)' }
+      },
+      outline: {
+        backgroundColor: 'transparent',
+        color: '#4a90d9',
+        border: '2px solid #4a90d9',
+        ':hover': { backgroundColor: 'rgba(74, 144, 217, 0.1)' }
+      }
+    },
+    size: {
+      sm: {
+        fontSize: '12px',
+        padding: '4px 8px'
+      },
+      md: {
+        fontSize: '16px',
+        padding: '8px 16px'
+      },
+      lg: {
+        fontSize: '18px',
+        padding: '12px 24px'
+      }
+    },
+    fullWidth: {
+      true: { width: '100%' },
+      false: { width: 'auto' }
+    }
+  },
+  defaultVariants: {
+    variant: 'primary',
+    size: 'md',
+    fullWidth: false
+  }
+});
+```
+
+**Using Recipes in Components**:
+
+```typescript
+// src/components/common/button.tsx
+import { buttonRecipe } from '~/styles/recipes/button.recipe.css';
+
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  fullWidth?: boolean;
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}
+
+export const Button = ({
+  variant = 'primary',
+  size = 'md',
+  fullWidth = false,
+  children,
+  onClick,
+  disabled
+}: ButtonProps) => (
+  <button
+    className={buttonRecipe({ variant, size, fullWidth })}
+    onClick={onClick}
+    disabled={disabled}
+  >
+    {children}
+  </button>
+);
+
+// Usage examples
+const Examples = () => (
+  <>
+    <Button variant="primary" size="md">Primary Button</Button>
+    <Button variant="secondary" size="lg">Secondary Button</Button>
+    <Button variant="ghost">Ghost Button</Button>
+    <Button variant="outline" size="sm">Outline Button</Button>
+    <Button fullWidth>Full Width Button</Button>
+  </>
+);
+```
+
+### Complete Vanilla Extract Setup
+
+**Folder Structure**:
+
+```
+src/styles/
+├── design-tokens.css.ts      # Theme variables (createThemeContract)
+├── sprinkles.css.ts          # Atomic CSS utilities
+├── recipes/
+│   ├── button.recipe.css.ts  # Button component recipe
+│   ├── input.recipe.css.ts   # Input component recipe
+│   └── card.recipe.css.ts    # Card component recipe
+├── components/
+│   ├── button.css.ts         # Custom button styles
+│   └── chess-board.css.ts   # Chess board styles
+└── globals.css               # Global styles
+```
 
 ### Linting and Formatting
 
