@@ -27,6 +27,12 @@ This directory contains the architectural decisions and technical specifications
 16. **[16-distributed-system-design.md](./16-distributed-system-design.md)** - **Distributed coordination** with consistent hashing, WAL, and failure handling
 17. **[17-binary-format-evolution.md](./17-binary-format-evolution.md)** - **Binary format versioning** and migration strategy
 
+### Implementation Guides (NEW - Critical Infrastructure)
+18. **[14-nif-implementation.md](./14-nif-implementation.md)** - **NIF implementation guide** using Rustler for performance-critical paths
+19. **[14-stress-testing.md](./14-stress-testing.md)** - **Stress testing and chaos engineering** strategy for reliability
+20. **[14-search-algorithm.md](./14-search-algorithm.md)** - **Search algorithm documentation** for position and game queries
+21. **[14-data-retention.md](./14-data-retention.md)** - **Data retention policy** with GDPR compliance and cost optimization
+
 ## Quick Reference
 
 ### Technology Stack
@@ -85,3 +91,12 @@ If you're implementing this system, read these first:
 3. **[17-binary-format-evolution.md](./17-binary-format-evolution.md)** - Understand versioning strategy
 
 These documents address critical architectural issues and should be considered authoritative over earlier documents where they conflict.
+
+## New Implementation Guides
+
+Additional documentation for critical infrastructure:
+
+1. **[14-nif-implementation.md](./14-nif-implementation.md)** - Rustler NIF setup, Zobrist hashing, mmap, and testing
+2. **[14-stress-testing.md](./14-stress-testing.md)** - Load, stress, and chaos engineering strategies
+3. **[14-search-algorithm.md](./14-search-algorithm.md)** - Position and game search algorithms
+4. **[14-data-retention.md](./14-data-retention.md)** - Lifecycle management, GDPR compliance, and cost optimization
