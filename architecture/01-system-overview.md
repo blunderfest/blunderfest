@@ -40,11 +40,36 @@ Blunderfest is a high-performance, distributed chess database engine. It provide
 +-----------v---------------------v---------------------v----------+
 |                      Storage Layer                               |
 |  +------------------+  +------------------+  +------------------+|
-|  |  Database Files  |  |  Position Index  |  |  Shared Storage  ||
-|  |  (.bchess)       |  |  (.idx)          |  |  (S3/MinIO)      ||
+|  |  Hot Storage    |  |  Cold Storage   |  |  Metadata Store ||
+|  |  (Local SSD)    |  |  (S3/MinIO)    |  |  (PostgreSQL)    ||
+|  |  - Position idx |  |  - Game segments|  |  - Shard map     ||
+|  |  - Player idx   |  |  - Backups      |  |  - Node registry ||
+|  |  - Query cache  |  |  - Exports      |  |  - WAL           ||
 |  +------------------+  +------------------+  +------------------+|
 +------------------------------------------------------------------+
 ```
+
+## Storage Architecture (Hot/Cold Separation)
+
+The storage layer is split into three tiers for optimal performance:
+
+### Hot Storage (Local NVMe SSD)
+- Position index (memory-mapped for <1ms lookup)
+- Player index
+- Opening index
+- Query cache (LRU)
+- Bloom filter for quick existence checks
+
+### Cold Storage (S3/MinIO)
+- Game data segments (append-only .bchess files)
+- Backups and archives
+- User exports (PGN, JSON)
+
+### Metadata Store (PostgreSQL)
+- Shard map (consistent hashing)
+- Node registry
+- Write-ahead log (WAL)
+- API keys and authentication
 
 ## Component Overview
 
@@ -52,7 +77,7 @@ Blunderfest is a high-performance, distributed chess database engine. It provide
 
 The heart of the system - a pure Elixir library providing:
 
-- **Binary Storage**: Custom file format optimized for chess data
+- **Binary Storage**: Custom segment format optimized for chess data
 - **Game Management**: Add, retrieve, delete, search games
 - **Position Indexing**: Zobrist hashing for O(1) position lookup
 - **PGN Support**: Import/export standard PGN files
@@ -66,24 +91,24 @@ lib/blunderfest_core/
 ├── position.ex                 # Position operations
 ├── player.ex                   # Player operations
 ├── storage/
-│   ├── binary_format.ex        # Binary serialization
-│   ├── file_manager.ex         # File I/O and memory mapping
-│   ├── index.ex                # Index management
-│   └── compression.ex          # Move compression
+│   ├── segment.ex              # Append-only segment management
+│   ├── memory_mapped.ex       # NIF-backed memory mapping
+│   ├── index.ex               # Position index management
+│   └── cache.ex               # LRU cache implementation
 ├── chess/
-│   ├── board.ex                # Board representation
-│   ├── move.ex                 # Move encoding/decoding
-│   ├── fen.ex                  # FEN parsing/generation
-│   ├── pgn.ex                  # PGN parser/generator
-│   └── zobrist.ex              # Zobrist hashing
+│   ├── board.ex               # Board representation
+│   ├── move.ex                # Move encoding/decoding
+│   ├── fen.ex                 # FEN parsing/generation
+│   ├── pgn.ex                 # PGN parser/generator
+│   └── zobrist.ex             # Zobrist hashing
 ├── analysis/
-│   ├── statistics.ex           # Position/game statistics
-│   ├── opening.ex              # Opening classification
-│   └── search.ex               # Advanced search
+│   ├── statistics.ex          # Position/game statistics
+│   ├── opening.ex             # Opening classification
+│   └── search.ex              # Advanced search
 └── types/
-    ├── game.ex                 # Game struct
-    ├── position.ex             # Position struct
-    └── player.ex               # Player struct
+    ├── game.ex                # Game struct
+    ├── position.ex            # Position struct
+    └── player.ex              # Player struct
 ```
 
 ### 2. API Server (`blunderfest_api`)
@@ -92,7 +117,7 @@ Phoenix-based REST API with WebSocket support:
 
 - **REST Endpoints**: CRUD operations for games, positions, players
 - **WebSocket**: Real-time engine analysis, notifications
-- **Authentication**: API key management (future)
+- **Authentication**: API key management
 - **Rate Limiting**: Protect against abuse
 - **Telemetry**: Metrics and monitoring
 
@@ -105,11 +130,11 @@ lib/blunderfest_api/
 │   ├── player_controller.ex
 │   └── analysis_controller.ex
 ├── channels/
-│   └── analysis_channel.ex     # WebSocket for engine analysis
+│   └── analysis_channel.ex    # WebSocket for engine analysis
 ├── telemetry.ex                # Metrics collection
 └── middleware/
-    ├── auth.ex                 # Authentication
-    └── rate_limit.ex           # Rate limiting
+    ├── auth.ex                # Authentication
+    └── rate_limit.ex          # Rate limiting
 ```
 
 ### 3. React UI (`blunderfest_ui`)
@@ -125,16 +150,20 @@ Modern web interface built with React 19:
 ```
 src/
 ├── components/
-│   ├── Board/                  # Chessboard component
-│   ├── GameViewer/             # Game playback
-│   ├── MoveList/               # Move notation display
-│   ├── PositionSearch/         # Search interface
-│   ├── OpeningTree/            # Opening explorer
-│   └── AnalysisBoard/          # Engine analysis
-├── hooks/                      # Custom React hooks
-├── services/                   # API client
-├── stores/                     # State management
-└── types/                      # TypeScript definitions
+│   ├── chess/
+│   │   ├── board/             # Chessboard component
+│   │   ├── piece/             # Piece rendering
+│   │   └── move-list/         # Move notation display
+│   ├── features/
+│   │   ├── game-viewer/       # Game playback
+│   │   ├── position-search/   # Search interface
+│   │   ├── opening-tree/      # Opening explorer
+│   │   └── analysis-board/     # Engine analysis
+│   └── layout/                # Layout components
+├── hooks/                     # Custom React hooks
+├── services/                  # API client (ky + TanStack Query)
+├── stores/                    # Zustand state management
+└── types/                     # TypeScript definitions
 ```
 
 ## Data Flow
@@ -151,24 +180,24 @@ PGN File
     |                   +--------+
     v                        |
 +--------+                   v
-| Core   | <---encode---- +--------+
+| Core   | <---encode----+--------+
 | DB     |               | Compress |
 +--------+               +--------+
     |
     v
 +--------+
-| Binary |
-| Format |
+| Append |
+| Segment|
 +--------+
     |
     v
 +--------+
-| Index  |
 | Update |
+| Index  |
 +--------+
     |
     v
-Storage (.bchess file)
+Background Sync --> Cold Storage (S3)
 ```
 
 ### Position Search Flow
@@ -189,13 +218,14 @@ Search Query (FEN/Criteria)
     |                     |
     v                     v
 +--------+           +--------+
-| Index  | <-------- | Lookup |
+| Cache  | <-------- | Lookup |
 +--------+           +--------+
-    |
-    v
-+--------+
-| Filter |
-+--------+
+    | (cache miss)      | (cache hit)
+    v                  v
++--------+           +--------+
+| Index  |           | Return |
+| Query  |           | Cache  |
++--------+           +--------+
     |
     v
 Results (Game IDs + Stats)
@@ -255,10 +285,10 @@ WebSocket --> Client (real-time updates)
 |  +-------------+--------------+  |
 |                |                 |
 |  +-------------v--------------+  |
-|  |   Storage Layer            |  |
-|  |   - .bchess files          |  |
-|  |   - .idx files             |  |
-|  |   - ETS caches             |  |
+|  |   Storage Layer          |  |
+|  |   - Hot Index (SSD)     |  |
+|  |   - Cold Segments (S3)  |  |
+|  |   - PostgreSQL (Meta)    |  |
 |  +----------------------------+  |
 +----------------------------------+
 ```
@@ -275,9 +305,9 @@ WebSocket --> Client (real-time updates)
         |               |               |
 +-------v-------+ +-----v-------+ +-----v-------+
 |   Node 1      | |   Node 2    | |   Node 3    |
-|   (API+DB)    | |   (API+DB)  | |   (Analysis)|
+|   (API+Hot)  | |   (API+Hot) | |   (Analysis)|
 |   Shard A-E   | |   Shard F-J | |   Engine    |
-|               | |             | |   Pool      |
+|   Hot Index   | |   Hot Index | |   Pool      |
 +-------+-------+ +-----+-------+ +-----+-------+
         |               |               |
         +---------------+---------------+
@@ -285,24 +315,22 @@ WebSocket --> Client (real-time updates)
                 +-------v-------+
                 | Shared Storage|
                 |   (S3/MinIO)  |
+                |  + PostgreSQL |
                 +---------------+
 ```
 
 ### Sharding Strategy
 
-Games are distributed across nodes based on:
+We use **consistent hashing** as the primary sharding strategy:
 
-1. **ECO Code Sharding**: Games grouped by opening classification
-   - Node 1: A00-B99
-   - Node 2: C00-D99
-   - Node 3: E00-E99 + unclassified
+```
+Game ID --> FNV-1a Hash --> Ring Position --> Node
+```
 
-2. **Date Sharding**: Games grouped by year
-   - Node 1: Pre-2000
-   - Node 2: 2000-2010
-   - Node 3: 2011-present
-
-3. **Hash-based Sharding**: Consistent hashing for even distribution
+Benefits:
+- Even distribution across nodes
+- Minimal reshuffling when adding/removing nodes
+- Simple cross-shard query resolution
 
 ## Technology Choices
 
@@ -313,11 +341,18 @@ Games are distributed across nodes based on:
 - **Performance**: BEAM VM optimized for I/O-bound operations
 - **Distribution**: Built-in support for clustering
 
+### Why Hot/Cold Storage Separation?
+
+- **S3 cannot be memory-mapped**: Object storage requires PUT/GET, not byte-range access
+- **Local SSD for hot data**: Sub-millisecond access for frequently queried indexes
+- **S3 for cold data**: Unlimited scale, cost-effective for game segments
+- **PostgreSQL for metadata**: ACID transactions for shard map and coordination
+
 ### Why Custom Binary Format?
 
 - **Performance**: Optimized specifically for chess data
 - **Size**: Better compression than generic formats
-- **Speed**: Memory-mapped access for fast queries
+- **Speed**: Memory-mapped access for hot indexes
 - **Control**: Full control over optimization and evolution
 
 ### Why React (not LiveView)?
@@ -331,12 +366,28 @@ Games are distributed across nodes based on:
 
 | Operation | Target | Notes |
 |-----------|--------|-------|
-| Position lookup | < 1ms | Indexed positions |
+| Position lookup (hot) | < 1ms | Indexed positions |
+| Position lookup (cold) | < 50ms | S3 fetch |
 | Game retrieval | < 5ms | By ID |
 | Game search | < 100ms | Typical query |
 | Import speed | > 1000 games/sec | Bulk import |
 | Concurrent users | > 10,000 | Per node |
-| Database size | > 100M games | Single file |
+| Database size | > 100M games | Single cluster |
+
+## Key Architectural Decisions
+
+### 1. Append-Only Segments
+- No in-place updates eliminates race conditions
+- Crash-safe writes via WAL
+- Periodic compaction merges segments
+
+### 2. NIF Integration
+- Rustler NIFs for mmap, Zobrist hashing, binary parsing
+- Achieves <1ms position lookup targets
+
+### 3. Eventual Consistency
+- Most operations are eventually consistent (0-5s)
+- Read-your-writes for critical operations
 
 ## Security Considerations
 

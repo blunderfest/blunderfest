@@ -161,21 +161,49 @@ cbexport database.cbv games.pgn --all --annotations --variations
 
 ### SCID Format Support
 
-SCID uses the .si4 format which can be read directly:
+**Important:** SCID has two main formats:
+- **`.si4`** - Legacy binary format (NOT SQLite-based)
+- **`.si5`** - Newer SQLite-based format
+
+The recommended approach is to export to PGN first, as binary parsing of .si4 is complex.
+
+### Recommended: Export to PGN First
+
+```bash
+# Export SCID database to PGN using scidb tool
+scidb export --database mydb.si5 --output games.pgn
+
+# Or use the scidpgn tool
+scidpgn -x mydb.si5 -o games.pgn
+```
+
+Then import the PGN:
+
+```elixir
+:ok = Blunderfest.Migration.PGN.import_file(
+  "games.pgn",
+  "blunderfest.bchess",
+  on_progress: &log_progress/1
+)
+```
+
+### Advanced: Direct .si5 Import (SQLite)
+
+For newer SCID databases using the .si5 format (SQLite-based):
 
 ```elixir
 defmodule Blunderfest.Migration.SCID do
   @moduledoc """
-  Migrate SCID databases to Blunderfest format.
+  Migrate SCID databases (.si5 format) to Blunderfest format.
   """
   
-  @spec import_si4(String.t(), String.t(), keyword()) :: import_result()
-  def import_si4(si4_path, db_path, opts \\ []) do
-    # SCID files are SQLite-based
-    {:ok, conn} = SQLite3.open(si4_path)
+  @spec import_si5(String.t(), String.t(), keyword()) :: import_result()
+  def import_si5(si5_path, db_path, opts \\ []) do
+    # SCID .si5 files ARE SQLite-based (unlike the older .si4)
+    {:ok, conn} = SQLite3.open(si5_path)
     
-    # Read metadata
-    metadata = read_scid_metadata(conn)
+    # Read metadata from SCID tables
+    metadata = read_scid5_metadata(conn)
     
     # Create Blunderfest database
     {:ok, db} = Blunderfest.Database.create(db_path, 
@@ -183,7 +211,7 @@ defmodule Blunderfest.Migration.SCID do
     )
     
     # Import games
-    results = stream_scid_games(conn)
+    results = stream_scid5_games(conn)
     |> Enum.reduce(%{total: 0, imported: 0, errors: 0}, fn game, acc ->
       case Blunderfest.Game.add(db, game) do
         {:ok, _id} -> %{acc | imported: acc.imported + 1}
@@ -197,6 +225,88 @@ defmodule Blunderfest.Migration.SCID do
     
     results
   end
+  
+  defp read_scid5_metadata(conn) do
+    # SCID .si5 stores metadata in SQLite tables
+    query = "SELECT * FROM Names LIMIT 1"
+    case SQLite3.query(conn, query) do
+      {:ok, rows} -> %{
+        format: :scid5,
+        row_count: length(rows)
+      }
+      {:error, _} -> %{}
+    end
+  end
+  
+  defp stream_scid5_games(conn) do
+    # SCID games are stored in the 'Games' table
+    Stream.resource(
+      fn -> :ok end,
+      fn :ok ->
+        case SQLite3.query(conn, "SELECT * FROM Games LIMIT 1000") do
+          {:ok, []} -> {:halt, nil}
+          {:ok, rows} ->
+            games = Enum.map(rows, &scid_game_to_struct/1)
+            {games, :ok}
+          {:error, _} -> {:halt, nil}
+        end
+      fn _ -> :ok end
+    )
+  end
+  
+  defp scid_game_to_struct(row) do
+    # Convert SCID row format to Blunderfest game struct
+    %Blunderfest.Types.Game{
+      white: Map.get(row, "White", "Unknown"),
+      black: Map.get(row, "Black", "Unknown"),
+      result: parse_result(Map.get(row, "Result", "*")),
+      date: parse_date(Map.get(row, "Date", "")),
+      eco: Map.get(row, "Eco", ""),
+      event: Map.get(row, "Event", ""),
+      site: Map.get(row, "Site", ""),
+      round: Map.get(row, "Round", ""),
+      moves: parse_moves(Map.get(row, "Moves", ""))
+    }
+  end
+  
+  defp parse_result("1-0"), do: :white_wins
+  defp parse_result("0-1"), do: :black_wins
+  defp parse_result("1/2-1/2"), do: :draw
+  defp parse_result(_), do: :unknown
+  
+  defp parse_date(""), do: nil
+  defp parse_date(date_str) do
+    # SCID dates are typically YYYYMMDD format
+    with {:ok, date} <- Date.from_iso8601(String.pad_leading(date_str, 8, "0")) do
+      date
+    else _ -> nil
+    end
+  end
+  
+  defp parse_moves(""), do: []
+  defp parse_moves(moves_str) do
+    # Parse SAN moves from SCID format
+    String.split(moves_str, " ")
+    |> Enum.reject(&(&1 == ""))
+  end
+end
+```
+
+### Note on .si4 Binary Format
+
+The older .si4 format uses a proprietary binary structure. To migrate from .si4:
+
+1. **Recommended**: Open in SCID and re-save as .si5 (SQLite-based)
+2. **Alternative**: Use a conversion tool like `scidconv` to export to PGN
+
+```bash
+# Convert .si4 to .si5 (if SCID is installed)
+scid mydb.si4
+# Then File -> Save As -> mydb.si5
+
+# Or use command line conversion
+scidconv -if si4 -of si5 -i mydb.si4 -o mydb.si5
+```
   
   defp read_scid_metadata(conn) do
     # SCID stores metadata in SQLite tables

@@ -201,8 +201,18 @@ defmodule Blunderfest.Storage.BloomFilter do
     trunc(-n * :math.log(p) / (:math.log(2) ** 2))
   end
   
-  defp calculate_hashes(p) do
-    trunc(:math.log(2) * -n / :math.log(p))
+  @doc """
+  Calculate optimal number of hash functions.
+  
+  The optimal number of hash functions k for a bloom filter with
+  false positive probability p and capacity n is:
+  
+      k = -log₂(p) = -ln(p) / ln(2)
+  
+  Note: This function uses the capacity 'n' for the calculation.
+  """
+  defp calculate_hashes(n, p) do
+    trunc(-:math.log(p) / :math.log(2))
   end
 end
 ```
@@ -532,28 +542,92 @@ MMsize 32G                           # 32 GB memory limit
 
 ### Auto-Scaling
 
+**Note:** Poolboy does not have a `resize/2` function. Use a DynamicSupervisor with a Registry instead.
+
 ```elixir
 defmodule Blunderfest.AutoScale do
-  def check_and_scale do
+  use GenServer
+  
+  @target_utilization 0.7
+  @scale_up_threshold 0.8
+  @scale_down_threshold 0.5
+  @min_workers 50
+  @max_workers 200
+  @scale_step 10
+  
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+  end
+  
+  @impl true
+  def init(_opts) do
+    schedule_check()
+    {:ok, %{current_workers: @min_workers}}
+  end
+  
+  defp schedule_check do
+    Process.send_after(self(), :check_and_scale, 30_000)  # Check every 30 seconds
+  end
+  
+  @impl true
+  def handle_info(:check_and_scale, state) do
     current_load = get_current_load()
-    target_load = 0.7  # 70% target utilization
     
-    if current_load > target_load do
-      scale_up()
-    elsif current_load < target_load * 0.5 do
-      scale_down()
+    new_state = cond do
+      current_load > @scale_up_threshold and state.current_workers < @max_workers ->
+        scale_up(state)
+      current_load < @scale_down_threshold and state.current_workers > @min_workers ->
+        scale_down(state)
+      true ->
+        state
     end
+    
+    schedule_check()
+    {:noreply, new_state}
   end
   
-  defp scale_up do
-    # Add more worker processes
-    current = :poolboy.child_count(:db_workers)
-    :poolboy.resize(:db_workers, current + 20)
+  defp scale_up(state) do
+    new_count = min(state.current_workers + @scale_step, @max_workers)
+    
+    # Use DynamicSupervisor to add workers
+    for _ <- 1..@scale_step do
+      DynamicSupervisor.start_child(
+        Blunderfest.Workers.Supervisor,
+        {Blunderfest.Workers.DatabaseWorker, []}
+      )
+    end
+    
+    Logger.info("Scaled up from #{state.current_workers} to #{new_count} workers")
+    %{state | current_workers: new_count}
   end
   
-  defp scale_down do
-    current = :poolboy.child_count(:db_workers)
-    :poolboy.resize(:db_workers, max(current - 10, 50))
+  defp scale_down(state) do
+    new_count = max(state.current_workers - @scale_step, @min_workers)
+    
+    # Remove excess workers (simple approach - remove oldest)
+    for _ <- 1..@scale_step do
+      case DynamicSupervisor.which_children(Blunderfest.Workers.Supervisor) do
+        [{pid, _, _, _} | _] ->
+          DynamicSupervisor.terminate_child(Blunderfest.Workers.Supervisor, pid)
+        [] ->
+          :ok
+      end
+    end
+    
+    Logger.info("Scaled down from #{state.current_workers} to #{new_count} workers")
+    %{state | current_workers: new_count}
+  end
+  
+  defp get_current_load do
+    # Calculate load as (busy_workers / total_workers)
+    busy = :ets.tab2list(:db_workers_busy)
+    total = DynamicSupervisor.count_children(Blunderfest.Workers.Supervisor)
+    
+    if total.specs > 0 do
+      length(busy) / total.specs
+    else
+      0.0
+    end
   end
 end
 ```

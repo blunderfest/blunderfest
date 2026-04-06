@@ -34,6 +34,120 @@ We'll use **Vanilla Extract** for type-safe, zero-runtime CSS-in-JS styling.
 
 **Note**: No component library is selected at this time. Components will be built from scratch using Vanilla Extract for styling.
 
+### Linting and Formatting
+
+We'll use **Biome** for linting and formatting, with a minimal ESLint configuration for import path enforcement.
+
+**Rationale**:
+- Biome is faster than ESLint + Prettier
+- Single tool for linting and formatting
+- Good TypeScript support
+- Minimal ESLint config only for import path rules
+
+```json
+// biome.json
+{
+  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
+  "organizeImports": {
+    "enabled": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "noUnusedImports": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always",
+      "trailingCommas": "es5"
+    }
+  }
+}
+```
+
+```json
+// .eslintrc.json (minimal - import path enforcement only)
+{
+  "plugins": ["no-relative-import-paths"],
+  "rules": {
+    "no-relative-import-paths/no-relative-import-paths": [
+      "error",
+      {
+        "dirs": ["src"],
+        "allowSameFolder": false,
+        "resolveToRelative": false
+      }
+    ]
+  }
+}
+```
+
+### Path Aliases
+
+We use **~** as the path prefix for absolute imports (not "@").
+
+```typescript
+// ✅ Good - using ~ prefix
+import { useGameStore } from '~/stores/game-store';
+import { Move, Position } from '~/types/chess';
+import ChessBoard from '~/components/chess/board/chess-board';
+
+// ❌ Bad - no relative imports
+import { useGameStore } from '../../../stores/game-store';
+```
+
+### File Naming Convention
+
+All files use **kebab-case**:
+
+```
+src/
+├── components/
+│   ├── chess/
+│   │   ├── board/
+│   │   │   ├── chess-board.tsx
+│   │   │   ├── chess-board.css.ts
+│   │   │   └── index.ts
+│   │   ├── piece/
+│   │   │   ├── piece.tsx
+│   │   │   └── index.ts
+│   │   └── move-list/
+│   │       ├── move-list.tsx
+│   │       └── index.ts
+│   └── layout/
+│       ├── header/
+│       │   ├── header.tsx
+│       │   └── index.ts
+│       └── sidebar/
+│           ├── sidebar.tsx
+│           └── index.ts
+├── stores/
+│   ├── game-store.ts
+│   ├── analysis-store.ts
+│   └── ui-store.ts
+├── hooks/
+│   ├── use-chess-game.ts
+│   └── use-position-search.ts
+└── types/
+    ├── chess.ts
+    └── api.ts
+```
+
 ### Chess Board Component
 
 **Choice: react-chessboard vs. chessboard.js vs. Custom**
@@ -118,14 +232,14 @@ apps/blunderfest_ui/
 ### Chessboard Component
 
 ```typescript
-// src/components/chess/Board/ChessBoard.tsx
+// src/components/chess/board/chess-board.tsx
 import React, { useCallback } from 'react';
 import { useDrop } from 'react-dnd';
-import { useGameStore } from '@/stores/gameStore';
-import Square from '@/components/chess/Board/Square';
-import Piece from '@/components/chess/Board/Piece';
-import { Move, Position } from '@/types/chess';
-import './ChessBoard.css';
+import { useGameStore } from '~/stores/game-store';
+import Square from '~/components/chess/board/square';
+import Piece from '~/components/chess/board/piece';
+import { Move, Position } from '~/types/chess';
+import './chess-board.css';
 
 interface ChessBoardProps {
   position: Position;
@@ -223,10 +337,10 @@ export default ChessBoard;
 ### Move List Component
 
 ```typescript
-// src/components/chess/MoveList/MoveList.tsx
+// src/components/chess/move-list/move-list.tsx
 import React from 'react';
-import { Move } from '@/types/chess';
-import './MoveList.css';
+import { Move } from '~/types/chess';
+import './move-list.css';
 
 interface MoveListProps {
   moves: Move[];
@@ -296,12 +410,12 @@ export default MoveList;
 ### Position Search Component
 
 ```typescript
-// src/components/features/PositionSearch/PositionSearch.tsx
+// src/components/features/position-search/position-search.tsx
 import React, { useState } from 'react';
-import { usePositionSearch } from '@/hooks/usePositionSearch';
-import ChessBoard from '@/components/chess/Board/ChessBoard';
-import { MaterialFilter, PatternFilter } from '@/types/search';
-import './PositionSearch.css';
+import { usePositionSearch } from '~/hooks/use-position-search';
+import ChessBoard from '~/components/chess/board/chess-board';
+import { MaterialFilter, PatternFilter } from '~/types/search';
+import './position-search.css';
 
 const PositionSearch: React.FC = () => {
   const [materialFilter, setMaterialFilter] = useState<MaterialFilter>({
@@ -405,9 +519,9 @@ export default PositionSearch;
 ### Game Store (Zustand)
 
 ```typescript
-// src/stores/gameStore.ts
+// src/stores/game-store.ts
 import { create } from 'zustand';
-import { Game, Move, Position } from '@/types/chess';
+import { Game, Move, Position } from '~/types/chess';
 
 interface GameStore {
   currentGame: Game | null;
@@ -525,9 +639,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 ### Analysis Store
 
 ```typescript
-// src/stores/analysisStore.ts
+// src/stores/analysis-store.ts
 import { create } from 'zustand';
-import { AnalysisResult } from '@/types/analysis';
+import { AnalysisResult } from '~/types/analysis';
 
 interface AnalysisStore {
   isAnalyzing: boolean;
@@ -552,18 +666,58 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   },
 
   startAnalysis: async (fen: string) => {
-    set({ isAnalyzing: true });
+    const { websocket, isAnalyzing } = get();
     
-    // Connect to WebSocket for real-time analysis
-    const ws = new WebSocket(`ws://${import.meta.env.VITE_API_URL}/ws/analysis`);
+    // Clean up existing WebSocket if any
+    if (websocket) {
+      websocket.close();
+    }
+    
+    // Create new WebSocket connection
+    const ws = new WebSocket(
+      `ws://${import.meta.env.VITE_API_URL}/ws/analysis`
+    );
+    
+    set({ 
+      isAnalyzing: true,
+      websocket: ws,  // Store reference for cleanup
+      currentAnalysis: null
+    });
     
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
-      if (data.type === 'analysis_update') {
-        set({ currentAnalysis: data.result });
-      } else if (data.type === 'analysis_complete') {
-        set({ isAnalyzing: false });
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'analysis_update') {
+          set({ currentAnalysis: data.result });
+        } else if (data.type === 'analysis_complete') {
+          set({ 
+            isAnalyzing: false,
+            websocket: null  // Clear reference on completion
+          });
+          ws.close();
+        }
+      } catch (error) {
+        console.error('Failed to parse WebSocket message:', error);
+      }
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      set({ 
+        isAnalyzing: false,
+        websocket: null 
+      });
+    };
+    
+    ws.onclose = () => {
+      // Ensure cleanup on close
+      const { websocket: currentWs } = get();
+      if (currentWs === ws) {
+        set({ 
+          isAnalyzing: false,
+          websocket: null 
+        });
       }
     };
     
@@ -578,7 +732,17 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   },
 
   stopAnalysis: () => {
-    set({ isAnalyzing: false });
+    const { websocket } = get();
+    
+    // Close WebSocket if exists
+    if (websocket) {
+      websocket.close();
+    }
+    
+    set({ 
+      isAnalyzing: false,
+      websocket: null 
+    });
   },
 
   setEngineDepth: (depth) => set({ engineDepth: depth }),
@@ -629,8 +793,67 @@ export const api = ky.create({
 ```typescript
 // src/services/games.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
-import { Game, GameSearchParams } from '@/types/game';
+import { api } from '~/lib/api';
+import { Game, GameSearchParams } from '~/types/game';
+```typescript
+// src/lib/api.ts
+import ky from 'ky';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+export const api = ky.create({
+  prefixUrl: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  hooks: {
+    beforeRequest: [
+      request => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          request.headers.set('Authorization', `Bearer ${token}`);
+        }
+      }
+    ]
+  }
+});
+```
+
+### Games Service (with ky and TanStack Query)
+
+```typescript
+// src/services/games.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '~/lib/api';
+import { Game, GameSearchParams } from '~/types/game';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+export const api = ky.create({
+  prefixUrl: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  hooks: {
+    beforeRequest: [
+      request => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          request.headers.set('Authorization', `Bearer ${token}`);
+        }
+      }
+    ]
+  }
+});
+```
+
+### Games Service (with ky and TanStack Query)
+
+```typescript
+// src/services/games.ts
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '~/lib/api';
+import { Game, GameSearchParams } from '~/types/game';
 
 export const gameKeys = {
   all: ['games'] as const,
@@ -704,10 +927,10 @@ export const useImportPGN = () => {
 ### Virtual Scrolling for Move Lists
 
 ```typescript
-// src/components/chess/MoveList/VirtualMoveList.tsx
+// src/components/chess/move-list/virtual-move-list.tsx
 import React from 'react';
 import { FixedSizeList } from 'react-window';
-import MoveRow from './MoveRow';
+import MoveRow from './move-row';
 
 interface VirtualMoveListProps {
   moves: Move[];
@@ -763,9 +986,9 @@ export default VirtualMoveList;
 ### Memoization for Board Rendering
 
 ```typescript
-// src/components/chess/Board/MemoizedBoard.tsx
+// src/components/chess/board/memoized-board.tsx
 import React, { memo, useMemo } from 'react';
-import { Position } from '@/types/chess';
+import { Position } from '~/types/chess';
 
 interface BoardProps {
   position: Position;
@@ -791,11 +1014,11 @@ export default MemoizedBoard;
 ### Component Tests
 
 ```typescript
-// tests/components/ChessBoard.test.tsx
+// tests/components/chess-board.test.tsx
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import ChessBoard from '@/components/chess/Board/ChessBoard';
-import { Position } from '@/types/chess';
+import ChessBoard from '~/components/chess/board/chess-board';
+import { Position } from '~/types/chess';
 
 describe('ChessBoard', () => {
   it('renders the initial position', () => {
@@ -829,28 +1052,46 @@ describe('ChessBoard', () => {
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 import path from 'path';
 
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src')
-    }
-  },
-  build: {
-    outDir: '../blunderfest_api/priv/static',
-    sourcemap: true
-  },
-  server: {
-    proxy: {
-      '/api': 'http://localhost:8080'
-    }
-  }
+export default defineConfig(({ command }) => {
+	const isDev = command !== 'build';
+	
+	if (isDev) {
+		// Terminate the watcher when Phoenix quits
+		process.stdin.on('close', () => {
+			process.exit(0);
+		});
+
+		process.stdin.resume();
+	}
+
+	return {
+		plugins: [react()],
+		resolve: {
+			alias: {
+				'~': path.resolve(__dirname, './src')
+			}
+		},
+		build: {
+			outDir: '../blunderfest_api/priv/static',
+			sourcemap: true
+		},
+		server: {
+			proxy: {
+				'/api': 'http://localhost:8080'
+			}
+		}
+	};
 });
 ```
+
+**Key Points:**
+- Uses **~** (not **@**) as the path prefix for absolute imports
+- Handles Phoenix stdin closure to properly terminate Vite in development
+- Proxies API requests to Phoenix server
 
 ### TypeScript Config
 
@@ -874,9 +1115,10 @@ export default defineConfig({
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "~/*": ["./src/*"]
     }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
+```

@@ -371,8 +371,25 @@ defmodule Blunderfest.Storage.PositionBloomFilter do
     trunc(-n * :math.log(p) / (:math.log(2) ** 2))
   end
   
-  defp calculate_hash_count(p) do
-    trunc(:math.log(2) * 8 / :math.log(2))
+  @doc """
+  Calculate optimal number of hash functions.
+  
+  The optimal number of hash functions k for a bloom filter with
+  false positive probability p is:
+  
+      k = -log₂(p)
+  
+  Or equivalently, using natural log:
+  
+      k = (m/n) * ln(2)  where m is bit size, n is capacity
+  
+  This simplifies to: k = -ln(p) / ln(2)
+  """
+  defp calculate_hash_count(n, p) do
+    # Optimal k = -ln(p) / ln(2)
+    # Using log base 2: k = -log2(p)
+    # Which equals: k = -ln(p) / ln(2)
+    trunc(-:math.log(p) / :math.log(2))
   end
 end
 ```

@@ -9,8 +9,8 @@ Blunderfest is a high-performance, distributed chess database engine built with 
 ### Backend
 - **Language**: Elixir 1.17+
 - **Framework**: Phoenix 1.7+
-- **Database**: Custom binary format (.bchess) with shared storage (S3/MinIO)
-- **Architecture**: Single shared database with multiple API nodes
+- **Database**: Custom binary format with hot/cold storage architecture
+- **Architecture**: Hot storage (local SSD) + Cold storage (S3/MinIO) + PostgreSQL (metadata)
 
 ### Frontend
 - **Framework**: React 19 with TypeScript
@@ -19,7 +19,8 @@ Blunderfest is a high-performance, distributed chess database engine built with 
 - **Styling**: Vanilla Extract (type-safe CSS-in-JS)
 - **State Management**: Zustand
 - **Data Fetching**: TanStack Query with ky HTTP client
-- **Import Aliases**: `@/` path alias (no relative imports)
+- **Linting/Formatting**: Biome (with minimal ESLint for import path rules)
+- **Import Aliases**: `~/` path alias (no relative imports)
 
 ## Project Structure (Umbrella)
 
@@ -97,7 +98,7 @@ export default defineConfig(({ command }) => {
 		plugins: [react()],
 		resolve: {
 			alias: {
-				"@": path.resolve(__dirname, "./src")
+				"~": path.resolve(__dirname, "./src")
 			}
 		},
 		build: {
@@ -115,33 +116,109 @@ export default defineConfig(({ command }) => {
 
 ### TypeScript Import Rules
 
-**Always use absolute imports with `@/` alias:**
+**Always use absolute imports with `~/` alias:**
 
 ```typescript
-// ✅ Good
-import { useGameStore } from "@/stores/gameStore";
-import { Move, Position } from "@/types/chess";
-import ChessBoard from "@/components/chess/Board/ChessBoard";
+// ✅ Good - using ~ prefix
+import { useGameStore } from '~/stores/game-store';
+import { Move, Position } from '~/types/chess';
+import ChessBoard from '~/components/chess/board/chess-board';
 
 // ❌ Bad - no relative imports
-import { useGameStore } from "../../../stores/gameStore";
-import { Move, Position } from "../../../types/chess";
+import { useGameStore } from '../../../stores/gameStore';
+import { Move, Position } from '../../../types/chess';
 ```
+
+### File Naming Convention
+
+All files use **kebab-case**:
+
+```
+src/
+├── components/
+│   ├── chess/
+│   │   ├── board/
+│   │   │   ├── chess-board.tsx
+│   │   │   └── index.ts
+│   │   └── piece/
+│   │       └── piece.tsx
+│   └── features/
+│       └── game-viewer/
+│           └── game-viewer.tsx
+├── stores/
+│   └── game-store.ts
+└── types/
+    └── chess.ts
+```
+
+### Linting and Formatting
+
+We use **Biome** for linting and formatting, with a minimal ESLint configuration for import path enforcement.
+
+```json
+// biome.json
+{
+  "organizeImports": { "enabled": true },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "noUnusedImports": "warn"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always"
+    }
+  }
+}
+```
+
+```json
+// .eslintrc.json (minimal - import path enforcement only)
+{
+  "plugins": ["no-relative-import-paths"],
+  "rules": {
+    "no-relative-import-paths/no-relative-import-paths": [
+      "error",
+      { "dirs": ["src"], "allowSameFolder": false }
+    ]
+  }
+}
+```
+
+### Storage Architecture
+
+**Hot/Cold Storage Separation:**
+
+- **Hot Storage (Local SSD)**: Position index, player index, opening index, query cache, bloom filter
+- **Cold Storage (S3/MinIO)**: Game data segments, backups, exports
+- **Metadata Store (PostgreSQL)**: Shard map, node registry, WAL, API keys
 
 ### Database Architecture
 
 **Single Shared Database Model:**
-- One primary database stored on shared storage (S3/MinIO)
-- Multiple API nodes connect to the same database
+- One primary database with hot/cold storage separation
+- Multiple API nodes connect to the same distributed system
 - Use `Database.initialize()` for initial setup (admin only)
 - Use `Database.connect()` for API nodes to connect
 
 ```elixir
 # Admin/setup - initialize database once
-{:ok, db} = Blunderfest.Database.initialize("s3://blunderfest-db/main.bchess")
+{:ok, db} = Blunderfest.Database.initialize("s3://blunderfest-db/main")
 
 # API nodes - connect to existing database
-{:ok, db} = Blunderfest.Database.connect("s3://blunderfest-db/main.bchess")
+{:ok, db} = Blunderfest.Database.connect("s3://blunderfest-db/main")
 ```
 
 ### API Client (Frontend)
@@ -149,19 +226,19 @@ import { Move, Position } from "../../../types/chess";
 Use `ky` + `TanStack Query` (no axios):
 
 ```typescript
-import { useQuery, useMutation } from "@tanstack/react-query";
-import ky from "ky";
+import { useQuery, useMutation } from '@tanstack/react-query';
+import ky from 'ky';
 
 const api = ky.create({
-  prefixUrl: import.meta.env.VITE_API_URL || "http://localhost:8080/api/v1",
+  prefixUrl: import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1',
   headers: {
-    "Content-Type": "application/json"
+    'Content-Type': 'application/json'
   }
 });
 
 // Use with TanStack Query
 const { data } = useQuery({
-  queryKey: ["game", id],
+  queryKey: ['game', id],
   queryFn: () => api.get(`games/${id}`).json()
 });
 ```
@@ -170,11 +247,14 @@ const { data } = useQuery({
 
 All architecture documentation is in the `architecture/` directory:
 
-- `01-system-overview.md` - System architecture
-- `02-binary-format-specification.md` - .bchess format
+### Core Architecture
+- `01-system-overview.md` - System architecture with hot/cold storage
+- `02-binary-format-specification.md` - .bchess segment format
 - `03-api-design.md` - API specifications
-- `04-scalability-performance.md` - Performance targets
+- `04-scalability-performance.md` - Performance targets and NIF integration
 - `05-deployment-guide.md` - Deployment instructions
+
+### Technical Specifications
 - `06-zobrist-hashing.md` - Position hashing
 - `07-pgn-specification.md` - PGN parsing
 - `08-opening-classification.md` - Opening codes
@@ -183,13 +263,20 @@ All architecture documentation is in the `architecture/` directory:
 - `11-uci-integration.md` - Engine integration
 - `12-react-ui-architecture.md` - Frontend architecture
 - `13-security-testing.md` - Security and testing
-- `14-implementation-plan.md` - Implementation timeline
+- `99-implementation-plan.md` - Implementation timeline
+
+### Advanced Topics
+- `15-storage-architecture.md` - Hot/cold storage separation
+- `16-distributed-system-design.md` - Consistent hashing, WAL, sharding
+- `17-binary-format-evolution.md` - Versioning and migration
 
 ## Key Decisions
 
-3. **No relative imports** - Using `@/` path alias
-4. **Single database** - Shared database for all users
-5. **No ChessBase comparison** - Standalone product
+1. **No relative imports** - Using `~/` path alias
+2. **Hot/Cold storage separation** - Local SSD for indexes, S3 for data
+3. **Consistent hashing** - Primary sharding strategy
+4. **Append-only segments** - Crash-safe writes via WAL
+5. **Biome for linting** - Fast formatting with minimal ESLint
 
 ## Testing
 
@@ -201,7 +288,7 @@ All architecture documentation is in the `architecture/` directory:
 
 | Operation | Target |
 |-----------|--------|
-| Position lookup | < 1ms |
+| Position lookup (hot) | < 1ms |
 | Game retrieval | < 5ms |
 | Game search | < 100ms |
 | Import speed | > 1000 games/sec |

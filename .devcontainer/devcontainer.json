@@ -11,6 +11,9 @@
       "upgradePackages": false
     }
   },
+  "mounts": [
+    "source=vscode-server-data,target=/home/vscode/.vscode-server,type=volume"
+  ],
   "forwardPorts": [
     4000,
     5432,
