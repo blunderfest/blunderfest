@@ -62,13 +62,14 @@ RUN cd assets && pnpm install && pnpm run build
 # compile the project
 RUN mix deps.compile && mix compile
 
+# Copy the release configuration
+COPY rel rel
+
 # Changes to config/runtime.exs don't require recompiling the code
 COPY config/runtime.exs config/
 
-COPY rel rel
-
-# Compile and release
-RUN mix deps.compile && mix compile && mix release
+# Build the release
+RUN mix release
 
 # start a new build stage so that the final image will only contain
 # the compiled release and other runtime necessities
