@@ -17,7 +17,7 @@ defmodule BlunderfestWeb.Endpoint do
 
   plug(Plug.Static,
     at: "/",
-    from: {:app, :blunderfest, "priv/static"},
+    from: "priv/static",
     gzip: true,
     only: BlunderfestWeb.static_paths()
   )
