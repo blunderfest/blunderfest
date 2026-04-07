@@ -4,7 +4,7 @@ defmodule BlunderfestWeb do
   as controllers, components, channels and so on.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt index.html)
 
   def controller do
     quote do
