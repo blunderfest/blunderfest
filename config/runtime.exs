@@ -8,8 +8,8 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   check_origin: false
 
 config :blunderfest, Blunderfest.Storage,
-  hot_storage_path: System.get_env("HOT_STORAGE_PATH", "/var/lib/blunderfest/hot"),
-  cold_storage_path: System.get_env("COLD_STORAGE_PATH", "/var/lib/blunderfest/cold"),
+  hot_storage_path: System.get_env("HOT_STORAGE_PATH", "./data/hot"),
+  cold_storage_path: System.get_env("COLD_STORAGE_PATH", "./data/cold"),
   cache_size: System.get_env("CACHE_SIZE", "8000000000") |> String.to_integer()
 
 config :logger, level: String.to_existing_atom(System.get_env("LOG_LEVEL") || "info")
