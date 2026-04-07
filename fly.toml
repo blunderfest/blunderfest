@@ -31,3 +31,14 @@ kill_signal = 'SIGTERM'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 1024
+
+[deploy]
+  strategy = 'bluegreen'
+
+[[regions]]
+  region = 'ams'
+  count = 1
+
+[[regions]]
+  region = 'iad'
+  count = 1
