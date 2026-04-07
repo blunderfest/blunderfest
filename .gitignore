@@ -41,3 +41,5 @@ assets/dist/
 # Backup files
 *.bak
 *.backup
+
+.pnpm-store/

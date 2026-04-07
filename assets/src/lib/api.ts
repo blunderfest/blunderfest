@@ -5,16 +5,24 @@ const API_BASE_URL =
 	"http://localhost:8080/api/v1";
 
 export const api = ky.create({
-	prefixUrl: API_BASE_URL,
+	prefix: API_BASE_URL,
 	headers: {
 		"Content-Type": "application/json",
 	},
 	hooks: {
 		beforeRequest: [
-			(request) => {
+			(request: unknown) => {
 				const token = localStorage.getItem("auth_token");
-				if (token) {
-					request.headers.set("Authorization", `Bearer ${token}`);
+				if (
+					token &&
+					typeof request === "object" &&
+					request !== null &&
+					"headers" in request
+				) {
+					(request.headers as Headers).append(
+						"Authorization",
+						`Bearer ${token}`,
+					);
 				}
 			},
 		],
