@@ -10,7 +10,8 @@
     },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20"
-    }
+    },
+    "ghcr.io/devcontainers/features/fly-cli:1": {}
   },
   "customizations": {
     "vscode": {
