@@ -2,8 +2,7 @@ import Config
 
 config :blunderfest, BlunderfestWeb.Endpoint,
   url: [host: System.get_env("PHX_HOST") || "blunderfest.com", port: 443],
-  force_ssl: [rewrite_on: [:x_forwarded_proto]],
-  cache_static_manifest: "priv/static/cache_manifest.json"
+  force_ssl: [rewrite_on: [:x_forwarded_proto]]
 
 config :blunderfest, Blunderfest.Storage,
   hot_storage_path: System.get_env("HOT_STORAGE_PATH", "/var/lib/blunderfest/hot"),
