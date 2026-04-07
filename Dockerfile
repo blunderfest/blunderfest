@@ -62,6 +62,9 @@ RUN cd assets && pnpm install && pnpm run build
 # compile the project
 RUN mix deps.compile && mix compile
 
+# Digest and compress static assets for production
+RUN mix phx.digest
+
 # Copy the release configuration
 COPY rel rel
 
