@@ -47,6 +47,9 @@ defmodule BlunderfestWeb.Router do
     get("/import/status/:id", ImportController, :status)
   end
 
+  # Catch-all route for SPA - serve index.html for any unmatched routes
+  get("/*path", BlunderfestWeb.PageController, :index)
+
   if Application.compile_env(:blunderfest, :dev_routes) do
     scope "/dev" do
     end

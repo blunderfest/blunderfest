@@ -15,6 +15,7 @@ defmodule BlunderfestWeb.Endpoint do
 
   socket("/ws", BlunderfestWeb.UserSocket)
 
+  # Serve static files from the priv/static directory
   plug(Plug.Static,
     at: "/",
     from: "/app/priv/static",
