@@ -90,6 +90,9 @@ ENV LC_ALL en_US.UTF-8
 WORKDIR "/app"
 RUN chown nobody /app
 
+# Create data directories for hot/cold storage
+RUN mkdir -p /app/data/hot /app/data/cold && chown -R nobody:nogroup /app/data
+
 # set runner ENV
 ENV MIX_ENV="prod"
 
