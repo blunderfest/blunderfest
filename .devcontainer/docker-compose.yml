@@ -7,38 +7,16 @@ services:
         USERNAME: vscode
     volumes:
       - ..:/workspace:cached
-      - cline-data:/home/vscode/.local/share/Cline
-      - vscode-data:/home/vscode/.vscode
       - vscode-server:/home/vscode/.vscode-server
       - ssh-data:/home/vscode/.ssh
-      - git-config:/home/vscode/.gitconfig
-      - npm-data:/home/vscode/.npm
+      - ~/.gitconfig:/home/vscode/.gitconfig:ro
     command: sleep infinity
-    environment:
-      DATABASE_URL: postgres://postgres:postgres@db:5432/blunderfest_dev
-      PGHOST: db
-      PGUSER: postgres
-      PGPASSWORD: postgres
-    depends_on:
-      - db
-
-  db:
-    image: postgres:18-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: blunderfest_dev
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+    working_dir: /workspace
+    user: vscode
     ports:
-      - 5432:5432
+      - "5173:5173"
+      - "8080:8080"
 
 volumes:
-  postgres-data:
-  cline-data:
   vscode-server:
-  vscode-data:
   ssh-data:
-  git-config:
-  npm-data:

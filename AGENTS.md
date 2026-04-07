@@ -22,34 +22,48 @@ Blunderfest is a high-performance, distributed chess database engine built with 
 - **Linting/Formatting**: Biome (with minimal ESLint for import path rules)
 - **Import Aliases**: `~/` path alias (no relative imports)
 
-## Project Structure (Umbrella)
+## Project Structure
 
 ```
 blunderfest/
-├── apps/
-│   ├── blunderfest_core/     # Pure Elixir library
-│   ├── blunderfest_api/      # Phoenix server (serves built React app)
-│   └── blunderfest_ui/       # React app (built output goes to blunderfest_api/priv/static)
-├── mix.exs
-├── package.json              # Root package.json for PNPM workspace
-└── pnpm-workspace.yaml       # PNPM workspace configuration
+├── mix.exs                    # Single Phoenix application
+├── config/
+│   ├── config.exs
+│   ├── dev.exs
+│   ├── test.exs
+│   └── prod.exs
+├── lib/
+│   ├── blunderfest.ex         # Main application module
+│   └── blunderfest/
+│       ├── application.ex      # Application supervision
+│       ├── endpoint.ex         # Phoenix endpoint
+│       ├── router.ex           # API router
+│       └── telemetry.ex        # Metrics
+├── assets/                     # React frontend
+│   ├── src/
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── tsconfig.json
+└── priv/
+    └── static/               # Built assets
 ```
 
 ### Development Workflow
 
 ```bash
-# Start Phoenix API server
-cd apps/blunderfest_api && mix phx.server
+# Start Phoenix server (includes Vite watcher in dev)
+mix phx.server
 
-# Start React dev server (in another terminal)
-cd apps/blunderfest_ui && pnpm run dev
+# Or start them separately
+mix phx.server          # Phoenix on port 8080
+cd assets && pnpm run dev  # Vite on port 5173
 ```
 
 ### Build Process
 
 ```bash
-# Build React app (outputs to blunderfest_api/priv/static)
-cd apps/blunderfest_ui && pnpm run build
+# Build React app (outputs to priv/static)
+cd assets && pnpm run build
 ```
 
 ## Development Guidelines
@@ -74,10 +88,10 @@ git add . && git commit -m "type: description of changes"
 
 ### Vite Configuration
 
-The Vite config must handle Phoenix integration properly:
+The Vite config handles Phoenix integration:
 
 ```typescript
-// apps/blunderfest_ui/vite.config.ts
+// assets/vite.config.ts
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import path from "path";
@@ -102,7 +116,7 @@ export default defineConfig(({ command }) => {
 			}
 		},
 		build: {
-			outDir: "../blunderfest_api/priv/static",
+			outDir: "../priv/static",
 			sourcemap: true
 		},
 		server: {
@@ -134,7 +148,7 @@ import { Move, Position } from '../../../types/chess';
 All files use **kebab-case**:
 
 ```
-src/
+assets/src/
 ├── components/
 │   ├── chess/
 │   │   ├── board/
@@ -272,11 +286,12 @@ All architecture documentation is in the `architecture/` directory:
 
 ## Key Decisions
 
-1. **No relative imports** - Using `~/` path alias
-2. **Hot/Cold storage separation** - Local SSD for indexes, S3 for data
-3. **Consistent hashing** - Primary sharding strategy
-4. **Append-only segments** - Crash-safe writes via WAL
-5. **Biome for linting** - Fast formatting with minimal ESLint
+1. **Non-umbrella project** - Single Phoenix application (not umbrella)
+2. **No relative imports** - Using `~/` path alias
+3. **Hot/Cold storage separation** - Local SSD for indexes, S3 for data
+4. **Consistent hashing** - Primary sharding strategy
+5. **Append-only segments** - Crash-safe writes via WAL
+6. **Biome for linting** - Fast formatting with minimal ESLint
 
 ## Testing
 

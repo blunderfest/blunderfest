@@ -65,7 +65,9 @@ RUN mix setup \
 COPY config/runtime.exs config/
 
 COPY rel rel
-RUN mix release
+
+# Compile and release
+RUN mix deps.compile && mix compile && mix release
 
 # start a new build stage so that the final image will only contain
 # the compiled release and other runtime necessities

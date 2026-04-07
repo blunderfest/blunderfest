@@ -1,60 +1,46 @@
-# Created by https://www.toptal.com/developers/gitignore/api/react,elixir,phoenix
-# Edit at https://www.toptal.com/developers/gitignore?templates=react,elixir,phoenix
-
-### Elixir ###
+# Dependencies
+_deps
 /_build
-/cover
-/deps
-/doc
-/.fetch
-erl_crash.dump
-*.ez
-*.beam
-/config/*.secret.exs
-.elixir_ls/
+deps
 
-### Elixir Patch ###
+# Generated files
+priv/static/cache_manifest.json
 
-### Phoenix ###
-# gitignore template for Phoenix projects
-# website: http://www.phoenixframework.org/
-#
-# Recommended template: Elixir.gitignore
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Test coverage
+cover/
+cov/
 
 # Temporary files
-/tmp
-
-# Static artifacts
-/node_modules
-/assets/node_modules
-/assets/dist
-
-# Since we are building assets from web/static,
-# we ignore priv/static. You may want to comment
-# this depending on your deployment strategy.
-/priv/static/
-
-# Installer-related files
-/installer/_build
-/installer/tmp
-/installer/doc
-/installer/deps
-
-### react ###
-.DS_*
+tmp/
 *.log
-logs
-**/*.backup.*
-**/*.back.*
 
-node_modules
-bower_components
+# Data files
+data/
+*.bchess
+*.bchessseg
 
-*.sublime*
+# Node modules (frontend)
+assets/node_modules/
 
-psd
-thumb
-sketch
+# Build output (frontend)
+assets/dist/
 
-# End of https://www.toptal.com/developers/gitignore/api/react,elixir,phoenix
-.pnpm-store
+# Backup files
+*.bak
+*.backup
+
+.pnpm-store/
+*.dump
