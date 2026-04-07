@@ -26,7 +26,9 @@ defmodule Blunderfest.Storage do
     cold_path = Keyword.get(config, :cold_storage_path, "./data/cold")
     cache_size = Keyword.get(config, :cache_size, 8_000_000_000)
 
-    # Create directories if they don't exist
+    # Create directories if they don't exist (use absolute paths)
+    hot_path = Path.expand(hot_path)
+    cold_path = Path.expand(cold_path)
     File.mkdir_p!(hot_path)
     File.mkdir_p!(cold_path)
 
