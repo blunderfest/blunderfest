@@ -6,14 +6,14 @@ defmodule Blunderfest.Storage.PositionIndex do
   use GenServer
 
   @type entry :: %{
-    hash: non_neg_integer(),
-    game_ids: [non_neg_integer()],
-    stats: %{
-      white_wins: non_neg_integer(),
-      black_wins: non_neg_integer(),
-      draws: non_neg_integer()
-    }
-  }
+          hash: non_neg_integer(),
+          game_ids: [non_neg_integer()],
+          stats: %{
+            white_wins: non_neg_integer(),
+            black_wins: non_neg_integer(),
+            draws: non_neg_integer()
+          }
+        }
 
   @type t :: %__MODULE__{table: atom()}
 
@@ -23,14 +23,16 @@ defmodule Blunderfest.Storage.PositionIndex do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  @impl true
   def init(_opts) do
-    table = :ets.new(:position_index, [
-      :set,
-      :public,
-      :named_table,
-      {:read_concurrency, true},
-      {:write_concurrency, true}
-    ])
+    table =
+      :ets.new(:position_index, [
+        :set,
+        :public,
+        :named_table,
+        {:read_concurrency, true},
+        {:write_concurrency, true}
+      ])
 
     {:ok, %__MODULE__{table: table}}
   end
@@ -59,7 +61,10 @@ defmodule Blunderfest.Storage.PositionIndex do
   def handle_cast({:insert, table, hash, game_id, stats}, state) do
     case :ets.lookup(table, hash) do
       [{^hash, existing_game_ids, existing_stats}] ->
-        :ets.insert(table, {hash, [game_id | existing_game_ids], merge_stats(existing_stats, stats)})
+        :ets.insert(
+          table,
+          {hash, [game_id | existing_game_ids], merge_stats(existing_stats, stats)}
+        )
 
       [] ->
         :ets.insert(table, {hash, [game_id], stats})

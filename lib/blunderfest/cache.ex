@@ -13,14 +13,16 @@ defmodule Blunderfest.Cache do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  @impl true
   def init(opts) do
-    table = :ets.new(__MODULE__, [
-      :set,
-      :public,
-      :named_table,
-      {:read_concurrency, true},
-      {:write_concurrency, true}
-    ])
+    table =
+      :ets.new(__MODULE__, [
+        :set,
+        :public,
+        :named_table,
+        {:read_concurrency, true},
+        {:write_concurrency, true}
+      ])
 
     state = %__MODULE__{
       table: table,
@@ -76,9 +78,10 @@ defmodule Blunderfest.Cache do
     entries = :ets.tab2list(state.table) |> Enum.reject(fn {k, _, _} -> k == :stats end)
     sorted = Enum.sort_by(entries, fn {_, _, accessed} -> accessed end)
 
-    {evicted, remaining} = Enum.split_while(sorted, fn {_, _, _} ->
-      state.current_memory > state.max_memory / 2
-    end)
+    {evicted, remaining} =
+      Enum.split_while(sorted, fn {_, _, _} ->
+        state.current_memory > state.max_memory / 2
+      end)
 
     Enum.each(evicted, fn {key, _, _} -> :ets.delete(__MODULE__, key) end)
 
