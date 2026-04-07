@@ -2,27 +2,32 @@ import Config
 
 config :blunderfest, BlunderfestWeb.Endpoint,
   http: [ip: {0, 0, 0, 0}, port: 8080],
+  url: [host: "localhost"],
+  adapter: Bandit.PhoenixAdapter,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "dev_secret_key_base_that_is_at_least_64_bytes_long_for_development",
   watchers: [
-    pnpm: :dev
-  ]
-
-config :blunderfest, Blunderfest.Storage,
-  hot_storage_path: "data/hot",
-  cold_storage_path: "data/cold",
-  cache_size: 1_000_000_000
-
-config :blunderfest, BlunderfestWeb.Endpoint,
+    pnpm: ["run", "dev", cd: Path.expand("../assets", __DIR__)]
+  ],
   live_reload: [
     patterns: [
       ~r"priv/static/.*(js|css|png|jpeg|jpg|gif|svg)$",
       ~r"priv/gettext/.*(po)$",
       ~r"lib/blunderfest_web/(controllers|live|components)/.*(ex|heex)$"
     ]
-  ]
+  ],
+  render_errors: [
+    formats: [json: BlunderfestWeb.ErrorJSON],
+    layout: false
+  ],
+  live_view: [signing_salt: "blunderfest_secret"]
+
+config :blunderfest, Blunderfest.Storage,
+  hot_storage_path: "data/hot",
+  cold_storage_path: "data/cold",
+  cache_size: 1_000_000_000
 
 config :logger, :console, format: "[$level] $message\n"
 

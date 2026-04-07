@@ -1,5 +1,5 @@
 {
-  "name": "Elixir Dev",
+  "name": "Elixir + Phoenix + Vite",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
@@ -8,7 +8,9 @@
       "installZsh": true,
       "installOhMyZsh": true
     },
-    "ghcr.io/devcontainers/features/node:1": {}
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
   },
   "customizations": {
     "vscode": {
@@ -23,5 +25,9 @@
     }
   },
   "postCreateCommand": "mix deps.get",
-  "remoteUser": "vscode"
+  "remoteUser": "vscode",
+  "forwardPorts": [
+    8080,
+    5173
+  ]
 }

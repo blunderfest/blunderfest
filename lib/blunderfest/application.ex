@@ -11,7 +11,7 @@ defmodule Blunderfest.Application do
     children = [
       Blunderfest.Storage,
       Blunderfest.Cache,
-      Blunderfest.Endpoint
+      BlunderfestWeb.Endpoint
     ]
 
     opts = [strategy: :one_for_one, name: Blunderfest.Supervisor]
@@ -20,7 +20,7 @@ defmodule Blunderfest.Application do
 
   @impl true
   def config_change(changed, _new, removed) do
-    Blunderfest.Endpoint.config_change(changed, removed)
+    BlunderfestWeb.Endpoint.config_change(changed, removed)
     :ok
   end
 end

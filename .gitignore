@@ -43,3 +43,4 @@ assets/dist/
 *.backup
 
 .pnpm-store/
+*.dump
