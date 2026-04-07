@@ -19,6 +19,7 @@ defmodule BlunderfestWeb.Endpoint do
     at: "/",
     from: "/app/priv/static",
     gzip: true,
+    index: "index.html",
     only: BlunderfestWeb.static_paths()
   )
 
