@@ -11,22 +11,25 @@
     "format": "biome format --write ."
   },
   "dependencies": {
+    "@radix-ui/colors": "^3.0.0",
+    "@tanstack/react-query": "^5.62.0",
+    "@vanilla-extract/recipes": "^0.5.7",
+    "@vanilla-extract/sprinkles": "^1.6.5",
+    "ky": "^2.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@tanstack/react-query": "^5.62.0",
-    "ky": "^2.0.0",
     "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vanilla-extract/css": "^1.16.0",
     "@vanilla-extract/vite-plugin": "^5.2.2",
     "@vitejs/plugin-react": "^6.0.1",
-    "typescript": "^6.0.2",
-    "vite": "^8.0.0",
-    "@biomejs/biome": "^2.4.10",
     "eslint": "^10.2.0",
-    "eslint-plugin-no-relative-import-paths": "^1.5.0"
+    "eslint-plugin-no-relative-import-paths": "^1.5.0",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.0"
   }
 }
