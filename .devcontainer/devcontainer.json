@@ -1,56 +1,24 @@
 {
-  "name": "Blunderfest Elixir Dev",
+  "name": "Elixir Dev",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": true,
-      "configureZshAsDefaultShell": false,
-      "installOhMyZsh": true,
-      "upgradePackages": false
-    }
-  },
-  "mounts": [
-    "source=cline-config,target=/home/vscode/.local/share/Cline,type=volume"
-  ],
-  "forwardPorts": [
-    4000,
-    5432,
-    5050
-  ],
-  "portsAttributes": {
-    "4000": {
-      "label": "Phoenix Server",
-      "onAutoForward": "notify"
+      "installOhMyZsh": true
     },
-    "5432": {
-      "label": "PostgreSQL",
-      "onAutoForward": "silent"
-    },
-    "5050": {
-      "label": "pgAdmin",
-      "onAutoForward": "notify"
-    }
+    "ghcr.io/devcontainers/features/node:1": {}
   },
   "customizations": {
     "vscode": {
       "extensions": [
-        "JakeBecker.elixir-ls",
-        "ms-azuretools.vscode-docker",
-        "ckolkman.vscode-postgres",
-        "saoudrizwan.claude-dev",
-        "biomejs.biome"
+        "JakeBecker.elixir-ls"
       ],
       "settings": {
         "elixirLS.dialyzerEnabled": true,
         "elixirLS.fetchDeps": true,
-        "editor.formatOnSave": true,
-        "files.watcherExclude": {
-          "**/_build/**": true,
-          "**/deps/**": true,
-          "**/node_modules/**": true
-        }
+        "editor.formatOnSave": true
       }
     }
   },
