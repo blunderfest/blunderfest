@@ -5,12 +5,7 @@ defmodule Blunderfest.Application do
 
   @impl true
   def start(_type, _args) do
-    # Start telemetry handlers
-    Blunderfest.Telemetry.start_link([])
-
     children = [
-      Blunderfest.Storage,
-      Blunderfest.Cache,
       BlunderfestWeb.Endpoint
     ]
 
