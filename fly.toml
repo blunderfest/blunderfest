@@ -40,5 +40,5 @@ kill_signal = 'SIGTERM'
   count = 1
 
 [[regions]]
-  region = 'iad'
+  region = 'ord'
   count = 1
