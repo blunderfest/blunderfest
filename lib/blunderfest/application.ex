@@ -6,6 +6,12 @@ defmodule Blunderfest.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      # Core services
+      Blunderfest.Telemetry,
+      Blunderfest.Cache,
+      Blunderfest.Storage,
+
+      # Web endpoint
       BlunderfestWeb.Endpoint
     ]
 
