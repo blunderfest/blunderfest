@@ -3,6 +3,9 @@ defmodule BlunderfestWeb.Router do
 
   pipeline :api do
     plug(:accepts, ["json"])
+  end
+
+  pipeline :api_authenticated do
     plug(Blunderfest.Middleware.Auth)
     plug(Blunderfest.Middleware.RateLimit)
   end
@@ -11,6 +14,8 @@ defmodule BlunderfestWeb.Router do
     pipe_through(:api)
 
     get("/health", HealthController, :index)
+
+    pipe_through(:api_authenticated)
 
     resources("/games", GameController, only: [:index, :show, :create, :update, :delete])
     get("/games/:id/pgn", GameController, :pgn)
