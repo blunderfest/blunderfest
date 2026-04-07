@@ -1,9 +1,9 @@
-defmodule BlunderfestApi.MixProject do
+defmodule BlunderfestWeb.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :blunderfest_api,
+      app: :blunderfest_web,
       version: "0.1.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
@@ -18,7 +18,7 @@ defmodule BlunderfestApi.MixProject do
 
   def application do
     [
-      mod: {BlunderfestApi.Application, []},
+      mod: {BlunderfestWeb.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -37,8 +37,6 @@ defmodule BlunderfestApi.MixProject do
       {:phoenix_live_view, "~> 0.20.0"},
       {:floki, ">= 0.30.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8"},
-      {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
       {:swoosh, "~> 1.5"},
       {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 1.0"},
@@ -53,12 +51,11 @@ defmodule BlunderfestApi.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      dev: ["assets.setup"],
-      "assets.setup": ["cmd --app blunderfest_ui pnpm install"],
-      "assets.deploy": ["cmd --app blunderfest_ui pnpm run build"]
+      setup: ["deps.get"],
+      "assets.setup": ["cmd --cd assets pnpm install"],
+      "assets.dev": ["cmd --cd assets pnpm run dev"],
+      "assets.build": ["cmd --cd assets pnpm run build"],
+      "assets.deploy": ["cmd --cd assets pnpm run build"]
     ]
   end
 end

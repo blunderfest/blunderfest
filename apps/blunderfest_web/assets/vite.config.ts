@@ -26,7 +26,7 @@ export default defineConfig(({ command }) => {
 			},
 		},
 		build: {
-			outDir: "../blunderfest_api/priv/static",
+			outDir: "../priv/static",
 			sourcemap: true,
 		},
 		server: {

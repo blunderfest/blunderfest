@@ -1,6 +1,6 @@
-defmodule BlunderfestApi do
+defmodule BlunderfestWeb do
   @moduledoc """
-  BlunderfestApi keeps the contexts that define your domain
+  BlunderfestWeb keeps the contexts that define your domain
   and business logic.
 
   Contexts are also responsible for managing your data, whether
@@ -14,12 +14,12 @@ defmodule BlunderfestApi do
 
     children = [
       # Start the endpoint when the application starts
-      BlunderfestApi.Endpoint
-      # Starts a worker by calling: BlunderfestApi.Worker.start_link(arg)
-      # {BlunderfestApi.Worker, arg}
+      BlunderfestWeb.Endpoint
+      # Starts a worker by calling: BlunderfestWeb.Worker.start_link(arg)
+      # {BlunderfestWeb.Worker, arg}
     ]
 
-    opts = [strategy: :one_for_one, name: BlunderfestApi.Supervisor]
+    opts = [strategy: :one_for_one, name: BlunderfestWeb.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
@@ -27,7 +27,7 @@ defmodule BlunderfestApi do
   # whenever the application is updated.
   @impl true
   def config_change(changed, _new, removed) do
-    BlunderfestApi.Endpoint.config_change(changed, removed)
+    BlunderfestWeb.Endpoint.config_change(changed, removed)
     :ok
   end
 end

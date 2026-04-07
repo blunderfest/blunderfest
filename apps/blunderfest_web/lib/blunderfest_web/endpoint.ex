@@ -1,5 +1,5 @@
-defmodule BlunderfestApi.Endpoint do
-  use Phoenix.Endpoint, otp_app: :blunderfest_api
+defmodule BlunderfestWeb.Endpoint do
+  use Phoenix.Endpoint, otp_app: :blunderfest_web
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
@@ -25,9 +25,9 @@ defmodule BlunderfestApi.Endpoint do
 
   plug Plug.Static,
     at: "/",
-    from: :blunderfest_api,
+    from: :blunderfest_web,
     gzip: false,
-    only: BlunderfestApi.static_paths()
+    only: BlunderfestWeb.static_paths()
 
   if code_reloading? do
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
@@ -46,7 +46,7 @@ defmodule BlunderfestApi.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug BlunderfestApi.Router
+  plug BlunderfestWeb.Router
 
   # Static paths to serve from priv/static
   defp static_paths do

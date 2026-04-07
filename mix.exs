@@ -11,8 +11,11 @@ defmodule Blunderfest.Umbrella.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "cmd --app blunderfest_ui pnpm install"],
-      "assets.deploy": ["cmd --app blunderfest_ui pnpm run build"]
+      setup: ["deps.get", "cmd --cd apps/blunderfest_web/assets pnpm install"],
+      "assets.setup": ["cmd --cd apps/blunderfest_web/assets pnpm install"],
+      "assets.dev": ["cmd --cd apps/blunderfest_web/assets pnpm run dev"],
+      "assets.build": ["cmd --cd apps/blunderfest_web/assets pnpm run build"],
+      "assets.deploy": ["cmd --cd apps/blunderfest_web/assets pnpm run build"]
     ]
   end
 end
