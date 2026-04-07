@@ -4,14 +4,8 @@
   "service": "app",
   "workspaceFolder": "/workspace",
   "features": {
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": true,
-      "installOhMyZsh": true
-    },
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
-    },
-    "ghcr.io/devcontainers/features/fly-cli:1": {}
+    "ghcr.io/devcontainers/features/common-utils:2": {},
+    "ghcr.io/devcontainers/features/node:1": {}
   },
   "customizations": {
     "vscode": {
@@ -25,7 +19,7 @@
       }
     }
   },
-  "postCreateCommand": "mix deps.get",
+  "postCreateCommand": "mix deps.get && curl -L https://fly.io/install.sh | sh && echo 'export PATH=\"$HOME/.fly/bin:$PATH\"' >> ~/.zshrc",
   "remoteUser": "vscode",
   "forwardPorts": [
     8080,
