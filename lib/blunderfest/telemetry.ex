@@ -5,11 +5,11 @@ defmodule Blunderfest.Telemetry do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
+  @impl true
   def init(_opts) do
     :telemetry.attach_many(
       "blunderfest-handler",
       [
-        [:blunderfest, :repo, :query],
         [:blunderfest, :endpoint, :start],
         [:blunderfest, :endpoint, :stop],
         [:blunderfest, :game, :add],
@@ -21,7 +21,7 @@ defmodule Blunderfest.Telemetry do
       %{}
     )
 
-    :ok
+    {:ok, %{}}
   end
 
   def handle_event([:blunderfest, :repo, :query], measurements, metadata, _config) do
