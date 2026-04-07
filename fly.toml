@@ -33,7 +33,7 @@ kill_signal = 'SIGTERM'
   memory_mb = 1024
 
 [deploy]
-  strategy = 'bluegreen'
+  strategy = 'rolling'
 
 [[regions]]
   region = 'ams'
