@@ -7,16 +7,6 @@ defmodule BlunderfestWeb.Router do
     plug(Blunderfest.Middleware.RateLimit)
   end
 
-  # Serve static files and index.html from priv/static
-  if Code.ensure_loaded?(Plug.Static) do
-    plug(Plug.Static,
-      at: "/",
-      from: :blunderfest,
-      gzip: false,
-      only: BlunderfestWeb.static_paths()
-    )
-  end
-
   scope "/api/v1", BlunderfestWeb do
     pipe_through(:api)
 
