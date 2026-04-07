@@ -8,10 +8,10 @@ defmodule Blunderfest.Storage do
   alias Blunderfest.Storage.{PositionIndex, Segment}
 
   @type t :: %__MODULE__{
-    hot_path: String.t(),
-    cold_path: String.t(),
-    cache_size: non_neg_integer()
-  }
+          hot_path: String.t(),
+          cold_path: String.t(),
+          cache_size: non_neg_integer()
+        }
 
   defstruct [:hot_path, :cold_path, :cache_size, :position_index]
 
@@ -19,12 +19,16 @@ defmodule Blunderfest.Storage do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  @impl true
   def init(_opts) do
-    hot_path = Application.get_env(:blunderfest, Blunderfest.Storage)[:hot_storage_path] || "./data/hot"
-    cold_path = Application.get_env(:blunderfest, Blunderfest.Storage)[:cold_storage_path] || "./data/cold"
-    cache_size = Application.get_env(:blunderfest, Blunderfest.Storage)[:cache_size] || 8_000_000_000
+    config = Application.get_env(:blunderfest, Blunderfest.Storage, [])
+    hot_path = Keyword.get(config, :hot_storage_path, "./data/hot")
+    cold_path = Keyword.get(config, :cold_storage_path, "./data/cold")
+    cache_size = Keyword.get(config, :cache_size, 8_000_000_000)
 
+    # Create directories if they don't exist
     File.mkdir_p!(hot_path)
+    File.mkdir_p!(cold_path)
 
     state = %__MODULE__{
       hot_path: hot_path,
