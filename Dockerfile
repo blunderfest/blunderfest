@@ -99,7 +99,7 @@ USER nobody
 # above and adding an entrypoint. See https://github.com/krallin/tini for details
 # ENTRYPOINT ["/tini", "--"]
 
-CMD ["/app/bin/server"]
+CMD ["/app/bin/blunderfest", "start"]
 
 # Appended by flyctl
 ENV ECTO_IPV6 true
