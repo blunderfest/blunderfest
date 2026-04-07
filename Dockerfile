@@ -56,10 +56,11 @@ COPY lib lib
 
 COPY assets assets
 
-# compile assets
-RUN mix setup \
-  && mix assets.deploy \
-  && mix compile
+# Install frontend dependencies and build assets
+RUN cd assets && pnpm install && pnpm run build
+
+# compile the project
+RUN mix deps.compile && mix compile
 
 # Changes to config/runtime.exs don't require recompiling the code
 COPY config/runtime.exs config/
