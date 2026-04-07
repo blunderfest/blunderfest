@@ -17,7 +17,7 @@ defmodule BlunderfestWeb.Endpoint do
 
   plug(Plug.Static,
     at: "/",
-    from: Path.expand("priv/static", File.cwd!()),
+    from: "/app/priv/static",
     gzip: true,
     only: BlunderfestWeb.static_paths()
   )
