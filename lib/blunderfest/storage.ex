@@ -19,10 +19,10 @@ defmodule Blunderfest.Storage do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def init(opts) do
-    hot_path = Keyword.get(opts, :hot_path, "/var/lib/blunderfest/hot")
-    cold_path = Keyword.get(opts, :cold_path, "s3://blunderfest-cold")
-    cache_size = Keyword.get(opts, :cache_size, 8_000_000_000)
+  def init(_opts) do
+    hot_path = Application.get_env(:blunderfest, Blunderfest.Storage)[:hot_storage_path] || "./data/hot"
+    cold_path = Application.get_env(:blunderfest, Blunderfest.Storage)[:cold_storage_path] || "./data/cold"
+    cache_size = Application.get_env(:blunderfest, Blunderfest.Storage)[:cache_size] || 8_000_000_000
 
     File.mkdir_p!(hot_path)
 

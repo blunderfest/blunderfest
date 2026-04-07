@@ -1,14 +1,5 @@
 import Config
 
-config :blunderfest, Blunderfest.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "blunderfest_dev",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
-
 config :blunderfest, BlunderfestWeb.Endpoint,
   http: [ip: {0, 0, 0, 0}, port: 8080],
   check_origin: false,
@@ -16,8 +7,7 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "dev_secret_key_base_that_is_at_least_64_bytes_long_for_development",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:default, ~w(--watch)]}
+    pnpm: :dev
   ]
 
 config :blunderfest, Blunderfest.Storage,

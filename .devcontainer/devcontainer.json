@@ -14,13 +14,6 @@
   "mounts": [
     "source=cline-config,target=/home/vscode/.local/share/Cline,type=volume"
   ],
-  // "mounts": [
-  //   "source=vscode-server-data,target=/home/vscode/.vscode-server,type=volume",
-  //   "source=cline-data,target=/home/vscode/.cline,type=volume"
-  // ],
-  // "mounts": [
-  //   "source=vscode-server-data,target=/home/vscode/.vscode-server,type=volume"
-  // ],
   "forwardPorts": [
     4000,
     5432,

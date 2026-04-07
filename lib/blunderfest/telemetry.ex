@@ -1,6 +1,8 @@
 defmodule Blunderfest.Telemetry do
+  use GenServer
+
   def start_link(_opts) do
-    Supervisor.start_link([], strategy: :one_for_one, name: __MODULE__)
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
   def init(_opts) do

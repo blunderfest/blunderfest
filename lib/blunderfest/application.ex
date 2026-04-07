@@ -5,13 +5,12 @@ defmodule Blunderfest.Application do
 
   @impl true
   def start(_type, _args) do
+    # Start telemetry handlers
+    Blunderfest.Telemetry.start_link([])
+
     children = [
-      Blunderfest.Repo,
       Blunderfest.Storage,
       Blunderfest.Cache,
-      Blunderfest.Telemetry,
-      {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || fn -> :ok end},
-      {Phoenix.PubSub, name: Blunderfest.PubSub},
       Blunderfest.Endpoint
     ]
 
