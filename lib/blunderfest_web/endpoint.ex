@@ -18,8 +18,9 @@ defmodule BlunderfestWeb.Endpoint do
   # Serve static files from the priv/static directory
   plug(Plug.Static,
     at: "/",
-    from: "/app/priv/static",
+    from: :blunderfest,
     gzip: true,
+    only: BlunderfestWeb.static_paths(),
     index: "index.html"
   )
 
