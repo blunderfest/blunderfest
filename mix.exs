@@ -33,12 +33,12 @@ defmodule Blunderfest.MixProject do
     [
       {:phoenix, "~> 1.7.0"},
       {:phoenix_html, "~> 4.1"},
-      {:phoenix_live_view, "~> 0.20.0"},
+      {:phoenix_live_view, "~> 1.1.28"},
       {:phoenix_live_reload, "~> 1.5", only: :dev},
       {:floki, ">= 0.36.0", only: :test},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
-      {:gettext, "~> 0.20"},
+      {:gettext, "~> 1.0"},
       {:jason, "~> 1.4"},
       {:bandit, "~> 1.5"},
       {:rustler, "~> 0.35"}
