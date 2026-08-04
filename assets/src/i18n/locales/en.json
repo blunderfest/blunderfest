@@ -7,5 +7,10 @@
     "checking": "Connecting to analysis service…",
     "ok": "Analysis service online",
     "down": "Analysis service unreachable"
+  },
+  "profile": {
+    "loading": "Preparing your identity…",
+    "name": "You are {{name}}",
+    "error": "Could not prepare your identity"
   }
 }

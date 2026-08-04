@@ -9,6 +9,8 @@ defmodule BlunderfestWeb.Router do
     pipe_through :api
 
     get "/healthz", HealthController, :check
+    post "/profiles", ProfileController, :create
+    get "/profiles/:id", ProfileController, :show
   end
 
   # The single-page application shell. Everything that is not a JSON API

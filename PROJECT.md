@@ -29,9 +29,11 @@ Future sessions must read this file first and keep it up to date as decisions ch
 
 ## Core principles
 
-1. **Anonymous-first, zero PII.** Anyone can use the whole product without an account.
-   Signing up is purely for keeping track of games/analysis. No email, no name, no
-   external identity providers, no magic links.
+1. **Anonymous-first, no stored PII.** Anyone can use the whole product without an
+   account, with full access. Signing up (magic links and/or external providers) is
+   purely for keeping track of games/analysis across devices. No email addresses,
+   names, or other PII are ever stored — only salted hashes and keyed hashes of
+   identifiers.
 2. **Open collaboration.** Anyone with an (unguessable) room link joins as a full
    editor. No permission restrictions.
 3. **Analysis is unstructured.** The board is a canvas: moves, variations, arrows,
@@ -49,9 +51,12 @@ Future sessions must read this file first and keep it up to date as decisions ch
 - **Rooms** — a persistent shared analysis session pinned to a game. Anyone with the
   unguessable slug joins as a full editor (Google-Docs-style). Games can live in
   rooms indefinitely.
-- **Profiles** — an account is a **handle + a secret passphrase** (no PII).
-  The server stores only a salted hash of the secret; clients hold a device token
-  (localStorage). Claiming a room/game = attaching it to your profile.
+- **Profiles** — an automatic anonymous identity: a server-generated fun name
+  (curated wordlists, no user input, so no moderation needed) plus a device secret
+  held in `localStorage`; the server stores only a salted hash. Signing in with a
+  magic link or an external provider links the profile to a keyed hash (never the
+  address itself) purely to keep track of games/analysis across devices. Claiming
+  a room/game = attaching it to your profile.
 - **Game library** — per-profile collection of owned/claimed games; a first-class
   early feature (the reason to make an account at all).
 
@@ -105,7 +110,7 @@ mock engine.
 ## Data model (initial)
 
 ```
-profiles          (id, slug, handle, secret_hash)
+profiles          (id, name, secret_hash, keyed_hash?, created_at)
 games             (id, slug, pgn, white, black, result, eco, owner_profile_id?)
 rooms             (id, slug, game_id)
 ops               (room_id, seq, type, payload, author, ts)
@@ -173,8 +178,10 @@ Each milestone ends releasable; the existing Fly setup deploys continuously.
    (backend + frontend), Dockerized release, Fly config. No database: state is
    in-memory for now (see Infra / deploy notes). Verified locally and in a
    built Docker image.
-2. **Anonymous profiles** — handle + secret, salted hashes, device tokens, zero
-   PII. In-memory store (ETS/Agent) first; a persistent DB is deferred.
+2. **Anonymous profiles** — DONE. Automatic anonymous identity: fun auto-generated
+   name, device secret in localStorage, salted hash on the server, zero stored PII.
+   In-memory store (GenServer) first; a persistent DB is deferred. Identity links
+   (magic links / external provider sub, stored as keyed hashes) land later.
 3. **Import** — PGN paste → tree → DB. Lichess link-import immediately after.
 4. **Solo board** — hand-rolled board, navigator, arrows, region highlights, comments,
    browser-WASM Stockfish eval bar + best-move hints. No server needed.
