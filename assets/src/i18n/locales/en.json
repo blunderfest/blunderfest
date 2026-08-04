@@ -1,0 +1,11 @@
+{
+  "app": {
+    "name": "Blunderfest",
+    "tagline": "Collaborative chess analysis."
+  },
+  "status": {
+    "checking": "Connecting to analysis service…",
+    "ok": "Analysis service online",
+    "down": "Analysis service unreachable"
+  }
+}
