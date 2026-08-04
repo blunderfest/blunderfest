@@ -10,7 +10,7 @@ kill_signal = 'SIGTERM'
 [build]
 
 [env]
-  PHX_HOST = 'blunderfest.fly.dev'
+  PHX_HOST = 'blunderfest.org'
   PORT = '8080'
   SECRET_KEY_BASE = 'b+4LbtiRD6cthGGYnOyWQNytd6hL+VGf1jfovycvFDUuVVuvYS/9sykLNlQuC17k'
   RELEASE_COOKIE = "kVJ5EuhwBG-E6iomppZUscpq-ra1jbp6IIGPEAquK8jyDD3TxL9Cng=="
