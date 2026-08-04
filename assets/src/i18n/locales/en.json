@@ -10,7 +10,31 @@
   },
   "profile": {
     "loading": "Preparing your identity…",
-    "name": "You are {{name}}",
+    "name": "{{name}}",
     "error": "Could not prepare your identity"
+  },
+  "home": {
+    "create": "Create a room",
+    "createHint": "A room is a shared analysis board. Anyone with the code can join.",
+    "join": "Join a room",
+    "joinPlaceholder": "Room code",
+    "joinButton": "Join",
+    "joinError": "Enter a room code"
+  },
+  "room": {
+    "connecting": "Connecting…",
+    "codeLabel": "Room code",
+    "copied": "Copied!",
+    "copy": "Copy",
+    "members": "Members",
+    "activity": "Activity",
+    "emptyActivity": "No moves yet",
+    "leave": "Leave room",
+    "move": "{{ply}}. {{san}}",
+    "comment": "Comment on move {{ply}}: {{text}}",
+    "line": "Line from move {{ply}}",
+    "arrow": "Arrow on move {{ply}}",
+    "highlight": "Highlight on move {{ply}}",
+    "cursor": "Cursor on move {{ply}}"
   }
 }
