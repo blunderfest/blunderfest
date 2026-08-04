@@ -9,8 +9,10 @@ defmodule Blunderfest.Application do
   def start(_type, _args) do
     children = [
       Blunderfest.Profiles,
+      Blunderfest.Rooms,
       {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
+      BlunderfestWeb.Presence,
       BlunderfestWeb.Endpoint
     ]
 

@@ -17,6 +17,9 @@ importers:
       i18next:
         specifier: ^26.3.6
         version: 26.3.6(typescript@5.9.3)
+      phoenix:
+        specifier: ^1.8.9
+        version: 1.8.9
       react:
         specifier: ^19.1.0
         version: 19.2.8
@@ -45,6 +48,9 @@ importers:
       '@types/node':
         specifier: ^26.1.2
         version: 26.1.2
+      '@types/phoenix':
+        specifier: ^1.6.7
+        version: 1.6.7
       '@types/react':
         specifier: ^19.1.8
         version: 19.2.18
@@ -674,6 +680,9 @@ packages:
   '@types/node@26.1.2':
     resolution: {integrity: sha512-Vu4a5UFA9rIIFJ7rB/Vaafh9lrCQszopTCx6KjFboXTGQbPNasehVR5TEiithSDGyd1DEiUByggTZsg8jukeIg==}
 
+  '@types/phoenix@1.6.7':
+    resolution: {integrity: sha512-oN9ive//QSBkf19rfDv45M7eZPi0eEXylht2OLEXicu5b4KoQ1OzXIw+xDSGWxSxe1JmepRR/ZH283vsu518/Q==}
+
   '@types/react-dom@19.2.4':
     resolution: {integrity: sha512-Bsc+QHgp+P/F02XDzNCY9jnZNCUuLki36KT7VKrTXXLdHf+vHMNZnW1rVu5DNW/rCK+fya3DATySbLM4yhtKUw==}
     peerDependencies:
@@ -1050,6 +1059,9 @@ packages:
   pathval@2.0.1:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
+
+  phoenix@1.8.9:
+    resolution: {integrity: sha512-/2qzAZB3P2s08fFAYaG65lqaNFmVXUSlXdY4/JDdDKIC81y2cFWkPwI8gycy4VLpv197JwZ5PpBf3VhoG32yGA==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -1844,6 +1856,8 @@ snapshots:
     dependencies:
       undici-types: 8.3.0
 
+  '@types/phoenix@1.6.7': {}
+
   '@types/react-dom@19.2.4(@types/react@19.2.18)':
     dependencies:
       '@types/react': 19.2.18
@@ -2188,6 +2202,8 @@ snapshots:
   pathe@2.0.3: {}
 
   pathval@2.0.1: {}
+
+  phoenix@1.8.9: {}
 
   picocolors@1.1.1: {}
 

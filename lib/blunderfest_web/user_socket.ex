@@ -9,7 +9,7 @@ defmodule BlunderfestWeb.UserSocket do
   use Phoenix.Socket
 
   # Channel routes are registered as features land:
-  #   channel "room:*", BlunderfestWeb.RoomChannel
+  channel "room:*", BlunderfestWeb.RoomChannel
 
   def connect(_params, socket, _connect_info) do
     {:ok, socket}
