@@ -42,11 +42,16 @@ end
 
 if config_env() == :prod do
   database_url =
-    System.get_env("DATABASE_URL") ||
-      raise """
-      environment variable DATABASE_URL is missing.
-      For example: ecto://USER:PASS@HOST/DATABASE
-      """
+    case System.get_env("DATABASE_URL") do
+      nil ->
+        IO.puts(:stderr, "[blunderfest] WARNING: DATABASE_URL is not set. " <>
+          "Starting without a database; /api/healthz will report 503 until one is provisioned.")
+
+        "ecto://postgres:postgres@127.0.0.1/blunderfest_missing"
+
+      url ->
+        url
+    end
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
