@@ -1,11 +1,13 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 const phoenixOrigin = 'http://localhost:4000'
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     {
       name: 'watch-phoenix-stdin',
       configureServer() {

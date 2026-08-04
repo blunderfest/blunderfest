@@ -11,10 +11,15 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.12.0",
+    "@tailwindcss/vite": "^4.3.3",
     "i18next": "^26.3.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-i18next": "^17.0.11"
+    "react-i18next": "^17.0.11",
+    "react-redux": "^9.3.0",
+    "tailwind-variants": "^3.3.1",
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

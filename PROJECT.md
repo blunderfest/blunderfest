@@ -98,11 +98,18 @@ mock engine.
   the SPA.
 - **Dev flow:** Vite dev server on `:5173` (HMR), proxying `/api` and `/socket` to
   Phoenix on `:4000`. Prod: single Phoenix origin.
+- **Styling: Tailwind v4** (`@tailwindcss/vite`, CSS-first `@theme` tokens, dark
+  palette) + **`tailwind-variants`** (`tv()`) for component variants — board
+  squares (selected / highlighted / king in check), move-tree states, etc.
+- **State: Redux Toolkit** (`configureStore`, typed hooks). The room store
+  mirrors the op log — ops are applied strictly in `seq` order; `replayOps`
+  replays on join. Ops are shared TypeScript unions in `src/protocol/ops.ts`,
+  one-to-one with the Phoenix channel protocol (the "messages" both sides speak).
 - **Hand-rolled board component** — drag-drop, arrows, eval circles, region
   highlights, variations tree in the move list. Board renders *overlays*;
   annotations are first-class: `{type: highlight, plies: [15..19], squares: [...],
   color}`.
-- `chess.js` for rules/legal moves. Zustand-style store mirroring the room op log.
+- `chess.js` for rules/legal moves.
 - `phoenix` npm client mounted via a `useRoomChannel` hook.
 - Board state is pure: `position + move history + variations + evals` =
   serializable snapshot → trivial tests, replay, export.
