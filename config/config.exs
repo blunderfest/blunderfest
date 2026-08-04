@@ -8,7 +8,6 @@
 import Config
 
 config :blunderfest,
-  ecto_repos: [Blunderfest.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint

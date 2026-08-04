@@ -10,21 +10,6 @@ jobs:
     name: Elixir backend
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: blunderfest_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     env:
       MIX_ENV: test
 
@@ -49,7 +34,6 @@ jobs:
       - run: mix deps.get
       - run: mix format --check-formatted
       - run: mix compile --warnings-as-errors
-      - run: mix ecto.create --quiet && mix ecto.migrate --quiet
       - run: mix test
 
   frontend:

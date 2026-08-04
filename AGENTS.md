@@ -97,15 +97,10 @@ custom classes must fully style the input
 <!-- phoenix:phoenix-end -->
 
 <!-- phoenix:ecto-start -->
-## Ecto Guidelines
+## Persistence Guidelines
 
-- **Always** preload Ecto associations in queries when they'll be accessed in templates, ie a message that needs to reference the `message.user.email`
-- Remember `import Ecto.Query` and other supporting modules when you write `seeds.exs`
-- `Ecto.Schema` fields always use the `:string` type, even for `:text`, columns, ie: `field :name, :string`
-- `Ecto.Changeset.validate_number/2` **DOES NOT SUPPORT the `:allow_nil` option**. By default, Ecto validations only run if a change for the given field exists and the change value is not nil, so such as option is never needed
-- You **must** use `Ecto.Changeset.get_field(changeset, :field)` to access changeset fields
-- Fields which are set programmatically, such as `user_id`, must not be listed in `cast` calls or similar for security purposes. Instead they must be explicitly set when creating the struct
-- **Always** invoke `mix ecto.gen.migration migration_name_using_underscores` when generating migration files, so the correct timestamp and conventions are applied
+- Ecto/Postgres were removed for now; state lives in-memory (agents/ETS). Do **not** reintroduce Ecto, `mix ecto.*` tasks, or a `Repo` without explicit approval from the user.
+- Until then, recompute/rebuild state on boot and keep processes small so a scaled-to-zero instance loses nothing critical.
 <!-- phoenix:ecto-end -->
 
 <!-- phoenix:html-start -->

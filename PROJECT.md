@@ -167,12 +167,14 @@ for v1 search — otherwise "search this position" is meaningless on a tiny corp
 
 Each milestone ends releasable; the existing Fly setup deploys continuously.
 
-1. **Boot** — DONE. Phoenix (1.8.9 / Elixir 1.20 / OTP 29) + Postgres, React 19 +
+1. **Boot** — DONE. Phoenix (1.8.9 / Elixir 1.20 / OTP 29), React 19 +
    Vite + TypeScript skeleton building into `priv/static`, `GET /api/healthz`,
    channel socket at `/socket/websocket`, i18n scaffold (react-i18next), CI
-   (backend + frontend), Dockerized release, Fly config. Verified locally and in a
+   (backend + frontend), Dockerized release, Fly config. No database: state is
+   in-memory for now (see Infra / deploy notes). Verified locally and in a
    built Docker image.
-2. **Anonymous profiles** — handle + secret, salted hashes, device tokens, zero PII.
+2. **Anonymous profiles** — handle + secret, salted hashes, device tokens, zero
+   PII. In-memory store (ETS/Agent) first; a persistent DB is deferred.
 3. **Import** — PGN paste → tree → DB. Lichess link-import immediately after.
 4. **Solo board** — hand-rolled board, navigator, arrows, region highlights, comments,
    browser-WASM Stockfish eval bar + best-move hints. No server needed.
@@ -186,16 +188,18 @@ Each milestone ends releasable; the existing Fly setup deploys continuously.
 ## Infra / deploy notes
 
 - `fly.toml` deploys a single app, regions ams + ord, scale-to-zero
-  (`auto_stop_machines`), Port 8080. CI deploys on push to `main`.
+  (`auto_stop_machines`), Port 8080. Deploys on push to the `restart` branch.
+  Requires `SECRET_KEY_BASE` (in `fly.toml`).
 - **Known issue:** scale-to-zero + websocket reconnects — revisit
   `min_machines_running` (likely 1) at milestone 5.
 - `.github/workflows/ci.yml` (backend + frontend tests) and `fly.yml` (deploy)
   exist. Release is built by the multi-stage `Dockerfile` (Node stage builds
   assets, Elixir stage compiles a release that serves them).
-- Requires `DATABASE_URL` (set by `fly postgres attach`) and `SECRET_KEY_BASE`
-  (in `fly.toml`).
+- **No database for now.** Ecto/Postgres deps were removed; all state lives
+  in-memory (agents/ETS) and is rebuilt on boot, so a scale-to-zero instance
+  loses nothing critical. Reintroduce a DB only with explicit approval.
 - Dev toolchain bootstrap lives in `execute.sh` (idempotent; Arch packages +
-  Postgres init).
+  Postgres init; `flyctl` for deploys/provisioning).
 
 ## Development conventions
 

@@ -40,9 +40,6 @@ defmodule Blunderfest.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.8.9"},
-      {:phoenix_ecto, "~> 4.5"},
-      {:ecto_sql, "~> 3.13"},
-      {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 4.1"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
@@ -58,16 +55,13 @@ defmodule Blunderfest.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup", "assets.setup"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      setup: ["deps.get", "assets.setup"],
       "assets.setup": ["cmd --cd assets pnpm install"],
       "assets.deploy": [
         "cmd --cd assets pnpm install --frozen-lockfile",
         "cmd --cd assets pnpm build",
         "phx.digest"
       ],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
     ]
   end
