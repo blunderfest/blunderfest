@@ -35,4 +35,12 @@ sudo systemctl enable --now postgresql
 echo "==> 4. Setting the postgres password Phoenix uses in local dev"
 sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" || true
 
+echo "==> 5. Installing flyctl (for Fly.io deploys + Postgres provisioning)"
+if ! command -v flyctl >/dev/null 2>&1; then
+  echo "    installing flyctl (AUR) via yay"
+  yay -S --noconfirm flyctl || true
+else
+  echo "    flyctl already installed"
+fi
+
 echo "==> Done. Backend + DB ready."
