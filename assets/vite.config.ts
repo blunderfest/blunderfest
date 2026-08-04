@@ -4,7 +4,17 @@ import react from '@vitejs/plugin-react'
 const phoenixOrigin = 'http://localhost:4000'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'watch-phoenix-stdin',
+      configureServer() {
+        // Keeps stdin open; Node exits when Phoenix dies and closes the stream
+        process.stdin.resume()
+        process.stdin.on('close', () => process.exit(0))
+      },
+    },
+  ],
   build: {
     outDir: '../priv/static',
     emptyOutDir: false,

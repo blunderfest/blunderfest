@@ -27,6 +27,7 @@ blunderfest-*.tar
 
 # Frontend
 /assets/node_modules/
+/.vite/
 
 # Phoenix build output (compiled React bundle + digests)
 /priv/static/*

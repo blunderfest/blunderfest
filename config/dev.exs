@@ -14,7 +14,9 @@ config :blunderfest, BlunderfestWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "KLA0y8TxvV+8+Kq3UdYhgylka2oa6Hf7E1arSKIhhc7+jqYA8/COyQEAphJ8xvIQ",
-  watchers: []
+  watchers: [
+    node: ["node_modules/vite/bin/vite.js", cd: Path.expand("assets", File.cwd!())]
+  ]
 
 # ## SSL Support
 #
