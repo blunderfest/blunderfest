@@ -1,14 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, act, waitFor, fireEvent } from '@testing-library/react'
-import { Provider } from 'react-redux'
-import { configureStore } from '@reduxjs/toolkit'
-import RoomView from '@/features/room/RoomView'
-import roomReducer from '@/store/room'
-import { FakeChannel } from '@/test/fakeChannel'
-import type { GameTree, GameNode } from '@/lib/api'
-import type { Op } from '@/protocol/ops'
+import { configureStore } from '@reduxjs/toolkit';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import RoomView from '@/features/room/RoomView';
+import type { GameNode, GameTree } from '@/lib/api';
+import type { Op } from '@/protocol/ops';
+import roomReducer from '@/store/room';
+import { FakeChannel } from '@/test/fakeChannel';
 
-const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 function node(partial: Partial<GameNode>): GameNode {
   return {
@@ -24,7 +24,7 @@ function node(partial: Partial<GameNode>): GameNode {
     fen: START_FEN,
     children: [],
     ...partial,
-  }
+  };
 }
 
 const gameTree: GameTree = {
@@ -42,10 +42,10 @@ const gameTree: GameTree = {
       node({ id: 2, ply: 2, san: 'e5', from: 'e7', to: 'e5', fen: 'y' }),
     ],
   }),
-}
+};
 
 function makeStore() {
-  return configureStore({ reducer: { room: roomReducer } })
+  return configureStore({ reducer: { room: roomReducer } });
 }
 
 const moveOp: Op = {
@@ -54,79 +54,79 @@ const moveOp: Op = {
   ts: '2026-01-01T00:00:00Z',
   type: 'move_at_ply',
   payload: { ply: 1, san: 'e4' },
-}
+};
 
 describe('RoomView', () => {
-  let channel: FakeChannel
+  let channel: FakeChannel;
 
   beforeEach(() => {
-    channel = new FakeChannel()
+    channel = new FakeChannel();
     vi.stubGlobal(
       'fetch',
       vi.fn(() => {
-        throw new Error(`unmocked fetch`)
+        throw new Error(`unmocked fetch`);
       }),
-    )
-  })
+    );
+  });
 
   afterEach(() => {
-    vi.unstubAllGlobals()
-  })
+    vi.unstubAllGlobals();
+  });
 
   function renderRoom(slug = 'abc12', onLeave = vi.fn()) {
-    const store = makeStore()
+    const store = makeStore();
     const view = render(
       <Provider store={store}>
         <RoomView slug={slug} onLeave={onLeave} channelFactory={() => channel} />
       </Provider>,
-    )
-    return { store, onLeave, view }
+    );
+    return { store, onLeave, view };
   }
 
   it('shows the room code and joins the channel', async () => {
-    renderRoom()
-    expect(screen.getByText('ABC12')).toBeInTheDocument()
-    expect(channel.joined).toBe(true)
-    expect(screen.getByText('Copy')).toBeInTheDocument()
-    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
-  })
+    renderRoom();
+    expect(screen.getByText('ABC12')).toBeInTheDocument();
+    expect(channel.joined).toBe(true);
+    expect(screen.getByText('Copy')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());
+  });
 
   it('shows joining members from presence diffs', async () => {
-    renderRoom()
-    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
+    renderRoom();
+    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());
     act(() =>
       channel.emit('presence_diff', {
         joins: { 'profile-2': { metas: [{ name: 'Swift Falcon 17' }] } },
         leaves: {},
       }),
-    )
-    expect(await screen.findByText('Swift Falcon 17')).toBeInTheDocument()
-  })
+    );
+    expect(await screen.findByText('Swift Falcon 17')).toBeInTheDocument();
+  });
 
   it('lists ops replayed on join with author names', async () => {
-    channel.joinReturn = { ops: [moveOp] }
-    renderRoom()
-    expect(await screen.findByText('1. e4')).toBeInTheDocument()
-  })
+    channel.joinReturn = { ops: [moveOp] };
+    renderRoom();
+    expect(await screen.findByText('1. e4')).toBeInTheDocument();
+  });
 
   it('appends echoed ops from the channel', async () => {
-    renderRoom()
-    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
-    act(() => channel.emit('new_op', moveOp))
-    expect(await screen.findByText('1. e4')).toBeInTheDocument()
-  })
+    renderRoom();
+    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());
+    act(() => channel.emit('new_op', moveOp));
+    expect(await screen.findByText('1. e4')).toBeInTheDocument();
+  });
 
   it('leaves the room when clicking leave', () => {
-    const { onLeave } = renderRoom()
-    fireEvent.click(screen.getByRole('button', { name: 'Leave room' }))
-    expect(onLeave).toHaveBeenCalledTimes(1)
-  })
+    const { onLeave } = renderRoom();
+    fireEvent.click(screen.getByRole('button', { name: 'Leave room' }));
+    expect(onLeave).toHaveBeenCalledTimes(1);
+  });
 
   it('shows the import form when the room has no game', async () => {
-    renderRoom()
-    expect(await screen.findByText('Import a game')).toBeInTheDocument()
-    expect(screen.getByLabelText('PGN')).toBeInTheDocument()
-  })
+    renderRoom();
+    expect(await screen.findByText('Import a game')).toBeInTheDocument();
+    expect(screen.getByLabelText('PGN')).toBeInTheDocument();
+  });
 
   it('imports a game by pushing a set_game op', async () => {
     vi.stubGlobal(
@@ -139,22 +139,22 @@ describe('RoomView', () => {
           }),
         ),
       ),
-    )
-    renderRoom()
+    );
+    renderRoom();
 
-    fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Import' }))
+    fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
-    await waitFor(() => expect(channel.pushes.length).toBe(1))
+    await waitFor(() => expect(channel.pushes.length).toBe(1));
     expect(channel.pushes[0]).toEqual({
       event: 'op',
       payload: { type: 'set_game', payload: { tree: gameTree } },
-    })
-  })
+    });
+  });
 
   it('shows the board once the set_game echo arrives', async () => {
-    renderRoom()
-    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
+    renderRoom();
+    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());
 
     const op: Op = {
       seq: 1,
@@ -162,13 +162,13 @@ describe('RoomView', () => {
       ts: '2026-01-01T00:00:00Z',
       type: 'set_game',
       payload: { tree: gameTree },
-    }
-    act(() => channel.emit('new_op', op))
+    };
+    act(() => channel.emit('new_op', op));
 
-    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument()
-    expect(screen.getByTestId('square-e2')).toHaveTextContent('♙')
-    expect(screen.getByText('Imported a game')).toBeInTheDocument()
-  })
+    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument();
+    expect(screen.getByTestId('square-e2')).toHaveTextContent('♙');
+    expect(screen.getByText('Imported a game')).toBeInTheDocument();
+  });
 
   it('reopens the import form to replace the game', async () => {
     const op: Op = {
@@ -177,12 +177,12 @@ describe('RoomView', () => {
       ts: '2026-01-01T00:00:00Z',
       type: 'set_game',
       payload: { tree: gameTree },
-    }
-    channel.joinReturn = { ops: [op] }
-    renderRoom()
+    };
+    channel.joinReturn = { ops: [op] };
+    renderRoom();
 
-    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Import a new game' }))
-    expect(screen.getByLabelText('PGN')).toBeInTheDocument()
-  })
-})
+    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Import a new game' }));
+    expect(screen.getByLabelText('PGN')).toBeInTheDocument();
+  });
+});

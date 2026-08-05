@@ -1,18 +1,18 @@
-import { Socket } from 'phoenix'
-import { loadDevice } from '@/lib/device'
+import { Socket } from 'phoenix';
+import { loadDevice } from '@/lib/device';
 
-let socket: Socket | null = null
+let socket: Socket | null = null;
 
 export function getSocket(): Socket {
   if (!socket) {
     socket = new Socket('/socket', {
       params: { profile_id: loadDevice()?.id ?? null },
-    })
-    socket.connect()
+    });
+    socket.connect();
   }
-  return socket
+  return socket;
 }
 
 export function channelFor(topic: string) {
-  return getSocket().channel(topic)
+  return getSocket().channel(topic);
 }

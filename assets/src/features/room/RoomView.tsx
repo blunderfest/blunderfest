@@ -1,30 +1,30 @@
-import { useEffect, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import type { TFunction } from 'i18next'
-import type { Channel } from 'phoenix'
-import { useRoomChannel } from '@/features/room/useRoomChannel'
-import { useAppSelector } from '@/store'
-import type { Op } from '@/protocol/ops'
-import type { GameTree } from '@/lib/api'
-import ImportForm from '@/features/import/ImportForm'
-import Analysis from '@/features/analysis/Analysis'
+import type { TFunction } from 'i18next';
+import type { Channel } from 'phoenix';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import Analysis from '@/features/analysis/Analysis';
+import ImportForm from '@/features/import/ImportForm';
+import { useRoomChannel } from '@/features/room/useRoomChannel';
+import type { GameTree } from '@/lib/api';
+import type { Op } from '@/protocol/ops';
+import { useAppSelector } from '@/store';
 
 function opLabel(t: TFunction, op: Op): string {
   switch (op.type) {
     case 'set_game':
-      return t('room.game')
+      return t('room.game');
     case 'move_at_ply':
-      return t('room.move', { ply: op.payload.ply, san: op.payload.san })
+      return t('room.move', { ply: op.payload.ply, san: op.payload.san });
     case 'comment_at_ply':
-      return t('room.comment', { ply: op.payload.ply, text: op.payload.text })
+      return t('room.comment', { ply: op.payload.ply, text: op.payload.text });
     case 'replace_line':
-      return t('room.line', { ply: op.payload.ply })
+      return t('room.line', { ply: op.payload.ply });
     case 'add_arrow':
-      return t('room.arrow', { ply: op.payload.ply })
+      return t('room.arrow', { ply: op.payload.ply });
     case 'add_highlight':
-      return t('room.highlight', { ply: op.payload.ply })
+      return t('room.highlight', { ply: op.payload.ply });
     case 'set_cursor':
-      return t('room.cursor', { ply: op.payload.ply })
+      return t('room.cursor', { ply: op.payload.ply });
   }
 }
 
@@ -33,38 +33,42 @@ export default function RoomView({
   onLeave,
   channelFactory,
 }: {
-  slug: string
-  onLeave: () => void
-  channelFactory?: (topic: string) => Channel
+  slug: string;
+  onLeave: () => void;
+  channelFactory?: (topic: string) => Channel;
 }) {
-  const { t } = useTranslation()
-  const { joined, presence, sendOp } = useRoomChannel(slug, channelFactory)
-  const ops = useAppSelector((state) => state.room.ops)
-  const storePresence = useAppSelector((state) => state.room.presence)
-  const game = useAppSelector((state) => state.room.game)
-  const [copied, setCopied] = useState(false)
-  const [showImport, setShowImport] = useState(false)
+  const { t } = useTranslation();
+  const { joined, presence, sendOp } = useRoomChannel(slug, channelFactory);
+  const ops = useAppSelector((state) => state.room.ops);
+  const storePresence = useAppSelector((state) => state.room.presence);
+  const game = useAppSelector((state) => state.room.game);
+  const [copied, setCopied] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
-    if (game) setShowImport(false)
-  }, [game])
+    if (game) {
+      setShowImport(false);
+    }
+  }, [game]);
 
   async function handleCopy() {
-    if (!navigator.clipboard) return
+    if (!navigator.clipboard) {
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(slug)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
+      await navigator.clipboard.writeText(slug);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
     } catch {
       // clipboard unavailable (permissions etc.) — nothing to show
     }
   }
 
   function handleImported(tree: GameTree) {
-    sendOp({ type: 'set_game', payload: { tree } })
+    sendOp({ type: 'set_game', payload: { tree } });
   }
 
-  const showImportForm = game === null || showImport
+  const showImportForm = game === null || showImport;
 
   return (
     <main className="flex flex-1 flex-col items-stretch gap-6 p-6">
@@ -75,6 +79,7 @@ export default function RoomView({
             {slug.toUpperCase()}
           </code>
           <button
+            type="button"
             id="copy-code-button"
             className="rounded-lg border border-white/10 px-3 py-1 text-sm text-muted transition-colors hover:border-white/30 hover:text-ink"
             onClick={() => void handleCopy()}
@@ -84,6 +89,7 @@ export default function RoomView({
           {!joined && <p className="m-0 text-sm text-warn">{t('room.connecting')}</p>}
         </div>
         <button
+          type="button"
           id="leave-room-button"
           className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-white/30"
           onClick={onLeave}
@@ -139,6 +145,7 @@ export default function RoomView({
             <>
               <div className="flex w-full max-w-2xl justify-end">
                 <button
+                  type="button"
                   id="reimport-button"
                   className="rounded-lg border border-white/10 px-3 py-1 text-sm text-muted transition-colors hover:border-white/30 hover:text-ink"
                   onClick={() => setShowImport(true)}
@@ -152,5 +159,5 @@ export default function RoomView({
         </section>
       </div>
     </main>
-  )
+  );
 }

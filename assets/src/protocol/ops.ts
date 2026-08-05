@@ -6,48 +6,48 @@
  * side of that protocol — one source of truth shared by the socket handlers,
  * the store, and tests.
  */
-import type { GameTree } from '@/lib/api'
+import type { GameTree } from '@/lib/api';
 
 export type OpBase = {
-  seq: number
-  author: string
-  ts: string
-}
+  seq: number;
+  author: string;
+  ts: string;
+};
 
 export type SetGameOp = OpBase & {
-  type: 'set_game'
-  payload: { tree: GameTree }
-}
+  type: 'set_game';
+  payload: { tree: GameTree };
+};
 
 export type MoveAtPlyOp = OpBase & {
-  type: 'move_at_ply'
-  payload: { ply: number; san: string }
-}
+  type: 'move_at_ply';
+  payload: { ply: number; san: string };
+};
 
 export type ReplaceLineOp = OpBase & {
-  type: 'replace_line'
-  payload: { ply: number; moves: string[] }
-}
+  type: 'replace_line';
+  payload: { ply: number; moves: string[] };
+};
 
 export type CommentAtPlyOp = OpBase & {
-  type: 'comment_at_ply'
-  payload: { ply: number; text: string }
-}
+  type: 'comment_at_ply';
+  payload: { ply: number; text: string };
+};
 
 export type AddArrowOp = OpBase & {
-  type: 'add_arrow'
-  payload: { ply: number; from: string; to: string }
-}
+  type: 'add_arrow';
+  payload: { ply: number; from: string; to: string };
+};
 
 export type AddHighlightOp = OpBase & {
-  type: 'add_highlight'
-  payload: { ply: number; squares: string[] }
-}
+  type: 'add_highlight';
+  payload: { ply: number; squares: string[] };
+};
 
 export type SetCursorOp = OpBase & {
-  type: 'set_cursor'
-  payload: { ply: number }
-}
+  type: 'set_cursor';
+  payload: { ply: number };
+};
 
 export type Op =
   | SetGameOp
@@ -56,9 +56,9 @@ export type Op =
   | CommentAtPlyOp
   | AddArrowOp
   | AddHighlightOp
-  | SetCursorOp
+  | SetCursorOp;
 
 export type PresenceMember = {
-  id: string
-  name: string
-}
+  id: string;
+  name: string;
+};

@@ -1,223 +1,225 @@
-import { describe, it, expect, afterEach, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
-import { Provider } from 'react-redux'
-import App from '@/app/App'
-import { store } from '@/store'
-import { FakeChannel } from '@/test/fakeChannel'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import App from '@/app/App';
+import { store } from '@/store';
+import { FakeChannel } from '@/test/fakeChannel';
 
 const socketMocks = vi.hoisted(() => ({
   channelFor: vi.fn(),
-}))
+}));
 
-vi.mock('@/lib/socket', () => ({ channelFor: socketMocks.channelFor }))
+vi.mock('@/lib/socket', () => ({ channelFor: socketMocks.channelFor }));
 
-type FetchStub = Record<string, () => Promise<Response>>
+type FetchStub = Record<string, () => Promise<Response>>;
 
 function stubFetch(routes: FetchStub) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL) => {
-      const url = String(input)
-      const handler = routes[url]
-      if (!handler) throw new Error(`unmocked fetch: ${url}`)
-      return handler()
+      const url = String(input);
+      const handler = routes[url];
+      if (!handler) {
+        throw new Error(`unmocked fetch: ${url}`);
+      }
+      return handler();
     }),
-  )
+  );
 }
 
 function jsonResponse(body: unknown, status = 200): Promise<Response> {
   return Promise.resolve(
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } }),
-  )
+  );
 }
 
 const profileBody = {
   profile: { id: 'profile-1', name: 'Brave Otter 42', created_at: '2026-01-01T00:00:00Z' },
   secret: 'the-secret',
-}
+};
 
 beforeEach(() => {
-  localStorage.clear()
-  window.location.hash = ''
-  socketMocks.channelFor.mockReset()
-})
+  localStorage.clear();
+  window.location.hash = '';
+  socketMocks.channelFor.mockReset();
+});
 
 afterEach(() => {
-  vi.unstubAllGlobals()
-})
+  vi.unstubAllGlobals();
+});
 
 describe('App', () => {
   it('shows the app name and tagline', () => {
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
-    })
+    });
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    expect(screen.getByRole('heading', { name: 'Blunderfest' })).toBeInTheDocument()
-    expect(screen.getByText('Collaborative chess analysis.')).toBeInTheDocument()
-  })
+    expect(screen.getByRole('heading', { name: 'Blunderfest' })).toBeInTheDocument();
+    expect(screen.getByText('Collaborative chess analysis.')).toBeInTheDocument();
+  });
 
   it('reports the backend as online when healthz succeeds', async () => {
     stubFetch({
       '/api/healthz': () => Promise.resolve(new Response(null, { status: 200 })),
       '/api/profiles': () => jsonResponse(profileBody, 201),
-    })
+    });
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    const status = await screen.findByText('Analysis service online')
-    expect(status).toHaveAttribute('data-status', 'ok')
-  })
+    const status = await screen.findByText('Analysis service online');
+    expect(status).toHaveAttribute('data-status', 'ok');
+  });
 
   it('reports the backend as unreachable when healthz fails', async () => {
     stubFetch({
       '/api/healthz': () => Promise.resolve(new Response(null, { status: 503 })),
       '/api/profiles': () => jsonResponse(profileBody, 201),
-    })
+    });
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    const status = await waitFor(() => screen.getByText('Analysis service unreachable'))
-    expect(status).toHaveAttribute('data-status', 'down')
-  })
+    const status = await waitFor(() => screen.getByText('Analysis service unreachable'));
+    expect(status).toHaveAttribute('data-status', 'down');
+  });
 
   it('creates an anonymous profile on first visit and shows the generated name', async () => {
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles': () => jsonResponse(profileBody, 201),
-    })
+    });
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument()
+    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.device')).toBe(
       JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
-    )
-  })
+    );
+  });
 
   it('reuses a stored device token on later visits', async () => {
     localStorage.setItem(
       'blunderfest.device',
       JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
-    )
+    );
 
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles/profile-1': () => jsonResponse({ profile: profileBody.profile }),
-    })
+    });
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument()
-  })
+    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
+  });
 
   it('creates a fresh profile when the stored device is unauthorized', async () => {
     localStorage.setItem(
       'blunderfest.device',
       JSON.stringify({ id: 'stale-profile', secret: 'stale-secret' }),
-    )
+    );
 
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles/stale-profile': () => jsonResponse({ errors: { code: 'unauthorized' } }, 401),
       '/api/profiles': () => jsonResponse(profileBody, 201),
-    })
+    });
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument()
+    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.device')).toBe(
       JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
-    )
-  })
+    );
+  });
 
   it('creates a room and navigates to the room screen', async () => {
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
-    })
-    socketMocks.channelFor.mockReturnValue(new FakeChannel())
+    });
+    socketMocks.channelFor.mockReturnValue(new FakeChannel());
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create a room' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Create a room' }));
 
     await waitFor(() => {
-      expect(window.location.hash).toMatch(/^#\/r\/[a-z0-9]{5}$/)
-    })
-    const code = window.location.hash.match(/[a-z0-9]{5}$/)![0]
-    expect(screen.getByText(code.toUpperCase())).toBeInTheDocument()
-  })
+      expect(window.location.hash).toMatch(/^#\/r\/[a-z0-9]{5}$/);
+    });
+    const code = window.location.hash.slice(-5);
+    expect(screen.getByText(code.toUpperCase())).toBeInTheDocument();
+  });
 
   it('joins a room from the code input', async () => {
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
-    })
-    socketMocks.channelFor.mockReturnValue(new FakeChannel())
+    });
+    socketMocks.channelFor.mockReturnValue(new FakeChannel());
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    fireEvent.change(screen.getByPlaceholderText('Room code'), { target: { value: 'xyz99' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Join' }))
+    fireEvent.change(screen.getByPlaceholderText('Room code'), { target: { value: 'xyz99' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }));
 
-    await waitFor(() => expect(window.location.hash).toBe('#/r/xyz99'))
-    expect(screen.getByText('XYZ99')).toBeInTheDocument()
-  })
+    await waitFor(() => expect(window.location.hash).toBe('#/r/xyz99'));
+    expect(screen.getByText('XYZ99')).toBeInTheDocument();
+  });
 
   it('renders a room directly from a deep link', async () => {
-    window.location.hash = '#/r/abc12'
+    window.location.hash = '#/r/abc12';
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
-    })
-    socketMocks.channelFor.mockReturnValue(new FakeChannel())
+    });
+    socketMocks.channelFor.mockReturnValue(new FakeChannel());
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    expect(screen.getByText('ABC12')).toBeInTheDocument()
-  })
+    expect(screen.getByText('ABC12')).toBeInTheDocument();
+  });
 
   it('leaves a room back to the home screen', async () => {
-    window.location.hash = '#/r/abc12'
+    window.location.hash = '#/r/abc12';
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
-    })
-    socketMocks.channelFor.mockReturnValue(new FakeChannel())
+    });
+    socketMocks.channelFor.mockReturnValue(new FakeChannel());
     render(
       <Provider store={store}>
         <App />
       </Provider>,
-    )
+    );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Leave room' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Leave room' }));
 
-    await waitFor(() => expect(window.location.hash).toBe('#/'))
-    expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument()
-  })
-})
+    await waitFor(() => expect(window.location.hash).toBe('#/'));
+    expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();
+  });
+});

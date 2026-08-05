@@ -1,11 +1,11 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { tv } from 'tailwind-variants'
-import { ApiError, importLichess, importPgn, type GameTree } from '@/lib/api'
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { tv } from 'tailwind-variants';
+import { ApiError, type GameTree, importLichess, importPgn } from '@/lib/api';
 
 const panel = tv({
   base: 'flex w-full max-w-xl flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-6',
-})
+});
 
 const button = tv({
   base: 'rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
@@ -15,43 +15,43 @@ const button = tv({
       ghost: 'border border-white/10 text-ink hover:border-white/30',
     },
   },
-})
+});
 
 const input = tv({
   base: 'w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-white/40 focus:outline-none',
-})
+});
 
 type ImportState =
   | { status: 'idle' }
   | { status: 'importing' }
   | { status: 'success'; tree: GameTree }
-  | { status: 'error'; code: string }
+  | { status: 'error'; code: string };
 
-export default function ImportForm({
-  onImported,
-}: {
-  onImported: (tree: GameTree) => void
-}) {
-  const { t } = useTranslation()
-  const [pgn, setPgn] = useState('')
-  const [url, setUrl] = useState('')
-  const [state, setState] = useState<ImportState>({ status: 'idle' })
+export default function ImportForm({ onImported }: { onImported: (tree: GameTree) => void }) {
+  const { t } = useTranslation();
+  const [pgn, setPgn] = useState('');
+  const [url, setUrl] = useState('');
+  const [state, setState] = useState<ImportState>({ status: 'idle' });
 
   function handleImport() {
-    if (state.status === 'importing') return
-    if (!pgn.trim() && !url.trim()) return
+    if (state.status === 'importing') {
+      return;
+    }
+    if (!pgn.trim() && !url.trim()) {
+      return;
+    }
 
-    setState({ status: 'importing' })
+    setState({ status: 'importing' });
 
-    const request = url.trim() ? importLichess(url.trim()) : importPgn(pgn)
+    const request = url.trim() ? importLichess(url.trim()) : importPgn(pgn);
     request.then(
       ({ tree }) => {
-        setState({ status: 'success', tree })
-        onImported(tree)
+        setState({ status: 'success', tree });
+        onImported(tree);
       },
       (error) =>
         setState({ status: 'error', code: error instanceof ApiError ? error.code : 'unknown' }),
-    )
+    );
   }
 
   return (
@@ -82,10 +82,13 @@ export default function ImportForm({
           value={url}
           onChange={(event) => setUrl(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') handleImport()
+            if (event.key === 'Enter') {
+              handleImport();
+            }
           }}
         />
         <button
+          type="button"
           id="import-submit-button"
           className={button({ variant: 'primary' })}
           disabled={state.status === 'importing' || (!pgn.trim() && !url.trim())}
@@ -100,5 +103,5 @@ export default function ImportForm({
         )}
       </section>
     </div>
-  )
+  );
 }

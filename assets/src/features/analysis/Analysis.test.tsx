@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import Analysis from '@/features/analysis/Analysis'
-import type { GameTree, GameNode } from '@/lib/api'
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import Analysis from '@/features/analysis/Analysis';
+import type { GameNode, GameTree } from '@/lib/api';
 
-const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 function node(partial: Partial<GameNode>): GameNode {
   return {
@@ -19,7 +19,7 @@ function node(partial: Partial<GameNode>): GameNode {
     fen: START_FEN,
     children: [],
     ...partial,
-  }
+  };
 }
 
 const tree: GameTree = {
@@ -72,54 +72,54 @@ const tree: GameTree = {
       }),
     ],
   }),
-}
+};
 
 function renderAnalysis() {
-  return render(<Analysis tree={tree} />)
+  return render(<Analysis tree={tree} />);
 }
 
 describe('Analysis', () => {
   it('renders the start position on the board', () => {
-    renderAnalysis()
+    renderAnalysis();
 
-    expect(screen.getByTestId('square-e1')).toHaveTextContent('♔')
-    expect(screen.getByTestId('square-e8')).toHaveTextContent('♚')
-    expect(screen.getByTestId('square-d2')).toHaveTextContent('♙')
-    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♙')
-  })
+    expect(screen.getByTestId('square-e1')).toHaveTextContent('♔');
+    expect(screen.getByTestId('square-e8')).toHaveTextContent('♚');
+    expect(screen.getByTestId('square-d2')).toHaveTextContent('♙');
+    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♙');
+  });
 
   it('navigates forward and backward with the buttons', () => {
-    renderAnalysis()
+    renderAnalysis();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }))
-    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙')
-    expect(screen.getByTestId('square-e2')).not.toHaveTextContent('♙')
+    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
+    expect(screen.getByTestId('square-e2')).not.toHaveTextContent('♙');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }))
-    expect(screen.getByTestId('square-e5')).toHaveTextContent('♟')
+    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    expect(screen.getByTestId('square-e5')).toHaveTextContent('♟');
 
-    fireEvent.click(screen.getByRole('button', { name: '◀ Previous' }))
-    expect(screen.getByTestId('square-e5')).not.toHaveTextContent('♟')
-  })
+    fireEvent.click(screen.getByRole('button', { name: '◀ Previous' }));
+    expect(screen.getByTestId('square-e5')).not.toHaveTextContent('♟');
+  });
 
   it('jumps to first and last moves', () => {
-    renderAnalysis()
+    renderAnalysis();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Last ⏭' }))
-    expect(screen.getByTestId('square-f3')).toHaveTextContent('♘')
-    expect(screen.getByTestId('analysis-move-4')).toHaveClass('bg-ink/20')
+    fireEvent.click(screen.getByRole('button', { name: 'Last ⏭' }));
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♘');
+    expect(screen.getByTestId('analysis-move-4')).toHaveClass('bg-ink/20');
 
-    fireEvent.click(screen.getByRole('button', { name: '⏮ First' }))
-    expect(screen.getByTestId('square-g1')).toHaveTextContent('♘')
-  })
+    fireEvent.click(screen.getByRole('button', { name: '⏮ First' }));
+    expect(screen.getByTestId('square-g1')).toHaveTextContent('♘');
+  });
 
   it('clicks a variation in the move list', () => {
-    renderAnalysis()
+    renderAnalysis();
 
-    fireEvent.click(screen.getByTestId('analysis-move-3'))
-    expect(screen.getByTestId('square-c5')).toHaveTextContent('♟')
-    expect(screen.getByText('Sicilian')).toBeInTheDocument()
-  })
+    fireEvent.click(screen.getByTestId('analysis-move-3'));
+    expect(screen.getByTestId('square-c5')).toHaveTextContent('♟');
+    expect(screen.getByText('Sicilian')).toBeInTheDocument();
+  });
 
   it('shows the checkmate status badge', () => {
     const mateTree: GameTree = {
@@ -140,56 +140,56 @@ describe('Analysis', () => {
           }),
         ],
       }),
-    }
-    render(<Analysis tree={mateTree} />)
+    };
+    render(<Analysis tree={mateTree} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }))
-    expect(screen.getByText('Checkmate')).toBeInTheDocument()
-  })
+    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    expect(screen.getByText('Checkmate')).toBeInTheDocument();
+  });
 
   it('navigates with the arrow keys', () => {
-    renderAnalysis()
+    renderAnalysis();
 
-    fireEvent.keyDown(window, { key: 'ArrowRight' })
-    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙')
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
 
-    fireEvent.keyDown(window, { key: 'ArrowLeft' })
-    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♙')
-  })
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♙');
+  });
 
   it('shows the fallback screen when no game is loaded', () => {
-    render(<Analysis tree={null} />)
+    render(<Analysis tree={null} />);
 
-    expect(screen.getByText('Import a game to start analyzing.')).toBeInTheDocument()
-  })
+    expect(screen.getByText('Import a game to start analyzing.')).toBeInTheDocument();
+  });
 
   it('jumps with Home and End keys', () => {
-    renderAnalysis()
+    renderAnalysis();
 
-    fireEvent.keyDown(window, { key: 'End' })
-    expect(screen.getByTestId('square-f3')).toHaveTextContent('♘')
+    fireEvent.keyDown(window, { key: 'End' });
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♘');
 
-    fireEvent.keyDown(window, { key: 'Home' })
-    expect(screen.getByTestId('square-g1')).toHaveTextContent('♘')
-  })
+    fireEvent.keyDown(window, { key: 'Home' });
+    expect(screen.getByTestId('square-g1')).toHaveTextContent('♘');
+  });
 
   it('flips the board with the f key', () => {
-    renderAnalysis()
+    renderAnalysis();
 
-    const board = () => screen.getByRole('img', { name: 'Chess board after start position' })
+    const board = () => screen.getByRole('img', { name: 'Chess board after start position' });
     const squares = () =>
       Array.from(board().querySelectorAll('[data-testid^="square-"]')).map((el) =>
         el.getAttribute('data-testid'),
-      )
+      );
 
-    expect(squares()[0]).toBe('square-a8')
+    expect(squares()[0]).toBe('square-a8');
 
-    fireEvent.keyDown(window, { key: 'f' })
+    fireEvent.keyDown(window, { key: 'f' });
 
-    expect(squares()[0]).toBe('square-h1')
+    expect(squares()[0]).toBe('square-h1');
     expect(screen.getByRole('button', { name: 'Flip board' })).toHaveAttribute(
       'aria-pressed',
       'true',
-    )
-  })
-})
+    );
+  });
+});

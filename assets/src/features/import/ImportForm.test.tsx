@@ -1,25 +1,27 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import ImportForm from '@/features/import/ImportForm'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import ImportForm from '@/features/import/ImportForm';
 
-type FetchStub = Record<string, (init?: RequestInit) => Promise<Response>>
+type FetchStub = Record<string, (init?: RequestInit) => Promise<Response>>;
 
 function stubFetch(routes: FetchStub) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input)
-      const handler = routes[url]
-      if (!handler) throw new Error(`unmocked fetch: ${url}`)
-      return handler(init)
+      const url = String(input);
+      const handler = routes[url];
+      if (!handler) {
+        throw new Error(`unmocked fetch: ${url}`);
+      }
+      return handler(init);
     }),
-  )
+  );
 }
 
 function jsonResponse(body: unknown, status = 200): Promise<Response> {
   return Promise.resolve(
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } }),
-  )
+  );
 }
 
 const tree = {
@@ -69,79 +71,79 @@ const tree = {
       },
     ],
   },
-}
+};
 
-const pgn = '1. e4 e5 *\n'
+const pgn = '1. e4 e5 *\n';
 
 beforeEach(() => {
-  vi.unstubAllGlobals()
-})
+  vi.unstubAllGlobals();
+});
 
 afterEach(() => {
-  vi.unstubAllGlobals()
-})
+  vi.unstubAllGlobals();
+});
 
 describe('ImportForm', () => {
   it('imports pasted PGN and hands the game to the caller', async () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ tree }),
-    })
-    const onImported = vi.fn()
-    render(<ImportForm onImported={onImported} />)
+    });
+    const onImported = vi.fn();
+    render(<ImportForm onImported={onImported} />);
 
-    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } })
-    fireEvent.click(screen.getByRole('button', { name: 'Import' }))
+    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
-    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1))
-    expect(onImported).toHaveBeenCalledWith(expect.objectContaining({ headers: tree.headers }))
-  })
+    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1));
+    expect(onImported).toHaveBeenCalledWith(expect.objectContaining({ headers: tree.headers }));
+  });
 
   it('prefers a Lichess URL over pasted PGN', async () => {
     stubFetch({
       '/api/import/lichess': () => jsonResponse({ tree }),
-    })
-    const onImported = vi.fn()
-    render(<ImportForm onImported={onImported} />)
+    });
+    const onImported = vi.fn();
+    render(<ImportForm onImported={onImported} />);
 
-    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } })
+    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } });
     fireEvent.change(screen.getByLabelText('Lichess URL'), {
       target: { value: 'https://lichess.org/abc123' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Import' }))
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
-    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1))
-  })
+    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1));
+  });
 
   it('shows the error message when the PGN is invalid', async () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ errors: { code: 'invalid_pgn' } }, 422),
-    })
-    render(<ImportForm onImported={vi.fn()} />)
+    });
+    render(<ImportForm onImported={vi.fn()} />);
 
-    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: 'not pgn' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Import' }))
+    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: 'not pgn' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
-    expect(await screen.findByText('This PGN could not be parsed.')).toBeInTheDocument()
-  })
+    expect(await screen.findByText('This PGN could not be parsed.')).toBeInTheDocument();
+  });
 
   it('keeps the submit disabled while both inputs are empty', () => {
-    render(<ImportForm onImported={vi.fn()} />)
+    render(<ImportForm onImported={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
-  })
+    expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled();
+  });
 
   it('imports again after a failed attempt', async () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ errors: { code: 'invalid_pgn' } }, 422),
-    })
-    render(<ImportForm onImported={vi.fn()} />)
+    });
+    render(<ImportForm onImported={vi.fn()} />);
 
-    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: 'bad' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Import' }))
+    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: 'bad' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
     await waitFor(() =>
       expect(screen.getByText('This PGN could not be parsed.')).toBeInTheDocument(),
-    )
-    expect(screen.getByRole('button', { name: 'Import' })).not.toBeDisabled()
-  })
-})
+    );
+    expect(screen.getByRole('button', { name: 'Import' })).not.toBeDisabled();
+  });
+});

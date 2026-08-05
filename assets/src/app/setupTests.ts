@@ -1,33 +1,33 @@
-import '@testing-library/jest-dom/vitest'
-import '@/i18n'
+import '@testing-library/jest-dom/vitest';
+import '@/i18n';
 
 // Node 26 defines an experimental `localStorage` on the global, which makes
 // vitest skip copying jsdom's own localStorage onto the test global. Provide
 // an in-memory one so the identity code is exercised as in a real browser.
-const store = new Map<string, string>()
+const store = new Map<string, string>();
 
 const localStorageMock: Storage = {
   get length() {
-    return store.size
+    return store.size;
   },
   clear() {
-    store.clear()
+    store.clear();
   },
   getItem(key: string) {
-    return store.get(key) ?? null
+    return store.get(key) ?? null;
   },
   key(index: number) {
-    return [...store.keys()][index] ?? null
+    return [...store.keys()][index] ?? null;
   },
   removeItem(key: string) {
-    store.delete(key)
+    store.delete(key);
   },
   setItem(key: string, value: string) {
-    store.set(key, value)
+    store.set(key, value);
   },
-}
+};
 
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
   configurable: true,
-})
+});

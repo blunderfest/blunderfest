@@ -1,12 +1,12 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { tv } from 'tailwind-variants'
-import { generateRoomCode, normalizeRoomCode } from '@/lib/roomCode'
-import type { BackendStatus } from '@/app/App'
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { tv } from 'tailwind-variants';
+import type { BackendStatus } from '@/app/App';
+import { generateRoomCode, normalizeRoomCode } from '@/lib/roomCode';
 
 const panel = tv({
   base: 'flex w-full max-w-sm flex-col items-stretch gap-3 rounded-xl border border-white/10 bg-white/5 p-6',
-})
+});
 
 const button = tv({
   base: 'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
@@ -16,34 +16,36 @@ const button = tv({
       ghost: 'border border-white/10 text-ink hover:border-white/30',
     },
   },
-})
+});
 
 export default function Home({
   backend,
   onJoin,
 }: {
-  backend: BackendStatus
-  onJoin: (slug: string) => void
+  backend: BackendStatus;
+  onJoin: (slug: string) => void;
 }) {
-  const { t } = useTranslation()
-  const [code, setCode] = useState('')
-  const [error, setError] = useState(false)
-  const [creating, setCreating] = useState(false)
+  const { t } = useTranslation();
+  const [code, setCode] = useState('');
+  const [error, setError] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   function handleCreate() {
-    if (creating) return
-    setCreating(true)
-    onJoin(generateRoomCode())
+    if (creating) {
+      return;
+    }
+    setCreating(true);
+    onJoin(generateRoomCode());
   }
 
   function handleJoin() {
-    const slug = normalizeRoomCode(code)
+    const slug = normalizeRoomCode(code);
     if (!slug) {
-      setError(true)
-      return
+      setError(true);
+      return;
     }
-    setError(false)
-    onJoin(slug)
+    setError(false);
+    onJoin(slug);
   }
 
   return (
@@ -65,6 +67,7 @@ export default function Home({
       <div className="flex flex-col items-center gap-4">
         <section className={panel()}>
           <button
+            type="button"
             id="create-room-button"
             className={button({ variant: 'primary' })}
             onClick={handleCreate}
@@ -83,20 +86,31 @@ export default function Home({
               placeholder={t('home.joinPlaceholder')}
               value={code}
               onChange={(event) => {
-                setCode(event.target.value)
-                setError(false)
+                setCode(event.target.value);
+                setError(false);
               }}
               onKeyDown={(event) => {
-                if (event.key === 'Enter') handleJoin()
+                if (event.key === 'Enter') {
+                  handleJoin();
+                }
               }}
             />
-            <button id="join-room-button" className={button({ variant: 'ghost' })} onClick={handleJoin}>
+            <button
+              type="button"
+              id="join-room-button"
+              className={button({ variant: 'ghost' })}
+              onClick={handleJoin}
+            >
               {t('home.joinButton')}
             </button>
           </div>
-          {error && <p className="m-0 text-sm text-bad" role="alert">{t('home.joinError')}</p>}
+          {error && (
+            <p className="m-0 text-sm text-bad" role="alert">
+              {t('home.joinError')}
+            </p>
+          )}
         </section>
       </div>
     </main>
-  )
+  );
 }

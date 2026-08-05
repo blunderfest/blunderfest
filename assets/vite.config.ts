@@ -1,9 +1,9 @@
-import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { fileURLToPath, URL } from 'node:url';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
 
-const phoenixOrigin = 'http://localhost:4000'
+const phoenixOrigin = 'http://localhost:4000';
 
 export default defineConfig({
   resolve: {
@@ -18,8 +18,8 @@ export default defineConfig({
       name: 'watch-phoenix-stdin',
       configureServer() {
         // Keeps stdin open; Node exits when Phoenix dies and closes the stream
-        process.stdin.resume()
-        process.stdin.on('close', () => process.exit(0))
+        process.stdin.resume();
+        process.stdin.on('close', () => process.exit(0));
       },
     },
   ],
@@ -52,4 +52,4 @@ export default defineConfig({
       jsdom: { url: 'http://localhost:5173' },
     },
   },
-})
+});

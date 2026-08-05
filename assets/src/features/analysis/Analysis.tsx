@@ -1,13 +1,13 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { tv } from 'tailwind-variants'
-import type { GameNode, GameTree } from '@/lib/api'
-import Board from '@/components/Board'
-import { parseFen } from '@/components/board'
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { tv } from 'tailwind-variants';
+import Board from '@/components/Board';
+import { parseFen } from '@/components/board';
+import type { GameNode, GameTree } from '@/lib/api';
 
 const panel = tv({
   base: 'flex w-full max-w-2xl flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-6',
-})
+});
 
 const button = tv({
   base: 'rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40',
@@ -17,7 +17,7 @@ const button = tv({
       ghost: 'border border-white/10 text-ink hover:border-white/30',
     },
   },
-})
+});
 
 const moveButton = tv({
   base: 'rounded-md px-1.5 py-0.5 font-mono text-sm transition-colors',
@@ -25,13 +25,14 @@ const moveButton = tv({
     selected: { true: 'bg-ink/20 text-white', false: 'text-ink hover:bg-white/10' },
     bold: { true: 'font-bold', false: '' },
   },
-})
+});
 
-const moveNumber = (node: GameNode) => `${Math.ceil(node.ply / 2)}${node.ply % 2 === 1 ? '.' : '…'}`
+const moveNumber = (node: GameNode) =>
+  `${Math.ceil(node.ply / 2)}${node.ply % 2 === 1 ? '.' : '…'}`;
 
 type Row =
   | { type: 'pair'; white: GameNode; black: GameNode | null }
-  | { type: 'variation'; root: GameNode }
+  | { type: 'variation'; root: GameNode };
 
 function MoveButton({
   node,
@@ -39,10 +40,10 @@ function MoveButton({
   bold,
   onSelect,
 }: {
-  node: GameNode
-  selected: boolean
-  bold?: boolean
-  onSelect: (id: number) => void
+  node: GameNode;
+  selected: boolean;
+  bold?: boolean;
+  onSelect: (id: number) => void;
 }) {
   return (
     <button
@@ -53,7 +54,7 @@ function MoveButton({
     >
       <span className="text-muted">{moveNumber(node)}</span> {node.san}
     </button>
-  )
+  );
 }
 
 function VariationLine({
@@ -62,16 +63,16 @@ function VariationLine({
   onSelect,
   nested = false,
 }: {
-  root: GameNode
-  currentId: number | null
-  onSelect: (id: number) => void
-  nested?: boolean
+  root: GameNode;
+  currentId: number | null;
+  onSelect: (id: number) => void;
+  nested?: boolean;
 }) {
-  const nodes: GameNode[] = []
-  let node: GameNode | null = root
+  const nodes: GameNode[] = [];
+  let node: GameNode | null = root;
   while (node) {
-    nodes.push(node)
-    node = node.children[0] ?? null
+    nodes.push(node);
+    node = node.children[0] ?? null;
   }
 
   const content = (
@@ -99,105 +100,126 @@ function VariationLine({
       ))}
       <span className="text-muted">)</span>
     </Fragment>
-  )
+  );
 
-  if (nested) return content
-  return <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 pl-7">{content}</div>
+  if (nested) {
+    return content;
+  }
+  return <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 pl-7">{content}</div>;
 }
 
-type Entry = { node: GameNode; parent: GameNode | null }
+type Entry = { node: GameNode; parent: GameNode | null };
 
 export default function Analysis({ tree }: { tree: GameTree | null }) {
-  const { t } = useTranslation()
-  const [flipped, setFlipped] = useState(false)
+  const { t } = useTranslation();
+  const [flipped, setFlipped] = useState(false);
 
   const byId = useMemo(() => {
-    const map = new Map<number, Entry>()
+    const map = new Map<number, Entry>();
     const walk = (node: GameNode, parent: GameNode | null) => {
-      map.set(node.id, { node, parent })
-      node.children.forEach((child) => walk(child, node))
+      map.set(node.id, { node, parent });
+      node.children.forEach((child) => {
+        walk(child, node);
+      });
+    };
+    if (tree) {
+      walk(tree.root, null);
     }
-    if (tree) walk(tree.root, null)
-    return map
-  }, [tree])
+    return map;
+  }, [tree]);
 
-  const [currentId, setCurrentId] = useState<number | null>(null)
+  const [currentId, setCurrentId] = useState<number | null>(null);
 
   useEffect(() => {
-    setCurrentId(tree?.root.id ?? null)
-  }, [tree])
+    setCurrentId(tree?.root.id ?? null);
+  }, [tree]);
 
-  const current: GameNode | null = currentId === null ? null : byId.get(currentId)?.node ?? null
+  const current: GameNode | null = currentId === null ? null : (byId.get(currentId)?.node ?? null);
 
   const rows = useMemo(() => {
-    if (!tree) return []
-    const result: Row[] = []
-    let node: GameNode | null = tree.root.children[0] ?? null
-    while (node) {
-      const white: GameNode = node
-      const black: GameNode | null =
-        white.children[0] && white.children[0].ply % 2 === 0 ? white.children[0] : null
-      result.push({ type: 'pair', white, black })
-      white.children.slice(1).forEach((child) => result.push({ type: 'variation', root: child }))
-      if (black) black.children.slice(1).forEach((child) => result.push({ type: 'variation', root: child }))
-      node = black ? black.children[0] ?? null : white.children[0] ?? null
+    if (!tree) {
+      return [];
     }
-    return result
-  }, [tree])
+    const result: Row[] = [];
+    let node: GameNode | null = tree.root.children[0] ?? null;
+    while (node) {
+      const white: GameNode = node;
+      const black: GameNode | null =
+        white.children[0] && white.children[0].ply % 2 === 0 ? white.children[0] : null;
+      result.push({ type: 'pair', white, black });
+      white.children.slice(1).forEach((child) => {
+        result.push({ type: 'variation', root: child });
+      });
+      if (black) {
+        black.children.slice(1).forEach((child) => {
+          result.push({ type: 'variation', root: child });
+        });
+      }
+      node = black ? (black.children[0] ?? null) : (white.children[0] ?? null);
+    }
+    return result;
+  }, [tree]);
 
   useEffect(() => {
-    if (!tree) return
+    if (!tree) {
+      return;
+    }
     const onKey = (event: KeyboardEvent) => {
-      let handled = false
+      let handled = false;
       if (event.key === 'ArrowRight') {
-        setCurrentId((id) => id === null ? id : byId.get(id)?.node.children[0]?.id ?? id)
-        handled = true
+        setCurrentId((id) => (id === null ? id : (byId.get(id)?.node.children[0]?.id ?? id)));
+        handled = true;
       }
       if (event.key === 'ArrowLeft') {
-        setCurrentId((id) => id === null ? id : byId.get(id)?.parent?.id ?? id)
-        handled = true
+        setCurrentId((id) => (id === null ? id : (byId.get(id)?.parent?.id ?? id)));
+        handled = true;
       }
       if (event.key === 'Home') {
-        setCurrentId(tree.root.id)
-        handled = true
+        setCurrentId(tree.root.id);
+        handled = true;
       }
       if (event.key === 'End') {
         setCurrentId((id) => {
-          const start = id === null ? tree.root : byId.get(id)?.node ?? tree.root
-          let node = start
-          while (node.children[0]) node = node.children[0]
-          return node.id
-        })
-        handled = true
+          const start = id === null ? tree.root : (byId.get(id)?.node ?? tree.root);
+          let node = start;
+          while (node.children[0]) {
+            node = node.children[0];
+          }
+          return node.id;
+        });
+        handled = true;
       }
       if (event.key === 'f' || event.key === 'F') {
-        setFlipped((value) => !value)
-        handled = true
+        setFlipped((value) => !value);
+        handled = true;
       }
-      if (handled) event.preventDefault()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [tree, byId])
+      if (handled) {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [tree, byId]);
 
   if (tree === null || current === null) {
     return (
       <div className="flex w-full flex-1 flex-col items-center justify-center gap-6 p-8">
         <p className="m-0 text-muted">{t('analysis.noGame')}</p>
       </div>
-    )
+    );
   }
 
-  const parent = byId.get(current.id)?.parent ?? null
-  const next = current.children[0] ?? null
-  const lastChild = (node: GameNode): GameNode => (node.children[0] ? lastChild(node.children[0]) : node)
+  const parent = byId.get(current.id)?.parent ?? null;
+  const next = current.children[0] ?? null;
+  const lastChild = (node: GameNode): GameNode =>
+    node.children[0] ? lastChild(node.children[0]) : node;
 
   return (
     <div className="flex w-full flex-col items-center gap-6">
       <div className="flex w-full max-w-2xl flex-col gap-2">
         <div className="flex items-baseline justify-between gap-4">
           <h2 className="m-0 text-2xl tracking-[-0.02em]">
-            {tree.headers['White'] ?? '?'} – {tree.headers['Black'] ?? '?'}
+            {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
           </h2>
           <p className="m-0 text-muted">{tree.result}</p>
         </div>
@@ -212,6 +234,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
         />
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
+            type="button"
             id="analysis-first-button"
             className={button({ variant: 'ghost' })}
             disabled={parent === null}
@@ -221,6 +244,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
             ⏮ {t('analysis.first')}
           </button>
           <button
+            type="button"
             id="analysis-prev-button"
             className={button({ variant: 'ghost' })}
             disabled={parent === null}
@@ -230,6 +254,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
             ◀ {t('analysis.prev')}
           </button>
           <button
+            type="button"
             id="analysis-next-button"
             className={button({ variant: 'ghost' })}
             disabled={next === null}
@@ -239,6 +264,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
             {t('analysis.next')} ▶
           </button>
           <button
+            type="button"
             id="analysis-last-button"
             className={button({ variant: 'ghost' })}
             disabled={current.children.length === 0}
@@ -248,6 +274,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
             {t('analysis.last')} ⏭
           </button>
           <button
+            type="button"
             id="analysis-flip-button"
             className={button({ variant: 'ghost' })}
             aria-pressed={flipped}
@@ -258,8 +285,8 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
           </button>
         </div>
         <p className="m-0 text-xs text-muted">
-          <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd>{' '}
-          <kbd>End</kbd> {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')}
+          <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
+          {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')}
         </p>
         {current.status !== 'active' && (
           <p id="analysis-status" className="m-0 text-sm font-semibold text-warn" role="status">
@@ -309,16 +336,16 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
 
       <section className={panel()}>
         <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          {tree.headers['Event'] && (
+          {tree.headers.Event && (
             <>
               <dt className="m-0 text-muted">{t('import.event')}</dt>
-              <dd className="m-0 text-ink">{tree.headers['Event']}</dd>
+              <dd className="m-0 text-ink">{tree.headers.Event}</dd>
             </>
           )}
-          {tree.headers['Date'] && (
+          {tree.headers.Date && (
             <>
               <dt className="m-0 text-muted">{t('import.date')}</dt>
-              <dd className="m-0 text-ink">{tree.headers['Date']}</dd>
+              <dd className="m-0 text-ink">{tree.headers.Date}</dd>
             </>
           )}
           <dt className="m-0 text-muted">{t('import.plies')}</dt>
@@ -328,5 +355,5 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
         </dl>
       </section>
     </div>
-  )
+  );
 }

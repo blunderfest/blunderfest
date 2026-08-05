@@ -1,6 +1,6 @@
-import i18n from 'i18next'
-import { initReactI18next } from 'react-i18next'
-import en from './locales/en.json'
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import en from './locales/en.json';
 
 // i18n for the user-facing UI. The server never returns prose: the JSON API
 // answers with structured error codes, and the React app owns all copy.
@@ -16,6 +16,6 @@ void i18n.use(initReactI18next).init({
   interpolation: {
     escapeValue: false,
   },
-})
+});
 
-export default i18n
+export default i18n;
