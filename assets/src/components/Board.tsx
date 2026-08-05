@@ -38,7 +38,7 @@ export default function Board({
 
   return (
     <div
-      className="grid aspect-square w-[min(88vw,28rem)] grid-cols-8 select-none overflow-hidden rounded-lg border border-white/10 shadow-lg"
+      className="grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-lg border border-white/10 shadow-lg"
       role="img"
       aria-label={label}
     >
@@ -70,7 +70,7 @@ export default function Board({
 function PieceGlyph({ piece }: { piece: Piece }) {
   return (
     <span
-      className="text-[min(8.5vw,3.4rem)] leading-none"
+      className="text-[min(10vw,3.75rem)] leading-none"
       style={{
         color: piece.color === 'w' ? '#f9f9f9' : '#1a1a1a',
         textShadow:
