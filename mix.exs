@@ -43,7 +43,9 @@ defmodule Blunderfest.MixProject do
       {:phoenix_html, "~> 4.1"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:echecs, "~> 0.1.4"},
+      {:req, "~> 0.5"}
     ]
   end
 

@@ -11,6 +11,8 @@ defmodule BlunderfestWeb.Router do
     get "/healthz", HealthController, :check
     post "/profiles", ProfileController, :create
     get "/profiles/:id", ProfileController, :show
+    post "/import/pgn", ImportController, :pgn
+    post "/import/lichess", ImportController, :lichess
   end
 
   # The single-page application shell. Everything that is not a JSON API

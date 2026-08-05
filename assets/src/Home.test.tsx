@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import Home from './Home'
 
 function renderHome(onJoin = vi.fn()) {
-  const utils = render(<Home backend="ok" onJoin={onJoin} />)
+  const utils = render(<Home backend="ok" onJoin={onJoin} onImport={vi.fn()} />)
   return { onJoin, ...utils }
 }
 

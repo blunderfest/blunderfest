@@ -11,7 +11,7 @@ defmodule BlunderfestWeb.ChannelCase do
       # The default endpoint for testing
       @endpoint BlunderfestWeb.Endpoint
 
-      use Phoenix.ChannelTest
+      import Phoenix.ChannelTest
 
       import BlunderfestWeb.ChannelCase
     end

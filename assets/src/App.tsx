@@ -2,13 +2,18 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useProfile } from './useProfile'
 import Home from './Home'
+import Import from './Import'
 import RoomView from './RoomView'
 
 export type BackendStatus = 'checking' | 'ok' | 'down'
 
-type Route = { screen: 'home' } | { screen: 'room'; slug: string }
+type Route =
+  | { screen: 'home' }
+  | { screen: 'import' }
+  | { screen: 'room'; slug: string }
 
 function readHashRoute(): Route {
+  if (window.location.hash === '#/import') return { screen: 'import' }
   const match = window.location.hash.match(/^#\/r\/([a-z0-9]+)$/)
   if (match) return { screen: 'room', slug: match[1] }
   return { screen: 'home' }
@@ -16,6 +21,10 @@ function readHashRoute(): Route {
 
 function navigateToRoom(slug: string) {
   window.location.hash = `#/r/${slug}`
+}
+
+function navigateImport() {
+  window.location.hash = '#/import'
 }
 
 function navigateHome() {
@@ -66,7 +75,9 @@ export default function App() {
       </header>
 
       {route.screen === 'home' ? (
-        <Home backend={backend} onJoin={navigateToRoom} />
+        <Home backend={backend} onJoin={navigateToRoom} onImport={navigateImport} />
+      ) : route.screen === 'import' ? (
+        <Import onBack={navigateHome} />
       ) : (
         <RoomView slug={route.slug} onLeave={navigateHome} />
       )}

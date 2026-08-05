@@ -46,3 +46,41 @@ export async function fetchProfile(device: Device): Promise<Profile> {
   })
   return body.profile
 }
+
+export type GameNode = {
+  id: number
+  ply: number
+  san: string | null
+  from: string | null
+  to: string | null
+  promotion: string | null
+  comment: string | null
+  nags: number[]
+  status: string
+  children: GameNode[]
+}
+
+export type GameTree = {
+  headers: Record<string, string>
+  result: string
+  setup: { fen?: string } | null
+  root: GameNode
+  mainline_ply_count: number
+  node_count: number
+}
+
+export async function importPgn(pgn: string): Promise<{ tree: GameTree }> {
+  return request('/api/import/pgn', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pgn }),
+  })
+}
+
+export async function importLichess(url: string): Promise<{ tree: GameTree }> {
+  return request('/api/import/lichess', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })
+}
