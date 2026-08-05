@@ -116,9 +116,7 @@ describe('Analysis', () => {
   it('clicks a variation in the move list', () => {
     renderAnalysis()
 
-    fireEvent.click(
-      screen.getByTestId('analysis-move-3').querySelector('button') as HTMLButtonElement,
-    )
+    fireEvent.click(screen.getByTestId('analysis-move-3'))
     expect(screen.getByTestId('square-c5')).toHaveTextContent('♟')
     expect(screen.getByText('Sicilian')).toBeInTheDocument()
   })
