@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import type { Channel, ChannelState } from 'phoenix'
-import type { Op } from '../protocol/ops'
+import type { Op } from '@/protocol/ops'
 
 export type Handler = (response?: unknown) => void | Promise<void>
 

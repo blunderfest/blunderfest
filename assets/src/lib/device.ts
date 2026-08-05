@@ -1,4 +1,4 @@
-import type { Device } from './api'
+import type { Device } from '@/lib/api'
 
 const STORAGE_KEY = 'blunderfest.device'
 

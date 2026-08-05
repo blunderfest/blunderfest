@@ -1,5 +1,5 @@
 import { Socket } from 'phoenix'
-import { loadDevice } from './device'
+import { loadDevice } from '@/lib/device'
 
 let socket: Socket | null = null
 

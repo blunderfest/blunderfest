@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { tv } from 'tailwind-variants'
-import { generateRoomCode, normalizeRoomCode } from './roomCode'
-import type { BackendStatus } from './App'
+import { generateRoomCode, normalizeRoomCode } from '@/lib/roomCode'
+import type { BackendStatus } from '@/app/App'
 
 const panel = tv({
   base: 'flex w-full max-w-sm flex-col items-stretch gap-3 rounded-xl border border-white/10 bg-white/5 p-6',

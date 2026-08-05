@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { GameTree } from '../api'
-import type { Op, PresenceMember } from '../protocol/ops'
+import type { GameTree } from '@/lib/api'
+import type { Op, PresenceMember } from '@/protocol/ops'
 
 export type RoomState = {
   slug: string | null

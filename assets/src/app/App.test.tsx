@@ -1,15 +1,15 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { Provider } from 'react-redux'
-import App from './App'
-import { store } from './store'
-import { FakeChannel } from './test/fakeChannel'
+import App from '@/app/App'
+import { store } from '@/store'
+import { FakeChannel } from '@/test/fakeChannel'
 
 const socketMocks = vi.hoisted(() => ({
   channelFor: vi.fn(),
 }))
 
-vi.mock('./socket', () => ({ channelFor: socketMocks.channelFor }))
+vi.mock('@/lib/socket', () => ({ channelFor: socketMocks.channelFor }))
 
 type FetchStub = Record<string, () => Promise<Response>>
 

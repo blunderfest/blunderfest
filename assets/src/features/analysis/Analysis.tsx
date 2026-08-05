@@ -1,9 +1,9 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { tv } from 'tailwind-variants'
-import type { GameNode, GameTree } from './api'
-import Board from './Board'
-import { parseFen } from './board'
+import type { GameNode, GameTree } from '@/lib/api'
+import Board from '@/components/Board'
+import { parseFen } from '@/components/board'
 
 const panel = tv({
   base: 'flex w-full max-w-2xl flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-6',

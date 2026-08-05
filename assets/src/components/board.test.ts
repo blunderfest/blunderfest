@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isLightSquare, parseFen, pieceGlyph, squareName } from './board'
+import { isLightSquare, parseFen, pieceGlyph, squareName } from '@/components/board'
 
 const start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import roomReducer, { enterRoom, leaveRoom, applyOp, replayOps, joinMember, leaveMember } from './room'
-import type { Op, SetGameOp } from '../protocol/ops'
+import type { Op, SetGameOp } from '@/protocol/ops'
 
 function moveOp(seq: number): Op {
   return {

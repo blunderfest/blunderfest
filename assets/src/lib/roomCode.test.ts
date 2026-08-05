@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateRoomCode, normalizeRoomCode } from './roomCode'
+import { generateRoomCode, normalizeRoomCode } from '@/lib/roomCode'
 
 describe('generateRoomCode', () => {
   it('returns a 5-character code from the unambiguous alphabet', () => {

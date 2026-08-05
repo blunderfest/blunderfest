@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import './i18n'
+import '@/i18n'
 
 // Node 26 defines an experimental `localStorage` on the global, which makes
 // vitest skip copying jsdom's own localStorage onto the test global. Provide

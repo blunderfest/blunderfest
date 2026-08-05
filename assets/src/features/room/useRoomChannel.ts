@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Channel } from 'phoenix'
-import { useAppDispatch } from './store'
-import { applyOp, enterRoom, joinMember, leaveMember, leaveRoom, replayOps } from './store/room'
-import type { Op } from './protocol/ops'
-import { channelFor } from './socket'
+import { useAppDispatch } from '@/store'
+import { applyOp, enterRoom, joinMember, leaveMember, leaveRoom, replayOps } from '@/store/room'
+import type { Op } from '@/protocol/ops'
+import { channelFor } from '@/lib/socket'
 
 export type RoomPresenceMember = {
   id: string

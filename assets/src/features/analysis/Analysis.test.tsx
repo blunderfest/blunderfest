@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import Analysis from './Analysis'
-import type { GameTree, GameNode } from './api'
+import Analysis from '@/features/analysis/Analysis'
+import type { GameTree, GameNode } from '@/lib/api'
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 

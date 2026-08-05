@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useProfile } from './useProfile'
-import Home from './Home'
-import RoomView from './RoomView'
+import { useProfile } from '@/lib/useProfile'
+import Home from '@/features/home/Home'
+import RoomView from '@/features/room/RoomView'
 
 export type BackendStatus = 'checking' | 'ok' | 'down'
 

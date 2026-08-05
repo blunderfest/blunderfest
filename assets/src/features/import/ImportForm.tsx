@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { tv } from 'tailwind-variants'
-import { ApiError, importLichess, importPgn, type GameTree } from './api'
+import { ApiError, importLichess, importPgn, type GameTree } from '@/lib/api'
 
 const panel = tv({
   base: 'flex w-full max-w-xl flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-6',

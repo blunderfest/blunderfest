@@ -6,7 +6,7 @@
  * side of that protocol — one source of truth shared by the socket handlers,
  * the store, and tests.
  */
-import type { GameTree } from '../api'
+import type { GameTree } from '@/lib/api'
 
 export type OpBase = {
   seq: number

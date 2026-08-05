@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import Home from './Home'
+import Home from '@/features/home/Home'
 
 function renderHome(onJoin = vi.fn()) {
   const utils = render(<Home backend="ok" onJoin={onJoin} />)

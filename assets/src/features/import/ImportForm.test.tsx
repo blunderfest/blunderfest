@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import ImportForm from './ImportForm'
+import ImportForm from '@/features/import/ImportForm'
 
 type FetchStub = Record<string, (init?: RequestInit) => Promise<Response>>
 

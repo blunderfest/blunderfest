@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import type { Channel } from 'phoenix'
-import { useRoomChannel } from './useRoomChannel'
-import { useAppSelector } from './store'
-import type { Op } from './protocol/ops'
-import type { GameTree } from './api'
-import ImportForm from './ImportForm'
-import Analysis from './Analysis'
+import { useRoomChannel } from '@/features/room/useRoomChannel'
+import { useAppSelector } from '@/store'
+import type { Op } from '@/protocol/ops'
+import type { GameTree } from '@/lib/api'
+import ImportForm from '@/features/import/ImportForm'
+import Analysis from '@/features/analysis/Analysis'
 
 function opLabel(t: TFunction, op: Op): string {
   switch (op.type) {

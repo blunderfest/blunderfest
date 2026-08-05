@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ApiError, createProfile, fetchProfile, type Profile } from './api'
-import { clearDevice, loadDevice, saveDevice } from './device'
+import { ApiError, createProfile, fetchProfile, type Profile } from '@/lib/api'
+import { clearDevice, loadDevice, saveDevice } from '@/lib/device'
 
 type ProfileState =
   | { status: 'loading'; profile: null; error: null }

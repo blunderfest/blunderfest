@@ -1,5 +1,5 @@
 import { tv } from 'tailwind-variants'
-import { isLightSquare, pieceGlyph, squareName, type Piece, type Position } from './board'
+import { isLightSquare, pieceGlyph, squareName, type Piece, type Position } from '@/components/board'
 
 const square = tv({
   base: 'relative flex items-center justify-center',
