@@ -5,7 +5,7 @@ defmodule Blunderfest.Game.Node do
   `children` holds every move playable from this node's position: the first
   child is the mainline, further children are variations. `from`/`to` are
   algebraic squares (e.g. "e2", "g8"); `promotion` is a piece letter
-  ("Q"/"R"/"B"/"N") or `nil`.
+  ("Q"/"R"/"B"/"N") or `nil`. `fen` is the position after the move.
   """
 
   defstruct [
@@ -18,6 +18,7 @@ defmodule Blunderfest.Game.Node do
     :comment,
     :nags,
     :status,
+    :fen,
     children: []
   ]
 
@@ -31,6 +32,7 @@ defmodule Blunderfest.Game.Node do
           comment: String.t() | nil,
           nags: [non_neg_integer()],
           status: atom(),
+          fen: String.t() | nil,
           children: [t()]
         }
 end

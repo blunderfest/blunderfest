@@ -49,6 +49,7 @@ defmodule Blunderfest.PGN do
         comment: nil,
         nags: [],
         status: Echecs.status(game),
+        fen: Echecs.FEN.to_string(game),
         children: nodes
       }
 
@@ -320,6 +321,7 @@ defmodule Blunderfest.PGN do
             comment: st.pending,
             nags: [],
             status: Echecs.status(new_game),
+            fen: Echecs.FEN.to_string(new_game),
             children: []
           }
 

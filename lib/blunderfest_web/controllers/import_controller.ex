@@ -80,6 +80,7 @@ defmodule BlunderfestWeb.ImportController do
       comment: node.comment,
       nags: node.nags,
       status: node.status,
+      fen: node.fen,
       children: Enum.map(node.children, &node_json/1)
     }
   end

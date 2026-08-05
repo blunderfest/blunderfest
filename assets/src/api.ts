@@ -57,6 +57,7 @@ export type GameNode = {
   comment: string | null
   nags: number[]
   status: string
+  fen: string | null
   children: GameNode[]
 }
 

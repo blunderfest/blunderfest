@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { tv } from 'tailwind-variants'
 import { ApiError, importLichess, importPgn, type GameNode, type GameTree } from './api'
-
 const panel = tv({
   base: 'flex w-full max-w-xl flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-6',
 })
@@ -33,7 +32,13 @@ type ImportState =
   | { status: 'success'; tree: GameTree }
   | { status: 'error'; code: string }
 
-export default function Import({ onBack }: { onBack: () => void }) {
+export default function Import({
+  onBack,
+  onAnalyze,
+}: {
+  onBack: () => void
+  onAnalyze: (tree: GameTree) => void
+}) {
   const { t } = useTranslation()
   const [pgn, setPgn] = useState('')
   const [url, setUrl] = useState('')
@@ -104,6 +109,13 @@ export default function Import({ onBack }: { onBack: () => void }) {
 
       {state.status === 'success' && (
         <section className={panel()}>
+          <button
+            id="analyze-button"
+            className={button({ variant: 'primary' })}
+            onClick={() => onAnalyze(state.tree)}
+          >
+            {t('import.analyze')}
+          </button>
           <h2 className="m-0 text-sm font-semibold text-muted">{t('import.summary')}</h2>
           <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
             {state.tree.headers['White'] && (

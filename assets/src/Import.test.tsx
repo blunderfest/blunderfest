@@ -83,7 +83,7 @@ describe('Import', () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ tree }),
     })
-    render(<Import onBack={vi.fn()} />)
+    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } })
     fireEvent.click(screen.getByRole('button', { name: 'Import' }))
@@ -99,7 +99,7 @@ describe('Import', () => {
     stubFetch({
       '/api/import/lichess': () => jsonResponse({ tree }),
     })
-    render(<Import onBack={vi.fn()} />)
+    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } })
     fireEvent.change(screen.getByLabelText('Lichess URL'), {
@@ -114,7 +114,7 @@ describe('Import', () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ errors: { code: 'invalid_pgn' } }, 422),
     })
-    render(<Import onBack={vi.fn()} />)
+    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: 'not pgn' } })
     fireEvent.click(screen.getByRole('button', { name: 'Import' }))
@@ -123,14 +123,14 @@ describe('Import', () => {
   })
 
   it('keeps the submit disabled while both inputs are empty', () => {
-    render(<Import onBack={vi.fn()} />)
+    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
 
     expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
   })
 
   it('navigates back when the back button is clicked', () => {
     const onBack = vi.fn()
-    render(<Import onBack={onBack} />)
+    render(<Import onBack={onBack} onAnalyze={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }))
     expect(onBack).toHaveBeenCalledTimes(1)
@@ -140,7 +140,7 @@ describe('Import', () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ errors: { code: 'invalid_pgn' } }, 422),
     })
-    render(<Import onBack={vi.fn()} />)
+    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: 'bad' } })
     fireEvent.click(screen.getByRole('button', { name: 'Import' }))

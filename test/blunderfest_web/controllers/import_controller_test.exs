@@ -18,6 +18,8 @@ defmodule BlunderfestWeb.ImportControllerTest do
       assert tree["result"] == "*"
       assert tree["mainline_ply_count"] == 4
       assert tree["node_count"] == 7
+      assert tree["root"]["fen"] =~ "rnbqkbnr/pppppppp"
+      assert tree["root"]["children"] |> hd() |> Map.get("fen") =~ "4P3"
 
       [e4] = tree["root"]["children"]
       [e5] = e4["children"]
