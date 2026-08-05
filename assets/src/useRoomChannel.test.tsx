@@ -121,6 +121,83 @@ describe('useRoomChannel', () => {
     unmount()
 
     expect(channel.joined).toBe(false)
-    expect(store.getState().room).toEqual({ slug: null, ops: [], presence: {} })
+    expect(store.getState().room).toEqual({ slug: null, ops: [], presence: {}, game: null })
+  })
+
+  it('rebuilds the game from a set_game op in the join payload', async () => {
+    const op: Op = {
+      seq: 1,
+      author: 'profile-1',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'set_game',
+      payload: {
+        tree: {
+          headers: { White: 'Alice' },
+          result: '*',
+          setup: null,
+          mainline_ply_count: 0,
+          node_count: 1,
+          root: {
+            id: 0,
+            ply: 0,
+            san: null,
+            from: null,
+            to: null,
+            promotion: null,
+            comment: null,
+            nags: [],
+            status: 'active',
+            fen: null,
+            children: [],
+          },
+        },
+      },
+    }
+    channel.joinReturn = { ops: [op] }
+
+    renderHook(() => useRoomChannel('room-a', () => channel), {
+      wrapper: wrapper(store),
+    })
+
+    await waitFor(() => expect(store.getState().room.game).not.toBeNull())
+    expect(store.getState().room.game?.headers['White']).toBe('Alice')
+  })
+
+  it('sets the game from a set_game op echo', async () => {
+    renderHook(() => useRoomChannel('room-a', () => channel), {
+      wrapper: wrapper(store),
+    })
+
+    const op: Op = {
+      seq: 1,
+      author: 'profile-1',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'set_game',
+      payload: {
+        tree: {
+          headers: { White: 'Bob' },
+          result: '1-0',
+          setup: null,
+          mainline_ply_count: 0,
+          node_count: 1,
+          root: {
+            id: 0,
+            ply: 0,
+            san: null,
+            from: null,
+            to: null,
+            promotion: null,
+            comment: null,
+            nags: [],
+            status: 'active',
+            fen: null,
+            children: [],
+          },
+        },
+      },
+    }
+    act(() => channel.emit('new_op', op))
+
+    await waitFor(() => expect(store.getState().room.game?.headers['White']).toBe('Bob'))
   })
 })

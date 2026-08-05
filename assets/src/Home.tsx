@@ -21,11 +21,9 @@ const button = tv({
 export default function Home({
   backend,
   onJoin,
-  onImport,
 }: {
   backend: BackendStatus
   onJoin: (slug: string) => void
-  onImport: () => void
 }) {
   const { t } = useTranslation()
   const [code, setCode] = useState('')
@@ -96,18 +94,7 @@ export default function Home({
               {t('home.joinButton')}
             </button>
           </div>
-          {error && <p className="m-0 text-sm text-bad">{t('home.joinError')}</p>}
-        </section>
-
-        <section className={panel()}>
-          <button
-            id="import-button"
-            className={button({ variant: 'ghost' })}
-            onClick={onImport}
-          >
-            {t('home.import')}
-          </button>
-          <p className="m-0 text-center text-sm text-muted">{t('home.importHint')}</p>
+          {error && <p className="m-0 text-sm text-bad" role="alert">{t('home.joinError')}</p>}
         </section>
       </div>
     </main>

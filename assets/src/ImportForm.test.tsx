@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import Import from './Import'
+import ImportForm from './ImportForm'
 
 type FetchStub = Record<string, (init?: RequestInit) => Promise<Response>>
 
@@ -38,6 +38,7 @@ const tree = {
     comment: null,
     nags: [],
     status: 'active',
+    fen: null,
     children: [
       {
         id: 1,
@@ -49,6 +50,7 @@ const tree = {
         comment: null,
         nags: [],
         status: 'active',
+        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
         children: [
           {
             id: 2,
@@ -60,6 +62,7 @@ const tree = {
             comment: null,
             nags: [],
             status: 'active',
+            fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
             children: [],
           },
         ],
@@ -78,28 +81,27 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('Import', () => {
-  it('imports pasted PGN and shows the parsed game', async () => {
+describe('ImportForm', () => {
+  it('imports pasted PGN and hands the game to the caller', async () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ tree }),
     })
-    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
+    const onImported = vi.fn()
+    render(<ImportForm onImported={onImported} />)
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } })
     fireEvent.click(screen.getByRole('button', { name: 'Import' }))
 
-    expect(await screen.findByText('1. e4 2. e5')).toBeInTheDocument()
-    expect(screen.getByText('Alice')).toBeInTheDocument()
-    expect(screen.getByText('Bob')).toBeInTheDocument()
-    expect(screen.getByText('Test Game')).toBeInTheDocument()
-    expect(screen.getByText('*')).toBeInTheDocument()
+    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1))
+    expect(onImported).toHaveBeenCalledWith(expect.objectContaining({ headers: tree.headers }))
   })
 
   it('prefers a Lichess URL over pasted PGN', async () => {
     stubFetch({
       '/api/import/lichess': () => jsonResponse({ tree }),
     })
-    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
+    const onImported = vi.fn()
+    render(<ImportForm onImported={onImported} />)
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } })
     fireEvent.change(screen.getByLabelText('Lichess URL'), {
@@ -107,14 +109,14 @@ describe('Import', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Import' }))
 
-    expect(await screen.findByText('1. e4 2. e5')).toBeInTheDocument()
+    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1))
   })
 
   it('shows the error message when the PGN is invalid', async () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ errors: { code: 'invalid_pgn' } }, 422),
     })
-    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
+    render(<ImportForm onImported={vi.fn()} />)
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: 'not pgn' } })
     fireEvent.click(screen.getByRole('button', { name: 'Import' }))
@@ -123,24 +125,16 @@ describe('Import', () => {
   })
 
   it('keeps the submit disabled while both inputs are empty', () => {
-    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
+    render(<ImportForm onImported={vi.fn()} />)
 
     expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
-  })
-
-  it('navigates back when the back button is clicked', () => {
-    const onBack = vi.fn()
-    render(<Import onBack={onBack} onAnalyze={vi.fn()} />)
-
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
-    expect(onBack).toHaveBeenCalledTimes(1)
   })
 
   it('imports again after a failed attempt', async () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ errors: { code: 'invalid_pgn' } }, 422),
     })
-    render(<Import onBack={vi.fn()} onAnalyze={vi.fn()} />)
+    render(<ImportForm onImported={vi.fn()} />)
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: 'bad' } })
     fireEvent.click(screen.getByRole('button', { name: 'Import' }))

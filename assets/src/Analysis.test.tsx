@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import Analysis from './Analysis'
 import type { GameTree, GameNode } from './api'
@@ -75,7 +75,7 @@ const tree: GameTree = {
 }
 
 function renderAnalysis() {
-  return render(<Analysis tree={tree} onBack={vi.fn()} />)
+  return render(<Analysis tree={tree} />)
 }
 
 describe('Analysis', () => {
@@ -141,7 +141,7 @@ describe('Analysis', () => {
         ],
       }),
     }
-    render(<Analysis tree={mateTree} onBack={vi.fn()} />)
+    render(<Analysis tree={mateTree} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }))
     expect(screen.getByText('Checkmate')).toBeInTheDocument()
@@ -158,16 +158,38 @@ describe('Analysis', () => {
   })
 
   it('shows the fallback screen when no game is loaded', () => {
-    render(<Analysis tree={null} onBack={vi.fn()} />)
+    render(<Analysis tree={null} />)
 
     expect(screen.getByText('Import a game to start analyzing.')).toBeInTheDocument()
   })
 
-  it('navigates back when the back button is clicked', () => {
-    const onBack = vi.fn()
-    render(<Analysis tree={tree} onBack={onBack} />)
+  it('jumps with Home and End keys', () => {
+    renderAnalysis()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
-    expect(onBack).toHaveBeenCalledTimes(1)
+    fireEvent.keyDown(window, { key: 'End' })
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♘')
+
+    fireEvent.keyDown(window, { key: 'Home' })
+    expect(screen.getByTestId('square-g1')).toHaveTextContent('♘')
+  })
+
+  it('flips the board with the f key', () => {
+    renderAnalysis()
+
+    const board = () => screen.getByRole('img', { name: 'Chess board after start position' })
+    const squares = () =>
+      Array.from(board().querySelectorAll('[data-testid^="square-"]')).map((el) =>
+        el.getAttribute('data-testid'),
+      )
+
+    expect(squares()[0]).toBe('square-a8')
+
+    fireEvent.keyDown(window, { key: 'f' })
+
+    expect(squares()[0]).toBe('square-h1')
+    expect(screen.getByRole('button', { name: 'Flip board' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
   })
 })

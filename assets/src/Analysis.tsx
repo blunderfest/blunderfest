@@ -107,13 +107,7 @@ function VariationLine({
 
 type Entry = { node: GameNode; parent: GameNode | null }
 
-export default function Analysis({
-  tree,
-  onBack,
-}: {
-  tree: GameTree | null
-  onBack: () => void
-}) {
+export default function Analysis({ tree }: { tree: GameTree | null }) {
   const { t } = useTranslation()
   const [flipped, setFlipped] = useState(false)
 
@@ -154,12 +148,33 @@ export default function Analysis({
   useEffect(() => {
     if (!tree) return
     const onKey = (event: KeyboardEvent) => {
+      let handled = false
       if (event.key === 'ArrowRight') {
         setCurrentId((id) => id === null ? id : byId.get(id)?.node.children[0]?.id ?? id)
+        handled = true
       }
       if (event.key === 'ArrowLeft') {
         setCurrentId((id) => id === null ? id : byId.get(id)?.parent?.id ?? id)
+        handled = true
       }
+      if (event.key === 'Home') {
+        setCurrentId(tree.root.id)
+        handled = true
+      }
+      if (event.key === 'End') {
+        setCurrentId((id) => {
+          const start = id === null ? tree.root : byId.get(id)?.node ?? tree.root
+          let node = start
+          while (node.children[0]) node = node.children[0]
+          return node.id
+        })
+        handled = true
+      }
+      if (event.key === 'f' || event.key === 'F') {
+        setFlipped((value) => !value)
+        handled = true
+      }
+      if (handled) event.preventDefault()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -167,12 +182,9 @@ export default function Analysis({
 
   if (tree === null || current === null) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
+      <div className="flex w-full flex-1 flex-col items-center justify-center gap-6 p-8">
         <p className="m-0 text-muted">{t('analysis.noGame')}</p>
-        <button id="analysis-back-button" className={button({ variant: 'ghost' })} onClick={onBack}>
-          {t('analysis.back')}
-        </button>
-      </main>
+      </div>
     )
   }
 
@@ -181,15 +193,12 @@ export default function Analysis({
   const lastChild = (node: GameNode): GameNode => (node.children[0] ? lastChild(node.children[0]) : node)
 
   return (
-    <main className="flex flex-1 flex-col items-center gap-6 p-8">
+    <div className="flex w-full flex-col items-center gap-6">
       <div className="flex w-full max-w-2xl flex-col gap-2">
-        <button id="analysis-back-button" className={button({ variant: 'ghost' })} onClick={onBack}>
-          {t('analysis.back')}
-        </button>
         <div className="flex items-baseline justify-between gap-4">
-          <h1 className="m-0 text-3xl tracking-[-0.03em]">
+          <h2 className="m-0 text-2xl tracking-[-0.02em]">
             {tree.headers['White'] ?? '?'} – {tree.headers['Black'] ?? '?'}
-          </h1>
+          </h2>
           <p className="m-0 text-muted">{tree.result}</p>
         </div>
       </div>
@@ -199,12 +208,14 @@ export default function Analysis({
           position={parseFen(current.fen ?? '')}
           lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
           flipped={flipped}
+          label={t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') })}
         />
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             id="analysis-first-button"
             className={button({ variant: 'ghost' })}
             disabled={parent === null}
+            aria-keyshortcuts="Home"
             onClick={() => setCurrentId(tree.root.id)}
           >
             ⏮ {t('analysis.first')}
@@ -213,6 +224,7 @@ export default function Analysis({
             id="analysis-prev-button"
             className={button({ variant: 'ghost' })}
             disabled={parent === null}
+            aria-keyshortcuts="ArrowLeft"
             onClick={() => parent !== null && setCurrentId(parent.id)}
           >
             ◀ {t('analysis.prev')}
@@ -221,6 +233,7 @@ export default function Analysis({
             id="analysis-next-button"
             className={button({ variant: 'ghost' })}
             disabled={next === null}
+            aria-keyshortcuts="ArrowRight"
             onClick={() => setCurrentId(next.id)}
           >
             {t('analysis.next')} ▶
@@ -229,6 +242,7 @@ export default function Analysis({
             id="analysis-last-button"
             className={button({ variant: 'ghost' })}
             disabled={current.children.length === 0}
+            aria-keyshortcuts="End"
             onClick={() => setCurrentId(lastChild(current).id)}
           >
             {t('analysis.last')} ⏭
@@ -236,13 +250,19 @@ export default function Analysis({
           <button
             id="analysis-flip-button"
             className={button({ variant: 'ghost' })}
+            aria-pressed={flipped}
+            aria-keyshortcuts="f"
             onClick={() => setFlipped((f) => !f)}
           >
             {t('analysis.flip')}
           </button>
         </div>
+        <p className="m-0 text-xs text-muted">
+          <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd>{' '}
+          <kbd>End</kbd> {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')}
+        </p>
         {current.status !== 'active' && (
-          <p id="analysis-status" className="m-0 text-sm font-semibold text-warn">
+          <p id="analysis-status" className="m-0 text-sm font-semibold text-warn" role="status">
             {t(`analysis.status.${current.status}`)}
           </p>
         )}
@@ -307,6 +327,6 @@ export default function Analysis({
           <dd className="m-0 text-ink">{tree.node_count}</dd>
         </dl>
       </section>
-    </main>
+    </div>
   )
 }

@@ -19,17 +19,23 @@ export default function Board({
   position,
   lastMove,
   flipped = false,
+  label = 'Chess board',
 }: {
   position: Position
   lastMove?: { from: string; to: string } | null
   flipped?: boolean
+  label?: string
 }) {
   const indices = flipped ? [...Array(64).keys()].reverse() : [...Array(64).keys()]
   const rankRow = flipped ? 1 : 8
   const fileCol = flipped ? 7 : 0
 
   return (
-    <div className="grid aspect-square w-[min(88vw,28rem)] grid-cols-8 select-none overflow-hidden rounded-lg border border-white/10 shadow-lg">
+    <div
+      className="grid aspect-square w-[min(88vw,28rem)] grid-cols-8 select-none overflow-hidden rounded-lg border border-white/10 shadow-lg"
+      role="img"
+      aria-label={label}
+    >
       {indices.map((index) => {
         const name = squareName(index)
         const piece = position[index]

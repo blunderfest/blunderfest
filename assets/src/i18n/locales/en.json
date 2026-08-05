@@ -19,21 +19,16 @@
     "join": "Join a room",
     "joinPlaceholder": "Room code",
     "joinButton": "Join",
-    "joinError": "Enter a room code",
-    "import": "Import a game",
-    "importHint": "Load a PGN or a Lichess game to analyze."
+    "joinError": "Enter a room code"
   },
   "import": {
-    "back": "Back",
     "title": "Import a game",
-    "subtitle": "Paste PGN or share a Lichess game URL.",
+    "subtitle": "Paste PGN or share a Lichess game URL. Everyone in the room gets the same game.",
     "pgnLabel": "PGN",
     "pgnPlaceholder": "1. e4 e5 2. Nf3 Nc6 …",
     "lichessLabel": "Lichess URL",
     "lichessPlaceholder": "https://lichess.org/…",
     "submit": "Import",
-    "analyze": "Analyze",
-    "summary": "Game",
     "white": "White",
     "black": "Black",
     "event": "Event",
@@ -52,7 +47,6 @@
     }
   },
   "analysis": {
-    "back": "Back",
     "noGame": "Import a game to start analyzing.",
     "first": "First",
     "prev": "Previous",
@@ -60,6 +54,11 @@
     "last": "Last",
     "flip": "Flip board",
     "moves": "Moves",
+    "shortcutNav": "previous/next move",
+    "shortcutJump": "first/last move",
+    "shortcutFlip": "flip board",
+    "boardLabel": "Chess board after {{move}}",
+    "startPosition": "start position",
     "status": {
       "checkmate": "Checkmate",
       "stalemate": "Stalemate",
@@ -75,6 +74,8 @@
     "activity": "Activity",
     "emptyActivity": "No moves yet",
     "leave": "Leave room",
+    "game": "Imported a game",
+    "importAnother": "Import a new game",
     "move": "{{ply}}. {{san}}",
     "comment": "Comment on move {{ply}}: {{text}}",
     "line": "Line from move {{ply}}",

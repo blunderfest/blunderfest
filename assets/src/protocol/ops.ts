@@ -6,11 +6,17 @@
  * side of that protocol — one source of truth shared by the socket handlers,
  * the store, and tests.
  */
+import type { GameTree } from '../api'
 
 export type OpBase = {
   seq: number
   author: string
   ts: string
+}
+
+export type SetGameOp = OpBase & {
+  type: 'set_game'
+  payload: { tree: GameTree }
 }
 
 export type MoveAtPlyOp = OpBase & {
@@ -44,6 +50,7 @@ export type SetCursorOp = OpBase & {
 }
 
 export type Op =
+  | SetGameOp
   | MoveAtPlyOp
   | ReplaceLineOp
   | CommentAtPlyOp

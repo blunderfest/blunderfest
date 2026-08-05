@@ -1,11 +1,48 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { configureStore } from '@reduxjs/toolkit'
 import RoomView from './RoomView'
 import roomReducer from './store/room'
 import { FakeChannel } from './test/fakeChannel'
+import type { GameTree, GameNode } from './api'
 import type { Op } from './protocol/ops'
+
+const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
+function node(partial: Partial<GameNode>): GameNode {
+  return {
+    id: 0,
+    ply: 1,
+    san: '',
+    from: null,
+    to: null,
+    promotion: null,
+    comment: null,
+    nags: [],
+    status: 'active',
+    fen: START_FEN,
+    children: [],
+    ...partial,
+  }
+}
+
+const gameTree: GameTree = {
+  headers: { White: 'Alice', Black: 'Bob' },
+  result: '*',
+  setup: null,
+  mainline_ply_count: 2,
+  node_count: 3,
+  root: node({
+    id: 0,
+    ply: 0,
+    san: null,
+    children: [
+      node({ id: 1, ply: 1, san: 'e4', from: 'e2', to: 'e4', fen: 'x' }),
+      node({ id: 2, ply: 2, san: 'e5', from: 'e7', to: 'e5', fen: 'y' }),
+    ],
+  }),
+}
 
 function makeStore() {
   return configureStore({ reducer: { room: roomReducer } })
@@ -24,6 +61,16 @@ describe('RoomView', () => {
 
   beforeEach(() => {
     channel = new FakeChannel()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => {
+        throw new Error(`unmocked fetch`)
+      }),
+    )
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   function renderRoom(slug = 'abc12', onLeave = vi.fn()) {
@@ -73,5 +120,69 @@ describe('RoomView', () => {
     const { onLeave } = renderRoom()
     fireEvent.click(screen.getByRole('button', { name: 'Leave room' }))
     expect(onLeave).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the import form when the room has no game', async () => {
+    renderRoom()
+    expect(await screen.findByText('Import a game')).toBeInTheDocument()
+    expect(screen.getByLabelText('PGN')).toBeInTheDocument()
+  })
+
+  it('imports a game by pushing a set_game op', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ tree: gameTree }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        ),
+      ),
+    )
+    renderRoom()
+
+    fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }))
+
+    await waitFor(() => expect(channel.pushes.length).toBe(1))
+    expect(channel.pushes[0]).toEqual({
+      event: 'op',
+      payload: { type: 'set_game', payload: { tree: gameTree } },
+    })
+  })
+
+  it('shows the board once the set_game echo arrives', async () => {
+    renderRoom()
+    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument())
+
+    const op: Op = {
+      seq: 1,
+      author: 'profile-1',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'set_game',
+      payload: { tree: gameTree },
+    }
+    act(() => channel.emit('new_op', op))
+
+    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument()
+    expect(screen.getByTestId('square-e2')).toHaveTextContent('♙')
+    expect(screen.getByText('Imported a game')).toBeInTheDocument()
+  })
+
+  it('reopens the import form to replace the game', async () => {
+    const op: Op = {
+      seq: 1,
+      author: 'profile-1',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'set_game',
+      payload: { tree: gameTree },
+    }
+    channel.joinReturn = { ops: [op] }
+    renderRoom()
+
+    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Import a new game' }))
+    expect(screen.getByLabelText('PGN')).toBeInTheDocument()
   })
 })
