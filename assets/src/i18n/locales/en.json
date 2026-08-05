@@ -54,6 +54,9 @@
     "last": "Last",
     "flip": "Flip board",
     "moves": "Moves",
+    "follow": "Follow presenter",
+    "following": "Following presenter",
+    "presenting": "You are presenting",
     "shortcutNav": "previous/next move",
     "shortcutJump": "first/last move",
     "shortcutFlip": "flip board",
@@ -71,6 +74,7 @@
     "copied": "Copied!",
     "copy": "Copy",
     "members": "Members",
+    "presenting": "Presenting",
     "activity": "Activity",
     "emptyActivity": "No moves yet",
     "leave": "Leave room",
@@ -80,7 +84,6 @@
     "comment": "Comment on move {{ply}}: {{text}}",
     "line": "Line from move {{ply}}",
     "arrow": "Arrow on move {{ply}}",
-    "highlight": "Highlight on move {{ply}}",
-    "cursor": "Cursor on move {{ply}}"
+    "highlight": "Highlight on move {{ply}}"
   }
 }

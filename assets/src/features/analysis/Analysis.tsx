@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
 import Board from '@/components/Board';
@@ -110,9 +110,25 @@ function VariationLine({
 
 type Entry = { node: GameNode; parent: GameNode | null };
 
-export default function Analysis({ tree }: { tree: GameTree | null }) {
+export default function Analysis({
+  tree,
+  presenterId = null,
+  selfId = null,
+  presenterCursorId = null,
+  onCursorChange,
+}: {
+  tree: GameTree | null;
+  presenterId?: string | null;
+  selfId?: string | null;
+  presenterCursorId?: number | null;
+  onCursorChange?: (nodeId: number) => void;
+}) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
+  const [following, setFollowing] = useState(false);
+
+  const presenterActive = presenterId !== null;
+  const amPresenter = selfId !== null && selfId === presenterId;
 
   const byId = useMemo(() => {
     const map = new Map<number, Entry>();
@@ -135,6 +151,43 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
   }, [tree]);
 
   const current: GameNode | null = currentId === null ? null : (byId.get(currentId)?.node ?? null);
+
+  /**
+   * Local navigation: breaks away from the presenter and moves the cursor.
+   */
+  const navigate = useCallback((id: number) => {
+    setFollowing(false);
+    setCurrentId(id);
+  }, []);
+
+  /**
+   * Follow the presenter: default on whenever someone else presents.
+   */
+  useEffect(() => {
+    if (presenterId === null || (selfId !== null && selfId === presenterId)) {
+      setFollowing(false);
+      return;
+    }
+    setFollowing(true);
+  }, [presenterId, selfId]);
+
+  /**
+   * Snap to the presenter's cursor while following.
+   */
+  useEffect(() => {
+    if (following && presenterCursorId !== null && byId.has(presenterCursorId)) {
+      setCurrentId(presenterCursorId);
+    }
+  }, [following, presenterCursorId, byId]);
+
+  /**
+   * Broadcast our own cursor when presenting.
+   */
+  useEffect(() => {
+    if (amPresenter && currentId !== null && onCursorChange) {
+      onCursorChange(currentId);
+    }
+  }, [amPresenter, currentId, onCursorChange]);
 
   const rows = useMemo(() => {
     if (!tree) {
@@ -160,33 +213,32 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
     return result;
   }, [tree]);
 
+  const lastChild = useCallback(
+    (node: GameNode): GameNode => (node.children[0] ? lastChild(node.children[0]) : node),
+    [],
+  );
+
   useEffect(() => {
-    if (!tree) {
+    if (!tree || !current) {
       return;
     }
+    const parent = byId.get(current.id)?.parent ?? null;
     const onKey = (event: KeyboardEvent) => {
       let handled = false;
-      if (event.key === 'ArrowRight') {
-        setCurrentId((id) => (id === null ? id : (byId.get(id)?.node.children[0]?.id ?? id)));
+      if (event.key === 'ArrowRight' && current.children[0]) {
+        navigate(current.children[0].id);
         handled = true;
       }
-      if (event.key === 'ArrowLeft') {
-        setCurrentId((id) => (id === null ? id : (byId.get(id)?.parent?.id ?? id)));
+      if (event.key === 'ArrowLeft' && parent) {
+        navigate(parent.id);
         handled = true;
       }
       if (event.key === 'Home') {
-        setCurrentId(tree.root.id);
+        navigate(tree.root.id);
         handled = true;
       }
       if (event.key === 'End') {
-        setCurrentId((id) => {
-          const start = id === null ? tree.root : (byId.get(id)?.node ?? tree.root);
-          let node = start;
-          while (node.children[0]) {
-            node = node.children[0];
-          }
-          return node.id;
-        });
+        navigate(lastChild(current).id);
         handled = true;
       }
       if (event.key === 'f' || event.key === 'F') {
@@ -199,7 +251,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tree, byId]);
+  }, [tree, byId, current, navigate, lastChild]);
 
   if (tree === null || current === null) {
     return (
@@ -211,8 +263,6 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
 
   const parent = byId.get(current.id)?.parent ?? null;
   const next = current.children[0] ?? null;
-  const lastChild = (node: GameNode): GameNode =>
-    node.children[0] ? lastChild(node.children[0]) : node;
 
   return (
     <div className="flex w-full flex-col items-center gap-6">
@@ -239,7 +289,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
             className={button({ variant: 'ghost' })}
             disabled={parent === null}
             aria-keyshortcuts="Home"
-            onClick={() => setCurrentId(tree.root.id)}
+            onClick={() => navigate(tree.root.id)}
           >
             ⏮ {t('analysis.first')}
           </button>
@@ -249,7 +299,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
             className={button({ variant: 'ghost' })}
             disabled={parent === null}
             aria-keyshortcuts="ArrowLeft"
-            onClick={() => parent !== null && setCurrentId(parent.id)}
+            onClick={() => parent !== null && navigate(parent.id)}
           >
             ◀ {t('analysis.prev')}
           </button>
@@ -259,7 +309,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
             className={button({ variant: 'ghost' })}
             disabled={next === null}
             aria-keyshortcuts="ArrowRight"
-            onClick={() => setCurrentId(next.id)}
+            onClick={() => next !== null && navigate(next.id)}
           >
             {t('analysis.next')} ▶
           </button>
@@ -269,7 +319,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
             className={button({ variant: 'ghost' })}
             disabled={current.children.length === 0}
             aria-keyshortcuts="End"
-            onClick={() => setCurrentId(lastChild(current).id)}
+            onClick={() => navigate(lastChild(current).id)}
           >
             {t('analysis.last')} ⏭
           </button>
@@ -283,6 +333,22 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
           >
             {t('analysis.flip')}
           </button>
+          {presenterActive && !amPresenter && (
+            <button
+              type="button"
+              id="analysis-follow-button"
+              className={button({ variant: 'ghost' })}
+              aria-pressed={following}
+              onClick={() => setFollowing((value) => !value)}
+            >
+              {following ? t('analysis.following') : t('analysis.follow')}
+            </button>
+          )}
+          {amPresenter && (
+            <p className="m-0 text-xs text-muted" role="status">
+              {t('analysis.presenting')}
+            </p>
+          )}
         </div>
         <p className="m-0 text-xs text-muted">
           <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
@@ -304,7 +370,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
                 <MoveButton
                   node={row.white}
                   selected={row.white.id === current.id}
-                  onSelect={setCurrentId}
+                  onSelect={navigate}
                 />
                 {row.white.comment && (
                   <span className="text-xs italic text-muted">{row.white.comment}</span>
@@ -314,7 +380,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
                     <MoveButton
                       node={row.black}
                       selected={row.black.id === current.id}
-                      onSelect={setCurrentId}
+                      onSelect={navigate}
                     />
                     {row.black.comment && (
                       <span className="text-xs italic text-muted">{row.black.comment}</span>
@@ -327,7 +393,7 @@ export default function Analysis({ tree }: { tree: GameTree | null }) {
                 key={row.root.id}
                 root={row.root}
                 currentId={current.id}
-                onSelect={setCurrentId}
+                onSelect={navigate}
               />
             ),
           )}

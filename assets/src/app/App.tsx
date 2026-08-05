@@ -67,7 +67,11 @@ export default function App() {
       {route.screen === 'home' ? (
         <Home backend={backend} onJoin={navigateToRoom} />
       ) : (
-        <RoomView slug={route.slug} onLeave={navigateHome} />
+        <RoomView
+          slug={route.slug}
+          onLeave={navigateHome}
+          selfId={profile.status === 'ready' ? profile.profile.id : null}
+        />
       )}
     </div>
   );

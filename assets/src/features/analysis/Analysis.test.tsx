@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import Analysis from '@/features/analysis/Analysis';
 import type { GameNode, GameTree } from '@/lib/api';
 
@@ -191,5 +191,64 @@ describe('Analysis', () => {
       'aria-pressed',
       'true',
     );
+  });
+
+  it('follows the presenter cursor', () => {
+    render(<Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={2} />);
+
+    expect(screen.getByTestId('square-e5')).toHaveTextContent('♟');
+    expect(screen.getByRole('button', { name: 'Following presenter' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('breaks away from the presenter on local navigation', () => {
+    const { rerender } = render(
+      <Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={2} />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
+    rerender(<Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={4} />);
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
+    expect(screen.getByRole('button', { name: 'Follow presenter' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('re-follows the presenter after breaking away', () => {
+    const { rerender } = render(
+      <Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={2} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+
+    rerender(<Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={4} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Follow presenter' }));
+
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♘');
+    expect(screen.getByRole('button', { name: 'Following presenter' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('broadcasts navigation while presenting', () => {
+    const onCursorChange = vi.fn();
+    render(<Analysis tree={tree} presenterId="p1" selfId="p1" onCursorChange={onCursorChange} />);
+
+    expect(onCursorChange).toHaveBeenCalledWith(0);
+    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    expect(onCursorChange).toHaveBeenCalledWith(1);
+    expect(screen.getByText('You are presenting')).toBeInTheDocument();
+  });
+
+  it('shows no follow button without a presenter', () => {
+    renderAnalysis();
+
+    expect(screen.queryByRole('button', { name: 'Follow presenter' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Following presenter' })).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { Channel } from 'phoenix';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Analysis from '@/features/analysis/Analysis';
 import ImportForm from '@/features/import/ImportForm';
@@ -8,6 +8,7 @@ import { useRoomChannel } from '@/features/room/useRoomChannel';
 import type { GameTree } from '@/lib/api';
 import type { Op } from '@/protocol/ops';
 import { useAppSelector } from '@/store';
+import { selectPresenter, selectPresenterCursor } from '@/store/room';
 
 function opLabel(t: TFunction, op: Op): string {
   switch (op.type) {
@@ -23,18 +24,20 @@ function opLabel(t: TFunction, op: Op): string {
       return t('room.arrow', { ply: op.payload.ply });
     case 'add_highlight':
       return t('room.highlight', { ply: op.payload.ply });
-    case 'set_cursor':
-      return t('room.cursor', { ply: op.payload.ply });
+    default:
+      return '';
   }
 }
 
 export default function RoomView({
   slug,
   onLeave,
+  selfId = null,
   channelFactory,
 }: {
   slug: string;
   onLeave: () => void;
+  selfId?: string | null;
   channelFactory?: (topic: string) => Channel;
 }) {
   const { t } = useTranslation();
@@ -42,8 +45,17 @@ export default function RoomView({
   const ops = useAppSelector((state) => state.room.ops);
   const storePresence = useAppSelector((state) => state.room.presence);
   const game = useAppSelector((state) => state.room.game);
+  const presenter = useAppSelector((state) => selectPresenter(state.room));
+  const presenterCursor = useAppSelector((state) => selectPresenterCursor(state.room));
   const [copied, setCopied] = useState(false);
   const [showImport, setShowImport] = useState(false);
+
+  const handleCursorChange = useCallback(
+    (nodeId: number) => sendOp({ type: 'set_cursor', payload: { node_id: nodeId } }),
+    [sendOp],
+  );
+
+  const activityOps = ops.filter((op) => op.type !== 'set_cursor');
 
   useEffect(() => {
     if (game) {
@@ -107,6 +119,11 @@ export default function RoomView({
                 <li key={member.id} className="flex items-center gap-2 text-sm">
                   <span className="h-2 w-2 rounded-full bg-ok" />
                   {member.name}
+                  {member.id === presenter?.id && (
+                    <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-muted">
+                      {t('room.presenting')}
+                    </span>
+                  )}
                 </li>
               ))}
               {presence.length === 0 && <li className="text-sm text-muted">…</li>}
@@ -115,11 +132,11 @@ export default function RoomView({
 
           <section className="rounded-xl border border-white/10 bg-white/5 p-4">
             <h2 className="m-0 mb-3 text-sm font-semibold text-muted">{t('room.activity')}</h2>
-            {ops.length === 0 ? (
+            {activityOps.length === 0 ? (
               <p className="m-0 text-sm text-muted">{t('room.emptyActivity')}</p>
             ) : (
               <ul className="m-0 flex max-h-96 flex-col gap-1 overflow-y-auto p-0">
-                {ops.map((op) => (
+                {activityOps.map((op) => (
                   <li
                     key={op.seq}
                     className="flex items-baseline justify-between gap-4 rounded-lg px-2 py-1 text-sm hover:bg-white/5"
@@ -153,7 +170,13 @@ export default function RoomView({
                   {t('room.importAnother')}
                 </button>
               </div>
-              <Analysis tree={game} />
+              <Analysis
+                tree={game}
+                presenterId={presenter?.id ?? null}
+                selfId={selfId}
+                presenterCursorId={presenterCursor}
+                onCursorChange={handleCursorChange}
+              />
             </>
           )}
         </section>

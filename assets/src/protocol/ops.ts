@@ -46,7 +46,7 @@ export type AddHighlightOp = OpBase & {
 
 export type SetCursorOp = OpBase & {
   type: 'set_cursor';
-  payload: { ply: number };
+  payload: { node_id: number };
 };
 
 export type Op =

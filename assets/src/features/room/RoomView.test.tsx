@@ -56,11 +56,64 @@ const moveOp: Op = {
   payload: { ply: 1, san: 'e4' },
 };
 
+function setGameOp(seq: number, tree: GameTree): Op {
+  return {
+    seq,
+    author: 'profile-1',
+    ts: '2026-01-01T00:00:00Z',
+    type: 'set_game',
+    payload: { tree },
+  };
+}
+
+function cursorOp(seq: number, node_id: number): Op {
+  return {
+    seq,
+    author: 'profile-1',
+    ts: '2026-01-01T00:00:00Z',
+    type: 'set_cursor',
+    payload: { node_id },
+  };
+}
+
+const followTree: GameTree = {
+  headers: { White: 'Alice', Black: 'Bob' },
+  result: '*',
+  setup: null,
+  mainline_ply_count: 2,
+  node_count: 3,
+  root: node({
+    id: 0,
+    ply: 0,
+    san: null,
+    children: [
+      node({
+        id: 1,
+        ply: 1,
+        san: 'e4',
+        from: 'e2',
+        to: 'e4',
+        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+      }),
+      node({
+        id: 2,
+        ply: 2,
+        san: 'e5',
+        from: 'e7',
+        to: 'e5',
+        fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
+      }),
+    ],
+  }),
+};
+
 describe('RoomView', () => {
   let channel: FakeChannel;
+  let channelFactory: () => FakeChannel;
 
   beforeEach(() => {
     channel = new FakeChannel();
+    channelFactory = () => channel;
     vi.stubGlobal(
       'fetch',
       vi.fn(() => {
@@ -77,7 +130,7 @@ describe('RoomView', () => {
     const store = makeStore();
     const view = render(
       <Provider store={store}>
-        <RoomView slug={slug} onLeave={onLeave} channelFactory={() => channel} />
+        <RoomView slug={slug} onLeave={onLeave} channelFactory={channelFactory} />
       </Provider>,
     );
     return { store, onLeave, view };
@@ -184,5 +237,50 @@ describe('RoomView', () => {
     expect(await screen.findByText('Alice – Bob')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Import a new game' }));
     expect(screen.getByLabelText('PGN')).toBeInTheDocument();
+  });
+
+  it('marks the set_game author as presenting in the member list', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)] };
+    renderRoom();
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
+    expect(screen.getByText('Presenting')).toBeInTheDocument();
+  });
+
+  it('keeps cursor ops out of the activity feed', async () => {
+    channel.joinReturn = {
+      ops: [setGameOp(1, gameTree), cursorOp(2, 1)],
+    };
+    renderRoom();
+
+    expect(await screen.findByText('Imported a game')).toBeInTheDocument();
+    expect(screen.queryByText('#2')).not.toBeInTheDocument();
+  });
+
+  it('follows the presenter cursor through the room', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, followTree), cursorOp(2, 2)] };
+    renderRoom();
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByTestId('square-e5')).toHaveTextContent('♟'));
+    expect(screen.getByRole('button', { name: 'Following presenter' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    act(() => channel.emit('new_op', cursorOp(3, 1)));
+
+    await waitFor(() => expect(screen.getByTestId('square-e4')).toHaveTextContent('♙'));
   });
 });

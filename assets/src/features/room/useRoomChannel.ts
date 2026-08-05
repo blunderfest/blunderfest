@@ -37,11 +37,13 @@ export function useRoomChannel(
 ) {
   const dispatch = useAppDispatch();
   const channelRef = useRef<Channel | null>(null);
+  const channelFactoryRef = useRef(channelFactory);
+  channelFactoryRef.current = channelFactory;
   const [joined, setJoined] = useState(false);
   const [presence, setPresence] = useState<RoomPresenceMember[]>([]);
 
   useEffect(() => {
-    const channel = channelFactory(`room:${slug}`);
+    const channel = channelFactoryRef.current(`room:${slug}`);
     channelRef.current = channel;
 
     dispatch(enterRoom({ slug }));
@@ -87,7 +89,7 @@ export function useRoomChannel(
       setJoined(false);
       setPresence([]);
     };
-  }, [dispatch, slug, channelFactory]);
+  }, [dispatch, slug]);
 
   const sendOp = useCallback((op: Omit<Op, 'seq' | 'author' | 'ts'>) => {
     channelRef.current?.push('op', op);

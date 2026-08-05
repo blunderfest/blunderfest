@@ -22,10 +22,12 @@ function wrapper(store: TestStore) {
 
 describe('useRoomChannel', () => {
   let channel: FakeChannel;
+  let channelFactory: () => FakeChannel;
   let store: TestStore;
 
   beforeEach(() => {
     channel = new FakeChannel();
+    channelFactory = () => channel;
     store = makeStore();
   });
 
@@ -41,7 +43,7 @@ describe('useRoomChannel', () => {
     ];
     channel.joinReturn = { ops };
 
-    const { result } = renderHook(() => useRoomChannel('room-a', () => channel), {
+    const { result } = renderHook(() => useRoomChannel('room-a', channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -50,7 +52,7 @@ describe('useRoomChannel', () => {
   });
 
   it('dispatches new_op echoes into the store', async () => {
-    renderHook(() => useRoomChannel('room-a', () => channel), {
+    renderHook(() => useRoomChannel('room-a', channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -67,25 +69,25 @@ describe('useRoomChannel', () => {
   });
 
   it('sendOp pushes to the channel without applying locally', async () => {
-    const { result } = renderHook(() => useRoomChannel('room-a', () => channel), {
+    const { result } = renderHook(() => useRoomChannel('room-a', channelFactory), {
       wrapper: wrapper(store),
     });
 
     act(() =>
       result.current.sendOp({
         type: 'set_cursor',
-        payload: { ply: 3 },
+        payload: { node_id: 3 },
       }),
     );
 
     expect(channel.pushes).toEqual([
-      { event: 'op', payload: { type: 'set_cursor', payload: { ply: 3 } } },
+      { event: 'op', payload: { type: 'set_cursor', payload: { node_id: 3 } } },
     ]);
     expect(store.getState().room.ops).toEqual([]);
   });
 
   it('tracks presence members on state and diff events', async () => {
-    const { result } = renderHook(() => useRoomChannel('room-a', () => channel), {
+    const { result } = renderHook(() => useRoomChannel('room-a', channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -114,7 +116,7 @@ describe('useRoomChannel', () => {
   });
 
   it('cleans up: leaves the channel and clears the room', () => {
-    const { unmount } = renderHook(() => useRoomChannel('room-a', () => channel), {
+    const { unmount } = renderHook(() => useRoomChannel('room-a', channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -155,7 +157,7 @@ describe('useRoomChannel', () => {
     };
     channel.joinReturn = { ops: [op] };
 
-    renderHook(() => useRoomChannel('room-a', () => channel), {
+    renderHook(() => useRoomChannel('room-a', channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -164,7 +166,7 @@ describe('useRoomChannel', () => {
   });
 
   it('sets the game from a set_game op echo', async () => {
-    renderHook(() => useRoomChannel('room-a', () => channel), {
+    renderHook(() => useRoomChannel('room-a', channelFactory), {
       wrapper: wrapper(store),
     });
 
