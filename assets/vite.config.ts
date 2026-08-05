@@ -7,6 +7,7 @@ const phoenixOrigin = 'http://localhost:4000'
 export default defineConfig({
   plugins: [
     react(),
+    // @ts-expect-error
     tailwindcss(),
     {
       name: 'watch-phoenix-stdin',

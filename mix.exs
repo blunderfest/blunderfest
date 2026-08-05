@@ -57,7 +57,7 @@ defmodule Blunderfest.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "assets.setup"],
+      setup: ["deps.get", "cmd elixir scripts/ensure_echecs_magic_cache.exs", "assets.setup"],
       "assets.setup": ["cmd --cd assets pnpm install"],
       "assets.deploy": [
         "cmd --cd assets pnpm install --frozen-lockfile",

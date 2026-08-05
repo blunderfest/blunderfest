@@ -32,6 +32,8 @@ jobs:
 
       - run: mix local.hex --force && mix local.rebar --force
       - run: mix deps.get
+      # echecs does not ship its magic bitboard cache; generate it before compiling
+      - run: test -f deps/echecs/priv/magic_cache.bin || elixir deps/echecs/scripts/generate_magic_cache.exs
       - run: mix format --check-formatted
       - run: mix compile --warnings-as-errors
       - run: mix test

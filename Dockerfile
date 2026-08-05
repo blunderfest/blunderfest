@@ -54,6 +54,8 @@ ENV MIX_ENV="prod"
 # install mix dependencies
 COPY mix.exs mix.lock ./
 RUN mix deps.get --only $MIX_ENV
+# echecs does not ship its magic bitboard cache; generate it before compiling
+RUN test -f deps/echecs/priv/magic_cache.bin || elixir deps/echecs/scripts/generate_magic_cache.exs
 RUN mkdir config
 
 # copy compile-time config files before we compile dependencies
