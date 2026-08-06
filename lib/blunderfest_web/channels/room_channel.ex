@@ -20,33 +20,43 @@ defmodule BlunderfestWeb.RoomChannel do
 
   @impl true
   def join("room:" <> slug, params, socket) do
-    if not Rooms.valid_code?(slug) do
-      {:error, %{reason: :invalid_code}}
-    else
-      profile_id = params["profile_id"] || "anonymous"
+    cond do
+      not Rooms.valid_code?(slug) ->
+        {:error, %{reason: :invalid_code}}
 
-      case Rooms.approval_status(slug, profile_id) do
-        :approved ->
-          Rooms.claim(slug, profile_id)
+      not Rooms.room_exists?(slug) ->
+        # Joins never create rooms; only the create endpoint does.
+        {:error, %{reason: :room_not_found}}
 
-          socket =
-            socket
-            |> assign(:slug, slug)
-            |> assign(:profile_id, profile_id)
-            |> assign(:profile_name, profile_name_for(profile_id, params["name"]))
+      true ->
+        approve_join(slug, params, socket)
+    end
+  end
 
-          send(self(), :after_join)
+  defp approve_join(slug, params, socket) do
+    profile_id = params["profile_id"] || "anonymous"
 
-          {:ok, %{ops: Rooms.ops(slug), roles: stringify_roles(Rooms.roles(slug))}, socket}
+    case Rooms.approval_status(slug, profile_id) do
+      :approved ->
+        Rooms.claim(slug, profile_id)
 
-        :pending ->
-          # Private rooms: the owner must approve the join first. The client
-          # stays joined on a `%{status: "pending"}` reply and waits for an
-          # explicit approval push before tracking presence or replaying ops.
-          # Unreachable until private rooms exist; kept as the approval seam.
-          socket = assign(socket, :slug, slug)
-          {:ok, %{status: "pending"}, socket}
-      end
+        socket =
+          socket
+          |> assign(:slug, slug)
+          |> assign(:profile_id, profile_id)
+          |> assign(:profile_name, profile_name_for(profile_id, params["name"]))
+
+        send(self(), :after_join)
+
+        {:ok, %{ops: Rooms.ops(slug), roles: stringify_roles(Rooms.roles(slug))}, socket}
+
+      :pending ->
+        # Private rooms: the owner must approve the join first. The client
+        # stays joined on a `%{status: "pending"}` reply and waits for an
+        # explicit approval push before tracking presence or replaying ops.
+        # Unreachable until private rooms exist; kept as the approval seam.
+        socket = assign(socket, :slug, slug)
+        {:ok, %{status: "pending"}, socket}
     end
   end
 

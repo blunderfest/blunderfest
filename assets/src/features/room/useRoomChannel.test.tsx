@@ -34,6 +34,17 @@ describe('useRoomChannel', () => {
     store = makeStore();
   });
 
+  it('exposes the reason when the join is rejected', async () => {
+    channel.joinError = { reason: 'room_not_found' };
+
+    const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() => expect(result.current.joinError).toBe('room_not_found'));
+    expect(result.current.joined).toBe(false);
+  });
+
   it('joins the room topic and replays ops into the store', async () => {
     const ops: Op[] = [
       {

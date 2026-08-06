@@ -50,6 +50,7 @@ export function useRoomChannel(
   const channelFactoryRef = useRef(channelFactory);
   channelFactoryRef.current = channelFactory;
   const [joined, setJoined] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   useEffect(() => {
     const params: Record<string, string> = {};
@@ -96,18 +97,23 @@ export function useRoomChannel(
       .join()
       .receive('ok', (payload: { ops: Op[]; roles?: Record<string, MemberRole> }) => {
         if (channelRef.current === channel) {
+          setJoinError(null);
           dispatch(replayOps(payload.ops));
           dispatch(setRoles(payload.roles ?? {}));
           setJoined(true);
         }
       })
-      .receive('error', () => {
+      .receive('error', (payload: { reason?: string }) => {
         if (channelRef.current === channel) {
+          setJoined(false);
+          setJoinError(payload?.reason ?? 'unknown');
           dispatch(leaveRoom());
         }
       })
       .receive('timeout', () => {
         if (channelRef.current === channel) {
+          setJoined(false);
+          setJoinError('timeout');
           dispatch(leaveRoom());
         }
       });
@@ -117,6 +123,7 @@ export function useRoomChannel(
       channelRef.current = null;
       dispatch(leaveRoom());
       setJoined(false);
+      setJoinError(null);
     };
   }, [dispatch, slug, selfId, selfName]);
 
@@ -128,5 +135,5 @@ export function useRoomChannel(
     channelRef.current?.push('set_role', { member_id: memberId, role });
   }, []);
 
-  return { joined, sendOp, sendRole };
+  return { joined, joinError, sendOp, sendRole };
 }

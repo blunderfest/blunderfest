@@ -181,6 +181,20 @@ describe('RoomView', () => {
     await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());
   });
 
+  it('shows a not-found screen and a way home when the join is rejected', async () => {
+    channel.joinError = { reason: 'room_not_found' };
+    const onLeave = vi.fn();
+    renderRoom('abc12', onLeave);
+    expect(await screen.findByText('Room not found')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'This room does not exist yet. Ask the host to create it, then check the code.',
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to home' }));
+    expect(onLeave).toHaveBeenCalled();
+  });
+
   it('shows joining members from presence diffs', async () => {
     renderRoom();
     await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());

@@ -1,6 +1,7 @@
 import type { Channel } from 'phoenix';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { button } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
 import ImportForm from '@/features/import/ImportForm';
 import ActivityFeed from '@/features/room/ActivityFeed';
@@ -36,7 +37,12 @@ export default function RoomView({
   channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
 }) {
   const { t } = useTranslation();
-  const { joined, sendOp, sendRole } = useRoomChannel(slug, selfId, selfName, channelFactory);
+  const { joined, joinError, sendOp, sendRole } = useRoomChannel(
+    slug,
+    selfId,
+    selfName,
+    channelFactory,
+  );
   const storePresence = useAppSelector((state) => state.room.presence);
   const members = useAppSelector((state) => selectSortedMembers(state.room));
   const roles = useAppSelector((state) => state.room.roles);
@@ -122,6 +128,18 @@ export default function RoomView({
   }
 
   const showImportForm = Object.keys(games).length === 0 || showImport;
+
+  if (joinError !== null) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+        <p className="m-0 text-lg font-semibold">{t('room.notFoundTitle')}</p>
+        <p className="m-0 max-w-md text-center text-sm text-muted">{t('room.notFound')}</p>
+        <button type="button" className={button({ variant: 'ghost' })} onClick={onLeave}>
+          {t('room.backHome')}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col items-stretch gap-6 p-6">

@@ -16,6 +16,8 @@
   },
   "home": {
     "create": "Create a room",
+    "creating": "Creating…",
+    "createError": "Could not create the room. Try again.",
     "createHint": "A room is a shared analysis board. Anyone with the code can join.",
     "join": "Join a room",
     "joinLabel": "Room code",
@@ -102,6 +104,9 @@
     },
     "promote": "Promote",
     "demote": "Demote",
-    "viewerWaiting": "Waiting for the room owner to share a game…"
+    "viewerWaiting": "Waiting for the room owner to share a game…",
+    "notFoundTitle": "Room not found",
+    "notFound": "This room does not exist yet. Ask the host to create it, then check the code.",
+    "backHome": "Back to home"
   }
 }

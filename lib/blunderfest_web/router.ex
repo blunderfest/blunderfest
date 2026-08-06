@@ -11,6 +11,7 @@ defmodule BlunderfestWeb.Router do
     get "/healthz", HealthController, :check
     post "/profiles", ProfileController, :create
     get "/profiles/:id", ProfileController, :show
+    post "/rooms", RoomController, :create
     post "/import/pgn", ImportController, :pgn
     post "/import/lichess", ImportController, :lichess
     post "/games/moves", MovesController, :moves

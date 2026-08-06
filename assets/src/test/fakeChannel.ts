@@ -10,6 +10,7 @@ export class FakeChannel implements Channel {
   joined = false;
   joinParams: Record<string, string> = {};
   joinReturn: { ops: Op[]; roles?: Record<string, MemberRole> } = { ops: [] };
+  joinError: { reason?: string } | null = null;
   joinReceives = new Map<string, Handler>();
   state = 'joined' as ChannelState;
   topic = 'room:test';
@@ -46,8 +47,10 @@ export class FakeChannel implements Channel {
     const push = {
       receive: (event: string, handler: Handler) => {
         this.joinReceives.set(event, handler);
-        if (event === 'ok') {
+        if (event === 'ok' && this.joinError === null) {
           handler(this.joinReturn);
+        } else if (event === 'error' && this.joinError !== null) {
+          handler(this.joinError);
         }
         return push;
       },

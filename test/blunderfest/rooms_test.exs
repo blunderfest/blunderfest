@@ -17,6 +17,29 @@ defmodule Blunderfest.RoomsTest do
     assert Rooms.approval_status("abcde", "profile-1", store) == :approved
   end
 
+  test "room_exists? is false until the room is created", %{store: store} do
+    refute Rooms.room_exists?("abcde", store)
+    Rooms.create("abcde", "anonymous", store)
+    assert Rooms.room_exists?("abcde", store)
+  end
+
+  test "create records the first profiled creator as owner", %{store: store} do
+    Rooms.create("abcde", "profile-1", store)
+    assert Rooms.owner("abcde", store) == "profile-1"
+  end
+
+  test "create with an anonymous creator leaves the room ownerless", %{store: store} do
+    Rooms.create("abcde", "anonymous", store)
+    assert Rooms.owner("abcde", store) == nil
+  end
+
+  test "re-creating an existing room keeps its ops", %{store: store} do
+    Rooms.create("abcde", "anonymous", store)
+    Rooms.append("abcde", %{"type" => "set_cursor", "payload" => %{"ply" => 1}}, store)
+    Rooms.create("abcde", "anonymous", store)
+    assert length(Rooms.ops("abcde", store)) == 1
+  end
+
   test "append stamps seq starting at 1 and ts", %{store: store} do
     op =
       Rooms.append(

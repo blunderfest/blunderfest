@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
 import type { BackendStatus } from '@/app/App';
 import { button, input, panel } from '@/components/ui';
+import { createRoom } from '@/lib/api';
 import { generateRoomCode, normalizeRoomCode, validRoomCode } from '@/lib/roomCode';
 
 export default function Home({
@@ -16,13 +17,22 @@ export default function Home({
   const [code, setCode] = useState('');
   const [error, setError] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState(false);
 
-  function handleCreate() {
+  async function handleCreate() {
     if (creating) {
       return;
     }
     setCreating(true);
-    onJoin(generateRoomCode());
+    setCreateError(false);
+    try {
+      const slug = generateRoomCode();
+      await createRoom(slug);
+      onJoin(slug);
+    } catch {
+      setCreateError(true);
+      setCreating(false);
+    }
   }
 
   function handleJoin() {
@@ -58,10 +68,16 @@ export default function Home({
             id="create-room-button"
             className={button({ variant: 'primary' })}
             onClick={handleCreate}
+            disabled={creating}
           >
-            {t('home.create')}
+            {creating ? t('home.creating') : t('home.create')}
           </button>
           <p className="m-0 text-center text-sm text-muted">{t('home.createHint')}</p>
+          {createError && (
+            <p className="m-0 text-sm text-bad" role="alert">
+              {t('home.createError')}
+            </p>
+          )}
         </section>
 
         <section className={panel()}>

@@ -156,6 +156,7 @@ describe('App', () => {
   it('creates a room and navigates to the room screen', async () => {
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
+      '/api/rooms': () => jsonResponse({ code: 'abcde' }, 201),
     });
     socketMocks.channelFor.mockReturnValue(new FakeChannel());
     render(
@@ -204,6 +205,23 @@ describe('App', () => {
     );
 
     expect(screen.getByText('ABCDE')).toBeInTheDocument();
+  });
+
+  it('shows a not-found screen for a deep link to a room that was never created', async () => {
+    window.location.hash = '#/r/zzzqq';
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+    });
+    const channel = new FakeChannel();
+    channel.joinError = { reason: 'room_not_found' };
+    socketMocks.channelFor.mockReturnValue(channel);
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    expect(await screen.findByText('Room not found')).toBeInTheDocument();
   });
 
   it('ignores deep links with malformed room codes', async () => {

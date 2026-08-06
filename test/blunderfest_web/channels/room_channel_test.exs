@@ -5,6 +5,9 @@ defmodule BlunderfestWeb.RoomChannelTest do
 
   setup do
     Rooms.reset()
+    # Joins never create rooms; the tests create theirs up front.
+    Rooms.create("abcde", "anonymous")
+    Rooms.create("fresh", "anonymous")
     :ok
   end
 
@@ -33,6 +36,11 @@ defmodule BlunderfestWeb.RoomChannelTest do
     assert {:error, %{reason: :invalid_code}} = join_room("room:abcd")
     assert {:error, %{reason: :invalid_code}} = join_room("room:abcde!")
     assert Rooms.ops("kjhkjhkjhkj") == []
+  end
+
+  test "rejects joins to rooms that were never created", %{} do
+    assert {:error, %{reason: :room_not_found}} = join_room("room:zzzqq")
+    assert Rooms.ops("zzzqq") == []
   end
 
   test "pushing an op broadcasts it to all subscribers with seq, ts and author", %{} do

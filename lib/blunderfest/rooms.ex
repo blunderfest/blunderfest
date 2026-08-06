@@ -53,6 +53,21 @@ defmodule Blunderfest.Rooms do
     GenServer.call(server, {:ops, slug})
   end
 
+  @doc "Whether a room with `slug` has been created."
+  def room_exists?(slug, server \\ __MODULE__) do
+    GenServer.call(server, {:room_exists?, slug})
+  end
+
+  @doc """
+  Explicitly creates a room. Joins never create rooms: a code that was not
+  created here (or a room the server has lost) is rejected at join time.
+  Idempotent — re-creating an existing slug keeps its state. The first
+  profiled creator becomes the owner; anonymous creators are not recorded.
+  """
+  def create(slug, profile_id, server \\ __MODULE__) do
+    GenServer.call(server, {:create, slug, profile_id})
+  end
+
   def append(slug, op, server \\ __MODULE__) do
     GenServer.call(server, {:append, slug, op})
   end
@@ -118,6 +133,15 @@ defmodule Blunderfest.Rooms do
     {:reply, Map.get(state, slug, empty_room()).ops, state}
   end
 
+  def handle_call({:room_exists?, slug}, _from, state) do
+    {:reply, Map.has_key?(state, slug), state}
+  end
+
+  def handle_call({:create, slug, profile_id}, _from, state) do
+    room = Map.get(state, slug, empty_room())
+    {:reply, :ok, Map.put(state, slug, register_member(room, profile_id))}
+  end
+
   def handle_call({:approval_status, _slug, _profile_id}, _from, state) do
     # Public rooms approve every join automatically. Private rooms will
     # consult room metadata (and the owner) here instead.
@@ -133,20 +157,7 @@ defmodule Blunderfest.Rooms do
 
   def handle_call({:claim, slug, profile_id}, _from, state) do
     room = Map.get(state, slug, empty_room())
-
-    room =
-      cond do
-        profile_id == "anonymous" or Map.has_key?(room.roles, profile_id) ->
-          room
-
-        room.owner == nil ->
-          %{room | owner: profile_id, roles: Map.put(room.roles, profile_id, :owner)}
-
-        true ->
-          %{room | roles: Map.put(room.roles, profile_id, :viewer)}
-      end
-
-    {:reply, :ok, Map.put(state, slug, room)}
+    {:reply, :ok, Map.put(state, slug, register_member(room, profile_id))}
   end
 
   def handle_call({:owner, slug}, _from, state) do
@@ -185,6 +196,19 @@ defmodule Blunderfest.Rooms do
 
   def handle_call(:reset, _from, _state) do
     {:reply, :ok, %{}}
+  end
+
+  defp register_member(room, profile_id) do
+    cond do
+      profile_id == "anonymous" or Map.has_key?(room.roles, profile_id) ->
+        room
+
+      room.owner == nil ->
+        %{room | owner: profile_id, roles: Map.put(room.roles, profile_id, :owner)}
+
+      true ->
+        %{room | roles: Map.put(room.roles, profile_id, :viewer)}
+    end
   end
 
   defp empty_room do

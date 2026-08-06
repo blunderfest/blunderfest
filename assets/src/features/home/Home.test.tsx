@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import Home from '@/features/home/Home';
 
 function renderHome(onJoin = vi.fn()) {
@@ -7,12 +7,41 @@ function renderHome(onJoin = vi.fn()) {
   return { onJoin, ...utils };
 }
 
+function stubCreateRoom(ok = true) {
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok,
+    status: ok ? 201 : 422,
+    json: async () => (ok ? { code: 'abcde' } : { errors: { code: 'invalid_code' } }),
+  } as Response);
+  return fetchMock;
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('Home', () => {
-  it('creates a room with a generated 5-character code', () => {
+  it('creates a room on the server before joining with the code', async () => {
+    const fetchMock = stubCreateRoom();
     const { onJoin } = renderHome();
     fireEvent.click(screen.getByRole('button', { name: 'Create a room' }));
-    expect(onJoin).toHaveBeenCalledTimes(1);
-    expect(onJoin.mock.calls[0][0]).toMatch(/^[abcdefghjkmnpqrstuvwxyz23456789]{5}$/);
+    await waitFor(() => expect(onJoin).toHaveBeenCalledTimes(1));
+    const code = onJoin.mock.calls[0][0] as string;
+    expect(code).toMatch(/^[abcdefghjkmnpqrstuvwxyz23456789]{5}$/);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/rooms',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(callArgs.body as string).code).toBe(code);
+  });
+
+  it('shows an error and stays home when room creation fails', async () => {
+    stubCreateRoom(false);
+    const { onJoin } = renderHome();
+    fireEvent.click(screen.getByRole('button', { name: 'Create a room' }));
+    expect(await screen.findByText('Could not create the room. Try again.')).toBeInTheDocument();
+    expect(onJoin).not.toHaveBeenCalled();
   });
 
   it('joins a room with a normalized code', () => {
