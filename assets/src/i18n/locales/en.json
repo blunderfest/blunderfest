@@ -92,7 +92,7 @@
     "highlight": "Highlight on move {{ply}}",
     "role": {
       "owner": "Owner",
-      "partner": "Partner",
+      "collaborator": "Collaborator",
       "viewer": "Viewer"
     },
     "promote": "Promote",

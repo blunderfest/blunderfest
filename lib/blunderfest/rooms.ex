@@ -11,15 +11,15 @@ defmodule Blunderfest.Rooms do
   ## Roles
 
   Each room has one `owner` (the first joiner, server-recorded) and a `roles`
-  map of `profile_id => :owner | :partner | :viewer`. Only the owner can
-  promote or demote other members to/from partner; everyone else is a viewer
+  map of `profile_id => :owner | :collaborator | :viewer`. Only the owner can
+  promote or demote other members to/from collaborator; everyone else is a viewer
   by default. Edit ops (`move_at_ply`, `set_game`, comments, arrows, ...) are
-  reserved for owners and partners.
+  reserved for owners and collaborators.
   """
 
   use GenServer
 
-  @type role :: :owner | :partner | :viewer
+  @type role :: :owner | :collaborator | :viewer
   @type op :: map()
 
   @edit_op_types ~w(set_game move_at_ply replace_line comment_at_ply add_arrow add_highlight)
@@ -43,7 +43,7 @@ defmodule Blunderfest.Rooms do
   @doc """
   Registers `profile_id` in the room on join. The first profiled joiner of an
   empty room becomes its owner; everyone else is recorded as a viewer (unless
-  already a partner/owner, so roles survive reconnects). Anonymous members are
+  already a collaborator/owner, so roles survive reconnects). Anonymous members are
   never recorded and can never own a room. Safe to call on every join.
   """
   def claim(slug, profile_id, server \\ __MODULE__) do
@@ -64,19 +64,19 @@ defmodule Blunderfest.Rooms do
   end
 
   @doc """
-  Sets `member_id`'s role to `role` (`:partner` or `:viewer`). Only the room's
+  Sets `member_id`'s role to `role` (`:collaborator` or `:viewer`). Only the room's
   owner may do this, and the owner's own role can't be changed. Returns
   `{:ok, role}` or `{:error, :forbidden | :invalid_role | :invalid_member}`.
   """
   def set_role(slug, actor_id, member_id, role, server \\ __MODULE__)
 
-  def set_role(slug, actor_id, member_id, role, server) when role in [:partner, :viewer] do
+  def set_role(slug, actor_id, member_id, role, server) when role in [:collaborator, :viewer] do
     GenServer.call(server, {:set_role, slug, actor_id, member_id, role})
   end
 
   def set_role(_slug, _actor_id, _member_id, _role, _server), do: {:error, :invalid_role}
 
-  @doc "Whether `profile_id` may push edit ops in this room (owner or partner)."
+  @doc "Whether `profile_id` may push edit ops in this room (owner or collaborator)."
   def can_edit?(slug, profile_id, server \\ __MODULE__) do
     GenServer.call(server, {:can_edit?, slug, profile_id})
   end
@@ -153,7 +153,7 @@ defmodule Blunderfest.Rooms do
 
   def handle_call({:can_edit?, slug, profile_id}, _from, state) do
     room = Map.get(state, slug, empty_room())
-    {:reply, Map.get(room.roles, profile_id, :viewer) in [:owner, :partner], state}
+    {:reply, Map.get(room.roles, profile_id, :viewer) in [:owner, :collaborator], state}
   end
 
   def handle_call(:reset, _from, _state) do

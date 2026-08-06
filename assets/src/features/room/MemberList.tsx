@@ -43,9 +43,11 @@ export default function MemberList({
                   type="button"
                   data-testid={`set-role-${member.id}`}
                   className="shrink-0 rounded-lg border border-white/10 px-1.5 py-0.5 text-xs text-ink transition-colors hover:border-white/30"
-                  onClick={() => onSetRole(member.id, role === 'partner' ? 'viewer' : 'partner')}
+                  onClick={() =>
+                    onSetRole(member.id, role === 'collaborator' ? 'viewer' : 'collaborator')
+                  }
                 >
-                  {role === 'partner' ? t('room.demote') : t('room.promote')}
+                  {role === 'collaborator' ? t('room.demote') : t('room.promote')}
                 </button>
               )}
             </li>

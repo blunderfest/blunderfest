@@ -78,4 +78,4 @@ export type PresenceMember = {
   name: string;
 };
 
-export type MemberRole = 'owner' | 'partner' | 'viewer';
+export type MemberRole = 'owner' | 'collaborator' | 'viewer';

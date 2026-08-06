@@ -78,18 +78,20 @@ defmodule Blunderfest.RoomsTest do
   test "roles survive reconnects", %{store: store} do
     Rooms.claim("room-a", "profile-1", store)
     Rooms.claim("room-a", "profile-2", store)
-    Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
+    Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
 
     Rooms.claim("room-a", "profile-2", store)
-    assert Rooms.role_for("room-a", "profile-2", store) == :partner
+    assert Rooms.role_for("room-a", "profile-2", store) == :collaborator
   end
 
   test "the owner can promote and demote other members", %{store: store} do
     Rooms.claim("room-a", "profile-1", store)
     Rooms.claim("room-a", "profile-2", store)
 
-    assert {:ok, :partner} = Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
-    assert Rooms.role_for("room-a", "profile-2", store) == :partner
+    assert {:ok, :collaborator} =
+             Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
+
+    assert Rooms.role_for("room-a", "profile-2", store) == :collaborator
 
     assert {:ok, :viewer} = Rooms.set_role("room-a", "profile-1", "profile-2", :viewer, store)
     assert Rooms.role_for("room-a", "profile-2", store) == :viewer
@@ -98,7 +100,7 @@ defmodule Blunderfest.RoomsTest do
   test "only the owner can change roles", %{store: store} do
     Rooms.claim("room-a", "profile-1", store)
     Rooms.claim("room-a", "profile-2", store)
-    Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
+    Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
 
     assert {:error, :forbidden} =
              Rooms.set_role("room-a", "profile-2", "profile-1", :viewer, store)
@@ -120,11 +122,11 @@ defmodule Blunderfest.RoomsTest do
              Rooms.set_role("room-a", "profile-1", "profile-2", :admin, store)
   end
 
-  test "can_edit? is true for owners and partners only", %{store: store} do
+  test "can_edit? is true for owners and collaborators only", %{store: store} do
     Rooms.claim("room-a", "profile-1", store)
     Rooms.claim("room-a", "profile-2", store)
     Rooms.claim("room-a", "profile-3", store)
-    Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
+    Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
 
     assert Rooms.can_edit?("room-a", "profile-1", store)
     assert Rooms.can_edit?("room-a", "profile-2", store)
@@ -149,9 +151,9 @@ defmodule Blunderfest.RoomsTest do
   test "roles returns the full role map", %{store: store} do
     Rooms.claim("room-a", "profile-1", store)
     Rooms.claim("room-a", "profile-2", store)
-    Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
+    Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
 
-    assert Rooms.roles("room-a", store) == %{"profile-1" => :owner, "profile-2" => :partner}
+    assert Rooms.roles("room-a", store) == %{"profile-1" => :owner, "profile-2" => :collaborator}
     assert Rooms.roles("room-b", store) == %{}
   end
 end

@@ -148,7 +148,7 @@ export function selectRoleOf(state: RoomState, profileId: string | null): Member
  */
 export function selectCanEdit(state: RoomState, profileId: string | null): boolean {
   const role = selectRoleOf(state, profileId);
-  return role === 'owner' || role === 'partner';
+  return role === 'owner' || role === 'collaborator';
 }
 
 /**

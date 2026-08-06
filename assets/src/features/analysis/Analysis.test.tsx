@@ -368,7 +368,7 @@ describe('Analysis', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('lets a partner play moves without presenting or broadcasting the cursor', async () => {
+  it('lets a collaborator play moves without presenting or broadcasting the cursor', async () => {
     fetchLegalMovesMock.mockResolvedValue({ moves: startMoves });
     const onCursorChange = vi.fn();
     const onPlayMove = vi.fn();

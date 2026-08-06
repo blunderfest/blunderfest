@@ -520,7 +520,7 @@ describe('RoomView', () => {
     });
   });
 
-  it('lets the owner promote a member to partner', async () => {
+  it('lets the owner promote a member to collaborator', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
@@ -538,14 +538,14 @@ describe('RoomView', () => {
     await waitFor(() => expect(channel.pushes.length).toBe(1));
     expect(channel.pushes[0]).toEqual({
       event: 'set_role',
-      payload: { member_id: 'profile-2', role: 'partner' },
+      payload: { member_id: 'profile-2', role: 'collaborator' },
     });
   });
 
-  it('lets the owner demote a partner back to viewer', async () => {
+  it('lets the owner demote a collaborator back to viewer', async () => {
     channel.joinReturn = {
       ops: [],
-      roles: { 'profile-1': 'owner', 'profile-2': 'partner' },
+      roles: { 'profile-1': 'owner', 'profile-2': 'collaborator' },
     };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
@@ -594,8 +594,8 @@ describe('RoomView', () => {
     );
 
     await waitFor(() => expect(screen.getByText('Viewer')).toBeInTheDocument());
-    act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'partner' }));
+    act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'collaborator' }));
 
-    await waitFor(() => expect(screen.getByText('Partner')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Collaborator')).toBeInTheDocument());
   });
 });

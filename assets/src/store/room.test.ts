@@ -236,14 +236,17 @@ describe('room slice', () => {
   });
 
   it('setRoles replaces the role map', () => {
-    const state = roomReducer(undefined, setRoles({ 'author-1': 'owner', 'author-2': 'partner' }));
-    expect(state.roles).toEqual({ 'author-1': 'owner', 'author-2': 'partner' });
+    const state = roomReducer(
+      undefined,
+      setRoles({ 'author-1': 'owner', 'author-2': 'collaborator' }),
+    );
+    expect(state.roles).toEqual({ 'author-1': 'owner', 'author-2': 'collaborator' });
   });
 
   it('setMemberRole updates a single member role', () => {
     let state = roomReducer(undefined, setRoles({ 'author-1': 'owner', 'author-2': 'viewer' }));
-    state = roomReducer(state, setMemberRole({ member_id: 'author-2', role: 'partner' }));
-    expect(state.roles).toEqual({ 'author-1': 'owner', 'author-2': 'partner' });
+    state = roomReducer(state, setMemberRole({ member_id: 'author-2', role: 'collaborator' }));
+    expect(state.roles).toEqual({ 'author-1': 'owner', 'author-2': 'collaborator' });
   });
 
   it('applyOp appends ops with increasing seq', () => {
@@ -322,15 +325,21 @@ describe('room slice', () => {
   });
 
   it('selectRoleOf defaults unknown and anonymous members to viewer', () => {
-    const state = roomReducer(undefined, setRoles({ 'author-1': 'owner', 'author-2': 'partner' }));
+    const state = roomReducer(
+      undefined,
+      setRoles({ 'author-1': 'owner', 'author-2': 'collaborator' }),
+    );
     expect(selectRoleOf(state, 'author-1')).toBe('owner');
-    expect(selectRoleOf(state, 'author-2')).toBe('partner');
+    expect(selectRoleOf(state, 'author-2')).toBe('collaborator');
     expect(selectRoleOf(state, 'unknown')).toBe('viewer');
     expect(selectRoleOf(state, null)).toBe('viewer');
   });
 
-  it('selectCanEdit is true for owners and partners only', () => {
-    const state = roomReducer(undefined, setRoles({ 'author-1': 'owner', 'author-2': 'partner' }));
+  it('selectCanEdit is true for owners and collaborators only', () => {
+    const state = roomReducer(
+      undefined,
+      setRoles({ 'author-1': 'owner', 'author-2': 'collaborator' }),
+    );
     expect(selectCanEdit(state, 'author-1')).toBe(true);
     expect(selectCanEdit(state, 'author-2')).toBe(true);
     expect(selectCanEdit(state, 'author-3')).toBe(false);
