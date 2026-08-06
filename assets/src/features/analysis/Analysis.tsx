@@ -334,20 +334,20 @@ export default function Analysis({
               onSquareClick={canPlay ? handleSquareClick : undefined}
             />
           </div>
-          {(engineState.status === 'thinking' || engineState.status === 'error') && (
-            <p className="m-0 text-xs text-muted" role="status">
-              {engineState.status === 'thinking'
-                ? t('analysis.engineThinking')
-                : t('analysis.engineUnavailable')}
-            </p>
-          )}
-          {engineState.status === 'ready' &&
-            engineState.eval !== null &&
-            engineState.depth !== null && (
-              <p className="m-0 text-xs text-muted">
+          {/* Always rendered (min-h-4 reserves the line) so engine updates
+              never collapse the layout; the previous eval stays dimmed while
+              the new position is being analyzed. */}
+          <p className="m-0 min-h-4 text-xs text-muted" data-testid="engine-line">
+            {engineState.status === 'error' ? (
+              t('analysis.engineUnavailable')
+            ) : engineState.eval !== null && engineState.depth !== null ? (
+              <span className={engineState.status === 'thinking' ? 'opacity-60' : undefined}>
                 {evalLabel(engineState.eval)} · {t('analysis.depth', { depth: engineState.depth })}
-              </p>
-            )}
+              </span>
+            ) : engineState.status === 'thinking' ? (
+              t('analysis.engineThinking')
+            ) : null}
+          </p>
           {canPlay && (
             <p className="m-0 text-xs text-muted" role="status">
               {t('analysis.playHint')}

@@ -62,7 +62,10 @@ export function useEngine(
       return;
     }
 
-    setState((previous) => ({ ...previous, bestMove: null, depth: null, status: 'idle' }));
+    // Keep the previous result on screen while the new position is analyzed:
+    // clearing it here would collapse the status line and flash the hint
+    // arrow for a fraction of a second on every move.
+    setState((previous) => ({ ...previous, status: 'thinking' }));
     const controller = new AbortController();
     const sideToMove: 'w' | 'b' = fen.split(' ')[1] === 'b' ? 'b' : 'w';
 
@@ -71,7 +74,6 @@ export function useEngine(
       if (engine === null) {
         return;
       }
-      setState((previous) => ({ ...previous, status: 'thinking' }));
       engine
         .analyze(fen, { movetimeMs }, controller.signal)
         .then((result) => {

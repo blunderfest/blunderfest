@@ -45,6 +45,24 @@ describe('useEngine', () => {
     expect(result.current.depth).toBe(9);
   });
 
+  it('keeps the previous eval and hint visible while the next position is analyzed', async () => {
+    const engine = fakeEngine(RESULT);
+    const { result, rerender } = renderHook(
+      ({ fen }: { fen: string | null }) => useEngine(fen, { engine, debounceMs: 20 }),
+      { initialProps: { fen: START_FEN as string | null } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    rerender({ fen: AFTER_E4_FEN });
+
+    expect(result.current.status).toBe('thinking');
+    expect(result.current.eval).toEqual({ type: 'cp', cp: 30 });
+    expect(result.current.bestMove).toEqual({ from: 'e2', to: 'e4' });
+
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.eval).toEqual({ type: 'cp', cp: -30 });
+  });
+
   it('flips the eval when black is to move', async () => {
     const engine = fakeEngine(RESULT);
     const { result } = renderHook(() => useEngine(AFTER_E4_FEN, { engine, debounceMs: 0 }));
