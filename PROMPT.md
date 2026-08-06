@@ -76,6 +76,25 @@ analysis surface. Reference points: lichess analysis/studies (density,
 keyboard-first), chess.com game review (polish), Google Docs (presence and
 "we're in this together" liveness).
 
+## Where the product is going (design for extensibility)
+
+Don't design these screens, but leave natural room for them in the layout and
+component system:
+
+- **Drawable arrows/highlights** on the board (the protocol supports them; UI
+  is coming)
+- **Engine lines panel** (top-N engine lines, insertable as variations) and
+  **whole-game reports** with an eval curve and blunder flags
+- **A game library** (your saved games, claimable rooms) and optional sign-in
+- **PGN export**
+- **Position search** (the marquee feature: find exact and *similar*
+  positions across a game corpus, with configurable similarity weights)
+- Possibly **private rooms** and **text chat** later
+
+A good answer will show, for example, where an engine panel could dock, how
+the sidebar could accommodate one more panel, and where a "library" entry
+point would live in the header/home.
+
 ## What to deliver
 
 1. **Visual direction**: palette, typography scale, spacing/radius tokens,
