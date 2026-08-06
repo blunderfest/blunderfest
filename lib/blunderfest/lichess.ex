@@ -2,8 +2,10 @@ defmodule Blunderfest.Lichess do
   @moduledoc """
   Fetches game PGNs from Lichess.
 
-  The Lichess export endpoint does not require authentication for public
-  games. Game URLs and bare game IDs are both accepted.
+  Uses the legacy `game/export` route: the newer `/api/games/export` endpoint
+  can lag behind for freshly played games, while the legacy route serves all
+  public games immediately and needs no authentication. Game URLs and bare
+  game IDs are both accepted.
   """
 
   @game_id_re ~r/^(?:https?:\/\/)?(?:www\.)?lichess\.org\/([A-Za-z0-9]{6,12})(?:\/.*)?$/
@@ -26,7 +28,7 @@ defmodule Blunderfest.Lichess do
 
   @spec export_pgn(binary()) :: {:ok, binary()} | {:error, :not_found | :fetch_failed}
   def export_pgn(game_id) do
-    case Req.get(req_options("/api/games/export/#{game_id}")) do
+    case Req.get(req_options("/game/export/#{game_id}")) do
       {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) -> {:ok, body}
       {:ok, %Req.Response{status: 404}} -> {:error, :not_found}
       {:ok, %Req.Response{}} -> {:error, :fetch_failed}
@@ -40,7 +42,6 @@ defmodule Blunderfest.Lichess do
     [
       url: url,
       base_url: "https://lichess.org",
-      params: [pgnInJson: "false"],
       receive_timeout: 10_000,
       retry: false
     ]

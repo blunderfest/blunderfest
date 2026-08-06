@@ -80,7 +80,7 @@ defmodule BlunderfestWeb.ImportControllerTest do
   describe "POST /api/import/lichess" do
     test "fetches the game and returns the parsed tree", %{conn: conn} do
       Req.Test.stub(Blunderfest.Lichess, fn conn ->
-        assert conn.request_path == "/api/games/export/abc123"
+        assert conn.request_path == "/game/export/abc123"
         Req.Test.text(conn, @valid_pgn)
       end)
 
@@ -94,7 +94,7 @@ defmodule BlunderfestWeb.ImportControllerTest do
 
     test "accepts bare game ids", %{conn: conn} do
       Req.Test.stub(Blunderfest.Lichess, fn conn ->
-        assert conn.request_path == "/api/games/export/abc123"
+        assert conn.request_path == "/game/export/abc123"
         Req.Test.text(conn, @valid_pgn)
       end)
 
