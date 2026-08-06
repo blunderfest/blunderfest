@@ -2,7 +2,7 @@ export type PieceColor = 'w' | 'b';
 export type PieceKind = 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
 export type Piece = { color: PieceColor; kind: PieceKind };
 
-// Index 0 = a8 … index 63 = h1 (same convention as the backend)
+// Index 0 = a8 ... index 63 = h1 (same convention as the backend)
 export type Position = (Piece | null)[];
 
 const glyphs: Record<PieceColor, Record<PieceKind, string>> = {

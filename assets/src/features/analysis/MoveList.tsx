@@ -14,7 +14,7 @@ const moveButton = tv({
 });
 
 const moveNumber = (node: GameNode) =>
-  `${Math.ceil(node.ply / 2)}${node.ply % 2 === 1 ? '.' : '…'}`;
+  `${Math.ceil(node.ply / 2)}${node.ply % 2 === 1 ? '.' : '...'}`;
 
 function MoveButton({
   node,
@@ -103,9 +103,12 @@ export default function MoveList({
   const { t } = useTranslation();
 
   return (
-    <section className={panel({ width: 'lg' })}>
+    <section className={`${panel()} min-h-0 xl:flex-1`}>
       <h2 className="m-0 text-sm font-semibold text-muted">{t('analysis.moves')}</h2>
-      <div id="analysis-move-list" className="flex max-h-72 flex-col gap-0.5 overflow-y-auto">
+      <div
+        id="analysis-move-list"
+        className="flex max-h-72 flex-col gap-0.5 overflow-y-auto xl:max-h-none xl:min-h-0 xl:flex-1"
+      >
         {rows.map((row) =>
           row.type === 'pair' ? (
             <div key={row.white.id} className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5">

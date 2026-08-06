@@ -13,7 +13,7 @@ fix had to make room existence an explicit, server-side act.
 ## Decision
 
 - **`POST /api/rooms`** (`BlunderfestWeb.RoomController`) is the only way a
-  room comes into existence. It validates the code and returns `201 {"code": …}`;
+  room comes into existence. It validates the code and returns `201 {"code": ...}`;
   malformed codes get `422 {"errors": {"code": "invalid_code"}}`. The first
   profiled creator (bearer-authenticated `profile_id`, optional) becomes the
   room's owner; anonymous creators leave the room ownerless.

@@ -30,6 +30,7 @@ export type EngineResult = {
 export type WorkerLike = {
   postMessage(message: string): void;
   onmessage: ((event: { data: unknown }) => void) | null;
+  onerror?: ((event: { message?: string }) => void) | null;
   terminate(): void;
 };
 
@@ -53,6 +54,22 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
       ? workerFactory()
       : (new Worker(STOCKFISH_WORKER_URL) as unknown as WorkerLike);
   let listeners: Array<(line: string) => void> = [];
+  let fatal: Error | null = null;
+  const fatalListeners = new Set<(error: Error) => void>();
+
+  function failFatally(error: Error) {
+    fatal ??= error;
+    for (const listener of [...fatalListeners]) {
+      listener(fatal);
+    }
+  }
+
+  // A worker-level failure (script 404, wasm compile error, uncaught
+  // exception in the engine) never produces output — surface it immediately
+  // instead of letting handshakes time out.
+  worker.onerror = (event) => {
+    failFatally(new Error(event.message ?? 'engine worker failed to start'));
+  };
 
   worker.onmessage = (event) => {
     const text = String(event.data ?? '');
@@ -73,15 +90,30 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
     };
   }
 
+  function onFatal(listener: (error: Error) => void): () => void {
+    fatalListeners.add(listener);
+    return () => fatalListeners.delete(listener);
+  }
+
   function waitForLine(predicate: (line: string) => boolean, timeoutMs: number): Promise<string> {
     return new Promise((resolve, reject) => {
+      if (fatal !== null) {
+        reject(fatal);
+        return;
+      }
       const timer = setTimeout(() => {
         off();
         reject(new Error('engine handshake timed out'));
       }, timeoutMs);
+      const offFatal = onFatal((error) => {
+        clearTimeout(timer);
+        off();
+        reject(error);
+      });
       const off = onLine((line) => {
         if (predicate(line)) {
           clearTimeout(timer);
+          offFatal();
           off();
           resolve(line);
         }

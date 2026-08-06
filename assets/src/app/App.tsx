@@ -88,6 +88,13 @@ export default function App() {
       <main id="main" ref={mainRef} tabIndex={-1} className="flex flex-1 flex-col">
         {route.screen === 'home' ? (
           <Home backend={backend} onJoin={navigateToRoom} />
+        ) : profile.status === 'loading' ? (
+          // Wait for the identity before joining the room channel: joining
+          // anonymously and rejoining once the profile loads leaves a ghost
+          // "anonymous" presence entry and a window without edit rights.
+          <div className="flex flex-1 items-center justify-center p-8">
+            <p className="m-0 text-muted">{t('profile.loading')}</p>
+          </div>
         ) : (
           <RoomView
             slug={route.slug}

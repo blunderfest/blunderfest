@@ -50,7 +50,7 @@ Topic `room:<slug>`. Join reply: `{ops: Op[], roles: {member_id => role}}`.
 Events: `op` (push) → `new_op` (broadcast echo); `set_role` → `role_update`.
 Presence events `presence_state` / `presence_diff` carry member names. Ops are
 type-tagged payloads (`move_at_ply`, `comment_at_ply`, `set_game`,
-`select_game`, `set_cursor`, `set_role`, …) with `seq`, `author`, `ts` — the
+`select_game`, `set_cursor`, `set_role`, ...) with `seq`, `author`, `ts` — the
 shared vocabulary is mirrored in `assets/src/protocol/ops.ts`.
 
 ## Frontend (React 19 + Vite + TypeScript)
@@ -93,7 +93,7 @@ shared vocabulary is mirrored in `assets/src/protocol/ops.ts`.
    Join-by-code and deep links go straight to the room.
 2. `useRoomChannel` joins `room:<slug>`; server replies `{ops, roles}`;
    `replayOps` rebuilds games; presence fills the member list.
-3. User moves a piece → `sendOp({type: 'move_at_ply', …})` → server validates
+3. User moves a piece → `sendOp({type: 'move_at_ply', ...})` → server validates
    and appends → broadcasts `new_op` → **every** client applies it. The sender
    never applies locally; the echo is the only path (ADR-0005).
 

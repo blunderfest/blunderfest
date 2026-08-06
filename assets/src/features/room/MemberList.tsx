@@ -63,7 +63,7 @@ export default function MemberList({
             </li>
           );
         })}
-        {members.length === 0 && <li className="text-sm text-muted">…</li>}
+        {members.length === 0 && <li className="text-sm text-muted">...</li>}
       </ul>
     </section>
   );

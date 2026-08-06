@@ -178,7 +178,7 @@ describe('RoomView', () => {
     expect(screen.getByText('ABC12')).toBeInTheDocument();
     expect(channel.joined).toBe(true);
     expect(screen.getByText('Copy')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Connecting...')).not.toBeInTheDocument());
   });
 
   it('shows a not-found screen and a way home when the join is rejected', async () => {
@@ -197,7 +197,7 @@ describe('RoomView', () => {
 
   it('shows joining members from presence diffs', async () => {
     renderRoom();
-    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Connecting...')).not.toBeInTheDocument());
     act(() =>
       channel.emit('presence_diff', {
         joins: { 'profile-2': { metas: [{ name: 'Swift Falcon 17' }] } },
@@ -215,7 +215,7 @@ describe('RoomView', () => {
 
   it('appends echoed ops from the channel', async () => {
     renderRoom();
-    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Connecting...')).not.toBeInTheDocument());
     act(() => channel.emit('new_op', moveOp));
     expect(await screen.findByText('1. e4')).toBeInTheDocument();
   });
@@ -236,7 +236,7 @@ describe('RoomView', () => {
   it('shows a waiting message to viewers in an empty room', async () => {
     renderRoom();
     expect(
-      await screen.findByText('Waiting for the room owner to share a game…'),
+      await screen.findByText('Waiting for the room owner to share a game...'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Import PGN' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'New game' })).not.toBeInTheDocument();
@@ -269,7 +269,7 @@ describe('RoomView', () => {
 
   it('shows the board once the set_game echo arrives', async () => {
     renderRoom();
-    await waitFor(() => expect(screen.queryByText('Connecting…')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Connecting...')).not.toBeInTheDocument());
 
     const op: Op = {
       seq: 1,

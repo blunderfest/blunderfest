@@ -156,6 +156,7 @@ describe('App', () => {
   it('creates a room and navigates to the room screen', async () => {
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
       '/api/rooms': () => jsonResponse({ code: 'abcde' }, 201),
     });
     socketMocks.channelFor.mockReturnValue(new FakeChannel());
@@ -171,12 +172,13 @@ describe('App', () => {
       expect(window.location.hash).toMatch(/^#\/r\/[a-z0-9]{5}$/);
     });
     const code = window.location.hash.slice(-5);
-    expect(screen.getByText(code.toUpperCase())).toBeInTheDocument();
+    expect(await screen.findByText(code.toUpperCase())).toBeInTheDocument();
   });
 
   it('joins a room from the code input', async () => {
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
     });
     socketMocks.channelFor.mockReturnValue(new FakeChannel());
     render(
@@ -189,13 +191,14 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Join' }));
 
     await waitFor(() => expect(window.location.hash).toBe('#/r/xyz99'));
-    expect(screen.getByText('XYZ99')).toBeInTheDocument();
+    expect(await screen.findByText('XYZ99')).toBeInTheDocument();
   });
 
   it('renders a room directly from a deep link', async () => {
     window.location.hash = '#/r/abcde';
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
     });
     socketMocks.channelFor.mockReturnValue(new FakeChannel());
     render(
@@ -204,13 +207,55 @@ describe('App', () => {
       </Provider>,
     );
 
-    expect(screen.getByText('ABCDE')).toBeInTheDocument();
+    expect(await screen.findByText('ABCDE')).toBeInTheDocument();
+  });
+
+  it('waits for the identity before joining the room channel', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    window.location.hash = '#/r/abcde';
+
+    let resolveProfile: (response: Response) => void = () => {};
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles/profile-1': () =>
+        new Promise((resolve) => {
+          resolveProfile = resolve;
+        }),
+    });
+    socketMocks.channelFor.mockReturnValue(new FakeChannel());
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    expect(screen.getAllByText('Preparing your identity...').length).toBeGreaterThan(0);
+    expect(socketMocks.channelFor).not.toHaveBeenCalled();
+
+    resolveProfile(
+      new Response(JSON.stringify({ profile: profileBody.profile }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    expect(await screen.findByText('ABCDE')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(socketMocks.channelFor).toHaveBeenCalledWith('room:abcde', {
+        profile_id: 'profile-1',
+        name: 'Brave Otter 42',
+      }),
+    );
   });
 
   it('shows a not-found screen for a deep link to a room that was never created', async () => {
     window.location.hash = '#/r/zzzqq';
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
     });
     const channel = new FakeChannel();
     channel.joinError = { reason: 'room_not_found' };
@@ -244,6 +289,7 @@ describe('App', () => {
     window.location.hash = '#/r/abcde';
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
     });
     socketMocks.channelFor.mockReturnValue(new FakeChannel());
     render(
@@ -252,7 +298,7 @@ describe('App', () => {
       </Provider>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Leave room' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Leave room' }));
 
     await waitFor(() => expect(window.location.hash).toBe('#/'));
     expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();

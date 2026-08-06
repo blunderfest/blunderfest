@@ -196,10 +196,24 @@ describe('Analysis', () => {
     expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♙');
   });
 
-  it('ignores arrow keys pressed outside the analysis region', () => {
+  it('navigates with the arrow keys even when focus is outside the analysis region', () => {
     renderAnalysis();
 
-    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    fireEvent.keyDown(document.body, { key: 'ArrowRight' });
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
+  });
+
+  it('ignores the navigation keys while typing in the comment editor', () => {
+    render(<Analysis tree={tree} canEdit onComment={vi.fn()} />);
+
+    fireEvent.keyDown(screen.getByTestId('comment-editor'), { key: 'ArrowRight' });
+    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♙');
+  });
+
+  it('ignores the navigation keys when a modifier is held', () => {
+    renderAnalysis();
+
+    fireEvent.keyDown(document.body, { key: 'ArrowRight', ctrlKey: true });
     expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♙');
   });
 
@@ -548,7 +562,7 @@ describe('engine analysis', () => {
   it('shows no hint when the engine reports no best move', async () => {
     render(<Analysis tree={tree} engine={fakeEngine(null)} />);
 
-    await waitFor(() => expect(screen.queryByText('Analyzing…')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Analyzing...')).not.toBeInTheDocument());
     expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument();
   });
 

@@ -19,7 +19,7 @@ conflict resolution (complex, overkill for a canvas of moves and annotations).
   reconnect, crash recovery, and undo timeline all fall out of replaying from
   the last seen `seq`.
 - Operations are granular: `set_game`, `move_at_ply`, `comment_at_ply`,
-  `select_game`, `set_cursor`, `set_role`, … Conflicts collapse naturally
+  `select_game`, `set_cursor`, `set_role`, ... Conflicts collapse naturally
   because moves/variations are keyed by ply.
 - **The server echo is the single application path**: the client pushes an op,
   the server validates and appends it, and every client (including the sender)

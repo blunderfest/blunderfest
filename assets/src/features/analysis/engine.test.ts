@@ -5,6 +5,7 @@ class FakeWorker implements WorkerLike {
   messages: string[] = [];
   terminated = false;
   onmessage: ((event: { data: unknown }) => void) | null = null;
+  onerror: ((event: { message?: string }) => void) | null = null;
 
   postMessage(message: string) {
     this.messages.push(message);
@@ -16,6 +17,10 @@ class FakeWorker implements WorkerLike {
 
   emit(line: string) {
     this.onmessage?.({ data: line });
+  }
+
+  emitError(message: string) {
+    this.onerror?.({ message });
   }
 }
 
@@ -155,5 +160,17 @@ describe('createStockfishEngine', () => {
     const engine = await bootReady(worker);
     engine.terminate();
     expect(worker.terminated).toBe(true);
+  });
+
+  it('rejects immediately when the worker fails to start instead of timing out', async () => {
+    const worker = new FakeWorker();
+    const engine = createStockfishEngine(() => worker);
+
+    const init = engine.init();
+    worker.emitError('Script error.');
+    await expect(init).rejects.toThrow('Script error.');
+
+    const later = engine.analyze(START_FEN, { movetimeMs: 250 }, new AbortController().signal);
+    await expect(later).rejects.toThrow('Script error.');
   });
 });

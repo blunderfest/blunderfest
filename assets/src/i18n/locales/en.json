@@ -5,18 +5,18 @@
     "skipToBoard": "Skip to board"
   },
   "status": {
-    "checking": "Connecting to analysis service…",
+    "checking": "Connecting to analysis service...",
     "ok": "Analysis service online",
     "down": "Analysis service unreachable"
   },
   "profile": {
-    "loading": "Preparing your identity…",
+    "loading": "Preparing your identity...",
     "name": "{{name}}",
     "error": "Could not prepare your identity"
   },
   "home": {
     "create": "Create a room",
-    "creating": "Creating…",
+    "creating": "Creating...",
     "createError": "Could not create the room. Try again.",
     "createHint": "A room is a shared analysis board. Anyone with the code can join.",
     "join": "Join a room",
@@ -29,9 +29,9 @@
     "title": "Import a game",
     "subtitle": "Paste PGN or share a Lichess game URL. Everyone in the room gets the same game.",
     "pgnLabel": "PGN",
-    "pgnPlaceholder": "1. e4 e5 2. Nf3 Nc6 …",
+    "pgnPlaceholder": "1. e4 e5 2. Nf3 Nc6 ...",
     "lichessLabel": "Lichess URL",
-    "lichessPlaceholder": "https://lichess.org/…",
+    "lichessPlaceholder": "https://lichess.org/...",
     "submit": "Import",
     "white": "White",
     "black": "Black",
@@ -54,7 +54,7 @@
     "noGame": "Import a game to start analyzing.",
     "evalBar": "Eval bar",
     "evalLabel": "Engine evaluation: {{value}}",
-    "engineThinking": "Analyzing…",
+    "engineThinking": "Analyzing...",
     "engineUnavailable": "Engine analysis unavailable",
     "depth": "depth {{depth}}",
     "first": "First",
@@ -67,7 +67,7 @@
     "following": "Following presenter",
     "presenting": "You are presenting",
     "playHint": "Click a piece, then a target square to play a move.",
-    "commentPlaceholder": "Add a comment…",
+    "commentPlaceholder": "Add a comment...",
     "saveComment": "Save comment",
     "shortcutNav": "previous/next move",
     "shortcutJump": "first/last move",
@@ -82,7 +82,7 @@
     }
   },
   "room": {
-    "connecting": "Connecting…",
+    "connecting": "Connecting...",
     "codeLabel": "Room code",
     "copied": "Copied!",
     "copy": "Copy",
@@ -109,7 +109,7 @@
     },
     "promote": "Promote",
     "demote": "Demote",
-    "viewerWaiting": "Waiting for the room owner to share a game…",
+    "viewerWaiting": "Waiting for the room owner to share a game...",
     "notFoundTitle": "Room not found",
     "notFound": "This room does not exist yet. Ask the host to create it, then check the code.",
     "backHome": "Back to home"

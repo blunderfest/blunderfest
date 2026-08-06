@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
 import { parseFen } from '@/components/board';
@@ -41,7 +41,6 @@ export default function Analysis({
   onComment?: (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => void;
 }) {
   const { t } = useTranslation();
-  const rootRef = useRef<HTMLDivElement | null>(null);
   const [flipped, setFlipped] = useState(false);
   const [legalMoves, setLegalMoves] = useState<LegalMove[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -251,19 +250,20 @@ export default function Analysis({
     const parent = byId.get(current.id)?.parent ?? null;
     const onKey = (event: KeyboardEvent) => {
       const target = event.target;
-      // Never hijack typing, the board's own arrow-key grid navigation, or
-      // keys pressed outside the analysis region (scrolling lists, other
-      // panels).
+      // The board's arrow keys work from anywhere on the page — except while
+      // typing, while a modifier changes the meaning (browser shortcuts), or
+      // while the board's own square grid has focus (it moves the focused
+      // square instead of the position).
       if (!(target instanceof Element)) {
         return;
       }
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
         return;
       }
-      if (target.closest('[data-board-grid]')) {
+      if (event.ctrlKey || event.metaKey || event.altKey) {
         return;
       }
-      if (rootRef.current === null || !rootRef.current.contains(target)) {
+      if (target.closest('[data-board-grid]')) {
         return;
       }
       let handled = false;
@@ -313,92 +313,88 @@ export default function Analysis({
   const hintArrows = engineState.bestMove === null ? [] : [engineState.bestMove];
 
   return (
-    <div
-      ref={rootRef}
-      data-testid="analysis-root"
-      className="flex w-full flex-col items-center gap-6"
-    >
-      <div className="flex w-full max-w-2xl flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="m-0 text-2xl tracking-[-0.02em]">
-            {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
-          </h2>
-          <p className="m-0 text-muted">{tree.result}</p>
-        </div>
-      </div>
+    <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-6 xl:flex-row xl:items-start">
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex w-full items-baseline justify-between gap-4">
+            <h2 className="m-0 text-2xl tracking-[-0.02em]">
+              {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
+            </h2>
+            <p className="m-0 text-muted">{tree.result}</p>
+          </div>
 
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex items-stretch gap-3">
-          <EvalBar eval={engineState.eval} label={evalBarLabel} />
-          <Board
-            position={parseFen(current.fen ?? '')}
-            lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
-            flipped={flipped}
-            label={boardLabel}
-            interactive={canPlay}
-            selected={selected}
-            legalTargets={legalTargets}
-            arrows={hintArrows}
-            onSquareClick={canPlay ? handleSquareClick : undefined}
-          />
-        </div>
-        {(engineState.status === 'thinking' || engineState.status === 'error') && (
-          <p className="m-0 text-xs text-muted" role="status">
-            {engineState.status === 'thinking'
-              ? t('analysis.engineThinking')
-              : t('analysis.engineUnavailable')}
-          </p>
-        )}
-        {engineState.status === 'ready' &&
-          engineState.eval !== null &&
-          engineState.depth !== null && (
-            <p className="m-0 text-xs text-muted">
-              {evalLabel(engineState.eval)} · {t('analysis.depth', { depth: engineState.depth })}
+          <div className="flex items-stretch gap-3">
+            <EvalBar eval={engineState.eval} label={evalBarLabel} />
+            <Board
+              position={parseFen(current.fen ?? '')}
+              lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
+              flipped={flipped}
+              label={boardLabel}
+              interactive={canPlay}
+              selected={selected}
+              legalTargets={legalTargets}
+              arrows={hintArrows}
+              onSquareClick={canPlay ? handleSquareClick : undefined}
+            />
+          </div>
+          {(engineState.status === 'thinking' || engineState.status === 'error') && (
+            <p className="m-0 text-xs text-muted" role="status">
+              {engineState.status === 'thinking'
+                ? t('analysis.engineThinking')
+                : t('analysis.engineUnavailable')}
             </p>
           )}
-        {canPlay && (
-          <p className="m-0 text-xs text-muted" role="status">
-            {t('analysis.playHint')}
+          {engineState.status === 'ready' &&
+            engineState.eval !== null &&
+            engineState.depth !== null && (
+              <p className="m-0 text-xs text-muted">
+                {evalLabel(engineState.eval)} · {t('analysis.depth', { depth: engineState.depth })}
+              </p>
+            )}
+          {canPlay && (
+            <p className="m-0 text-xs text-muted" role="status">
+              {t('analysis.playHint')}
+            </p>
+          )}
+          <p className="sr-only" role="status">
+            {selected !== null ? t('analysis.selected', { square: selected }) : boardLabel}
           </p>
-        )}
-        <p className="sr-only" role="status">
-          {selected !== null ? t('analysis.selected', { square: selected }) : boardLabel}
-        </p>
-        <BoardControls
-          targets={{
-            first: tree.root.id,
-            prev: parent?.id ?? null,
-            next: next?.id ?? null,
-            last: current.children.length === 0 ? null : lastChild(current).id,
-          }}
-          flipped={flipped}
-          presenterActive={presenterActive}
-          amPresenter={amPresenter}
-          following={following}
-          onNavigate={navigate}
-          onFlip={() => setFlipped((f) => !f)}
-          onFollowChange={onFollowChange ?? (() => {})}
-        />
-        <p className="m-0 text-xs text-muted">
-          <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
-          {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')}
-        </p>
-        {current.status !== 'active' && (
-          <p id="analysis-status" className="m-0 text-sm font-semibold text-warn" role="status">
-            {t(`analysis.status.${current.status}`)}
+          <BoardControls
+            targets={{
+              first: tree.root.id,
+              prev: parent?.id ?? null,
+              next: next?.id ?? null,
+              last: current.children.length === 0 ? null : lastChild(current).id,
+            }}
+            flipped={flipped}
+            presenterActive={presenterActive}
+            amPresenter={amPresenter}
+            following={following}
+            onNavigate={navigate}
+            onFlip={() => setFlipped((f) => !f)}
+            onFollowChange={onFollowChange ?? (() => {})}
+          />
+          <p className="m-0 text-xs text-muted">
+            <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
+            {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')}
           </p>
-        )}
+          {current.status !== 'active' && (
+            <p id="analysis-status" className="m-0 text-sm font-semibold text-warn" role="status">
+              {t(`analysis.status.${current.status}`)}
+            </p>
+          )}
+        </div>
+
+        <aside className="flex w-full max-w-sm flex-col gap-4 xl:w-72 xl:max-w-none xl:self-stretch">
+          <NodeComment
+            comment={current.comment}
+            canEdit={canEdit}
+            onSave={(text) => onComment?.({ ply: current.ply, text })}
+          />
+          <MoveList rows={rows} currentId={current.id} onSelect={navigate} />
+          <GameInfo tree={tree} />
+        </aside>
       </div>
-
-      <NodeComment
-        comment={current.comment}
-        canEdit={canEdit}
-        onSave={(text) => onComment?.({ ply: current.ply, text })}
-      />
-
-      <MoveList rows={rows} currentId={current.id} onSelect={navigate} />
-
-      <GameInfo tree={tree} />
     </div>
   );
 }

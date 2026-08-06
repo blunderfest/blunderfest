@@ -61,3 +61,22 @@ The interactive layer is implemented in the frontend:
   board (`Board`'s `arrows` prop, SVG in 8×8 space, flip-aware).
 - Remaining from the original scope: blunder flags while dragging, and the
   server batch pool.
+
+### Engine delivery (2026-08-06, second pass)
+
+- The worker + wasm are served verbatim from `/engine/` as same-stem files
+  (`scripts/copy-engine.mjs` copies them into `public/engine/`; Phoenix's
+  `static_paths` includes `engine`). The stockfish.js glue locates its wasm by
+  replacing `.js` with `.wasm` in the worker script URL, so Vite's
+  content-hashed asset URLs break it in production — same-stem is the
+  package's canonical layout (its postinstall creates the same symlinks).
+- The client fails fast on worker-level errors (`worker.onerror`) instead of
+  hanging until the handshake timeout.
+- **Known issue (parked):** the engine never becomes ready in Firefox
+  (handshake timeout). Works in Chromium. Prime suspect is the glue's
+  `instantiateStreaming` override, which re-wraps the fetch in a synthetic
+  `Response` with a progress-tapping `ReadableStream`; Firefox is stricter
+  about non-network-backed responses. Fix candidate: patch the copied glue in
+  `copy-engine.mjs` to drop the `instantiateWasm` override so the engine uses
+  the default raw-response streaming path. Needs a Firefox environment to
+  verify.
