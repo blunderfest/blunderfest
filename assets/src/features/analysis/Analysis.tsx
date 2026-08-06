@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
 import { parseFen } from '@/components/board';
@@ -35,6 +35,7 @@ export default function Analysis({
   onComment?: (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => void;
 }) {
   const { t } = useTranslation();
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [flipped, setFlipped] = useState(false);
   const [legalMoves, setLegalMoves] = useState<LegalMove[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -238,8 +239,20 @@ export default function Analysis({
     }
     const parent = byId.get(current.id)?.parent ?? null;
     const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
+      const target = event.target;
+      // Never hijack typing, the board's own arrow-key grid navigation, or
+      // keys pressed outside the analysis region (scrolling lists, other
+      // panels).
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return;
+      }
+      if (target.closest('[data-board-grid]')) {
+        return;
+      }
+      if (rootRef.current === null || !rootRef.current.contains(target)) {
         return;
       }
       let handled = false;
@@ -281,9 +294,14 @@ export default function Analysis({
 
   const parent = byId.get(current.id)?.parent ?? null;
   const next = current.children[0] ?? null;
+  const boardLabel = t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') });
 
   return (
-    <div className="flex w-full flex-col items-center gap-6">
+    <div
+      ref={rootRef}
+      data-testid="analysis-root"
+      className="flex w-full flex-col items-center gap-6"
+    >
       <div className="flex w-full max-w-2xl flex-col gap-2">
         <div className="flex items-baseline justify-between gap-4">
           <h2 className="m-0 text-2xl tracking-[-0.02em]">
@@ -298,7 +316,7 @@ export default function Analysis({
           position={parseFen(current.fen ?? '')}
           lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
           flipped={flipped}
-          label={t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') })}
+          label={boardLabel}
           interactive={canPlay}
           selected={selected}
           legalTargets={legalTargets}
@@ -309,6 +327,9 @@ export default function Analysis({
             {t('analysis.playHint')}
           </p>
         )}
+        <p className="sr-only" role="status">
+          {selected !== null ? t('analysis.selected', { square: selected }) : boardLabel}
+        </p>
         <BoardControls
           targets={{
             first: tree.root.id,

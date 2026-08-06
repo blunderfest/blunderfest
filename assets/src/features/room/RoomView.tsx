@@ -124,7 +124,7 @@ export default function RoomView({
   const showImportForm = Object.keys(games).length === 0 || showImport;
 
   return (
-    <main className="flex flex-1 flex-col items-stretch gap-6 p-6">
+    <div className="flex flex-1 flex-col items-stretch gap-6 p-6">
       <RoomHeader slug={slug} joined={joined} onLeave={onLeave} />
 
       <div className="grid flex-1 gap-6 md:grid-cols-[220px_1fr]">
@@ -177,6 +177,6 @@ export default function RoomView({
           )}
         </section>
       </div>
-    </main>
+    </div>
   );
 }

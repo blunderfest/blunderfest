@@ -31,6 +31,7 @@ function MoveButton({
     <button
       type="button"
       data-testid={`analysis-move-${node.id}`}
+      aria-current={selected ? 'true' : undefined}
       className={moveButton({ selected, bold: bold ?? false })}
       onClick={() => onSelect(node.id)}
     >

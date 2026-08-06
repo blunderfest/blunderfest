@@ -37,22 +37,29 @@ export default function ActivityFeed({
       {ops.length === 0 ? (
         <p className="m-0 text-sm text-muted">{t('room.emptyActivity')}</p>
       ) : (
-        <ul className="m-0 flex max-h-96 flex-col gap-1 overflow-y-auto p-0">
-          {ops.map((op) => (
-            <li
-              key={op.seq}
-              className="flex items-baseline justify-between gap-4 rounded-lg px-2 py-1 text-sm hover:bg-white/5"
-            >
-              <span>
-                <span className="text-muted">#{op.seq} </span>
-                {opLabel(t, op)}
-              </span>
-              <span className="shrink-0 text-xs text-muted">
-                {presence[op.author]?.name ?? op.author}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions"
+          className="max-h-96 overflow-y-auto"
+        >
+          <ul className="m-0 flex flex-col gap-1 p-0">
+            {ops.map((op) => (
+              <li
+                key={op.seq}
+                className="flex items-baseline justify-between gap-4 rounded-lg px-2 py-1 text-sm hover:bg-white/5"
+              >
+                <span>
+                  <span className="text-muted">#{op.seq} </span>
+                  {opLabel(t, op)}
+                </span>
+                <span className="shrink-0 text-xs text-muted">
+                  {presence[op.author]?.name ?? op.author}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

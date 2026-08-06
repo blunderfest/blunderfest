@@ -46,6 +46,7 @@ export default function GameList({
                 onClick={() => onSelectGame(id)}
               >
                 <span className="min-w-0 truncate text-sm">{gameTitle(tree, t)}</span>
+                {presenterGameId === id && <span className="sr-only">{t('room.presenting')}</span>}
                 {tree.result !== '*' && (
                   <span className="shrink-0 text-xs text-muted">{tree.result}</span>
                 )}

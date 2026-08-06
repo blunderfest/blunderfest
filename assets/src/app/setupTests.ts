@@ -1,5 +1,14 @@
 import '@testing-library/jest-dom/vitest';
 import '@/i18n';
+import { toHaveNoViolations } from 'jest-axe';
+
+expect.extend(toHaveNoViolations);
+
+declare module 'vitest' {
+  interface Assertion<T> {
+    toHaveNoViolations(): void;
+  }
+}
 
 // Node 26 defines an experimental `localStorage` on the global, which makes
 // vitest skip copying jsdom's own localStorage onto the test global. Provide

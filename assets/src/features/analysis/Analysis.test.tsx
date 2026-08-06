@@ -187,11 +187,19 @@ describe('Analysis', () => {
 
   it('navigates with the arrow keys', () => {
     renderAnalysis();
+    const root = () => screen.getByTestId('analysis-root');
 
-    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    fireEvent.keyDown(root(), { key: 'ArrowRight' });
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
 
-    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    fireEvent.keyDown(root(), { key: 'ArrowLeft' });
+    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♙');
+  });
+
+  it('ignores arrow keys pressed outside the analysis region', () => {
+    renderAnalysis();
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
     expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♙');
   });
 
@@ -203,11 +211,12 @@ describe('Analysis', () => {
 
   it('jumps with Home and End keys', () => {
     renderAnalysis();
+    const root = () => screen.getByTestId('analysis-root');
 
-    fireEvent.keyDown(window, { key: 'End' });
+    fireEvent.keyDown(root(), { key: 'End' });
     expect(screen.getByTestId('square-f3')).toHaveTextContent('♘');
 
-    fireEvent.keyDown(window, { key: 'Home' });
+    fireEvent.keyDown(root(), { key: 'Home' });
     expect(screen.getByTestId('square-g1')).toHaveTextContent('♘');
   });
 
@@ -222,7 +231,7 @@ describe('Analysis', () => {
 
     expect(squares()[0]).toBe('square-a8');
 
-    fireEvent.keyDown(window, { key: 'f' });
+    fireEvent.keyDown(screen.getByTestId('analysis-root'), { key: 'f' });
 
     expect(squares()[0]).toBe('square-h1');
     expect(screen.getByRole('button', { name: 'Flip board' })).toHaveAttribute(

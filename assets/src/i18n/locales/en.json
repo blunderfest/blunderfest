@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Blunderfest",
-    "tagline": "Collaborative chess analysis."
+    "tagline": "Collaborative chess analysis.",
+    "skipToBoard": "Skip to board"
   },
   "status": {
     "checking": "Connecting to analysis service…",
@@ -17,6 +18,7 @@
     "create": "Create a room",
     "createHint": "A room is a shared analysis board. Anyone with the code can join.",
     "join": "Join a room",
+    "joinLabel": "Room code",
     "joinPlaceholder": "Room code",
     "joinButton": "Join",
     "joinError": "Enter a room code"
@@ -64,6 +66,7 @@
     "shortcutJump": "first/last move",
     "shortcutFlip": "flip board",
     "boardLabel": "Chess board after {{move}}",
+    "selected": "Selected {{square}}",
     "startPosition": "start position",
     "status": {
       "checkmate": "Checkmate",

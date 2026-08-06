@@ -42,6 +42,12 @@ export function squareName(index: number): string {
   return `${'abcdefgh'[index % 8]}${8 - Math.floor(index / 8)}`;
 }
 
+export function squareIndex(name: string): number {
+  const file = name.charCodeAt(0) - 97;
+  const rank = Number(name[1]);
+  return (8 - rank) * 8 + file;
+}
+
 export function isLightSquare(index: number): boolean {
   const file = index % 8;
   const rank = 8 - Math.floor(index / 8);

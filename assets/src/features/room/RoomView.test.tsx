@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { axe } from 'jest-axe';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RoomView from '@/features/room/RoomView';
@@ -297,7 +298,7 @@ describe('RoomView', () => {
     );
 
     expect(await screen.findAllByText('Brave Otter 42')).toHaveLength(2);
-    expect(screen.getAllByText('Presenting')).toHaveLength(2);
+    expect(screen.getAllByText('Presenting')).toHaveLength(3);
   });
 
   it('keeps cursor ops out of the activity feed', async () => {
@@ -696,5 +697,21 @@ describe('RoomView', () => {
       expect(screen.getByRole('img', { name: 'Collaborator' })).toBeInTheDocument(),
     );
     expect(screen.queryByRole('img', { name: 'Viewer' })).not.toBeInTheDocument();
+  });
+
+  it('has no axe violations with a game loaded', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
+    const store = makeStore();
+    const view = render(
+      <main>
+        <Provider store={store}>
+          <RoomView slug="abc12" onLeave={vi.fn()} selfId={null} channelFactory={channelFactory} />
+        </Provider>
+      </main>,
+    );
+
+    await screen.findAllByText('Alice – Bob');
+    const results = await axe(view.container);
+    expect(results).toHaveNoViolations();
   });
 });

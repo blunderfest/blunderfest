@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { axe } from 'jest-axe';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '@/app/App';
@@ -221,5 +222,21 @@ describe('App', () => {
 
     await waitFor(() => expect(window.location.hash).toBe('#/'));
     expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();
+  });
+
+  it('has no axe violations on the home screen', async () => {
+    stubFetch({
+      '/api/healthz': () => Promise.resolve(new Response(null, { status: 200 })),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
+    });
+    const view = render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    await screen.findByText('Analysis service online');
+    const results = await axe(view.container);
+    expect(results).toHaveNoViolations();
   });
 });

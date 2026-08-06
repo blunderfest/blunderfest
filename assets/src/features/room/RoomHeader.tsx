@@ -40,7 +40,7 @@ export default function RoomHeader({
           className="rounded-lg border border-white/10 px-3 py-1 text-sm text-muted transition-colors hover:border-white/30 hover:text-ink"
           onClick={() => void handleCopy()}
         >
-          {copied ? t('room.copied') : t('room.copy')}
+          <span aria-live="polite">{copied ? t('room.copied') : t('room.copy')}</span>
         </button>
         {!joined && <p className="m-0 text-sm text-warn">{t('room.connecting')}</p>}
       </div>
