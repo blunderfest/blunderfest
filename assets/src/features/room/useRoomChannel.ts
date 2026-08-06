@@ -42,7 +42,9 @@ function membersFrom(state: PresenceState): RoomPresenceMember[] {
  */
 export function useRoomChannel(
   slug: string,
-  channelFactory: (topic: string) => Channel = channelFor,
+  selfId: string | null = null,
+  selfName: string | null = null,
+  channelFactory: (topic: string, params?: Record<string, string>) => Channel = channelFor,
 ) {
   const dispatch = useAppDispatch();
   const channelRef = useRef<Channel | null>(null);
@@ -52,7 +54,14 @@ export function useRoomChannel(
   const [presence, setPresence] = useState<RoomPresenceMember[]>([]);
 
   useEffect(() => {
-    const channel = channelFactoryRef.current(`room:${slug}`);
+    const params: Record<string, string> = {};
+    if (selfId !== null) {
+      params.profile_id = selfId;
+    }
+    if (selfName !== null) {
+      params.name = selfName;
+    }
+    const channel = channelFactoryRef.current(`room:${slug}`, params);
     channelRef.current = channel;
 
     dispatch(enterRoom({ slug }));
@@ -102,7 +111,7 @@ export function useRoomChannel(
       setJoined(false);
       setPresence([]);
     };
-  }, [dispatch, slug]);
+  }, [dispatch, slug, selfId, selfName]);
 
   const sendOp = useCallback((op: Omit<Op, 'seq' | 'author' | 'ts'>) => {
     channelRef.current?.push('op', op);

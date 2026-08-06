@@ -26,16 +26,23 @@ export default function RoomView({
   slug,
   onLeave,
   selfId = null,
+  selfName = null,
   channelFactory,
 }: {
   slug: string;
   onLeave: () => void;
   selfId?: string | null;
-  channelFactory?: (topic: string) => Channel;
+  selfName?: string | null;
+  channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
 }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { joined, presence, sendOp, sendRole } = useRoomChannel(slug, channelFactory);
+  const { joined, presence, sendOp, sendRole } = useRoomChannel(
+    slug,
+    selfId,
+    selfName,
+    channelFactory,
+  );
   const storePresence = useAppSelector((state) => state.room.presence);
   const roles = useAppSelector((state) => state.room.roles);
   const games = useAppSelector((state) => state.room.games);

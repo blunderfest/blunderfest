@@ -8,6 +8,7 @@ export class FakeChannel implements Channel {
   handlers = new Map<string, Handler[]>();
   pushes: { event: string; payload: unknown }[] = [];
   joined = false;
+  joinParams: Record<string, string> = {};
   joinReturn: { ops: Op[]; roles?: Record<string, MemberRole> } = { ops: [] };
   joinReceives = new Map<string, Handler>();
   state = 'joined' as ChannelState;

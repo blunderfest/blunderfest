@@ -71,6 +71,18 @@ defmodule BlunderfestWeb.RoomChannelTest do
     }
   end
 
+  test "presence uses the server-side profile name when the client sends no name", %{} do
+    {:ok, profile, _secret} = Blunderfest.Profiles.create()
+    profile_id = profile.id
+    profile_name = profile.name
+
+    join_room("room:a", %{"profile_id" => profile_id})
+
+    assert_push "presence_diff", %{
+      joins: %{^profile_id => %{metas: [%{name: ^profile_name}]}}
+    }
+  end
+
   test "presence reflects members when a new client joins", %{} do
     join_room("room:a", %{"profile_id" => "profile-1", "name" => "Brave Otter 42"})
 
@@ -95,16 +107,24 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "anonymous joiners are never recorded and never own the room", %{} do
     {:ok, reply, _socket} = join_room("room:a", %{"name" => "No Profile"})
     assert reply.roles == %{}
-    assert Rooms.owner("room:a") == nil
+    assert Rooms.owner("a") == nil
 
     {:ok, reply2, _socket} = join_room("room:a", %{"profile_id" => "profile-1"})
     assert reply2.roles == %{"profile-1" => "owner"}
   end
 
+  test "a real profile id is required to claim ownership", %{} do
+    {:ok, profile, _secret} = Blunderfest.Profiles.create()
+
+    {:ok, reply, _socket} = join_room("room:a", %{"profile_id" => profile.id})
+    assert reply.roles == %{profile.id => "owner"}
+    assert Rooms.owner("a") == profile.id
+  end
+
   test "the owner cannot promote the shared anonymous key", %{} do
     {:ok, _reply, owner} = join_room("room:a", %{"profile_id" => "profile-1"})
 
-    ref = push(owner, "set_role", %{"member_id" => "anonymous", "role" => "partner"})
+    ref = push(owner, "set_role", %{"member_id" => "anonymous", "role" => "collaborator"})
     assert_reply ref, :error, %{reason: :invalid_member}
   end
 
@@ -129,38 +149,41 @@ defmodule BlunderfestWeb.RoomChannelTest do
     assert_broadcast "new_op", %{"type" => "set_cursor"}
   end
 
-  test "partners can push edit ops", %{} do
+  test "collaborators can push edit ops", %{} do
     {:ok, _reply, owner} = join_room("room:a", %{"profile_id" => "profile-1"})
     join_room("room:a", %{"profile_id" => "profile-2"})
 
-    ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "partner"})
+    ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
     assert_reply ref, :ok
 
-    {:ok, _reply, partner} =
+    {:ok, _reply, collaborator} =
       socket(BlunderfestWeb.UserSocket, "user3", %{})
       |> subscribe_and_join(BlunderfestWeb.RoomChannel, "room:a", %{"profile_id" => "profile-2"})
 
     ref =
-      push(partner, "op", %{"type" => "move_at_ply", "payload" => %{"ply" => 1, "san" => "e4"}})
+      push(collaborator, "op", %{
+        "type" => "move_at_ply",
+        "payload" => %{"ply" => 1, "san" => "e4"}
+      })
 
     assert_reply ref, :ok
     assert_broadcast "new_op", %{"type" => "move_at_ply"}
   end
 
-  test "the owner can promote a member to partner", %{} do
+  test "the owner can promote a member to collaborator", %{} do
     {:ok, _reply, owner} = join_room("room:a", %{"profile_id" => "profile-1"})
     join_room("room:a", %{"profile_id" => "profile-2"})
 
-    ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "partner"})
+    ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
     assert_reply ref, :ok
 
-    assert_broadcast "role_update", %{"member_id" => "profile-2", "role" => "partner"}
+    assert_broadcast "role_update", %{"member_id" => "profile-2", "role" => "collaborator"}
   end
 
-  test "the owner can demote a partner back to viewer", %{} do
+  test "the owner can demote a collaborator back to viewer", %{} do
     {:ok, _reply, owner} = join_room("room:a", %{"profile_id" => "profile-1"})
     join_room("room:a", %{"profile_id" => "profile-2"})
-    push(owner, "set_role", %{"member_id" => "profile-2", "role" => "partner"})
+    push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
 
     ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "viewer"})
     assert_reply ref, :ok
@@ -171,14 +194,14 @@ defmodule BlunderfestWeb.RoomChannelTest do
     {:ok, _reply, owner} = join_room("room:a", %{"profile_id" => "profile-1"})
     join_room("room:a", %{"profile_id" => "profile-2"})
 
-    ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "partner"})
+    ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
     assert_reply ref, :ok
 
-    {:ok, _reply, partner} =
+    {:ok, _reply, collaborator} =
       socket(BlunderfestWeb.UserSocket, "user3", %{})
       |> subscribe_and_join(BlunderfestWeb.RoomChannel, "room:a", %{"profile_id" => "profile-2"})
 
-    ref = push(partner, "set_role", %{"member_id" => "profile-1", "role" => "viewer"})
+    ref = push(collaborator, "set_role", %{"member_id" => "profile-1", "role" => "viewer"})
     assert_reply ref, :error, %{reason: :forbidden}
   end
 

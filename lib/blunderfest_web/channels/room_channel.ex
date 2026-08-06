@@ -16,7 +16,7 @@ defmodule BlunderfestWeb.RoomChannel do
 
   use BlunderfestWeb, :channel
 
-  alias Blunderfest.Rooms
+  alias Blunderfest.{Profiles, Rooms}
 
   @impl true
   def join("room:" <> slug, params, socket) do
@@ -28,7 +28,7 @@ defmodule BlunderfestWeb.RoomChannel do
       socket
       |> assign(:slug, slug)
       |> assign(:profile_id, profile_id)
-      |> assign(:profile_name, params["name"] || "Anonymous")
+      |> assign(:profile_name, profile_name_for(profile_id, params["name"]))
 
     send(self(), :after_join)
 
@@ -73,9 +73,16 @@ defmodule BlunderfestWeb.RoomChannel do
     end
   end
 
-  defp string_to_role("partner"), do: :partner
+  defp string_to_role("collaborator"), do: :collaborator
   defp string_to_role("viewer"), do: :viewer
   defp string_to_role(_role), do: :unknown
+
+  defp profile_name_for(profile_id, fallback) do
+    case Profiles.get(profile_id) do
+      {:ok, profile} -> profile.name
+      :error -> fallback || "Anonymous"
+    end
+  end
 
   defp stringify_roles(roles) do
     Map.new(roles, fn {profile_id, role} -> {profile_id, to_string(role)} end)

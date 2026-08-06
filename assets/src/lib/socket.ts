@@ -13,6 +13,6 @@ export function getSocket(): Socket {
   return socket;
 }
 
-export function channelFor(topic: string) {
-  return getSocket().channel(topic);
+export function channelFor(topic: string, params: Record<string, string> = {}) {
+  return getSocket().channel(topic, params);
 }

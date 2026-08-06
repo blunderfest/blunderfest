@@ -71,6 +71,7 @@ export default function App() {
           slug={route.slug}
           onLeave={navigateHome}
           selfId={profile.status === 'ready' ? profile.profile.id : null}
+          selfName={profile.status === 'ready' ? profile.profile.name : null}
         />
       )}
     </div>

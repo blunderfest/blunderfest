@@ -22,12 +22,15 @@ function wrapper(store: TestStore) {
 
 describe('useRoomChannel', () => {
   let channel: FakeChannel;
-  let channelFactory: () => FakeChannel;
+  let channelFactory: (topic: string, params?: Record<string, string>) => FakeChannel;
   let store: TestStore;
 
   beforeEach(() => {
     channel = new FakeChannel();
-    channelFactory = () => channel;
+    channelFactory = (_topic: string, params: Record<string, string> = {}) => {
+      channel.joinParams = params;
+      return channel;
+    };
     store = makeStore();
   });
 
@@ -52,7 +55,7 @@ describe('useRoomChannel', () => {
     ];
     channel.joinReturn = { ops };
 
-    const { result } = renderHook(() => useRoomChannel('room-a', channelFactory), {
+    const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -60,8 +63,46 @@ describe('useRoomChannel', () => {
     expect(store.getState().room.ops).toEqual(ops);
   });
 
+  it('passes the profile id and name as join params', async () => {
+    renderHook(() => useRoomChannel('room-a', 'profile-1', 'Brave Otter 42', channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() => expect(channel.joined).toBe(true));
+    expect(channel.joinParams).toEqual({ profile_id: 'profile-1', name: 'Brave Otter 42' });
+  });
+
+  it('joins without params when no profile is available, then rejoins with it once it loads', async () => {
+    const { rerender } = renderHook(
+      ({ id, name }: { id: string | null; name: string | null }) =>
+        useRoomChannel('room-a', id, name, channelFactory),
+      {
+        wrapper: wrapper(store),
+        initialProps: { id: null as string | null, name: null as string | null },
+      },
+    );
+
+    await waitFor(() => expect(channel.joined).toBe(true));
+    expect(channel.joinParams).toEqual({});
+
+    rerender({ id: 'profile-1', name: 'Brave Otter 42' });
+    await waitFor(() =>
+      expect(channel.joinParams).toEqual({ profile_id: 'profile-1', name: 'Brave Otter 42' }),
+    );
+    expect(channel.joined).toBe(true);
+  });
+
+  it('omits the name when only the profile id is known', async () => {
+    renderHook(() => useRoomChannel('room-a', 'profile-1', null, channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() => expect(channel.joined).toBe(true));
+    expect(channel.joinParams).toEqual({ profile_id: 'profile-1' });
+  });
+
   it('dispatches new_op echoes into the store', async () => {
-    renderHook(() => useRoomChannel('room-a', channelFactory), {
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -87,7 +128,7 @@ describe('useRoomChannel', () => {
   });
 
   it('sendOp pushes to the channel without applying locally', async () => {
-    const { result } = renderHook(() => useRoomChannel('room-a', channelFactory), {
+    const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -105,7 +146,7 @@ describe('useRoomChannel', () => {
   });
 
   it('tracks presence members on state and diff events', async () => {
-    const { result } = renderHook(() => useRoomChannel('room-a', channelFactory), {
+    const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -134,7 +175,7 @@ describe('useRoomChannel', () => {
   });
 
   it('cleans up: leaves the channel and clears the room', () => {
-    const { unmount } = renderHook(() => useRoomChannel('room-a', channelFactory), {
+    const { unmount } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -152,16 +193,16 @@ describe('useRoomChannel', () => {
   });
 
   it('dispatches the role map from the join reply', async () => {
-    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner', 'profile-2': 'partner' } };
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner', 'profile-2': 'collaborator' } };
 
-    renderHook(() => useRoomChannel('room-a', channelFactory), {
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
     await waitFor(() =>
       expect(store.getState().room.roles).toEqual({
         'profile-1': 'owner',
-        'profile-2': 'partner',
+        'profile-2': 'collaborator',
       }),
     );
   });
@@ -169,25 +210,25 @@ describe('useRoomChannel', () => {
   it('updates roles on role_update events', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner', 'profile-2': 'viewer' } };
 
-    renderHook(() => useRoomChannel('room-a', channelFactory), {
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
     await waitFor(() => expect(store.getState().room.roles['profile-2']).toBe('viewer'));
-    act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'partner' }));
+    act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'collaborator' }));
 
-    await waitFor(() => expect(store.getState().room.roles['profile-2']).toBe('partner'));
+    await waitFor(() => expect(store.getState().room.roles['profile-2']).toBe('collaborator'));
   });
 
   it('sendRole pushes a set_role event', async () => {
-    const { result } = renderHook(() => useRoomChannel('room-a', channelFactory), {
+    const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
-    act(() => result.current.sendRole('profile-2', 'partner'));
+    act(() => result.current.sendRole('profile-2', 'collaborator'));
 
     expect(channel.pushes).toEqual([
-      { event: 'set_role', payload: { member_id: 'profile-2', role: 'partner' } },
+      { event: 'set_role', payload: { member_id: 'profile-2', role: 'collaborator' } },
     ]);
   });
 
@@ -223,7 +264,7 @@ describe('useRoomChannel', () => {
     };
     channel.joinReturn = { ops: [op] };
 
-    renderHook(() => useRoomChannel('room-a', channelFactory), {
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -233,7 +274,7 @@ describe('useRoomChannel', () => {
   });
 
   it('sets the game from a set_game op echo', async () => {
-    renderHook(() => useRoomChannel('room-a', channelFactory), {
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
