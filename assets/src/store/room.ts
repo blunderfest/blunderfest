@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { GameNode, GameTree } from '@/lib/api';
 import type { MemberRole, MoveAtPlyOp, Op, PresenceMember, SetGameOp } from '@/protocol/ops';
 
@@ -122,6 +122,33 @@ export function selectActiveGame(state: RoomState): GameTree | null {
     return null;
   }
   return state.games[state.activeGameId] ?? null;
+}
+
+/**
+ * Ops worth showing in the activity feed — cursor and selection noise
+ * filtered out.
+ */
+export const selectActivityOps = createSelector([(state: RoomState) => state.ops], (ops) =>
+  ops.filter((op) => op.type !== 'set_cursor' && op.type !== 'select_game'),
+);
+
+/**
+ * The room role of `profileId` (everyone without an explicit role is a
+ * viewer, including anonymous members).
+ */
+export function selectRoleOf(state: RoomState, profileId: string | null): MemberRole {
+  if (profileId === null) {
+    return 'viewer';
+  }
+  return state.roles[profileId] ?? 'viewer';
+}
+
+/**
+ * Whether `profileId` may push edit ops (moves, imports, comments, arrows).
+ */
+export function selectCanEdit(state: RoomState, profileId: string | null): boolean {
+  const role = selectRoleOf(state, profileId);
+  return role === 'owner' || role === 'partner';
 }
 
 /**

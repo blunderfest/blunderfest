@@ -1,25 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { tv } from 'tailwind-variants';
+import { button, input, panel } from '@/components/ui';
 import { ApiError, type GameTree, importLichess, importPgn } from '@/lib/api';
-
-const panel = tv({
-  base: 'flex w-full max-w-xl flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-6',
-});
-
-const button = tv({
-  base: 'rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
-  variants: {
-    variant: {
-      primary: 'bg-ink text-surface hover:bg-white',
-      ghost: 'border border-white/10 text-ink hover:border-white/30',
-    },
-  },
-});
-
-const input = tv({
-  base: 'w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-white/40 focus:outline-none',
-});
 
 type ImportState =
   | { status: 'idle' }
@@ -61,7 +43,7 @@ export default function ImportForm({ onImported }: { onImported: (tree: GameTree
         <p className="m-0 text-muted">{t('import.subtitle')}</p>
       </div>
 
-      <section className={panel()}>
+      <section className={panel({ width: 'md' })}>
         <label className="m-0 text-sm font-semibold text-muted" htmlFor="pgn-input">
           {t('import.pgnLabel')}
         </label>
@@ -90,7 +72,7 @@ export default function ImportForm({ onImported }: { onImported: (tree: GameTree
         <button
           type="button"
           id="import-submit-button"
-          className={button({ variant: 'primary' })}
+          className={button({ variant: 'primary', disabled: 'dim' })}
           disabled={state.status === 'importing' || (!pgn.trim() && !url.trim())}
           onClick={handleImport}
         >

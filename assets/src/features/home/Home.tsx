@@ -2,21 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
 import type { BackendStatus } from '@/app/App';
+import { button, input, panel } from '@/components/ui';
 import { generateRoomCode, normalizeRoomCode } from '@/lib/roomCode';
-
-const panel = tv({
-  base: 'flex w-full max-w-sm flex-col items-stretch gap-3 rounded-xl border border-white/10 bg-white/5 p-6',
-});
-
-const button = tv({
-  base: 'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-  variants: {
-    variant: {
-      primary: 'bg-ink text-surface hover:bg-white',
-      ghost: 'border border-white/10 text-ink hover:border-white/30',
-    },
-  },
-});
 
 export default function Home({
   backend,
@@ -65,7 +52,7 @@ export default function Home({
       </div>
 
       <div className="flex flex-col items-center gap-4">
-        <section className={panel()}>
+        <section className={panel({ width: 'sm', layout: 'stretch' })}>
           <button
             type="button"
             id="create-room-button"
@@ -82,7 +69,7 @@ export default function Home({
           <div className="flex gap-2">
             <input
               id="join-code-input"
-              className="w-full rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-white/40 focus:outline-none"
+              className={input()}
               placeholder={t('home.joinPlaceholder')}
               value={code}
               onChange={(event) => {

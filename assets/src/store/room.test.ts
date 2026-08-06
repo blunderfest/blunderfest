@@ -9,9 +9,12 @@ import roomReducer, {
   leaveRoom,
   replayOps,
   selectActiveGame,
+  selectActivityOps,
+  selectCanEdit,
   selectPresenter,
   selectPresenterCursor,
   selectPresenterGameId,
+  selectRoleOf,
   setActiveGame,
   setMemberRole,
   setRoles,
@@ -310,6 +313,28 @@ describe('room slice', () => {
     expect(state.presence).toEqual({ 'author-1': member });
     state = roomReducer(state, leaveMember({ id: 'author-1' }));
     expect(state.presence).toEqual({});
+  });
+
+  it('selectActivityOps filters out cursor and selection noise', () => {
+    let state = roomReducer(undefined, replayOps([cursorOp(1), moveOp(2), selectOp(3, 'game-1')]));
+    state = roomReducer(state, applyOp(setGameOp(4, 'Alice')));
+    expect(selectActivityOps(state).map((op) => op.seq)).toEqual([2, 4]);
+  });
+
+  it('selectRoleOf defaults unknown and anonymous members to viewer', () => {
+    const state = roomReducer(undefined, setRoles({ 'author-1': 'owner', 'author-2': 'partner' }));
+    expect(selectRoleOf(state, 'author-1')).toBe('owner');
+    expect(selectRoleOf(state, 'author-2')).toBe('partner');
+    expect(selectRoleOf(state, 'unknown')).toBe('viewer');
+    expect(selectRoleOf(state, null)).toBe('viewer');
+  });
+
+  it('selectCanEdit is true for owners and partners only', () => {
+    const state = roomReducer(undefined, setRoles({ 'author-1': 'owner', 'author-2': 'partner' }));
+    expect(selectCanEdit(state, 'author-1')).toBe(true);
+    expect(selectCanEdit(state, 'author-2')).toBe(true);
+    expect(selectCanEdit(state, 'author-3')).toBe(false);
+    expect(selectCanEdit(state, null)).toBe(false);
   });
 
   describe('move_at_ply transforms', () => {

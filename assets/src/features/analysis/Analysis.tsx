@@ -1,115 +1,14 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { tv } from 'tailwind-variants';
 import Board from '@/components/Board';
 import { parseFen } from '@/components/board';
+import BoardControls from '@/features/analysis/BoardControls';
+import GameInfo from '@/features/analysis/GameInfo';
+import MoveList from '@/features/analysis/MoveList';
+import { buildRows } from '@/features/analysis/moveList';
+import { buildNodeMap } from '@/features/analysis/nodeMap';
 import { fetchLegalMoves, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
 import type { MoveAtPlyOp } from '@/protocol/ops';
-
-const panel = tv({
-  base: 'flex w-full max-w-2xl flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-6',
-});
-
-const button = tv({
-  base: 'rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-  variants: {
-    variant: {
-      primary: 'bg-ink text-surface hover:bg-white',
-      ghost: 'border border-white/10 text-ink hover:border-white/30',
-    },
-  },
-});
-
-const moveButton = tv({
-  base: 'rounded-md px-1.5 py-0.5 font-mono text-sm transition-colors',
-  variants: {
-    selected: { true: 'bg-ink/20 text-white', false: 'text-ink hover:bg-white/10' },
-    bold: { true: 'font-bold', false: '' },
-  },
-});
-
-const moveNumber = (node: GameNode) =>
-  `${Math.ceil(node.ply / 2)}${node.ply % 2 === 1 ? '.' : '…'}`;
-
-type Row =
-  | { type: 'pair'; white: GameNode; black: GameNode | null }
-  | { type: 'variation'; root: GameNode };
-
-function MoveButton({
-  node,
-  selected,
-  bold,
-  onSelect,
-}: {
-  node: GameNode;
-  selected: boolean;
-  bold?: boolean;
-  onSelect: (id: number) => void;
-}) {
-  return (
-    <button
-      type="button"
-      data-testid={`analysis-move-${node.id}`}
-      className={moveButton({ selected, bold: bold ?? false })}
-      onClick={() => onSelect(node.id)}
-    >
-      <span className="text-muted">{moveNumber(node)}</span> {node.san}
-    </button>
-  );
-}
-
-function VariationLine({
-  root,
-  currentId,
-  onSelect,
-  nested = false,
-}: {
-  root: GameNode;
-  currentId: number | null;
-  onSelect: (id: number) => void;
-  nested?: boolean;
-}) {
-  const nodes: GameNode[] = [];
-  let node: GameNode | null = root;
-  while (node) {
-    nodes.push(node);
-    node = node.children[0] ?? null;
-  }
-
-  const content = (
-    <Fragment>
-      <span className="text-muted">(</span>
-      {nodes.map((node, index) => (
-        <Fragment key={node.id}>
-          <MoveButton
-            node={node}
-            selected={node.id === currentId}
-            bold={index === 0}
-            onSelect={onSelect}
-          />
-          {node.comment && <span className="text-xs italic text-muted">{node.comment}</span>}
-          {node.children.slice(1).map((child) => (
-            <VariationLine
-              key={child.id}
-              root={child}
-              currentId={currentId}
-              onSelect={onSelect}
-              nested
-            />
-          ))}
-        </Fragment>
-      ))}
-      <span className="text-muted">)</span>
-    </Fragment>
-  );
-
-  if (nested) {
-    return content;
-  }
-  return <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 pl-7">{content}</div>;
-}
-
-type Entry = { node: GameNode; parent: GameNode | null };
 
 export default function Analysis({
   tree,
@@ -140,24 +39,12 @@ export default function Analysis({
   const presenterActive = presenterId !== null;
   const amPresenter = selfId !== null && selfId === presenterId;
 
-  const byId = useMemo(() => {
-    const map = new Map<number, Entry>();
-    const walk = (node: GameNode, parent: GameNode | null) => {
-      map.set(node.id, { node, parent });
-      node.children.forEach((child) => {
-        walk(child, node);
-      });
-    };
-    if (tree) {
-      walk(tree.root, null);
-    }
-    return map;
-  }, [tree]);
+  const byId = useMemo(() => buildNodeMap(tree), [tree]);
 
   const [currentId, setCurrentId] = useState<number | null>(null);
 
   /**
-   * Nodes the presenter played that have been broadcast but not yet applied
+   * Nodes the editor played that have been broadcast but not yet applied
    * back through the echo. Rendered like regular nodes so the board can show
    * the move immediately; the replayed tree takes precedence once it arrives.
    */
@@ -195,7 +82,7 @@ export default function Analysis({
   const canPlay = canEdit && current !== null && current.status === 'active';
 
   /**
-   * Fetch legal moves for the position when the presenter can play, so the
+   * Fetch legal moves for the position when the viewer can play, so the
    * board can hint and validate clicks.
    */
   useEffect(() => {
@@ -338,29 +225,7 @@ export default function Analysis({
     }
   }, [amPresenter, currentId, onCursorChange]);
 
-  const rows = useMemo(() => {
-    if (!tree) {
-      return [];
-    }
-    const result: Row[] = [];
-    let node: GameNode | null = tree.root.children[0] ?? null;
-    while (node) {
-      const white: GameNode = node;
-      const black: GameNode | null =
-        white.children[0] && white.children[0].ply % 2 === 0 ? white.children[0] : null;
-      result.push({ type: 'pair', white, black });
-      white.children.slice(1).forEach((child) => {
-        result.push({ type: 'variation', root: child });
-      });
-      if (black) {
-        black.children.slice(1).forEach((child) => {
-          result.push({ type: 'variation', root: child });
-        });
-      }
-      node = black ? (black.children[0] ?? null) : (white.children[0] ?? null);
-    }
-    return result;
-  }, [tree]);
+  const rows = useMemo(() => buildRows(tree), [tree]);
 
   const lastChild = useCallback(
     (node: GameNode): GameNode => (node.children[0] ? lastChild(node.children[0]) : node),
@@ -440,74 +305,21 @@ export default function Analysis({
             {t('analysis.playHint')}
           </p>
         )}
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            id="analysis-first-button"
-            className={button({ variant: 'ghost' })}
-            disabled={parent === null}
-            aria-keyshortcuts="Home"
-            onClick={() => navigate(tree.root.id)}
-          >
-            ⏮ {t('analysis.first')}
-          </button>
-          <button
-            type="button"
-            id="analysis-prev-button"
-            className={button({ variant: 'ghost' })}
-            disabled={parent === null}
-            aria-keyshortcuts="ArrowLeft"
-            onClick={() => parent !== null && navigate(parent.id)}
-          >
-            ◀ {t('analysis.prev')}
-          </button>
-          <button
-            type="button"
-            id="analysis-next-button"
-            className={button({ variant: 'ghost' })}
-            disabled={next === null}
-            aria-keyshortcuts="ArrowRight"
-            onClick={() => next !== null && navigate(next.id)}
-          >
-            {t('analysis.next')} ▶
-          </button>
-          <button
-            type="button"
-            id="analysis-last-button"
-            className={button({ variant: 'ghost' })}
-            disabled={current.children.length === 0}
-            aria-keyshortcuts="End"
-            onClick={() => navigate(lastChild(current).id)}
-          >
-            {t('analysis.last')} ⏭
-          </button>
-          <button
-            type="button"
-            id="analysis-flip-button"
-            className={button({ variant: 'ghost' })}
-            aria-pressed={flipped}
-            aria-keyshortcuts="f"
-            onClick={() => setFlipped((f) => !f)}
-          >
-            {t('analysis.flip')}
-          </button>
-          {presenterActive && !amPresenter && (
-            <button
-              type="button"
-              id="analysis-follow-button"
-              className={button({ variant: 'ghost' })}
-              aria-pressed={following}
-              onClick={() => onFollowChange?.(!following)}
-            >
-              {following ? t('analysis.following') : t('analysis.follow')}
-            </button>
-          )}
-          {amPresenter && (
-            <p className="m-0 text-xs text-muted" role="status">
-              {t('analysis.presenting')}
-            </p>
-          )}
-        </div>
+        <BoardControls
+          targets={{
+            first: tree.root.id,
+            prev: parent?.id ?? null,
+            next: next?.id ?? null,
+            last: current.children.length === 0 ? null : lastChild(current).id,
+          }}
+          flipped={flipped}
+          presenterActive={presenterActive}
+          amPresenter={amPresenter}
+          following={following}
+          onNavigate={navigate}
+          onFlip={() => setFlipped((f) => !f)}
+          onFollowChange={onFollowChange ?? (() => {})}
+        />
         <p className="m-0 text-xs text-muted">
           <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
           {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')}
@@ -519,65 +331,9 @@ export default function Analysis({
         )}
       </div>
 
-      <section className={panel()}>
-        <h2 className="m-0 text-sm font-semibold text-muted">{t('analysis.moves')}</h2>
-        <div id="analysis-move-list" className="flex max-h-72 flex-col gap-0.5 overflow-y-auto">
-          {rows.map((row) =>
-            row.type === 'pair' ? (
-              <div key={row.white.id} className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
-                <MoveButton
-                  node={row.white}
-                  selected={row.white.id === current.id}
-                  onSelect={navigate}
-                />
-                {row.white.comment && (
-                  <span className="text-xs italic text-muted">{row.white.comment}</span>
-                )}
-                {row.black && (
-                  <Fragment>
-                    <MoveButton
-                      node={row.black}
-                      selected={row.black.id === current.id}
-                      onSelect={navigate}
-                    />
-                    {row.black.comment && (
-                      <span className="text-xs italic text-muted">{row.black.comment}</span>
-                    )}
-                  </Fragment>
-                )}
-              </div>
-            ) : (
-              <VariationLine
-                key={row.root.id}
-                root={row.root}
-                currentId={current.id}
-                onSelect={navigate}
-              />
-            ),
-          )}
-        </div>
-      </section>
+      <MoveList rows={rows} currentId={current.id} onSelect={navigate} />
 
-      <section className={panel()}>
-        <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-          {tree.headers.Event && (
-            <>
-              <dt className="m-0 text-muted">{t('import.event')}</dt>
-              <dd className="m-0 text-ink">{tree.headers.Event}</dd>
-            </>
-          )}
-          {tree.headers.Date && (
-            <>
-              <dt className="m-0 text-muted">{t('import.date')}</dt>
-              <dd className="m-0 text-ink">{tree.headers.Date}</dd>
-            </>
-          )}
-          <dt className="m-0 text-muted">{t('import.plies')}</dt>
-          <dd className="m-0 text-ink">{tree.mainline_ply_count}</dd>
-          <dt className="m-0 text-muted">{t('import.variations')}</dt>
-          <dd className="m-0 text-ink">{tree.node_count}</dd>
-        </dl>
-      </section>
+      <GameInfo tree={tree} />
     </div>
   );
 }
