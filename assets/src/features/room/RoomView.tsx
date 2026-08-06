@@ -7,7 +7,6 @@ import ImportForm from '@/features/import/ImportForm';
 import ActivityFeed from '@/features/room/ActivityFeed';
 import GameList from '@/features/room/GameList';
 import MemberList from '@/features/room/MemberList';
-import RoomHeader from '@/features/room/RoomHeader';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
 import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp } from '@/protocol/ops';
@@ -143,8 +142,6 @@ export default function RoomView({
 
   return (
     <div className="flex flex-1 flex-col items-stretch gap-6 p-6">
-      <RoomHeader slug={slug} joined={joined} onLeave={onLeave} />
-
       <div className="grid flex-1 gap-6 md:grid-cols-[220px_1fr]">
         <aside className="flex flex-col gap-6">
           <GameList

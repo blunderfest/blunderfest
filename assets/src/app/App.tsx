@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Home from '@/features/home/Home';
+import RoomHeader from '@/features/room/RoomHeader';
 import RoomView from '@/features/room/RoomView';
 import { useProfile } from '@/lib/useProfile';
+import { useAppSelector } from '@/store';
+import { selectRoleOf } from '@/store/room';
 
 export type BackendStatus = 'checking' | 'ok' | 'down';
 
@@ -66,6 +69,10 @@ export default function App() {
         ? t('profile.error')
         : t('profile.loading');
 
+  const selfId = profile.status === 'ready' ? profile.profile.id : null;
+  const selfName = profile.status === 'ready' ? profile.profile.name : null;
+  const myRole = useAppSelector((state) => selectRoleOf(state.room, selfId));
+
   return (
     <div className="flex min-h-screen flex-col">
       <button
@@ -80,6 +87,9 @@ export default function App() {
         <a href="#/" className="text-sm font-semibold tracking-[-0.01em] text-ink no-underline">
           {t('app.name')}
         </a>
+        {route.screen === 'room' && myRole === 'owner' && (
+          <RoomHeader slug={route.slug} onLeave={navigateHome} />
+        )}
         <p className="m-0 text-sm text-muted" role="status" data-status={profile.status}>
           {name}
         </p>
@@ -96,12 +106,7 @@ export default function App() {
             <p className="m-0 text-muted">{t('profile.loading')}</p>
           </div>
         ) : (
-          <RoomView
-            slug={route.slug}
-            onLeave={navigateHome}
-            selfId={profile.status === 'ready' ? profile.profile.id : null}
-            selfName={profile.status === 'ready' ? profile.profile.name : null}
-          />
+          <RoomView slug={route.slug} onLeave={navigateHome} selfId={selfId} selfName={selfName} />
         )}
       </main>
     </div>

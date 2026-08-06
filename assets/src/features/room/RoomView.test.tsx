@@ -173,12 +173,10 @@ describe('RoomView', () => {
     return { store, onLeave, view };
   }
 
-  it('shows the room code and joins the channel', async () => {
+  it('joins the channel and shows the member list once joined', async () => {
     renderRoom();
-    expect(screen.getByText('ABC12')).toBeInTheDocument();
     expect(channel.joined).toBe(true);
-    expect(screen.getByText('Copy')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText('Connecting...')).not.toBeInTheDocument());
+    expect(await screen.findByTestId('member-list')).toBeInTheDocument();
   });
 
   it('shows a not-found screen and a way home when the join is rejected', async () => {
@@ -197,7 +195,7 @@ describe('RoomView', () => {
 
   it('shows joining members from presence diffs', async () => {
     renderRoom();
-    await waitFor(() => expect(screen.queryByText('Connecting...')).not.toBeInTheDocument());
+    await screen.findByTestId('member-list');
     act(() =>
       channel.emit('presence_diff', {
         joins: { 'profile-2': { metas: [{ name: 'Swift Falcon 17' }] } },
@@ -215,15 +213,9 @@ describe('RoomView', () => {
 
   it('appends echoed ops from the channel', async () => {
     renderRoom();
-    await waitFor(() => expect(screen.queryByText('Connecting...')).not.toBeInTheDocument());
+    await screen.findByTestId('member-list');
     act(() => channel.emit('new_op', moveOp));
     expect(await screen.findByText('1. e4')).toBeInTheDocument();
-  });
-
-  it('leaves the room when clicking leave', () => {
-    const { onLeave } = renderRoom();
-    fireEvent.click(screen.getByRole('button', { name: 'Leave room' }));
-    expect(onLeave).toHaveBeenCalledTimes(1);
   });
 
   it('shows the import form when the room has no game', async () => {
@@ -269,7 +261,7 @@ describe('RoomView', () => {
 
   it('shows the board once the set_game echo arrives', async () => {
     renderRoom();
-    await waitFor(() => expect(screen.queryByText('Connecting...')).not.toBeInTheDocument());
+    await screen.findByTestId('member-list');
 
     const op: Op = {
       seq: 1,

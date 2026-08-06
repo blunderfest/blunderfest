@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '@/app/App';
 import { store } from '@/store';
+import { leaveRoom } from '@/store/room';
 import { FakeChannel } from '@/test/fakeChannel';
 
 const socketMocks = vi.hoisted(() => ({
@@ -43,6 +44,7 @@ beforeEach(() => {
   localStorage.clear();
   window.location.hash = '';
   socketMocks.channelFor.mockReset();
+  store.dispatch(leaveRoom());
 });
 
 afterEach(() => {
@@ -159,7 +161,9 @@ describe('App', () => {
       '/api/profiles': () => jsonResponse(profileBody, 201),
       '/api/rooms': () => jsonResponse({ code: 'abcde' }, 201),
     });
-    socketMocks.channelFor.mockReturnValue(new FakeChannel());
+    const channel = new FakeChannel();
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    socketMocks.channelFor.mockReturnValue(channel);
     render(
       <Provider store={store}>
         <App />
@@ -180,7 +184,9 @@ describe('App', () => {
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    socketMocks.channelFor.mockReturnValue(new FakeChannel());
+    const channel = new FakeChannel();
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    socketMocks.channelFor.mockReturnValue(channel);
     render(
       <Provider store={store}>
         <App />
@@ -200,7 +206,9 @@ describe('App', () => {
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    socketMocks.channelFor.mockReturnValue(new FakeChannel());
+    const channel = new FakeChannel();
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    socketMocks.channelFor.mockReturnValue(channel);
     render(
       <Provider store={store}>
         <App />
@@ -208,6 +216,25 @@ describe('App', () => {
     );
 
     expect(await screen.findByText('ABCDE')).toBeInTheDocument();
+  });
+
+  it('hides the room code and leave button from non-owners', async () => {
+    window.location.hash = '#/r/abcde';
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
+    });
+    socketMocks.channelFor.mockReturnValue(new FakeChannel());
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    expect(await screen.findByTestId('member-list')).toBeInTheDocument();
+    expect(screen.queryByText('ABCDE')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Leave room' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument();
   });
 
   it('waits for the identity before joining the room channel', async () => {
@@ -242,7 +269,7 @@ describe('App', () => {
       }),
     );
 
-    expect(await screen.findByText('ABCDE')).toBeInTheDocument();
+    expect(await screen.findByTestId('member-list')).toBeInTheDocument();
     await waitFor(() =>
       expect(socketMocks.channelFor).toHaveBeenCalledWith('room:abcde', {
         profile_id: 'profile-1',
@@ -291,7 +318,9 @@ describe('App', () => {
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    socketMocks.channelFor.mockReturnValue(new FakeChannel());
+    const channel = new FakeChannel();
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    socketMocks.channelFor.mockReturnValue(channel);
     render(
       <Provider store={store}>
         <App />
