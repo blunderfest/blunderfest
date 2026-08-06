@@ -7,9 +7,18 @@ function emptyPosition() {
   return new Array(64).fill(null);
 }
 
-function focusedSquare() {
-  const focused = screen.getAllByRole('button').find((button) => button.tabIndex === 0);
-  return (focused as HTMLElement).closest('[data-board-grid]') as HTMLElement;
+/**
+ * The square currently in the tab order, focused as if reached via Tab, so it
+ * matches :focus-visible the way a keyboard user's focus does.
+ */
+function focusedSquareButton() {
+  return screen.getAllByRole('button').find((button) => button.tabIndex === 0) as HTMLElement;
+}
+
+function pressKey(key: string) {
+  const square = focusedSquareButton();
+  square.focus();
+  fireEvent.keyDown(square, { key });
 }
 
 describe('Board', () => {
@@ -73,49 +82,47 @@ describe('Board', () => {
         onSquareClick={vi.fn()}
       />,
     );
-
-    const grid = focusedSquare();
-    fireEvent.keyDown(grid, { key: 'ArrowUp' });
+    pressKey('ArrowUp');
     expect(screen.getByTestId('square-e5')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowUp' });
+    pressKey('ArrowUp');
     expect(screen.getByTestId('square-e6')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowUp' });
+    pressKey('ArrowUp');
     expect(screen.getByTestId('square-e7')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowUp' });
+    pressKey('ArrowUp');
     expect(screen.getByTestId('square-e8')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowUp' });
+    pressKey('ArrowUp');
     expect(screen.getByTestId('square-e8')).toHaveAttribute('tabindex', '0');
 
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    pressKey('ArrowDown');
     expect(screen.getByTestId('square-e7')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
+    pressKey('ArrowLeft');
     expect(screen.getByTestId('square-d7')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
+    pressKey('ArrowLeft');
     expect(screen.getByTestId('square-c7')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
+    pressKey('ArrowLeft');
     expect(screen.getByTestId('square-b7')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
+    pressKey('ArrowLeft');
     expect(screen.getByTestId('square-a7')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
+    pressKey('ArrowLeft');
     expect(screen.getByTestId('square-a7')).toHaveAttribute('tabindex', '0');
 
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    pressKey('ArrowRight');
     expect(screen.getByTestId('square-b7')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
     expect(screen.getByTestId('square-b1')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    pressKey('ArrowRight');
+    pressKey('ArrowRight');
+    pressKey('ArrowRight');
+    pressKey('ArrowRight');
+    pressKey('ArrowRight');
+    pressKey('ArrowRight');
     expect(screen.getByTestId('square-h1')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    pressKey('ArrowRight');
     expect(screen.getByTestId('square-h1')).toHaveAttribute('tabindex', '0');
   });
 
@@ -130,47 +137,45 @@ describe('Board', () => {
         onSquareClick={vi.fn()}
       />,
     );
-
-    const grid = focusedSquare();
-    fireEvent.keyDown(grid, { key: 'ArrowUp' });
+    pressKey('ArrowUp');
     expect(screen.getByTestId('square-e3')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowUp' });
+    pressKey('ArrowUp');
     expect(screen.getByTestId('square-e2')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowUp' });
+    pressKey('ArrowUp');
     expect(screen.getByTestId('square-e1')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowUp' });
+    pressKey('ArrowUp');
     expect(screen.getByTestId('square-e1')).toHaveAttribute('tabindex', '0');
 
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    pressKey('ArrowDown');
     expect(screen.getByTestId('square-e2')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    pressKey('ArrowRight');
     expect(screen.getByTestId('square-d2')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    pressKey('ArrowRight');
     expect(screen.getByTestId('square-c2')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    pressKey('ArrowRight');
     expect(screen.getByTestId('square-b2')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    pressKey('ArrowRight');
     expect(screen.getByTestId('square-a2')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    pressKey('ArrowRight');
     expect(screen.getByTestId('square-a2')).toHaveAttribute('tabindex', '0');
 
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
+    pressKey('ArrowLeft');
     expect(screen.getByTestId('square-b2')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
-    fireEvent.keyDown(grid, { key: 'ArrowDown' });
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
+    pressKey('ArrowDown');
     expect(screen.getByTestId('square-b8')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
+    pressKey('ArrowLeft');
+    pressKey('ArrowLeft');
+    pressKey('ArrowLeft');
+    pressKey('ArrowLeft');
+    pressKey('ArrowLeft');
+    pressKey('ArrowLeft');
     expect(screen.getByTestId('square-h8')).toHaveAttribute('tabindex', '0');
-    fireEvent.keyDown(grid, { key: 'ArrowLeft' });
+    pressKey('ArrowLeft');
     expect(screen.getByTestId('square-h8')).toHaveAttribute('tabindex', '0');
   });
 
@@ -202,9 +207,7 @@ describe('Board', () => {
         onSquareClick={onSquareClick}
       />,
     );
-
-    const grid = focusedSquare();
-    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    pressKey('ArrowRight');
     const fromSquare = screen.getByTestId('square-f4');
     expect(fromSquare).toHaveFocus();
 
@@ -215,7 +218,7 @@ describe('Board', () => {
     expect(onSquareClick).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps arrow navigation when the focused square changes', () => {
+  it('skips square navigation when the square was focused by mouse, keeping arrows free for game navigation', () => {
     render(
       <Board
         position={emptyPosition()}
@@ -229,8 +232,9 @@ describe('Board', () => {
     fireEvent.click(screen.getByTestId('square-g5'));
     expect(screen.getByTestId('square-g5')).toHaveAttribute('tabindex', '0');
 
-    fireEvent.keyDown(focusedSquare(), { key: 'ArrowRight' });
-    expect(screen.getByTestId('square-h5')).toHaveAttribute('tabindex', '0');
+    fireEvent.keyDown(screen.getByTestId('square-g5'), { key: 'ArrowRight' });
+    expect(screen.getByTestId('square-g5')).toHaveAttribute('tabindex', '0');
+    expect(screen.getByTestId('square-h5')).toHaveAttribute('tabindex', '-1');
   });
 
   it('renders plain squares when not interactive', () => {

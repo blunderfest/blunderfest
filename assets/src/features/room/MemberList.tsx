@@ -30,16 +30,22 @@ export default function MemberList({
         {members.map((member) => {
           const role = roles[member.id] ?? 'viewer';
           const isBold = role === 'owner' || role === 'collaborator';
-          const icon = role === 'owner' ? '♔' : role === 'collaborator' ? '♘' : '♙';
+          // Filled piece glyphs read much better than outline ones at small
+          // sizes; the color ramp separates the roles at a glance.
+          const icon = role === 'owner' ? '♚' : role === 'collaborator' ? '♞' : '♟';
           const iconClass =
             role === 'owner'
               ? 'text-warn'
               : role === 'collaborator'
-                ? 'text-slate-400'
-                : 'text-muted';
+                ? 'text-slate-200'
+                : 'text-slate-400';
           return (
             <li key={member.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-              <span role="img" aria-label={t(`room.role.${role}`)} className={iconClass}>
+              <span
+                role="img"
+                aria-label={t(`room.role.${role}`)}
+                className={`inline-block w-5 shrink-0 text-center text-lg leading-none ${iconClass}`}
+              >
                 {icon}
               </span>
               <span className={isBold ? 'font-semibold' : undefined}>{member.name}</span>

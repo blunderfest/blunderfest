@@ -203,6 +203,13 @@ describe('Analysis', () => {
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
   });
 
+  it('navigates the game when arrows are pressed on a square focused by mouse', () => {
+    render(<Analysis tree={tree} canEdit onPlayMove={vi.fn()} />);
+
+    fireEvent.keyDown(screen.getByTestId('square-e2'), { key: 'ArrowRight' });
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
+  });
+
   it('ignores the navigation keys while typing in the comment editor', () => {
     render(<Analysis tree={tree} canEdit onComment={vi.fn()} />);
 

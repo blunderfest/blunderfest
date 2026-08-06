@@ -71,6 +71,15 @@ export default function Board({
     if (!interactive) {
       return;
     }
+    /**
+     * Square-by-square arrow navigation is reserved for keyboard users: a
+     * square reached via Tab matches :focus-visible, one focused by a mouse
+     * click does not. Mouse users keep global game navigation — the event
+     * falls through to the analysis handler (which listens on window).
+     */
+    if (!(event.target instanceof HTMLElement) || !event.target.matches(':focus-visible')) {
+      return;
+    }
     let next: number | null = null;
     switch (event.key) {
       case 'ArrowUp':
@@ -98,6 +107,7 @@ export default function Board({
       return;
     }
     event.preventDefault();
+    event.stopPropagation();
     focusSquare(next);
   }
 

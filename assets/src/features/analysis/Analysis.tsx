@@ -252,8 +252,8 @@ export default function Analysis({
       const target = event.target;
       // The board's arrow keys work from anywhere on the page — except while
       // typing, while a modifier changes the meaning (browser shortcuts), or
-      // while the board's own square grid has focus (it moves the focused
-      // square instead of the position).
+      // while a board square has keyboard focus (the board moves the focused
+      // square instead of the position, and stops propagation itself).
       if (!(target instanceof Element)) {
         return;
       }
@@ -261,9 +261,6 @@ export default function Analysis({
         return;
       }
       if (event.ctrlKey || event.metaKey || event.altKey) {
-        return;
-      }
-      if (target.closest('[data-board-grid]')) {
         return;
       }
       let handled = false;
