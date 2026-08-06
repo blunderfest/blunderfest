@@ -46,6 +46,28 @@ function mainlineNode(tree: GameTree, ply: number): GameNode | null {
   return node;
 }
 
+/** The last node of the mainline (deepest first-child chain). */
+function mainlineTip(tree: GameTree): GameNode {
+  let node = tree.root;
+  while (node.children[0] !== undefined) {
+    node = node.children[0];
+  }
+  return node;
+}
+
+function findNode(node: GameNode, id: number): GameNode | null {
+  if (node.id === id) {
+    return node;
+  }
+  for (const child of node.children) {
+    const found = findNode(child, id);
+    if (found !== null) {
+      return found;
+    }
+  }
+  return null;
+}
+
 function maxNodeId(node: GameNode): number {
   let max = node.id;
   for (const child of node.children) {
@@ -72,16 +94,24 @@ function resultFor(status: string, ply: number): string | null {
 }
 
 /**
- * Appends a move at the given ply to the tree. A move beyond the end of the
- * mainline extends it; a move into a position that already has children is
- * inserted as a variation. Node ids are derived deterministically (max + 1)
- * so every client replays to the same tree.
+ * Appends a move to the tree. The parent is the node named by
+ * `payload.parent_id` (the cursor the move was played from — variation
+ * parents included); ops from before variations were playable fall back to
+ * the mainline node at `ply - 1`. Extending the mainline tip grows the
+ * mainline; anything else inserts a variation. Node ids are derived
+ * deterministically (max + 1) so every client replays to the same tree.
+ * Game result and mainline ply count only change on mainline moves — a mate
+ * in a variation is not the game's result.
  */
 export function applyMoveAtPly(tree: GameTree, payload: MoveAtPlyOp['payload']): GameTree {
-  const parent = mainlineNode(tree, payload.ply - 1);
+  const parent =
+    payload.parent_id !== undefined
+      ? findNode(tree.root, payload.parent_id)
+      : mainlineNode(tree, payload.ply - 1);
   if (parent === null) {
     return tree;
   }
+  const extendsMainline = parent.id === mainlineTip(tree).id;
 
   const node: GameNode = {
     id: maxNodeId(tree.root) + 1,
@@ -105,8 +135,10 @@ export function applyMoveAtPly(tree: GameTree, payload: MoveAtPlyOp['payload']):
   return {
     ...tree,
     root,
-    result: resultFor(payload.status, payload.ply) ?? tree.result,
-    mainline_ply_count: Math.max(tree.mainline_ply_count, payload.ply),
+    result: extendsMainline ? (resultFor(payload.status, payload.ply) ?? tree.result) : tree.result,
+    mainline_ply_count: extendsMainline
+      ? Math.max(tree.mainline_ply_count, payload.ply)
+      : tree.mainline_ply_count,
     node_count: tree.node_count + 1,
   };
 }

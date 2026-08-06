@@ -14,11 +14,19 @@ export function buildRows(tree: GameTree | null): Row[] {
   }
   const result: Row[] = [];
   let node: GameNode | null = tree.root.children[0] ?? null;
+  let firstRow = true;
   while (node) {
     const white: GameNode = node;
     const black: GameNode | null =
       white.children[0] && white.children[0].ply % 2 === 0 ? white.children[0] : null;
     result.push({ type: 'pair', white, black });
+    if (firstRow) {
+      // Alternatives to the first mainline move branch from the root.
+      tree.root.children.slice(1).forEach((child) => {
+        result.push({ type: 'variation', root: child });
+      });
+      firstRow = false;
+    }
     white.children.slice(1).forEach((child) => {
       result.push({ type: 'variation', root: child });
     });

@@ -184,6 +184,7 @@ export default function Analysis({
         promotion: move.promotion,
         fen: move.fen,
         status: move.status,
+        parent_id: current.id,
       });
       setPending((previous) => {
         const next = new Map(previous);
@@ -382,7 +383,12 @@ export default function Analysis({
           )}
         </div>
 
-        <aside className="flex w-full max-w-sm flex-col gap-4 xl:w-72 xl:max-w-none xl:self-stretch">
+        {/*
+          The sidebar gets a fixed height on wide screens (the board's own
+          height), so a long move list scrolls *inside* the sidebar and never
+          stretches the page. Below xl it stacks full-width with a capped list.
+        */}
+        <aside className="flex w-full max-w-sm flex-col gap-4 xl:h-[min(90vw,34rem)] xl:w-72 xl:max-w-none">
           <NodeComment
             comment={current.comment}
             canEdit={canEdit}

@@ -20,11 +20,13 @@ function MoveButton({
   node,
   selected,
   bold,
+  showNumber,
   onSelect,
 }: {
   node: GameNode;
   selected: boolean;
   bold?: boolean;
+  showNumber: boolean;
   onSelect: (id: number) => void;
 }) {
   return (
@@ -35,7 +37,7 @@ function MoveButton({
       className={moveButton({ selected, bold: bold ?? false })}
       onClick={() => onSelect(node.id)}
     >
-      <span className="text-muted">{moveNumber(node)}</span> {node.san}
+      {showNumber && <span className="text-muted">{moveNumber(node)}</span>} {node.san}
     </button>
   );
 }
@@ -58,29 +60,41 @@ function VariationLine({
     node = node.children[0] ?? null;
   }
 
+  /**
+   * Move-number rules: white moves always carry their number; black moves
+   * only when the line starts with black (a black-to-move variation) or when
+   * the line resumes after a nested variation has interrupted it.
+   */
+  let interrupted = true;
   const content = (
     <Fragment>
       <span className="text-muted">(</span>
-      {nodes.map((node, index) => (
-        <Fragment key={node.id}>
-          <MoveButton
-            node={node}
-            selected={node.id === currentId}
-            bold={index === 0}
-            onSelect={onSelect}
-          />
-          {node.comment && <span className="text-xs italic text-muted">{node.comment}</span>}
-          {node.children.slice(1).map((child) => (
-            <VariationLine
-              key={child.id}
-              root={child}
-              currentId={currentId}
+      {nodes.map((node) => {
+        const showNumber = node.ply % 2 === 1 || interrupted;
+        const nested = node.children.slice(1);
+        interrupted = nested.length > 0;
+        return (
+          <Fragment key={node.id}>
+            <MoveButton
+              node={node}
+              selected={node.id === currentId}
+              bold={node.id === root.id}
+              showNumber={showNumber}
               onSelect={onSelect}
-              nested
             />
-          ))}
-        </Fragment>
-      ))}
+            {node.comment && <span className="text-xs italic text-muted">{node.comment}</span>}
+            {nested.map((child) => (
+              <VariationLine
+                key={child.id}
+                root={child}
+                currentId={currentId}
+                onSelect={onSelect}
+                nested
+              />
+            ))}
+          </Fragment>
+        );
+      })}
       <span className="text-muted">)</span>
     </Fragment>
   );
@@ -115,6 +129,7 @@ export default function MoveList({
               <MoveButton
                 node={row.white}
                 selected={row.white.id === currentId}
+                showNumber
                 onSelect={onSelect}
               />
               {row.white.comment && (
@@ -125,6 +140,7 @@ export default function MoveList({
                   <MoveButton
                     node={row.black}
                     selected={row.black.id === currentId}
+                    showNumber={false}
                     onSelect={onSelect}
                   />
                   {row.black.comment && (

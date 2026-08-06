@@ -384,6 +384,49 @@ describe('room slice', () => {
       expect(state.games['game-1'].result).toBe('0-1');
     });
 
+    it('attaches moves to the parent named by parent_id, so variations continue in place', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      // 1... c5 as an alternative to 1... e5 (parent is the e4 node, id 1)
+      state = roomReducer(state, applyOp(moveAtPly(2, 2, { san: 'c5', parent_id: 1 })));
+      // 2. d4 continues the c5 variation (parent is the c5 node, id 3)
+      state = roomReducer(state, applyOp(moveAtPly(3, 3, { san: 'd4', parent_id: 3 })));
+
+      const game = state.games['game-1'];
+      const e4 = game.root.children[0];
+      const c5 = e4.children[1];
+      expect(c5).toMatchObject({ id: 3, ply: 2, san: 'c5' });
+      expect(c5.children[0]).toMatchObject({ id: 4, ply: 3, san: 'd4' });
+      // The mainline (e4 e5) is untouched and still ends at e5.
+      expect(e4.children[0].children).toEqual([]);
+      expect(game.mainline_ply_count).toBe(2);
+    });
+
+    it('extends the mainline when parent_id names the mainline tip', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(
+        state,
+        applyOp(moveAtPly(2, 3, { san: 'Nf3', from: 'g1', to: 'f3', parent_id: 2 })),
+      );
+
+      const game = state.games['game-1'];
+      expect(game.root.children[0].children[0].children[0]).toMatchObject({
+        id: 3,
+        san: 'Nf3',
+      });
+      expect(game.mainline_ply_count).toBe(3);
+    });
+
+    it('does not set the game result from a mate inside a variation', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(moveAtPly(2, 2, { san: 'c5', parent_id: 1 })));
+      state = roomReducer(
+        state,
+        applyOp(moveAtPly(3, 3, { san: 'Qh4#', status: 'checkmate', parent_id: 3 })),
+      );
+
+      expect(state.games['game-1'].result).toBe('*');
+    });
+
     it('applies move ops in seq order during replay', () => {
       const state = roomReducer(
         undefined,

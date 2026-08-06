@@ -72,4 +72,19 @@ describe('buildRows', () => {
       rows.map((row) => (row.type === 'pair' ? row.white.san : `var:${row.root.san}`)),
     ).toEqual(['e4', 'var:c5', 'var:Nc3', 'Nf3']);
   });
+
+  it('emits alternatives to the first move (root variations) after the first pair', () => {
+    const withRootVariation: GameTree = {
+      ...tree,
+      root: {
+        ...tree.root,
+        children: [...tree.root.children, node(7, 1, { san: 'd4' })],
+      },
+    };
+
+    const rows = buildRows(withRootVariation);
+    expect(
+      rows.map((row) => (row.type === 'pair' ? row.white.san : `var:${row.root.san}`)),
+    ).toEqual(['e4', 'var:d4', 'var:c5', 'var:Nc3', 'Nf3']);
+  });
 });

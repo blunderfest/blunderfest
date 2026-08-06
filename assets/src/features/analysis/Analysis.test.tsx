@@ -384,6 +384,7 @@ describe('Analysis', () => {
       promotion: null,
       fen: startMoves[0].fen,
       status: 'active',
+      parent_id: tree.root.id,
     });
   });
 

@@ -35,6 +35,14 @@ export type MoveAtPlyOp = OpBase & {
     promotion: string | null;
     fen: string;
     status: string;
+    /**
+     * The node this move extends. Node ids are derived deterministically
+     * (max id + 1) on every client, so the id addresses variation parents
+     * unambiguously — ply alone cannot (every node at a ply shares it).
+     * Absent in logs from before variations were playable; those resolve the
+     * mainline parent by ply.
+     */
+    parent_id?: number;
   };
 };
 
