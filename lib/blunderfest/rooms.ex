@@ -24,6 +24,27 @@ defmodule Blunderfest.Rooms do
 
   @edit_op_types ~w(set_game move_at_ply replace_line comment_at_ply add_arrow add_highlight)
 
+  # Room codes are 5 characters drawn from an unambiguous alphabet
+  # (no i/l/o/0/1 to avoid reading errors when codes are exchanged).
+  @code_regex ~r/^[abcdefghjkmnpqrstuvwxyz23456789]{5}$/
+
+  @doc "Room codes are exactly 5 characters from the canonical alphabet."
+  def valid_code?(slug) do
+    Regex.match?(@code_regex, slug)
+  end
+
+  @doc """
+  Join approval policy: returns `:approved` or `:pending`.
+
+  Every room is public today, so every join is approved automatically.
+  Private rooms will later make this decision per room (e.g. consult the
+  owner) instead of replying `:approved` unconditionally.
+  """
+  @spec approval_status(String.t(), String.t()) :: :approved | :pending
+  def approval_status(slug, profile_id, server \\ __MODULE__) do
+    GenServer.call(server, {:approval_status, slug, profile_id})
+  end
+
   def start_link(opts) do
     GenServer.start_link(__MODULE__, %{}, name: Keyword.get(opts, :name, __MODULE__))
   end
@@ -95,6 +116,12 @@ defmodule Blunderfest.Rooms do
   @impl true
   def handle_call({:ops, slug}, _from, state) do
     {:reply, Map.get(state, slug, empty_room()).ops, state}
+  end
+
+  def handle_call({:approval_status, _slug, _profile_id}, _from, state) do
+    # Public rooms approve every join automatically. Private rooms will
+    # consult room metadata (and the owner) here instead.
+    {:reply, :approved, state}
   end
 
   def handle_call({:append, slug, op}, _from, state) do

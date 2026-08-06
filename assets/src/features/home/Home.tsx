@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
 import type { BackendStatus } from '@/app/App';
 import { button, input, panel } from '@/components/ui';
-import { generateRoomCode, normalizeRoomCode } from '@/lib/roomCode';
+import { generateRoomCode, normalizeRoomCode, validRoomCode } from '@/lib/roomCode';
 
 export default function Home({
   backend,
@@ -27,7 +27,7 @@ export default function Home({
 
   function handleJoin() {
     const slug = normalizeRoomCode(code);
-    if (!slug) {
+    if (!validRoomCode(slug)) {
       setError(true);
       return;
     }

@@ -13,6 +13,10 @@ defmodule Blunderfest.RoomsTest do
     assert Rooms.ops("fresh-room", store) == []
   end
 
+  test "approval_status approves every join while rooms are public", %{store: store} do
+    assert Rooms.approval_status("abcde", "profile-1", store) == :approved
+  end
+
   test "append stamps seq starting at 1 and ts", %{store: store} do
     op =
       Rooms.append(

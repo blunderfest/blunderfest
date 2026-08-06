@@ -17,9 +17,23 @@ describe('Home', () => {
 
   it('joins a room with a normalized code', () => {
     const { onJoin } = renderHome();
-    fireEvent.change(screen.getByPlaceholderText('Room code'), { target: { value: ' AbC-1_2 ' } });
+    fireEvent.change(screen.getByPlaceholderText('Room code'), { target: { value: ' AbC_3-9 ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Join' }));
-    expect(onJoin).toHaveBeenCalledWith('abc12');
+    expect(onJoin).toHaveBeenCalledWith('abc39');
+  });
+
+  it('shows an error when the code is not a valid 5-character room code', () => {
+    const { onJoin } = renderHome();
+    fireEvent.change(screen.getByPlaceholderText('Room code'), { target: { value: 'abc12' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+    expect(screen.getByText('Enter a room code')).toBeInTheDocument();
+    expect(onJoin).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByPlaceholderText('Room code'), {
+      target: { value: 'kjhkjhkjhkj' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+    expect(onJoin).not.toHaveBeenCalled();
   });
 
   it('joins a room when pressing Enter in the input', () => {

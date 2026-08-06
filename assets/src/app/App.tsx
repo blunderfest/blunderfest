@@ -9,7 +9,7 @@ export type BackendStatus = 'checking' | 'ok' | 'down';
 type Route = { screen: 'home' } | { screen: 'room'; slug: string };
 
 function readHashRoute(): Route {
-  const match = window.location.hash.match(/^#\/r\/([a-z0-9]+)$/);
+  const match = window.location.hash.match(/^#\/r\/([abcdefghjkmnpqrstuvwxyz23456789]{5})$/);
   if (match) {
     return { screen: 'room', slug: match[1] };
   }

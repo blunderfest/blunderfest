@@ -192,7 +192,7 @@ describe('App', () => {
   });
 
   it('renders a room directly from a deep link', async () => {
-    window.location.hash = '#/r/abc12';
+    window.location.hash = '#/r/abcde';
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
     });
@@ -203,11 +203,27 @@ describe('App', () => {
       </Provider>,
     );
 
-    expect(screen.getByText('ABC12')).toBeInTheDocument();
+    expect(screen.getByText('ABCDE')).toBeInTheDocument();
+  });
+
+  it('ignores deep links with malformed room codes', async () => {
+    window.location.hash = '#/r/kjhkjhkjhkj';
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+    });
+    socketMocks.channelFor.mockReturnValue(new FakeChannel());
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();
+    expect(socketMocks.channelFor).not.toHaveBeenCalled();
   });
 
   it('leaves a room back to the home screen', async () => {
-    window.location.hash = '#/r/abc12';
+    window.location.hash = '#/r/abcde';
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
     });

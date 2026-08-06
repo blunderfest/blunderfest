@@ -20,19 +20,34 @@ defmodule BlunderfestWeb.RoomChannel do
 
   @impl true
   def join("room:" <> slug, params, socket) do
-    profile_id = params["profile_id"] || "anonymous"
+    if not Rooms.valid_code?(slug) do
+      {:error, %{reason: :invalid_code}}
+    else
+      profile_id = params["profile_id"] || "anonymous"
 
-    Rooms.claim(slug, profile_id)
+      case Rooms.approval_status(slug, profile_id) do
+        :approved ->
+          Rooms.claim(slug, profile_id)
 
-    socket =
-      socket
-      |> assign(:slug, slug)
-      |> assign(:profile_id, profile_id)
-      |> assign(:profile_name, profile_name_for(profile_id, params["name"]))
+          socket =
+            socket
+            |> assign(:slug, slug)
+            |> assign(:profile_id, profile_id)
+            |> assign(:profile_name, profile_name_for(profile_id, params["name"]))
 
-    send(self(), :after_join)
+          send(self(), :after_join)
 
-    {:ok, %{ops: Rooms.ops(slug), roles: stringify_roles(Rooms.roles(slug))}, socket}
+          {:ok, %{ops: Rooms.ops(slug), roles: stringify_roles(Rooms.roles(slug))}, socket}
+
+        :pending ->
+          # Private rooms: the owner must approve the join first. The client
+          # stays joined on a `%{status: "pending"}` reply and waits for an
+          # explicit approval push before tracking presence or replaying ops.
+          # Unreachable until private rooms exist; kept as the approval seam.
+          socket = assign(socket, :slug, slug)
+          {:ok, %{status: "pending"}, socket}
+      end
+    end
   end
 
   @impl true

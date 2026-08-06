@@ -15,3 +15,7 @@ export function normalizeRoomCode(input: string): string {
     .replace(/[^a-z0-9]/g, '')
     .trim();
 }
+
+export function validRoomCode(code: string): boolean {
+  return /^[abcdefghjkmnpqrstuvwxyz23456789]{5}$/.test(code);
+}
