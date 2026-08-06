@@ -212,9 +212,19 @@ describe('RoomView', () => {
   });
 
   it('shows the import form when the room has no game', async () => {
-    renderRoom();
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
     expect(await screen.findByText('Import a game')).toBeInTheDocument();
     expect(screen.getByLabelText('PGN')).toBeInTheDocument();
+  });
+
+  it('shows a waiting message to viewers in an empty room', async () => {
+    renderRoom();
+    expect(
+      await screen.findByText('Waiting for the room owner to share a game…'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Import PGN' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'New game' })).not.toBeInTheDocument();
   });
 
   it('imports a game by pushing a set_game op', async () => {
@@ -229,7 +239,8 @@ describe('RoomView', () => {
         ),
       ),
     );
-    renderRoom();
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
 
     fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } });
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
@@ -267,8 +278,8 @@ describe('RoomView', () => {
       type: 'set_game',
       payload: { game_id: 'game-1', tree: gameTree },
     };
-    channel.joinReturn = { ops: [op] };
-    renderRoom();
+    channel.joinReturn = { ops: [op], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
 
     expect(await screen.findByRole('button', { name: 'Alice – Bob' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Import PGN' }));
@@ -276,7 +287,7 @@ describe('RoomView', () => {
   });
 
   it('marks the set_game author as presenting in the member list', async () => {
-    channel.joinReturn = { ops: [setGameOp(1, gameTree)] };
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
     renderRoom();
 
     act(() =>
@@ -300,7 +311,10 @@ describe('RoomView', () => {
   });
 
   it('follows the presenter cursor through the room', async () => {
-    channel.joinReturn = { ops: [setGameOp(1, followTree), cursorOp(2, 2)] };
+    channel.joinReturn = {
+      ops: [setGameOp(1, followTree), cursorOp(2, 2)],
+      roles: { 'profile-1': 'owner' },
+    };
     renderRoom();
 
     act(() =>
@@ -321,7 +335,8 @@ describe('RoomView', () => {
   });
 
   it('creates an empty game with the New game button', async () => {
-    renderRoom();
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
 
     fireEvent.click(screen.getByRole('button', { name: 'New game' }));
 
@@ -382,6 +397,7 @@ describe('RoomView', () => {
   it('announces a game switch as the presenter', async () => {
     channel.joinReturn = {
       ops: [setGameOp(1, gameTree), setGameOp(2, secondTree, 'game-2')],
+      roles: { 'profile-1': 'owner' },
     };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
@@ -417,7 +433,7 @@ describe('RoomView', () => {
   });
 
   it('follows the presenter when they switch to another game', async () => {
-    channel.joinReturn = { ops: [setGameOp(1, gameTree)] };
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
     renderRoom();
 
     act(() =>
@@ -469,6 +485,7 @@ describe('RoomView', () => {
         ),
       ),
     );
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
     act(() =>
@@ -501,5 +518,84 @@ describe('RoomView', () => {
         },
       },
     });
+  });
+
+  it('lets the owner promote a member to partner', async () => {
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+        'profile-2': { metas: [{ name: 'Swift Falcon 17' }] },
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByText('Swift Falcon 17')).toBeInTheDocument());
+    expect(screen.getByText('Owner')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('set-role-profile-2'));
+
+    await waitFor(() => expect(channel.pushes.length).toBe(1));
+    expect(channel.pushes[0]).toEqual({
+      event: 'set_role',
+      payload: { member_id: 'profile-2', role: 'partner' },
+    });
+  });
+
+  it('lets the owner demote a partner back to viewer', async () => {
+    channel.joinReturn = {
+      ops: [],
+      roles: { 'profile-1': 'owner', 'profile-2': 'partner' },
+    };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+        'profile-2': { metas: [{ name: 'Swift Falcon 17' }] },
+      }),
+    );
+
+    const demote = await screen.findByRole('button', { name: 'Demote' });
+    fireEvent.click(demote);
+
+    await waitFor(() => expect(channel.pushes.length).toBe(1));
+    expect(channel.pushes[0]).toEqual({
+      event: 'set_role',
+      payload: { member_id: 'profile-2', role: 'viewer' },
+    });
+  });
+
+  it('non-owners do not get promote controls', async () => {
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom();
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+        'profile-2': { metas: [{ name: 'Swift Falcon 17' }] },
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByText('Swift Falcon 17')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Promote' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Demote' })).not.toBeInTheDocument();
+  });
+
+  it('updates member badges when a role_update arrives', async () => {
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner', 'profile-2': 'viewer' } };
+    renderRoom();
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+        'profile-2': { metas: [{ name: 'Swift Falcon 17' }] },
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByText('Viewer')).toBeInTheDocument());
+    act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'partner' }));
+
+    await waitFor(() => expect(screen.getByText('Partner')).toBeInTheDocument());
   });
 });

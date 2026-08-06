@@ -1,6 +1,6 @@
 import type { Channel, ChannelState } from 'phoenix';
 import { vi } from 'vitest';
-import type { Op } from '@/protocol/ops';
+import type { MemberRole, Op } from '@/protocol/ops';
 
 export type Handler = (response?: unknown) => void | Promise<void>;
 
@@ -8,7 +8,7 @@ export class FakeChannel implements Channel {
   handlers = new Map<string, Handler[]>();
   pushes: { event: string; payload: unknown }[] = [];
   joined = false;
-  joinReturn: { ops: Op[] } = { ops: [] };
+  joinReturn: { ops: Op[]; roles?: Record<string, MemberRole> } = { ops: [] };
   joinReceives = new Map<string, Handler>();
   state = 'joined' as ChannelState;
   topic = 'room:test';

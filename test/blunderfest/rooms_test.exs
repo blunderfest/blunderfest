@@ -46,4 +46,112 @@ defmodule Blunderfest.RoomsTest do
     Rooms.reset(store)
     assert Rooms.ops("room-a", store) == []
   end
+
+  test "the first joiner claims the room and becomes owner", %{store: store} do
+    assert Rooms.owner("room-a", store) == nil
+
+    Rooms.claim("room-a", "profile-1", store)
+    assert Rooms.owner("room-a", store) == "profile-1"
+    assert Rooms.role_for("room-a", "profile-1", store) == :owner
+
+    Rooms.claim("room-a", "profile-2", store)
+    assert Rooms.owner("room-a", store) == "profile-1"
+  end
+
+  test "anonymous members are never recorded and never own the room", %{store: store} do
+    Rooms.claim("room-a", "anonymous", store)
+    assert Rooms.owner("room-a", store) == nil
+    assert Rooms.roles("room-a", store) == %{}
+
+    Rooms.claim("room-a", "profile-1", store)
+    assert Rooms.owner("room-a", store) == "profile-1"
+  end
+
+  test "unclaimed members are viewers by default", %{store: store} do
+    Rooms.claim("room-a", "profile-1", store)
+    Rooms.claim("room-a", "profile-2", store)
+
+    assert Rooms.role_for("room-a", "profile-2", store) == :viewer
+    assert Rooms.role_for("room-a", "unknown", store) == :viewer
+  end
+
+  test "roles survive reconnects", %{store: store} do
+    Rooms.claim("room-a", "profile-1", store)
+    Rooms.claim("room-a", "profile-2", store)
+    Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
+
+    Rooms.claim("room-a", "profile-2", store)
+    assert Rooms.role_for("room-a", "profile-2", store) == :partner
+  end
+
+  test "the owner can promote and demote other members", %{store: store} do
+    Rooms.claim("room-a", "profile-1", store)
+    Rooms.claim("room-a", "profile-2", store)
+
+    assert {:ok, :partner} = Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
+    assert Rooms.role_for("room-a", "profile-2", store) == :partner
+
+    assert {:ok, :viewer} = Rooms.set_role("room-a", "profile-1", "profile-2", :viewer, store)
+    assert Rooms.role_for("room-a", "profile-2", store) == :viewer
+  end
+
+  test "only the owner can change roles", %{store: store} do
+    Rooms.claim("room-a", "profile-1", store)
+    Rooms.claim("room-a", "profile-2", store)
+    Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
+
+    assert {:error, :forbidden} =
+             Rooms.set_role("room-a", "profile-2", "profile-1", :viewer, store)
+
+    assert Rooms.role_for("room-a", "profile-1", store) == :owner
+  end
+
+  test "the owner cannot change their own role", %{store: store} do
+    Rooms.claim("room-a", "profile-1", store)
+
+    assert {:error, :invalid_member} =
+             Rooms.set_role("room-a", "profile-1", "profile-1", :viewer, store)
+  end
+
+  test "unknown roles are rejected", %{store: store} do
+    Rooms.claim("room-a", "profile-1", store)
+
+    assert {:error, :invalid_role} =
+             Rooms.set_role("room-a", "profile-1", "profile-2", :admin, store)
+  end
+
+  test "can_edit? is true for owners and partners only", %{store: store} do
+    Rooms.claim("room-a", "profile-1", store)
+    Rooms.claim("room-a", "profile-2", store)
+    Rooms.claim("room-a", "profile-3", store)
+    Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
+
+    assert Rooms.can_edit?("room-a", "profile-1", store)
+    assert Rooms.can_edit?("room-a", "profile-2", store)
+    refute Rooms.can_edit?("room-a", "profile-3", store)
+    refute Rooms.can_edit?("room-a", "unknown", store)
+  end
+
+  test "edit_op? classifies room edit ops", %{store: _store} do
+    assert Rooms.edit_op?(%{"type" => "move_at_ply"})
+    assert Rooms.edit_op?(%{"type" => "set_game"})
+    assert Rooms.edit_op?(%{"type" => "comment_at_ply"})
+    assert Rooms.edit_op?(%{"type" => "add_arrow"})
+    assert Rooms.edit_op?(%{"type" => "add_highlight"})
+    assert Rooms.edit_op?(%{"type" => "replace_line"})
+    refute Rooms.edit_op?(%{"type" => "set_cursor"})
+    refute Rooms.edit_op?(%{"type" => "select_game"})
+    refute Rooms.edit_op?(%{"type" => "unknown"})
+    refute Rooms.edit_op?(%{})
+    refute Rooms.edit_op?(nil)
+  end
+
+  test "roles returns the full role map", %{store: store} do
+    Rooms.claim("room-a", "profile-1", store)
+    Rooms.claim("room-a", "profile-2", store)
+    Rooms.set_role("room-a", "profile-1", "profile-2", :partner, store)
+
+    assert Rooms.roles("room-a", store) == %{"profile-1" => :owner, "profile-2" => :partner}
+    assert Rooms.roles("room-b", store) == %{}
+  end
 end

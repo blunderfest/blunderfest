@@ -89,6 +89,14 @@
     "comment": "Comment on move {{ply}}: {{text}}",
     "line": "Line from move {{ply}}",
     "arrow": "Arrow on move {{ply}}",
-    "highlight": "Highlight on move {{ply}}"
+    "highlight": "Highlight on move {{ply}}",
+    "role": {
+      "owner": "Owner",
+      "partner": "Partner",
+      "viewer": "Viewer"
+    },
+    "promote": "Promote",
+    "demote": "Demote",
+    "viewerWaiting": "Waiting for the room owner to share a game…"
   }
 }

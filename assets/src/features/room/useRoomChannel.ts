@@ -1,9 +1,18 @@
 import type { Channel } from 'phoenix';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { channelFor } from '@/lib/socket';
-import type { Op } from '@/protocol/ops';
+import type { MemberRole, Op } from '@/protocol/ops';
 import { useAppDispatch } from '@/store';
-import { applyOp, enterRoom, joinMember, leaveMember, leaveRoom, replayOps } from '@/store/room';
+import {
+  applyOp,
+  enterRoom,
+  joinMember,
+  leaveMember,
+  leaveRoom,
+  replayOps,
+  setMemberRole,
+  setRoles,
+} from '@/store/room';
 
 export type RoomPresenceMember = {
   id: string;
@@ -51,6 +60,9 @@ export function useRoomChannel(
     channel.on('new_op', (op: Op) => {
       dispatch(applyOp(op));
     });
+    channel.on('role_update', (update: { member_id: string; role: MemberRole }) => {
+      dispatch(setMemberRole(update));
+    });
     channel.on('presence_state', (state: PresenceState) => {
       const members = membersFrom(state);
       members.forEach((member) => {
@@ -75,8 +87,9 @@ export function useRoomChannel(
 
     channel
       .join()
-      .receive('ok', (payload: { ops: Op[] }) => {
+      .receive('ok', (payload: { ops: Op[]; roles?: Record<string, MemberRole> }) => {
         dispatch(replayOps(payload.ops));
+        dispatch(setRoles(payload.roles ?? {}));
         setJoined(true);
       })
       .receive('error', () => dispatch(leaveRoom()))
@@ -95,5 +108,9 @@ export function useRoomChannel(
     channelRef.current?.push('op', op);
   }, []);
 
-  return { joined, presence, sendOp };
+  const sendRole = useCallback((memberId: string, role: MemberRole) => {
+    channelRef.current?.push('set_role', { member_id: memberId, role });
+  }, []);
+
+  return { joined, presence, sendOp, sendRole };
 }

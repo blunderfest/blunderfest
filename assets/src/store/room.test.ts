@@ -13,6 +13,8 @@ import roomReducer, {
   selectPresenterCursor,
   selectPresenterGameId,
   setActiveGame,
+  setMemberRole,
+  setRoles,
 } from './room';
 
 const tree: GameTree = {
@@ -75,10 +77,10 @@ function selectOp(seq: number, gameId: string, author = 'author-1'): Op {
   };
 }
 
-function setGameOp(seq: number, white: string, gameId = 'game-1'): SetGameOp {
+function setGameOp(seq: number, white: string, gameId = 'game-1', author = 'author-1'): SetGameOp {
   return {
     seq,
-    author: 'author-1',
+    author,
     ts: '2026-01-01T00:00:00Z',
     type: 'set_game',
     payload: {
@@ -180,17 +182,19 @@ describe('room slice', () => {
       slug: null,
       ops: [],
       presence: {},
+      roles: {},
       games: {},
       activeGameId: null,
     });
   });
 
-  it('enterRoom sets the slug and clears ops, presence and games', () => {
+  it('enterRoom sets the slug and clears ops, presence, roles and games', () => {
     const state = roomReducer(
       {
         slug: 'old',
         ops: [moveOp(1)],
         presence: { 'author-1': { id: 'author-1', name: 'Brave Otter 42' } },
+        roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
         activeGameId: 'game-1',
       },
@@ -200,6 +204,7 @@ describe('room slice', () => {
       slug: 'room-123',
       ops: [],
       presence: {},
+      roles: {},
       games: {},
       activeGameId: null,
     });
@@ -211,6 +216,7 @@ describe('room slice', () => {
         slug: 'room-123',
         ops: [moveOp(1)],
         presence: { 'author-1': { id: 'author-1', name: 'Brave Otter 42' } },
+        roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
         activeGameId: 'game-1',
       },
@@ -220,9 +226,21 @@ describe('room slice', () => {
       slug: null,
       ops: [],
       presence: {},
+      roles: {},
       games: {},
       activeGameId: null,
     });
+  });
+
+  it('setRoles replaces the role map', () => {
+    const state = roomReducer(undefined, setRoles({ 'author-1': 'owner', 'author-2': 'partner' }));
+    expect(state.roles).toEqual({ 'author-1': 'owner', 'author-2': 'partner' });
+  });
+
+  it('setMemberRole updates a single member role', () => {
+    let state = roomReducer(undefined, setRoles({ 'author-1': 'owner', 'author-2': 'viewer' }));
+    state = roomReducer(state, setMemberRole({ member_id: 'author-2', role: 'partner' }));
+    expect(state.roles).toEqual({ 'author-1': 'owner', 'author-2': 'partner' });
   });
 
   it('applyOp appends ops with increasing seq', () => {
@@ -369,62 +387,81 @@ describe('room slice', () => {
   describe('presenter selectors', () => {
     const member = { id: 'author-1', name: 'Brave Otter 42' };
 
-    it('selectPresenter returns the last set_game author still in presence', () => {
-      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
+    function ownerState() {
+      let state = roomReducer(undefined, setRoles({ 'author-1': 'owner' }));
       state = roomReducer(state, joinMember(member));
+      return state;
+    }
+
+    it('selectPresenter returns the room owner still in presence', () => {
+      const state = ownerState();
       expect(selectPresenter(state)).toEqual(member);
     });
 
-    it('selectPresenter is null without a game or when the author left', () => {
+    it('selectPresenter is null without an owner or when the owner left', () => {
       expect(selectPresenter(initialState())).toBeNull();
-      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
+
+      let state = roomReducer(undefined, setRoles({ 'author-1': 'owner' }));
       state = roomReducer(state, joinMember(member));
       state = roomReducer(state, leaveMember({ id: 'author-1' }));
       expect(selectPresenter(state)).toBeNull();
     });
 
-    it('selectPresenterGameId is the presenter import or last selection', () => {
-      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
-      state = roomReducer(state, joinMember(member));
+    it('selectPresenter is null while the owner role is held by nobody in presence', () => {
+      const state = roomReducer(undefined, setRoles({ 'author-9': 'owner' }));
+      expect(selectPresenter(state)).toBeNull();
+    });
+
+    it('selectPresenterGameId is the owner import or last owner selection', () => {
+      let state = ownerState();
+      state = roomReducer(state, applyOp(setGameOp(1, 'Alice')));
       expect(selectPresenterGameId(state)).toBe('game-1');
       state = roomReducer(state, applyOp(selectOp(2, 'game-2')));
       expect(selectPresenterGameId(state)).toBe('game-2');
     });
 
-    it('selectPresenterGameId follows the newest importer, ignoring other focus ops', () => {
-      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
-      state = roomReducer(state, joinMember(member));
+    it('selectPresenterGameId ignores other members focus ops', () => {
+      let state = ownerState();
+      state = roomReducer(state, applyOp(setGameOp(1, 'Alice')));
       state = roomReducer(state, applyOp({ ...selectOp(2, 'game-9', 'author-2') }));
       expect(selectPresenterGameId(state)).toBe('game-1');
-      state = roomReducer(state, applyOp({ ...setGameOp(3, 'Carol', 'game-3') }));
-      expect(selectPresenterGameId(state)).toBe('game-3');
+      state = roomReducer(state, applyOp({ ...setGameOp(3, 'Carol', 'game-3', 'author-2') }));
+      expect(selectPresenterGameId(state)).toBe('game-1');
+    });
+
+    it('selectPresenterGameId falls back to the newest import when the owner has none', () => {
+      let state = ownerState();
+      state = roomReducer(state, applyOp({ ...setGameOp(1, 'Alice', 'game-1', 'author-2') }));
+      expect(selectPresenterGameId(state)).toBe('game-1');
+      state = roomReducer(state, applyOp({ ...setGameOp(2, 'Bob', 'game-2', 'author-2') }));
+      expect(selectPresenterGameId(state)).toBe('game-2');
     });
 
     it('selectPresenterCursor ignores cursors before the presenter focus', () => {
-      let state = roomReducer(undefined, applyOp(cursorOp(1)));
+      let state = ownerState();
+      state = roomReducer(state, applyOp(cursorOp(1)));
       state = roomReducer(state, applyOp(setGameOp(2, 'Alice')));
-      state = roomReducer(state, joinMember(member));
       expect(selectPresenterCursor(state)).toBeNull();
     });
 
     it('selectPresenterCursor ignores cursors from other authors', () => {
-      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
-      state = roomReducer(state, joinMember(member));
+      let state = ownerState();
+      state = roomReducer(state, applyOp(setGameOp(1, 'Alice')));
       state = roomReducer(state, applyOp({ ...cursorOp(2), author: 'author-2' }));
       expect(selectPresenterCursor(state)).toBeNull();
     });
 
     it('selectPresenterCursor keeps the last presenter cursor', () => {
-      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
-      state = roomReducer(state, joinMember(member));
+      let state = ownerState();
+      state = roomReducer(state, applyOp(setGameOp(1, 'Alice')));
       state = roomReducer(state, applyOp(cursorOp(2, 1)));
       state = roomReducer(state, applyOp(cursorOp(3, 5)));
       expect(selectPresenterCursor(state)).toBe(5);
     });
 
     it('selectPresenterCursor resets when the presenter focuses another game', () => {
-      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
-      state = roomReducer(state, joinMember(member));
+      let state = ownerState();
+      state = roomReducer(state, applyOp(setGameOp(1, 'Alice')));
       state = roomReducer(state, applyOp(cursorOp(2)));
       state = roomReducer(state, applyOp(selectOp(3, 'game-2')));
       expect(selectPresenterCursor(state)).toBeNull();
@@ -433,8 +470,8 @@ describe('room slice', () => {
     });
 
     it('selectPresenterCursor resets when a new game is imported', () => {
-      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
-      state = roomReducer(state, joinMember(member));
+      let state = ownerState();
+      state = roomReducer(state, applyOp(setGameOp(1, 'Alice')));
       state = roomReducer(state, applyOp(cursorOp(2)));
       state = roomReducer(state, applyOp(setGameOp(3, 'Bob', 'game-2')));
       expect(selectPresenterCursor(state)).toBeNull();

@@ -117,6 +117,7 @@ export default function Analysis({
   selfId = null,
   presenterCursorId = null,
   following = false,
+  canEdit = false,
   onFollowChange,
   onCursorChange,
   onPlayMove,
@@ -126,6 +127,7 @@ export default function Analysis({
   selfId?: string | null;
   presenterCursorId?: number | null;
   following?: boolean;
+  canEdit?: boolean;
   onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
   onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => void;
@@ -190,7 +192,7 @@ export default function Analysis({
     }
   }, [tree, current]);
 
-  const canPlay = amPresenter && current !== null && current.status === 'active';
+  const canPlay = canEdit && current !== null && current.status === 'active';
 
   /**
    * Fetch legal moves for the position when the presenter can play, so the
@@ -255,15 +257,17 @@ export default function Analysis({
   }, [byId, pending]);
 
   /**
-   * Plays a legal move: the presenter broadcasts the op with all node data
-   * and moves to the node every client will derive (max id + 1). The node is
-   * kept in `pending` until the echo applies it to the tree.
+   * Plays a legal move: the editor broadcasts the op with all node data and
+   * moves to the node every client will derive (max id + 1). The node is
+   * kept in `pending` until the echo applies it to the tree. Playing a move
+   * is a local navigation, so it also breaks away from the presenter.
    */
   const playMove = useCallback(
     (move: LegalMove) => {
       if (current === null || onPlayMove === undefined) {
         return;
       }
+      onFollowChange?.(false);
       const nodeId = maxNodeId + 1;
       onPlayMove({
         ply: current.ply + 1,
@@ -294,7 +298,7 @@ export default function Analysis({
       setSelected(null);
       setCurrentId(nodeId);
     },
-    [current, onPlayMove, maxNodeId],
+    [current, onPlayMove, onFollowChange, maxNodeId],
   );
 
   const handleSquareClick = useCallback(

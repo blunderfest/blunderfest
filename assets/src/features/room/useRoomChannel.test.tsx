@@ -145,9 +145,50 @@ describe('useRoomChannel', () => {
       slug: null,
       ops: [],
       presence: {},
+      roles: {},
       games: {},
       activeGameId: null,
     });
+  });
+
+  it('dispatches the role map from the join reply', async () => {
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner', 'profile-2': 'partner' } };
+
+    renderHook(() => useRoomChannel('room-a', channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() =>
+      expect(store.getState().room.roles).toEqual({
+        'profile-1': 'owner',
+        'profile-2': 'partner',
+      }),
+    );
+  });
+
+  it('updates roles on role_update events', async () => {
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner', 'profile-2': 'viewer' } };
+
+    renderHook(() => useRoomChannel('room-a', channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() => expect(store.getState().room.roles['profile-2']).toBe('viewer'));
+    act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'partner' }));
+
+    await waitFor(() => expect(store.getState().room.roles['profile-2']).toBe('partner'));
+  });
+
+  it('sendRole pushes a set_role event', async () => {
+    const { result } = renderHook(() => useRoomChannel('room-a', channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    act(() => result.current.sendRole('profile-2', 'partner'));
+
+    expect(channel.pushes).toEqual([
+      { event: 'set_role', payload: { member_id: 'profile-2', role: 'partner' } },
+    ]);
   });
 
   it('rebuilds the game from a set_game op in the join payload', async () => {

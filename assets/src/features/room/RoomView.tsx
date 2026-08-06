@@ -6,7 +6,7 @@ import Analysis from '@/features/analysis/Analysis';
 import ImportForm from '@/features/import/ImportForm';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
-import type { MoveAtPlyOp, Op } from '@/protocol/ops';
+import type { MemberRole, MoveAtPlyOp, Op } from '@/protocol/ops';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
   selectActiveGame,
@@ -48,9 +48,10 @@ export default function RoomView({
 }) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { joined, presence, sendOp } = useRoomChannel(slug, channelFactory);
+  const { joined, presence, sendOp, sendRole } = useRoomChannel(slug, channelFactory);
   const ops = useAppSelector((state) => state.room.ops);
   const storePresence = useAppSelector((state) => state.room.presence);
+  const roles = useAppSelector((state) => state.room.roles);
   const games = useAppSelector((state) => state.room.games);
   const activeGameId = useAppSelector((state) => state.room.activeGameId);
   const game = useAppSelector((state) => selectActiveGame(state.room));
@@ -62,6 +63,8 @@ export default function RoomView({
   const [following, setFollowing] = useState(false);
 
   const amPresenter = selfId !== null && presenter?.id === selfId;
+  const myRole: MemberRole = selfId === null ? 'viewer' : (roles[selfId] ?? 'viewer');
+  const canEdit = myRole === 'owner' || myRole === 'partner';
 
   const handleCursorChange = useCallback(
     (nodeId: number) => sendOp({ type: 'set_cursor', payload: { node_id: nodeId } }),
@@ -136,6 +139,10 @@ export default function RoomView({
     }
   }
 
+  function handleSetRole(memberId: string, role: MemberRole) {
+    sendRole(memberId, role);
+  }
+
   function gameTitle(tree: GameTree): string {
     const white = tree.headers.White;
     const black = tree.headers.Black;
@@ -204,39 +211,61 @@ export default function RoomView({
               </ul>
             )}
             <div className="mt-3 flex flex-col gap-2">
-              <button
-                type="button"
-                id="add-game-button"
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-ink transition-colors hover:border-white/30"
-                onClick={() => setShowImport(true)}
-              >
-                {t('room.addGame')}
-              </button>
-              <button
-                type="button"
-                id="new-game-button"
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-ink transition-colors hover:border-white/30"
-                onClick={handleNewGame}
-              >
-                {t('room.newGame')}
-              </button>
+              {canEdit && (
+                <>
+                  <button
+                    type="button"
+                    id="add-game-button"
+                    className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-ink transition-colors hover:border-white/30"
+                    onClick={() => setShowImport(true)}
+                  >
+                    {t('room.addGame')}
+                  </button>
+                  <button
+                    type="button"
+                    id="new-game-button"
+                    className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-ink transition-colors hover:border-white/30"
+                    onClick={handleNewGame}
+                  >
+                    {t('room.newGame')}
+                  </button>
+                </>
+              )}
             </div>
           </section>
 
           <section className="rounded-xl border border-white/10 bg-white/5 p-4">
             <h2 className="m-0 mb-3 text-sm font-semibold text-muted">{t('room.members')}</h2>
             <ul className="m-0 flex flex-col gap-2 p-0">
-              {presence.map((member) => (
-                <li key={member.id} className="flex items-center gap-2 text-sm">
-                  <span className="h-2 w-2 rounded-full bg-ok" />
-                  {member.name}
-                  {member.id === presenter?.id && (
-                    <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-muted">
-                      {t('room.presenting')}
+              {presence.map((member) => {
+                const role = roles[member.id] ?? 'viewer';
+                return (
+                  <li key={member.id} className="flex items-center gap-2 text-sm">
+                    <span className="h-2 w-2 shrink-0 rounded-full bg-ok" />
+                    <span className="min-w-0 truncate">{member.name}</span>
+                    {member.id === presenter?.id && (
+                      <span className="shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-xs text-muted">
+                        {t('room.presenting')}
+                      </span>
+                    )}
+                    <span className="ml-auto shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-xs text-muted">
+                      {t(`room.role.${role}`)}
                     </span>
-                  )}
-                </li>
-              ))}
+                    {myRole === 'owner' && member.id !== selfId && role !== 'owner' && (
+                      <button
+                        type="button"
+                        data-testid={`set-role-${member.id}`}
+                        className="shrink-0 rounded-lg border border-white/10 px-1.5 py-0.5 text-xs text-ink transition-colors hover:border-white/30"
+                        onClick={() =>
+                          handleSetRole(member.id, role === 'partner' ? 'viewer' : 'partner')
+                        }
+                      >
+                        {role === 'partner' ? t('room.demote') : t('room.promote')}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
               {presence.length === 0 && <li className="text-sm text-muted">…</li>}
             </ul>
           </section>
@@ -268,7 +297,13 @@ export default function RoomView({
 
         <section className="flex flex-col items-center gap-4">
           {showImportForm ? (
-            <ImportForm onImported={handleImported} />
+            canEdit ? (
+              <ImportForm onImported={handleImported} />
+            ) : (
+              <p id="viewer-waiting" className="m-0 max-w-md text-center text-sm text-muted">
+                {t('room.viewerWaiting')}
+              </p>
+            )
           ) : (
             <Analysis
               key={activeGameId ?? 'none'}
@@ -277,6 +312,7 @@ export default function RoomView({
               selfId={selfId}
               presenterCursorId={presenterCursor}
               following={following}
+              canEdit={canEdit}
               onFollowChange={setFollowing}
               onCursorChange={handleCursorChange}
               onPlayMove={handlePlayMove}

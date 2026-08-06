@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { GameNode, GameTree } from '@/lib/api';
-import type { MoveAtPlyOp, Op, PresenceMember, SetGameOp } from '@/protocol/ops';
+import type { MemberRole, MoveAtPlyOp, Op, PresenceMember, SetGameOp } from '@/protocol/ops';
 
 /**
  * `game_id` for `set_game` ops from before games had ids.
@@ -11,6 +11,7 @@ export type RoomState = {
   slug: string | null;
   ops: Op[];
   presence: Record<string, PresenceMember>;
+  roles: Record<string, MemberRole>;
   games: Record<string, GameTree>;
   activeGameId: string | null;
 };
@@ -19,6 +20,7 @@ const initialState: RoomState = {
   slug: null,
   ops: [],
   presence: {},
+  roles: {},
   games: {},
   activeGameId: null,
 };
@@ -115,16 +117,6 @@ export function gameIdOf(op: SetGameOp): string {
   return op.payload.game_id ?? LEGACY_GAME_ID;
 }
 
-function lastSetGame(ops: Op[]): SetGameOp | null {
-  let last: SetGameOp | null = null;
-  for (const op of ops) {
-    if (op.type === 'set_game') {
-      last = op;
-    }
-  }
-  return last;
-}
-
 export function selectActiveGame(state: RoomState): GameTree | null {
   if (state.activeGameId === null) {
     return null;
@@ -133,20 +125,28 @@ export function selectActiveGame(state: RoomState): GameTree | null {
 }
 
 /**
- * The presenter is the author of the last `set_game` op, as long as they are
- * still in the room. Nobody presents until someone imports a game.
+ * The presenter is the room's owner — the member holding the `owner` role,
+ * as long as they are still in the room. Nobody presents until an owner is
+ * present.
  */
 export function selectPresenter(state: RoomState): PresenceMember | null {
-  const last = lastSetGame(state.ops);
-  if (last === null) {
+  let ownerId: string | null = null;
+  for (const [id, role] of Object.entries(state.roles)) {
+    if (role === 'owner') {
+      ownerId = id;
+      break;
+    }
+  }
+  if (ownerId === null) {
     return null;
   }
-  return state.presence[last.author] ?? null;
+  return state.presence[ownerId] ?? null;
 }
 
 /**
  * The game the presenter is currently viewing — the target of their last
- * focus op (their own import, or a `select_game` announcing a switch).
+ * focus op (their own import, or a `select_game` announcing a switch). Falls
+ * back to the newest imported game when the owner has not focused anything.
  */
 export function selectPresenterGameId(state: RoomState): string | null {
   const presenter = selectPresenter(state);
@@ -154,18 +154,19 @@ export function selectPresenterGameId(state: RoomState): string | null {
     return null;
   }
   let focus: string | null = null;
+  let newest: string | null = null;
   for (const op of state.ops) {
-    if (op.author !== presenter.id) {
-      continue;
-    }
     if (op.type === 'set_game') {
-      focus = gameIdOf(op);
+      newest = gameIdOf(op);
+      if (op.author === presenter.id) {
+        focus = gameIdOf(op);
+      }
     }
-    if (op.type === 'select_game') {
+    if (op.type === 'select_game' && op.author === presenter.id) {
       focus = op.payload.game_id;
     }
   }
-  return focus;
+  return focus ?? newest;
 }
 
 /**
@@ -207,6 +208,7 @@ const roomSlice = createSlice({
       state.slug = action.payload.slug;
       state.ops = [];
       state.presence = {};
+      state.roles = {};
       state.games = {};
       state.activeGameId = null;
     },
@@ -214,8 +216,15 @@ const roomSlice = createSlice({
       state.slug = null;
       state.ops = [];
       state.presence = {};
+      state.roles = {};
       state.games = {};
       state.activeGameId = null;
+    },
+    setRoles(state, action: PayloadAction<Record<string, MemberRole>>) {
+      state.roles = action.payload;
+    },
+    setMemberRole(state, action: PayloadAction<{ member_id: string; role: MemberRole }>) {
+      state.roles[action.payload.member_id] = action.payload.role;
     },
     applyOp(state, action: PayloadAction<Op>) {
       const op = action.payload;
@@ -266,7 +275,16 @@ const roomSlice = createSlice({
   },
 });
 
-export const { enterRoom, leaveRoom, applyOp, replayOps, setActiveGame, joinMember, leaveMember } =
-  roomSlice.actions;
+export const {
+  enterRoom,
+  leaveRoom,
+  setRoles,
+  setMemberRole,
+  applyOp,
+  replayOps,
+  setActiveGame,
+  joinMember,
+  leaveMember,
+} = roomSlice.actions;
 
 export default roomSlice.reducer;

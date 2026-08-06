@@ -77,3 +77,5 @@ export type PresenceMember = {
   id: string;
   name: string;
 };
+
+export type MemberRole = 'owner' | 'partner' | 'viewer';

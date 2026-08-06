@@ -325,10 +325,10 @@ describe('Analysis', () => {
     expect(screen.queryByRole('button', { name: 'Following presenter' })).not.toBeInTheDocument();
   });
 
-  it('lets the presenter play a move from the board', async () => {
+  it('lets an editor play a move from the board', async () => {
     fetchLegalMovesMock.mockResolvedValue({ moves: startMoves });
     const onPlayMove = vi.fn();
-    render(<Analysis tree={tree} presenterId="p1" selfId="p1" onPlayMove={onPlayMove} />);
+    render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);
 
     await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalled());
     fireEvent.click(screen.getByTestId('square-e2'));
@@ -354,7 +354,7 @@ describe('Analysis', () => {
     });
   });
 
-  it('does not let members other than the presenter play moves', () => {
+  it('does not let viewers play moves', () => {
     const onPlayMove = vi.fn();
     render(<Analysis tree={tree} presenterId="p1" selfId="me" onPlayMove={onPlayMove} />);
 
@@ -368,6 +368,32 @@ describe('Analysis', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('lets a partner play moves without presenting or broadcasting the cursor', async () => {
+    fetchLegalMovesMock.mockResolvedValue({ moves: startMoves });
+    const onCursorChange = vi.fn();
+    const onPlayMove = vi.fn();
+    render(
+      <Analysis
+        tree={tree}
+        presenterId="p1"
+        selfId="me"
+        canEdit
+        onCursorChange={onCursorChange}
+        onPlayMove={onPlayMove}
+      />,
+    );
+
+    await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalled());
+    fireEvent.click(screen.getByTestId('square-e2'));
+    await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('square-e4'));
+
+    await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(1));
+    expect(onCursorChange).not.toHaveBeenCalled();
+    expect(screen.queryByText('You are presenting')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Follow presenter' })).toBeInTheDocument();
+  });
+
   it('stays on a played move before and after the echo applies it', async () => {
     fetchLegalMovesMock.mockResolvedValue({ moves: startMoves });
     const onCursorChange = vi.fn();
@@ -377,6 +403,7 @@ describe('Analysis', () => {
         tree={tree}
         presenterId="p1"
         selfId="p1"
+        canEdit
         onCursorChange={onCursorChange}
         onPlayMove={onPlayMove}
       />,
