@@ -1,222 +1,88 @@
-# Blunderfest — Project Decisions & Roadmap
+# Blunderfest — Project Overview & Roadmap
 
 Collaborative chess analysis: import games, analyze solo or with other people in real
 time, and search a growing corpus of positions (exact and *similar*).
 
-This document is the single source of truth for architectural decisions and the roadmap.
-Future sessions must read this file first and keep it up to date as decisions change.
+This document is the roadmap and entry point. Deep-dives live in [`docs/`](docs/README.md):
+[architecture](docs/architecture.md), [operations](docs/operations.md), and the
+[ADR set](docs/decisions/README.md) record the *why* behind every significant decision.
+Future sessions: read this file, then `docs/architecture.md`, keep both current.
 
 ## Hard constraints
 
 - Backend: **Elixir + Phoenix**, real-time via **Phoenix Channels**, plain **JSON API**.
-- **The backend contains no UI.** No LiveView, no HTML views, no server-rendered
-  markup. It exposes the JSON API and channel sockets, and hands out the compiled
-  React bundle (a static `index.html` shell + hashed assets) to browsers. React
-  owns all UI.
+- **The backend contains no UI** — JSON API + sockets only; the compiled React bundle
+  is served by a catch-all route (ADR-0002).
 - Frontend: **React 19** (Vite build, bundled by Phoenix for a single-app deploy).
+- **No database** — in-memory GenServer state rebuilt on boot (ADR-0001). Reintroducing
+  one needs explicit approval.
 - No hard release deadline; hobby project, but built **as if it will be shipped** —
   releasable at every milestone.
 
-## i18n
-
-- The **server never returns prose**. The JSON API answers with structured error
-  codes and machine-readable data; clients own all copy.
-- The **React app owns all user-facing strings** via `react-i18next`, with English
-  as the source-of-truth locale and room for more locales.
-- Chess content (SAN moves, FEN, PGN) is language-neutral; user-authored content
-  (comments/line names) is stored raw.
-- No server-side gettext.
-
 ## Core principles
 
-1. **Anonymous-first, no stored PII.** Anyone can use the whole product without an
-   account, with full access. Signing up (magic links and/or external providers) is
-   purely for keeping track of games/analysis across devices. No email addresses,
-   names, or other PII are ever stored — only salted hashes and keyed hashes of
-   identifiers.
-2. **Open collaboration.** Anyone with an (unguessable) room link joins as a full
-   editor. No permission restrictions.
+1. **Anonymous-first, no stored PII.** Full access without an account; profiles are a
+   server-generated fun name + device secret, only salted hashes stored (ADR-0004).
+2. **Open collaboration.** Anyone with a room link joins; roles (owner/collaborator/
+   viewer) gate editing.
 3. **Analysis is unstructured.** The board is a canvas: moves, variations, arrows,
-   comments, region highlights (even across several plies). Hand-rolled board
-   component — no board library.
-4. **Search is a marquee feature.** Same *and* similar positions (colors reversed,
-   piece shifted one square, piece-type substitution, same pawn structure, …),
-   with **user-configurable similarity weights** from day one.
-5. **Correctness first.** The similarity metric ships with golden-fixture tests.
+   comments. Hand-rolled board component — no board library.
+4. **Search is a marquee feature.** Same *and* similar positions with
+   **user-configurable similarity weights** from day one (ADR-0010).
+5. **Correctness first.** Similarity ships with golden-fixture tests.
 
 ## Product model
 
-- **Games** — imported PGNs (paste first; Lichess link-import right after).
-  Any game can be analyzed by anyone.
-- **Rooms** — a persistent shared analysis session pinned to a game. Anyone with the
-  unguessable slug joins as a full editor (Google-Docs-style). Games can live in
-  rooms indefinitely.
-- **Profiles** — an automatic anonymous identity: a server-generated fun name
-  (curated wordlists, no user input, so no moderation needed) plus a device secret
-  held in `localStorage`; the server stores only a salted hash. Signing in with a
-  magic link or an external provider links the profile to a keyed hash (never the
-  address itself) purely to keep track of games/analysis across devices. Claiming
-  a room/game = attaching it to your profile.
+- **Games** — imported PGNs (paste, or Lichess link). Any game can be analyzed by anyone.
+- **Rooms** — a shared analysis session per 5-char code, created explicitly via
+  `POST /api/rooms` (ADR-0006); join by code or `#/r/<code>` deep link.
+- **Profiles** — automatic anonymous identity (fun name + device secret, ADR-0004).
+  Signing in (magic links / external providers, keyed hashes only) is a future bridge
+  to cross-device identity.
 - **Game library** — per-profile collection of owned/claimed games; a first-class
   early feature (the reason to make an account at all).
 
-## Real-time architecture (channels)
+## Key decisions (summary)
 
-- One Phoenix Channel topic per room slug.
-- A chess analysis board is a **tree of variations** with annotations at nodes — the
-  protocol treats it that way.
-- **Authoritative state = the room's operation log** (`ops` table:
-  `room_id, seq, type, payload, author, ts`). Clients replay ops on join, then
-  subscribe to new ones. No whole-document last-writer-wins.
-- Granular operations: `move_at_ply`, `replace_line`, `comment_at_ply`,
-  `add_arrow`, `add_highlight`, `set_cursor`, … Conflicts collapse naturally because
-  variations are keyed by ply.
-- **Late join / reconnect / crash recovery / undo timeline** all fall out of replaying
-  ops from the last seen `seq`.
-- **Presence** (who's in the room) via Phoenix Presence; cursor/arrow broadcasts are
-  throttled.
-- Every collaborative visual (selected piece, arrows) travels with the op — that is
-  what makes co-editing feel like co-thinking.
+| Decision | ADR |
+|---|---|
+| No database; state rebuilt on boot | [ADR-0001](docs/decisions/adr-0001-no-database-in-memory-state.md) |
+| Backend = JSON API + SPA bundle, no server UI | [ADR-0002](docs/decisions/adr-0002-backend-serves-api-and-spa-no-ui.md) |
+| Structured error codes; client owns copy | [ADR-0003](docs/decisions/adr-0003-structured-error-codes-client-owns-copy.md) |
+| Anonymous-first profiles | [ADR-0004](docs/decisions/adr-0004-anonymous-first-profiles.md) |
+| Rooms sync via op log, replay on join | [ADR-0005](docs/decisions/adr-0005-op-log-room-synchronization.md) |
+| Rooms created explicitly; joins never create | [ADR-0006](docs/decisions/adr-0006-explicit-room-creation-and-join-gating.md) |
+| 5-char unambiguous room codes | [ADR-0007](docs/decisions/adr-0007-room-code-format.md) |
+| `main` active, `main_backup` archive | [ADR-0008](docs/decisions/adr-0008-branch-structure-main-and-backup.md) |
+| Engine: browser WASM + server UCI pool | [ADR-0009](docs/decisions/adr-0009-engine-strategy.md) |
+| Weight-agnostic search index | [ADR-0010](docs/decisions/adr-0010-weight-agnostic-search-index.md) |
 
-## Engine strategy
-
-| Layer | Mover | Purpose |
-|---|---|---|
-| Interactive | **Stockfish WASM in the browser** | instant eval bar, best-move hint, blunder flags while dragging |
-| Batch | **Server-side UCI worker pool** | "analyze whole game" jobs → per-ply evals stored → eval-curve chart; consistent truth for multiplayer |
-
-Server pool: a supervised pool of N Stockfish binary processes (UCI protocol over
-Elixir ports), pipelined over a `:queue`. No mature hex package exists for this —
-write `Blunderfest.Engine.Pool` as a clean, self-contained module, testable against a
-mock engine.
-
-## Frontend architecture
-
-- **React 19 + Vite** inside the Phoenix `assets/` dir; Vite outputs to
-  `priv/static` (outDir `../priv/static`, `emptyOutDir: false`). Phoenix serves the
-  compiled `index.html` shell + assets; a catch-all route hands non-API requests to
-  the SPA.
-- **Dev flow:** Vite dev server on `:5173` (HMR), proxying `/api` and `/socket` to
-  Phoenix on `:4000`. Prod: single Phoenix origin.
-- **Styling: Tailwind v4** (`@tailwindcss/vite`, CSS-first `@theme` tokens, dark
-  palette) + **`tailwind-variants`** (`tv()`) for component variants — board
-  squares (selected / highlighted / king in check), move-tree states, etc.
-- **State: Redux Toolkit** (`configureStore`, typed hooks). The room store
-  mirrors the op log — ops are applied strictly in `seq` order; `replayOps`
-  replays on join. Ops are shared TypeScript unions in `src/protocol/ops.ts`,
-  one-to-one with the Phoenix channel protocol (the "messages" both sides speak).
-- **Hand-rolled board component** — drag-drop, arrows, eval circles, region
-  highlights, variations tree in the move list. Board renders *overlays*;
-  annotations are first-class: `{type: highlight, plies: [15..19], squares: [...],
-  color}`.
-- `chess.js` for rules/legal moves.
-- `phoenix` npm client mounted via a `useRoomChannel` hook.
-- Board state is pure: `position + move history + variations + evals` =
-  serializable snapshot → trivial tests, replay, export.
-
-## Data model (initial)
-
-```
-profiles          (id, name, secret_hash, keyed_hash?, created_at)
-games             (id, slug, pgn, white, black, result, eco, owner_profile_id?)
-rooms             (id, slug, game_id)
-ops               (room_id, seq, type, payload, author, ts)
-positions         (id, game_id, ply, full piece maps + prefilter keys, indexed)  ← search
-engine_reports    (game_id, ply, score, best_line)
-```
-
-PGN export serializes ops → annotated PGN; import parses PGN → tree.
-
-## Search design (configurable, "perfect the first time")
-
-### Why config-first changes the index
-
-If weights were fixed we could bake them into index keys. With user-configurable
-weights the index must be **weight-agnostic**:
-
-- `positions` rows store **full piece maps** (per-color square+type sets) plus cheap
-  **prefilter buckets** (pawn structure, material, piece count), all indexed.
-- Prefilters narrow candidates; real ranking is computed live with the user's
-  weights. **Changing weights never requires re-running the corpus.**
-
-### The metric
-
-Position similarity = minimum-cost transformation between two piece multisets
-(white/black separately):
-
-- **match** — same piece, square, type: cost 0
-- **shift** — a piece moved `n` squares: `n × shift_weight`
-- **substitute** — same square, different type (rook↔bishop): `subst_weight`
-- **add / remove** — piece appears/disappears: `change_weight`
-- **color flip** — applied to the query when enabled: free (0) vs `flip_weight`
-- scope toggle: **full position** or **pawn structure only**
-
-It's an assignment problem, but ≤32 pieces + tight prefilters make greedy assignment
-+ refinement exact enough — and the winning assignment *decomposes* into the result
-labels ("pawn h3→h2", "rook→bishop", "colors reversed"): the explanation is a free
-byproduct of the metric.
-
-### UX
-
-Search panel from any board position: presets **Exact / Relaxed colors / Morphology
-(type-blind) / Pawn structure only / Custom**, plus per-transformation sliders in
-Custom. The config rides along in the "find similar" op. Results are ranked, labeled
-with the matched transformation, and jump to game at ply.
-
-### Corpus
-
-Importing a game spawns a background job that replays the PGN and extracts one
-`positions` row per ply. **Bulk PGN archive import** (e.g., Millionbase) is in scope
-for v1 search — otherwise "search this position" is meaningless on a tiny corpus.
-
-### Testing
-
-- Golden-fixture ExUnit tests: hand-computed positions with known pairwise distances,
-  assert ordering.
-- Property tests: metric validity (e.g., symmetric under color flip).
+For how it all fits together (state model, channel protocol, data flow, testing), see
+[`docs/architecture.md`](docs/architecture.md).
 
 ## Roadmap
 
-Each milestone ends releasable; the existing Fly setup deploys continuously.
+Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
+(see [`docs/operations.md`](docs/operations.md)).
 
-1. **Boot** — DONE. Phoenix (1.8.9 / Elixir 1.20 / OTP 29), React 19 +
-   Vite + TypeScript skeleton building into `priv/static`, `GET /api/healthz`,
-   channel socket at `/socket/websocket`, i18n scaffold (react-i18next), CI
-   (backend + frontend), Dockerized release, Fly config. No database: state is
-   in-memory for now (see Infra / deploy notes). Verified locally and in a
-   built Docker image.
-2. **Anonymous profiles** — DONE. Automatic anonymous identity: fun auto-generated
-   name, device secret in localStorage, salted hash on the server, zero stored PII.
-   In-memory store (GenServer) first; a persistent DB is deferred. Identity links
-   (magic links / external provider sub, stored as keyed hashes) land later.
-3. **Import** — PGN paste → tree → DB. Lichess link-import immediately after.
-4. **Solo board** — hand-rolled board, navigator, arrows, region highlights, comments,
-   browser-WASM Stockfish eval bar + best-move hints. No server needed.
-5. **Rooms** — channel per slug, op-log sync, presence, cursors; early profile game
-   library.
+1. **Boot** — DONE. Phoenix 1.8 / React 19 + Vite + TypeScript building into
+   `priv/static`, `/api/healthz`, channel socket, i18n scaffold, Dockerized
+   release, Fly config, in-memory state (ADR-0001).
+2. **Anonymous profiles** — DONE. Fun name + device secret, salted hashes, zero
+   stored PII, bearer auth (ADR-0004).
+3. **Import** — DONE. PGN paste and Lichess URL import → variation tree, shared
+   in rooms. (In-memory storage; "DB" only when a DB exists.)
+4. **Solo board** — MOSTLY DONE. Hand-rolled board, navigation, arrows,
+   highlights, comments. Remaining: Stockfish WASM eval bar + best-move hints.
+5. **Rooms** — DONE. Channel per slug, op-log sync (ADR-0005), presence, roles,
+   cursors, multiple games. Remaining: profile game library.
 6. **Save/export** — annotated PGN export, room/game claiming.
-7. **Server engine pool** — UCI workers, whole-game reports, eval charts.
+7. **Server engine pool** — UCI workers, whole-game reports, eval charts (ADR-0009).
 8. **Search** — position extraction job, weighted similarity metric + decomposition,
-   golden-fixture tests, bulk corpus import, configurable search UI.
-
-## Infra / deploy notes
-
-- `fly.toml` deploys a single app, regions ams + ord, scale-to-zero
-  (`auto_stop_machines`), Port 8080. Deploys on push to the `restart` branch.
-  Requires `SECRET_KEY_BASE` (in `fly.toml`).
-- **Known issue:** scale-to-zero + websocket reconnects — revisit
-  `min_machines_running` (likely 1) at milestone 5.
-- `.github/workflows/ci.yml` (backend + frontend tests) and `fly.yml` (deploy)
-  exist. Release is built by the multi-stage `Dockerfile` (Node stage builds
-  assets, Elixir stage compiles a release that serves them).
-- **No database for now.** Ecto/Postgres deps were removed; all state lives
-  in-memory (agents/ETS) and is rebuilt on boot, so a scale-to-zero instance
-  loses nothing critical. Reintroduce a DB only with explicit approval.
-- Dev toolchain bootstrap lives in `execute.sh` (idempotent; Arch packages +
-  Postgres init; `flyctl` for deploys/provisioning).
+   golden-fixture tests, bulk corpus import, configurable search UI (ADR-0010).
 
 ## Development conventions
 
-- Keep this file current: architecture decisions, roadmap changes, and anything a
-  fresh session needs to continue from.
+- Keep this file current: roadmap statuses, and anything a fresh session needs.
+- Record significant decisions as ADRs in `docs/decisions/` at decision time.
 - Commit in small, milestone-scoped steps.

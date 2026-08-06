@@ -1,5 +1,15 @@
 # Blunderfest
 
+Collaborative chess analysis: import games, analyze solo or with other people in
+real time, and search a growing corpus of positions.
+
+## Documentation
+
+* [PROJECT.md](PROJECT.md) — roadmap and overview
+* [docs/](docs/README.md) — architecture, operations, and Architecture Decision Records
+
+## Development
+
 To start your Phoenix server:
 
 * Run `mix setup` to install and setup dependencies
