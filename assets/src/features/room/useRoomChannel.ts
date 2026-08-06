@@ -88,10 +88,11 @@ export function useRoomChannel(
       leaving.forEach((id) => {
         dispatch(leaveMember({ id }));
       });
-      setPresence((current) => [
-        ...current.filter((member) => !leaving.includes(member.id)),
-        ...joining,
-      ]);
+      setPresence((current) => {
+        const filtered = current.filter((member) => !leaving.includes(member.id));
+        const ids = new Set(filtered.map((member) => member.id));
+        return [...filtered, ...joining.filter((member) => !ids.has(member.id))];
+      });
     });
 
     channel

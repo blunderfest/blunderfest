@@ -29,7 +29,7 @@ export default function MemberList({
           return (
             <li key={member.id} className="flex items-center gap-2 text-sm">
               <span className="h-2 w-2 shrink-0 rounded-full bg-ok" />
-              <span className="min-w-0 truncate">{member.name}</span>
+              <span className="min-w-0 break-words">{member.name}</span>
               {member.id === presenterId && (
                 <span className="shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-xs text-muted">
                   {t('room.presenting')}

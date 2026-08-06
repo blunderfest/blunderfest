@@ -41,6 +41,10 @@ defmodule BlunderfestWeb.RoomChannel do
       name: socket.assigns.profile_name
     })
 
+    # Phoenix does not send the current presence state to a joining client
+    # automatically; the joining client must push it itself after tracking.
+    push(socket, "presence_state", BlunderfestWeb.Presence.list(socket.topic))
+
     {:noreply, socket}
   end
 

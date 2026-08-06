@@ -174,6 +174,28 @@ describe('useRoomChannel', () => {
     ]);
   });
 
+  it('does not duplicate a member who appears in both the state and a diff', async () => {
+    const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+    act(() =>
+      channel.emit('presence_diff', {
+        joins: { 'profile-1': { metas: [{ name: 'Brave Otter 42' }] } },
+        leaves: {},
+      }),
+    );
+
+    await waitFor(() =>
+      expect(result.current.presence).toEqual([{ id: 'profile-1', name: 'Brave Otter 42' }]),
+    );
+  });
+
   it('cleans up: leaves the channel and clears the room', () => {
     const { unmount } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),

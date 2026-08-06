@@ -92,6 +92,17 @@ defmodule BlunderfestWeb.RoomChannelTest do
              BlunderfestWeb.Presence.list("room:a")
   end
 
+  test "a joining client receives the current presence state including themselves", %{} do
+    join_room("room:a", %{"profile_id" => "profile-1", "name" => "Brave Otter 42"})
+
+    join_room("room:a", %{"profile_id" => "profile-2", "name" => "Swift Falcon 17"})
+
+    assert_push "presence_state", %{
+      "profile-1" => %{metas: [%{name: "Brave Otter 42"}]},
+      "profile-2" => %{metas: [%{name: "Swift Falcon 17"}]}
+    }
+  end
+
   test "the first joiner becomes the room owner", %{} do
     {:ok, reply, _socket} = join_room("room:a", %{"profile_id" => "profile-1"})
     assert reply.roles == %{"profile-1" => "owner"}
