@@ -1,8 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { panel } from '@/components/ui';
-import type { RoomPresenceMember } from '@/features/room/useRoomChannel';
-import type { MemberRole } from '@/protocol/ops';
+import type { MemberRole, PresenceMember } from '@/protocol/ops';
 
+/**
+ * The member list. `members` is expected to be pre-sorted (see
+ * `selectSortedMembers`): owner, collaborators, then viewers, each by name.
+ */
 export default function MemberList({
   members,
   roles,
@@ -11,7 +14,7 @@ export default function MemberList({
   selfId,
   onSetRole,
 }: {
-  members: RoomPresenceMember[];
+  members: PresenceMember[];
   roles: Record<string, MemberRole>;
   presenterId: string | null;
   myRole: MemberRole;
@@ -20,22 +23,11 @@ export default function MemberList({
 }) {
   const { t } = useTranslation();
 
-  const roleRank = (role: MemberRole) => (role === 'owner' ? 0 : role === 'collaborator' ? 1 : 2);
-
-  const sortedMembers = [...members].sort((a, b) => {
-    const rankA = roleRank(roles[a.id] ?? 'viewer');
-    const rankB = roleRank(roles[b.id] ?? 'viewer');
-    if (rankA !== rankB) {
-      return rankA - rankB;
-    }
-    return a.name.localeCompare(b.name);
-  });
-
   return (
     <section className={panel({ layout: 'none', padding: 'tight' })}>
       <h2 className="m-0 mb-3 text-sm font-semibold text-muted">{t('room.members')}</h2>
       <ul data-testid="member-list" className="m-0 flex flex-col gap-2 p-0">
-        {sortedMembers.map((member) => {
+        {members.map((member) => {
           const role = roles[member.id] ?? 'viewer';
           const isBold = role === 'owner' || role === 'collaborator';
           const icon = role === 'owner' ? '♔' : role === 'collaborator' ? '♘' : '♙';

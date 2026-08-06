@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GameNode, GameTree } from '@/lib/api';
-import type { CommentAtPlyOp, MoveAtPlyOp, Op, SetGameOp } from '@/protocol/ops';
+import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp, Op, SetGameOp } from '@/protocol/ops';
 import roomReducer, {
   applyOp,
   enterRoom,
@@ -8,14 +8,14 @@ import roomReducer, {
   leaveMember,
   leaveRoom,
   replayOps,
-  selectActiveGame,
   selectActivityOps,
   selectCanEdit,
+  selectFirstGameId,
   selectPresenter,
   selectPresenterCursor,
   selectPresenterGameId,
   selectRoleOf,
-  setActiveGame,
+  selectSortedMembers,
   setMemberRole,
   setRoles,
 } from './room';
@@ -202,7 +202,6 @@ describe('room slice', () => {
       presence: {},
       roles: {},
       games: {},
-      activeGameId: null,
     });
   });
 
@@ -214,7 +213,6 @@ describe('room slice', () => {
         presence: { 'author-1': { id: 'author-1', name: 'Brave Otter 42' } },
         roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
-        activeGameId: 'game-1',
       },
       enterRoom({ slug: 'room-123' }),
     );
@@ -224,7 +222,6 @@ describe('room slice', () => {
       presence: {},
       roles: {},
       games: {},
-      activeGameId: null,
     });
   });
 
@@ -236,7 +233,6 @@ describe('room slice', () => {
         presence: { 'author-1': { id: 'author-1', name: 'Brave Otter 42' } },
         roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
-        activeGameId: 'game-1',
       },
       leaveRoom(),
     );
@@ -246,7 +242,6 @@ describe('room slice', () => {
       presence: {},
       roles: {},
       games: {},
-      activeGameId: null,
     });
   });
 
@@ -283,19 +278,17 @@ describe('room slice', () => {
     expect(state.ops.map((o) => o.seq)).toEqual([1, 2]);
   });
 
-  it('adds a set_game op to the games map and makes it active when nothing is', () => {
+  it('adds a set_game op to the games map', () => {
     const op = setGameOp(1, 'Alice');
     const state = roomReducer(undefined, applyOp(op));
     expect(state.games['game-1'].headers.White).toBe('Alice');
-    expect(state.activeGameId).toBe('game-1');
-    expect(selectActiveGame(state)).toEqual(op.payload.tree);
+    expect(selectFirstGameId(state)).toBe('game-1');
   });
 
-  it('a set_game echo does not switch the active game when one is already set', () => {
+  it('the first imported game stays the default selection', () => {
     let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
     state = roomReducer(state, applyOp(setGameOp(2, 'Bob', 'game-2')));
-    expect(state.activeGameId).toBe('game-1');
-    expect(selectActiveGame(state)?.headers.White).toBe('Alice');
+    expect(selectFirstGameId(state)).toBe('game-1');
   });
 
   it('set_game ops without a game_id land in the legacy game', () => {
@@ -303,26 +296,23 @@ describe('room slice', () => {
     delete legacy.payload.game_id;
     const state = roomReducer(undefined, applyOp(legacy));
     expect(state.games.main.headers.White).toBe('Alice');
-    expect(state.activeGameId).toBe('main');
+    expect(selectFirstGameId(state)).toBe('main');
   });
 
-  it('replayOps rebuilds games and selects the newest one', () => {
+  it('replayOps rebuilds games from the op log', () => {
     const state = roomReducer(
       undefined,
       replayOps([setGameOp(1, 'Alice'), moveOp(2), setGameOp(3, 'Bob', 'game-2')]),
     );
     expect(Object.keys(state.games)).toEqual(['game-1', 'game-2']);
-    expect(state.activeGameId).toBe('game-2');
-    expect(selectActiveGame(state)?.headers.White).toBe('Bob');
+    expect(selectFirstGameId(state)).toBe('game-1');
   });
 
-  it('setActiveGame switches the view to a known game and ignores unknown ids', () => {
-    let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
-    state = roomReducer(state, applyOp(setGameOp(2, 'Bob', 'game-2')));
-    state = roomReducer(state, setActiveGame('game-2'));
-    expect(state.activeGameId).toBe('game-2');
-    state = roomReducer(state, setActiveGame('nope'));
-    expect(state.activeGameId).toBe('game-2');
+  it('selectFirstGameId is null without games', () => {
+    let state = roomReducer(undefined, applyOp(cursorOp(1)));
+    expect(selectFirstGameId(state)).toBeNull();
+    state = roomReducer(state, applyOp(moveOp(2)));
+    expect(selectFirstGameId(state)).toBeNull();
   });
 
   it('tracks presence members', () => {
@@ -564,6 +554,42 @@ describe('room slice', () => {
       state = roomReducer(state, applyOp(cursorOp(2)));
       state = roomReducer(state, applyOp(setGameOp(3, 'Bob', 'game-2')));
       expect(selectPresenterCursor(state)).toBeNull();
+    });
+  });
+
+  describe('selectSortedMembers', () => {
+    function stateWith(roles: Record<string, MemberRole>): ReturnType<typeof initialState> {
+      let state = roomReducer(undefined, setRoles(roles));
+      state = roomReducer(state, joinMember({ id: 'owner', name: 'Proud Raven 65' }));
+      state = roomReducer(state, joinMember({ id: 'collab-b', name: 'Brave Otter 42' }));
+      state = roomReducer(state, joinMember({ id: 'collab-a', name: 'Swift Falcon 17' }));
+      state = roomReducer(state, joinMember({ id: 'viewer', name: 'Zeta Zulu 77' }));
+      return state;
+    }
+
+    it('sorts owners, then collaborators, then viewers, each by name', () => {
+      const state = stateWith({
+        owner: 'owner',
+        'collab-a': 'collaborator',
+        'collab-b': 'collaborator',
+        viewer: 'viewer',
+      });
+      expect(selectSortedMembers(state).map((m) => m.id)).toEqual([
+        'owner',
+        'collab-b',
+        'collab-a',
+        'viewer',
+      ]);
+    });
+
+    it('treats members without a role as viewers', () => {
+      const state = stateWith({ owner: 'owner' });
+      expect(selectSortedMembers(state).map((m) => m.id)).toEqual([
+        'owner',
+        'collab-b',
+        'collab-a',
+        'viewer',
+      ]);
     });
   });
 });

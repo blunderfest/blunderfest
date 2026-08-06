@@ -146,7 +146,7 @@ describe('useRoomChannel', () => {
   });
 
   it('tracks presence members on state and diff events', async () => {
-    const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -168,14 +168,10 @@ describe('useRoomChannel', () => {
         'profile-2': { id: 'profile-2', name: 'Swift Falcon 17' },
       });
     });
-    expect(result.current.presence).toEqual([
-      { id: 'profile-1', name: 'Brave Otter 42' },
-      { id: 'profile-2', name: 'Swift Falcon 17' },
-    ]);
   });
 
   it('does not duplicate a member who appears in both the state and a diff', async () => {
-    const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
@@ -192,7 +188,73 @@ describe('useRoomChannel', () => {
     );
 
     await waitFor(() =>
-      expect(result.current.presence).toEqual([{ id: 'profile-1', name: 'Brave Otter 42' }]),
+      expect(store.getState().room.presence).toEqual({
+        'profile-1': { id: 'profile-1', name: 'Brave Otter 42' },
+      }),
+    );
+  });
+
+  it('removes members on presence leaves', async () => {
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+    act(() =>
+      channel.emit('presence_diff', {
+        joins: {},
+        leaves: { 'profile-1': { metas: [{ name: 'Brave Otter 42' }] } },
+      }),
+    );
+
+    await waitFor(() => expect(store.getState().room.presence).toEqual({}));
+  });
+
+  it('ignores events from a superseded channel after a rejoin', async () => {
+    const first = new FakeChannel();
+    const second = new FakeChannel();
+    let created = 0;
+    const factory = (_topic: string, params: Record<string, string> = {}) => {
+      created += 1;
+      const channel = created === 1 ? first : second;
+      channel.joinParams = params;
+      return channel;
+    };
+    const { rerender } = renderHook(
+      ({ id, name }: { id: string | null; name: string | null }) =>
+        useRoomChannel('room-a', id, name, factory),
+      {
+        wrapper: wrapper(store),
+        initialProps: { id: null as string | null, name: null as string | null },
+      },
+    );
+
+    await waitFor(() => expect(first.joined).toBe(true));
+    rerender({ id: 'profile-1', name: 'Brave Otter 42' });
+    await waitFor(() => expect(second.joined).toBe(true));
+
+    act(() =>
+      first.emit('presence_diff', {
+        joins: { ghost: { metas: [{ name: 'Ghost 00' }] } },
+        leaves: {},
+      }),
+    );
+    await waitFor(() => expect(store.getState().room.presence).toEqual({}));
+
+    act(() =>
+      second.emit('presence_diff', {
+        joins: { 'profile-1': { metas: [{ name: 'Brave Otter 42' }] } },
+        leaves: {},
+      }),
+    );
+    await waitFor(() =>
+      expect(store.getState().room.presence).toEqual({
+        'profile-1': { id: 'profile-1', name: 'Brave Otter 42' },
+      }),
     );
   });
 
@@ -210,7 +272,6 @@ describe('useRoomChannel', () => {
       presence: {},
       roles: {},
       games: {},
-      activeGameId: null,
     });
   });
 
@@ -292,7 +353,6 @@ describe('useRoomChannel', () => {
 
     await waitFor(() => expect(store.getState().room.games['game-1']).toBeDefined());
     expect(store.getState().room.games['game-1']?.headers.White).toBe('Alice');
-    expect(store.getState().room.activeGameId).toBe('game-1');
   });
 
   it('sets the game from a set_game op echo', async () => {
@@ -332,6 +392,5 @@ describe('useRoomChannel', () => {
     act(() => channel.emit('new_op', op));
 
     await waitFor(() => expect(store.getState().room.games['game-2']?.headers.White).toBe('Bob'));
-    expect(store.getState().room.activeGameId).toBe('game-2');
   });
 });

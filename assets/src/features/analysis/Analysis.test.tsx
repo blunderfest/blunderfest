@@ -256,8 +256,11 @@ describe('Analysis', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
 
+    // The navigation asks the parent to stop following; until the parent
+    // confirms (rerender with `following={false}`), the presenter cursor
+    // still drives the board.
     expect(onFollowChange).toHaveBeenCalledWith(false);
-    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
+    expect(screen.getByTestId('square-e5')).toHaveTextContent('♟');
     rerender(
       <Analysis
         tree={tree}

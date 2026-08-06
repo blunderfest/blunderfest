@@ -1,5 +1,5 @@
 import type { Channel } from 'phoenix';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Analysis from '@/features/analysis/Analysis';
 import ImportForm from '@/features/import/ImportForm';
@@ -10,16 +10,16 @@ import RoomHeader from '@/features/room/RoomHeader';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
 import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp } from '@/protocol/ops';
-import { useAppDispatch, useAppSelector } from '@/store';
+import { useAppSelector } from '@/store';
 import {
-  selectActiveGame,
   selectActivityOps,
   selectCanEdit,
+  selectFirstGameId,
   selectPresenter,
   selectPresenterCursor,
   selectPresenterGameId,
   selectRoleOf,
-  setActiveGame,
+  selectSortedMembers,
 } from '@/store/room';
 
 export default function RoomView({
@@ -36,28 +36,39 @@ export default function RoomView({
   channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
 }) {
   const { t } = useTranslation();
-  const dispatch = useAppDispatch();
-  const { joined, presence, sendOp, sendRole } = useRoomChannel(
-    slug,
-    selfId,
-    selfName,
-    channelFactory,
-  );
+  const { joined, sendOp, sendRole } = useRoomChannel(slug, selfId, selfName, channelFactory);
   const storePresence = useAppSelector((state) => state.room.presence);
+  const members = useAppSelector((state) => selectSortedMembers(state.room));
   const roles = useAppSelector((state) => state.room.roles);
   const games = useAppSelector((state) => state.room.games);
-  const activeGameId = useAppSelector((state) => state.room.activeGameId);
-  const game = useAppSelector((state) => selectActiveGame(state.room));
   const presenter = useAppSelector((state) => selectPresenter(state.room));
   const presenterGameId = useAppSelector((state) => selectPresenterGameId(state.room));
   const presenterCursor = useAppSelector((state) => selectPresenterCursor(state.room));
   const activityOps = useAppSelector((state) => selectActivityOps(state.room));
   const myRole: MemberRole = useAppSelector((state) => selectRoleOf(state.room, selfId));
   const canEdit = useAppSelector((state) => selectCanEdit(state.room, selfId));
+  const firstGameId = useAppSelector((state) => selectFirstGameId(state.room));
+  const [activeGameId, setActiveGameId] = useState<string | null>(null);
+  const [followOverride, setFollowOverride] = useState<boolean | null>(null);
   const [showImport, setShowImport] = useState(false);
-  const [following, setFollowing] = useState(false);
 
   const amPresenter = selfId !== null && presenter?.id === selfId;
+
+  /**
+   * Follow whenever someone else presents, until the viewer explicitly
+   * follows or breaks away (`followOverride`).
+   */
+  const following =
+    followOverride ?? (presenter !== null && (selfId === null || selfId !== presenter.id));
+
+  /**
+   * The game shown: the presenter's while following, otherwise the viewer's
+   * own selection, defaulting to the first imported game.
+   */
+  const effectiveGameId = following
+    ? (presenterGameId ?? firstGameId)
+    : (activeGameId ?? firstGameId);
+  const game = effectiveGameId === null ? null : (games[effectiveGameId] ?? null);
 
   const handleCursorChange = useCallback(
     (nodeId: number) => sendOp({ type: 'set_cursor', payload: { node_id: nodeId } }),
@@ -66,61 +77,41 @@ export default function RoomView({
 
   const handlePlayMove = useCallback(
     (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => {
-      if (activeGameId !== null) {
-        sendOp({ type: 'move_at_ply', payload: { game_id: activeGameId, ...payload } });
+      if (effectiveGameId !== null) {
+        sendOp({ type: 'move_at_ply', payload: { game_id: effectiveGameId, ...payload } });
       }
     },
-    [sendOp, activeGameId],
+    [sendOp, effectiveGameId],
   );
 
   const handleComment = useCallback(
     (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => {
-      if (activeGameId !== null) {
-        sendOp({ type: 'comment_at_ply', payload: { game_id: activeGameId, ...payload } });
+      if (effectiveGameId !== null) {
+        sendOp({ type: 'comment_at_ply', payload: { game_id: effectiveGameId, ...payload } });
       }
     },
-    [sendOp, activeGameId],
+    [sendOp, effectiveGameId],
   );
 
-  /**
-   * Follow the presenter: default on whenever someone else presents.
-   */
-  useEffect(() => {
-    if (presenter === null || (selfId !== null && selfId === presenter.id)) {
-      setFollowing(false);
-      return;
-    }
-    setFollowing(true);
-  }, [presenter, selfId]);
-
-  /**
-   * Snap to the presenter's game while following.
-   */
-  useEffect(() => {
-    if (following && presenterGameId !== null && presenterGameId !== activeGameId) {
-      dispatch(setActiveGame(presenterGameId));
-    }
-  }, [following, presenterGameId, activeGameId, dispatch]);
-
   function handleImported(tree: GameTree) {
-    setFollowing(false);
+    setFollowOverride(false);
     const gameId = crypto.randomUUID();
     sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
-    dispatch(setActiveGame(gameId));
+    setActiveGameId(gameId);
     setShowImport(false);
   }
 
   function handleNewGame() {
-    setFollowing(false);
+    setFollowOverride(false);
     const gameId = crypto.randomUUID();
     sendOp({ type: 'set_game', payload: { game_id: gameId, tree: emptyGameTree() } });
-    dispatch(setActiveGame(gameId));
+    setActiveGameId(gameId);
     setShowImport(false);
   }
 
   function handleSelectGame(gameId: string) {
-    setFollowing(false);
-    dispatch(setActiveGame(gameId));
+    setFollowOverride(false);
+    setActiveGameId(gameId);
     if (amPresenter) {
       sendOp({ type: 'select_game', payload: { game_id: gameId } });
     }
@@ -140,21 +131,23 @@ export default function RoomView({
         <aside className="flex flex-col gap-6">
           <GameList
             games={games}
-            activeGameId={activeGameId}
+            activeGameId={effectiveGameId}
             presenterGameId={presenterGameId}
             canEdit={canEdit}
             onSelectGame={handleSelectGame}
             onAddGame={() => setShowImport(true)}
             onNewGame={handleNewGame}
           />
-          <MemberList
-            members={presence}
-            roles={roles}
-            presenterId={presenter?.id ?? null}
-            myRole={myRole}
-            selfId={selfId}
-            onSetRole={handleSetRole}
-          />
+          {joined && (
+            <MemberList
+              members={members}
+              roles={roles}
+              presenterId={presenter?.id ?? null}
+              myRole={myRole}
+              selfId={selfId}
+              onSetRole={handleSetRole}
+            />
+          )}
           <ActivityFeed ops={activityOps} presence={storePresence} />
         </aside>
 
@@ -169,14 +162,14 @@ export default function RoomView({
             )
           ) : (
             <Analysis
-              key={activeGameId ?? 'none'}
+              key={effectiveGameId ?? 'none'}
               tree={game}
               presenterId={presenter?.id ?? null}
               selfId={selfId}
               presenterCursorId={presenterCursor}
               following={following}
               canEdit={canEdit}
-              onFollowChange={setFollowing}
+              onFollowChange={setFollowOverride}
               onCursorChange={handleCursorChange}
               onPlayMove={handlePlayMove}
               onComment={handleComment}

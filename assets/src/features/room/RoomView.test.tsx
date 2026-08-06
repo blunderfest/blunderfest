@@ -75,10 +75,10 @@ function setGameOp(seq: number, tree: GameTree, gameId = 'game-1'): Op {
   };
 }
 
-function selectOp(seq: number, gameId: string): Op {
+function selectOp(seq: number, gameId: string, author = 'profile-1'): Op {
   return {
     seq,
-    author: 'profile-1',
+    author,
     ts: '2026-01-01T00:00:00Z',
     type: 'select_game',
     payload: { game_id: gameId },
@@ -450,6 +450,38 @@ describe('RoomView', () => {
         'aria-pressed',
         'true',
       ),
+    );
+  });
+
+  it('stays broken away when the presenter changes after a manual break', async () => {
+    channel.joinReturn = {
+      ops: [setGameOp(1, gameTree), setGameOp(2, secondTree, 'game-2')],
+      roles: { 'profile-1': 'owner' },
+    };
+    renderRoom();
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+        'profile-2': { metas: [{ name: 'Swift Falcon 17' }] },
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByTestId('square-e2')).toHaveTextContent('♙'));
+    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+
+    act(() => channel.emit('role_update', { member_id: 'profile-1', role: 'viewer' }));
+    act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'owner' }));
+    act(() => channel.emit('new_op', selectOp(3, 'game-2', 'profile-2')));
+
+    await waitFor(() => expect(screen.getByText('Swift Falcon 17')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Alice – Bob' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: /Carol – Dave/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
     );
   });
 

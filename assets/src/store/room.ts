@@ -20,7 +20,6 @@ export type RoomState = {
   presence: Record<string, PresenceMember>;
   roles: Record<string, MemberRole>;
   games: Record<string, GameTree>;
-  activeGameId: string | null;
 };
 
 const initialState: RoomState = {
@@ -29,7 +28,6 @@ const initialState: RoomState = {
   presence: {},
   roles: {},
   games: {},
-  activeGameId: null,
 };
 
 /**
@@ -145,12 +143,38 @@ export function gameIdOf(op: SetGameOp): string {
   return op.payload.game_id ?? LEGACY_GAME_ID;
 }
 
-export function selectActiveGame(state: RoomState): GameTree | null {
-  if (state.activeGameId === null) {
-    return null;
+/**
+ * The first game imported into the room (lowest-seg `set_game` op) — the
+ * default selection for a member who has not chosen a game themselves.
+ */
+export function selectFirstGameId(state: RoomState): string | null {
+  for (const op of state.ops) {
+    if (op.type === 'set_game') {
+      return gameIdOf(op);
+    }
   }
-  return state.games[state.activeGameId] ?? null;
+  return null;
 }
+
+/**
+ * Room members sorted for the member list: owner, then collaborators, then
+ * viewers, each group alphabetically by name. Members without a role are
+ * treated as viewers.
+ */
+export const selectSortedMembers = createSelector(
+  [(state: RoomState) => state.presence, (state: RoomState) => state.roles],
+  (presence, roles) => {
+    const roleRank = (role: MemberRole) => (role === 'owner' ? 0 : role === 'collaborator' ? 1 : 2);
+    return Object.values(presence).sort((a, b) => {
+      const rankA = roleRank(roles[a.id] ?? 'viewer');
+      const rankB = roleRank(roles[b.id] ?? 'viewer');
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  },
+);
 
 /**
  * Ops worth showing in the activity feed — cursor and selection noise
@@ -265,7 +289,6 @@ const roomSlice = createSlice({
       state.presence = {};
       state.roles = {};
       state.games = {};
-      state.activeGameId = null;
     },
     leaveRoom(state) {
       state.slug = null;
@@ -273,7 +296,6 @@ const roomSlice = createSlice({
       state.presence = {};
       state.roles = {};
       state.games = {};
-      state.activeGameId = null;
     },
     setRoles(state, action: PayloadAction<Record<string, MemberRole>>) {
       state.roles = action.payload;
@@ -287,11 +309,7 @@ const roomSlice = createSlice({
       if (op.seq > lastSeq) {
         state.ops.push(op);
         if (op.type === 'set_game') {
-          const id = gameIdOf(op);
-          state.games[id] = op.payload.tree;
-          if (state.activeGameId === null) {
-            state.activeGameId = id;
-          }
+          state.games[gameIdOf(op)] = op.payload.tree;
         }
         if (op.type === 'move_at_ply' || op.type === 'comment_at_ply') {
           applyOpToGame(state, op);
@@ -301,24 +319,15 @@ const roomSlice = createSlice({
     replayOps(state, action: PayloadAction<Op[]>) {
       state.ops = [...action.payload].sort((a, b) => a.seq - b.seq);
       state.games = {};
-      let newest: string | null = null;
       for (const op of state.ops) {
         if (op.type === 'set_game') {
-          const id = gameIdOf(op);
-          state.games[id] = op.payload.tree;
-          newest = id;
+          state.games[gameIdOf(op)] = op.payload.tree;
         }
       }
       for (const op of state.ops) {
         if (op.type === 'move_at_ply' || op.type === 'comment_at_ply') {
           applyOpToGame(state, op);
         }
-      }
-      state.activeGameId = newest;
-    },
-    setActiveGame(state, action: PayloadAction<string>) {
-      if (state.games[action.payload] !== undefined) {
-        state.activeGameId = action.payload;
       }
     },
     joinMember(state, action: PayloadAction<PresenceMember>) {
@@ -337,7 +346,6 @@ export const {
   setMemberRole,
   applyOp,
   replayOps,
-  setActiveGame,
   joinMember,
   leaveMember,
 } = roomSlice.actions;

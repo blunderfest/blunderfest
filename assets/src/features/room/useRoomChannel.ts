@@ -1,7 +1,7 @@
 import type { Channel } from 'phoenix';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { channelFor } from '@/lib/socket';
-import type { MemberRole, Op } from '@/protocol/ops';
+import type { MemberRole, Op, PresenceMember } from '@/protocol/ops';
 import { useAppDispatch } from '@/store';
 import {
   applyOp,
@@ -14,15 +14,10 @@ import {
   setRoles,
 } from '@/store/room';
 
-export type RoomPresenceMember = {
-  id: string;
-  name: string;
-};
-
 type PresenceState = Record<string, { metas: { name?: string }[] }>;
 type PresenceDiff = { joins: PresenceState; leaves: PresenceState };
 
-function membersFrom(state: PresenceState): RoomPresenceMember[] {
+function membersFrom(state: PresenceState): PresenceMember[] {
   return Object.entries(state).map(([id, presence]) => ({
     id,
     name: presence.metas[0]?.name ?? 'Anonymous',
@@ -36,6 +31,10 @@ function membersFrom(state: PresenceState): RoomPresenceMember[] {
  * payload replays the op log; presence diffs update the member list.
  * Outbound: `sendOp` pushes an op to the server — it is applied on the
  * client only via the server echo, so there is exactly one application path.
+ *
+ * Event handlers ignore events from a channel that has been superseded by a
+ * rejoin, so late arrivals from a previous connection cannot mutate the new
+ * room's state.
  *
  * A channel factory can be injected for tests; it defaults to the real
  * Phoenix socket.
@@ -51,7 +50,6 @@ export function useRoomChannel(
   const channelFactoryRef = useRef(channelFactory);
   channelFactoryRef.current = channelFactory;
   const [joined, setJoined] = useState(false);
-  const [presence, setPresence] = useState<RoomPresenceMember[]>([]);
 
   useEffect(() => {
     const params: Record<string, string> = {};
@@ -67,50 +65,58 @@ export function useRoomChannel(
     dispatch(enterRoom({ slug }));
 
     channel.on('new_op', (op: Op) => {
-      dispatch(applyOp(op));
+      if (channelRef.current === channel) {
+        dispatch(applyOp(op));
+      }
     });
     channel.on('role_update', (update: { member_id: string; role: MemberRole }) => {
-      dispatch(setMemberRole(update));
+      if (channelRef.current === channel) {
+        dispatch(setMemberRole(update));
+      }
     });
     channel.on('presence_state', (state: PresenceState) => {
-      const members = membersFrom(state);
-      members.forEach((member) => {
-        dispatch(joinMember(member));
-      });
-      setPresence(members);
+      if (channelRef.current === channel) {
+        membersFrom(state).forEach((member) => {
+          dispatch(joinMember(member));
+        });
+      }
     });
     channel.on('presence_diff', (diff: PresenceDiff) => {
-      const joining = membersFrom(diff.joins);
-      const leaving = Object.keys(diff.leaves);
-      joining.forEach((member) => {
-        dispatch(joinMember(member));
-      });
-      leaving.forEach((id) => {
-        dispatch(leaveMember({ id }));
-      });
-      setPresence((current) => {
-        const filtered = current.filter((member) => !leaving.includes(member.id));
-        const ids = new Set(filtered.map((member) => member.id));
-        return [...filtered, ...joining.filter((member) => !ids.has(member.id))];
-      });
+      if (channelRef.current === channel) {
+        membersFrom(diff.joins).forEach((member) => {
+          dispatch(joinMember(member));
+        });
+        Object.keys(diff.leaves).forEach((id) => {
+          dispatch(leaveMember({ id }));
+        });
+      }
     });
 
     channel
       .join()
       .receive('ok', (payload: { ops: Op[]; roles?: Record<string, MemberRole> }) => {
-        dispatch(replayOps(payload.ops));
-        dispatch(setRoles(payload.roles ?? {}));
-        setJoined(true);
+        if (channelRef.current === channel) {
+          dispatch(replayOps(payload.ops));
+          dispatch(setRoles(payload.roles ?? {}));
+          setJoined(true);
+        }
       })
-      .receive('error', () => dispatch(leaveRoom()))
-      .receive('timeout', () => dispatch(leaveRoom()));
+      .receive('error', () => {
+        if (channelRef.current === channel) {
+          dispatch(leaveRoom());
+        }
+      })
+      .receive('timeout', () => {
+        if (channelRef.current === channel) {
+          dispatch(leaveRoom());
+        }
+      });
 
     return () => {
       channel.leave();
       channelRef.current = null;
       dispatch(leaveRoom());
       setJoined(false);
-      setPresence([]);
     };
   }, [dispatch, slug, selfId, selfName]);
 
@@ -122,5 +128,5 @@ export function useRoomChannel(
     channelRef.current?.push('set_role', { member_id: memberId, role });
   }, []);
 
-  return { joined, presence, sendOp, sendRole };
+  return { joined, sendOp, sendRole };
 }

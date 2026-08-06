@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
 import { parseFen } from '@/components/board';
@@ -47,40 +47,46 @@ export default function Analysis({
   const [currentId, setCurrentId] = useState<number | null>(null);
 
   /**
+   * Start at the root once a tree arrives. A one-time write during render
+   * (converges immediately) — subsequent cursor changes come only from
+   * navigation, playing moves, or the presenter cursor.
+   */
+  if (currentId === null && tree !== null) {
+    setCurrentId(tree.root.id);
+  }
+
+  /**
    * Nodes the editor played that have been broadcast but not yet applied
    * back through the echo. Rendered like regular nodes so the board can show
    * the move immediately; the replayed tree takes precedence once it arrives.
    */
   const [pending, setPending] = useState<Map<number, GameNode>>(new Map());
 
-  const current: GameNode | null = useMemo(
-    () =>
-      currentId === null ? null : (byId.get(currentId)?.node ?? pending.get(currentId) ?? null),
-    [currentId, byId, pending],
-  );
-
   /**
-   * Keep the cursor where it is while the tree is updated in place (moves,
-   * variations); reset to the root when the tree is replaced wholesale and
-   * the current node is gone (new game, replay of a different op log).
+   * While following, the presenter's cursor wins; otherwise the viewer's own
+   * cursor. Falls back to the root when the cursor no longer exists (tree
+   * replaced wholesale), and to the pending node while an echo is in flight.
    */
-  const prevTreeRef = useRef<GameTree | null>(null);
-
-  useEffect(() => {
-    const prev = prevTreeRef.current;
-    prevTreeRef.current = tree;
+  const current: GameNode | null = useMemo(() => {
+    const id =
+      following && presenterCursorId !== null && byId.has(presenterCursorId)
+        ? presenterCursorId
+        : currentId;
+    if (id !== null) {
+      const entry = byId.get(id);
+      if (entry !== undefined) {
+        return entry.node;
+      }
+      const pendingNode = pending.get(id);
+      if (pendingNode !== undefined) {
+        return pendingNode;
+      }
+    }
     if (tree === null) {
-      setCurrentId(null);
-      setPending(new Map());
-      return;
+      return null;
     }
-    if (prev === tree) {
-      return;
-    }
-    if (current === null) {
-      setCurrentId(tree.root.id);
-    }
-  }, [tree, current]);
+    return byId.get(tree.root.id)?.node ?? null;
+  }, [following, presenterCursorId, currentId, byId, pending, tree]);
 
   const canPlay = canEdit && current !== null && current.status === 'active';
 
@@ -209,15 +215,6 @@ export default function Analysis({
     },
     [canPlay, selectedMoves, legalMoves, playMove],
   );
-
-  /**
-   * Snap to the presenter's cursor while following.
-   */
-  useEffect(() => {
-    if (following && presenterCursorId !== null && byId.has(presenterCursorId)) {
-      setCurrentId(presenterCursorId);
-    }
-  }, [following, presenterCursorId, byId]);
 
   /**
    * Broadcast our own cursor when presenting.

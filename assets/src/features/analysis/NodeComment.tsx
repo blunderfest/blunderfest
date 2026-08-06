@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, panel } from '@/components/ui';
 
@@ -17,10 +17,16 @@ export default function NodeComment({
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState(comment ?? '');
+  const [lastComment, setLastComment] = useState(comment);
 
-  useEffect(() => {
+  /**
+   * Re-sync the draft when the applied comment changes (echo from another
+   * member, or a save of our own). A render-time adjustment — no effect.
+   */
+  if (comment !== lastComment) {
+    setLastComment(comment);
     setDraft(comment ?? '');
-  }, [comment]);
+  }
 
   if (!canEdit && comment === null) {
     return null;
