@@ -7,6 +7,7 @@ real time, and search a growing corpus of positions.
 
 * [PROJECT.md](PROJECT.md) — roadmap and overview
 * [docs/](docs/README.md) — architecture, operations, and Architecture Decision Records
+* [FEATURES.md](FEATURES.md) — implemented, planned, and possible features
 
 ## Development
 

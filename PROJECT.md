@@ -7,6 +7,7 @@ This document is the roadmap and entry point. Deep-dives live in [`docs/`](docs/
 [architecture](docs/architecture.md), [operations](docs/operations.md), and the
 [ADR set](docs/decisions/README.md) record the *why* behind every significant decision.
 Future sessions: read this file, then `docs/architecture.md`, keep both current.
+The feature inventory lives in [`FEATURES.md`](FEATURES.md).
 
 ## Hard constraints
 
