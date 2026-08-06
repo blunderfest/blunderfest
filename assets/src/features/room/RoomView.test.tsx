@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RoomView from '@/features/room/RoomView';
@@ -580,6 +580,37 @@ describe('RoomView', () => {
     await waitFor(() => expect(screen.getByText('Swift Falcon 17')).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'Promote' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Demote' })).not.toBeInTheDocument();
+  });
+
+  it('sorts members by role then name', async () => {
+    channel.joinReturn = {
+      ops: [],
+      roles: {
+        'profile-1': 'owner',
+        'profile-2': 'collaborator',
+        'profile-3': 'viewer',
+        'profile-4': 'viewer',
+      },
+    };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-4': { metas: [{ name: 'Zeta Zulu 77' }] },
+        'profile-2': { metas: [{ name: 'Brave Otter 42' }] },
+        'profile-3': { metas: [{ name: 'Swift Falcon 17' }] },
+        'profile-1': { metas: [{ name: 'Proud Raven 65' }] },
+      }),
+    );
+
+    await waitFor(() => expect(screen.getByText('Proud Raven 65')).toBeInTheDocument());
+    const names = within(screen.getByTestId('member-list'))
+      .getAllByRole('listitem')
+      .map((item) => item.textContent);
+    expect(names[0]).toContain('Proud Raven 65');
+    expect(names[1]).toContain('Brave Otter 42');
+    expect(names[2]).toContain('Swift Falcon 17');
+    expect(names[3]).toContain('Zeta Zulu 77');
   });
 
   it('updates member role icons when a role_update arrives', async () => {

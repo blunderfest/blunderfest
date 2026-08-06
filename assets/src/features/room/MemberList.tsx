@@ -20,11 +20,22 @@ export default function MemberList({
 }) {
   const { t } = useTranslation();
 
+  const roleRank = (role: MemberRole) => (role === 'owner' ? 0 : role === 'collaborator' ? 1 : 2);
+
+  const sortedMembers = [...members].sort((a, b) => {
+    const rankA = roleRank(roles[a.id] ?? 'viewer');
+    const rankB = roleRank(roles[b.id] ?? 'viewer');
+    if (rankA !== rankB) {
+      return rankA - rankB;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
   return (
     <section className={panel({ layout: 'none', padding: 'tight' })}>
       <h2 className="m-0 mb-3 text-sm font-semibold text-muted">{t('room.members')}</h2>
-      <ul className="m-0 flex flex-col gap-2 p-0">
-        {members.map((member) => {
+      <ul data-testid="member-list" className="m-0 flex flex-col gap-2 p-0">
+        {sortedMembers.map((member) => {
           const role = roles[member.id] ?? 'viewer';
           const isBold = role === 'owner' || role === 'collaborator';
           const icon = role === 'owner' ? '♔' : role === 'collaborator' ? '♘' : '♙';
