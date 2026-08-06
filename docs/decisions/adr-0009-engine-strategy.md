@@ -72,11 +72,6 @@ The interactive layer is implemented in the frontend:
   package's canonical layout (its postinstall creates the same symlinks).
 - The client fails fast on worker-level errors (`worker.onerror`) instead of
   hanging until the handshake timeout.
-- **Known issue (parked):** the engine never becomes ready in Firefox
-  (handshake timeout). Works in Chromium. Prime suspect is the glue's
-  `instantiateStreaming` override, which re-wraps the fetch in a synthetic
-  `Response` with a progress-tapping `ReadableStream`; Firefox is stricter
-  about non-network-backed responses. Fix candidate: patch the copied glue in
-  `copy-engine.mjs` to drop the `instantiateWasm` override so the engine uses
-  the default raw-response streaming path. Needs a Firefox environment to
-  verify.
+- Verified working in Chromium and Firefox. (An earlier Firefox failure turned
+  out to be the content-hashed wasm URL 404ing — the same-stem layout fixed
+  all browsers at once.)
