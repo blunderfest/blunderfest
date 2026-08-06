@@ -1,6 +1,13 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { GameNode, GameTree } from '@/lib/api';
-import type { MemberRole, MoveAtPlyOp, Op, PresenceMember, SetGameOp } from '@/protocol/ops';
+import type {
+  CommentAtPlyOp,
+  MemberRole,
+  MoveAtPlyOp,
+  Op,
+  PresenceMember,
+  SetGameOp,
+} from '@/protocol/ops';
 
 /**
  * `game_id` for `set_game` ops from before games had ids.
@@ -106,10 +113,31 @@ export function applyMoveAtPly(tree: GameTree, payload: MoveAtPlyOp['payload']):
   };
 }
 
-function applyOpToGame(state: RoomState, op: MoveAtPlyOp): void {
+/**
+ * Sets (or clears, with empty text) the comment on the mainline node at the
+ * given ply. Comments on variation nodes are out of scope for now.
+ */
+export function applyCommentAtPly(tree: GameTree, payload: CommentAtPlyOp['payload']): GameTree {
+  const node = mainlineNode(tree, payload.ply);
+  if (node === null) {
+    return tree;
+  }
+  const root = replaceNode(tree.root, node.id, (n) => ({
+    ...n,
+    comment: payload.text === '' ? null : payload.text,
+  }));
+  return { ...tree, root };
+}
+
+function applyOpToGame(state: RoomState, op: MoveAtPlyOp | CommentAtPlyOp): void {
   const tree = state.games[op.payload.game_id];
-  if (tree !== undefined) {
+  if (tree === undefined) {
+    return;
+  }
+  if (op.type === 'move_at_ply') {
     state.games[op.payload.game_id] = applyMoveAtPly(tree, op.payload);
+  } else {
+    state.games[op.payload.game_id] = applyCommentAtPly(tree, op.payload);
   }
 }
 
@@ -265,7 +293,7 @@ const roomSlice = createSlice({
             state.activeGameId = id;
           }
         }
-        if (op.type === 'move_at_ply') {
+        if (op.type === 'move_at_ply' || op.type === 'comment_at_ply') {
           applyOpToGame(state, op);
         }
       }
@@ -282,7 +310,7 @@ const roomSlice = createSlice({
         }
       }
       for (const op of state.ops) {
-        if (op.type === 'move_at_ply') {
+        if (op.type === 'move_at_ply' || op.type === 'comment_at_ply') {
           applyOpToGame(state, op);
         }
       }

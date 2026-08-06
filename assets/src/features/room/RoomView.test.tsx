@@ -520,6 +520,39 @@ describe('RoomView', () => {
     });
   });
 
+  it('saves a comment on the current position as a comment_at_ply op', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    const editor = await screen.findByTestId('comment-editor');
+    fireEvent.change(editor, { target: { value: 'Sharp position' } });
+    fireEvent.click(screen.getByTestId('save-comment'));
+
+    await waitFor(() =>
+      expect(
+        channel.pushes.some(
+          (push) => (push.payload as { type?: string }).type === 'comment_at_ply',
+        ),
+      ).toBe(true),
+    );
+    const commentPush = channel.pushes.find(
+      (push) => (push.payload as { type?: string }).type === 'comment_at_ply',
+    );
+    expect(commentPush).toEqual({
+      event: 'op',
+      payload: {
+        type: 'comment_at_ply',
+        payload: { game_id: 'game-1', ply: 0, text: 'Sharp position' },
+      },
+    });
+  });
+
   it('lets the owner promote a member to collaborator', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');

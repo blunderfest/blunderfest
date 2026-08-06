@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GameNode, GameTree } from '@/lib/api';
-import type { MoveAtPlyOp, Op, SetGameOp } from '@/protocol/ops';
+import type { CommentAtPlyOp, MoveAtPlyOp, Op, SetGameOp } from '@/protocol/ops';
 import roomReducer, {
   applyOp,
   enterRoom,
@@ -172,6 +172,21 @@ function moveAtPly(
       status: 'active',
       ...payload,
     },
+  };
+}
+
+function commentAtPly(
+  seq: number,
+  plyNumber: number,
+  text: string,
+  payload: Partial<CommentAtPlyOp['payload']> = {},
+): Op {
+  return {
+    seq,
+    author: 'author-1',
+    ts: '2026-01-01T00:00:00Z',
+    type: 'comment_at_ply',
+    payload: { game_id: 'game-1', ply: plyNumber, text, ...payload },
   };
 }
 
@@ -415,6 +430,46 @@ describe('room slice', () => {
       const game = state.games['game-1'];
       expect(game.mainline_ply_count).toBe(2);
       expect(game.node_count).toBe(3);
+    });
+  });
+
+  describe('comment_at_ply transforms', () => {
+    it('sets a comment on the mainline node at the given ply', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(commentAtPly(2, 1, 'Strong move!')));
+
+      const move = state.games['game-1'].root.children[0];
+      expect(move.comment).toBe('Strong move!');
+    });
+
+    it('an empty text clears the comment', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(commentAtPly(2, 1, 'Strong move!')));
+      state = roomReducer(state, applyOp(commentAtPly(3, 1, '')));
+
+      const move = state.games['game-1'].root.children[0];
+      expect(move.comment).toBeNull();
+    });
+
+    it('ignores comments for plies beyond the mainline and unknown games', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(commentAtPly(2, 99, 'x')));
+      expect(state.games['game-1'].root.children[0].comment).toBeNull();
+
+      state = roomReducer(state, applyOp(commentAtPly(3, 1, 'x', { game_id: 'nope' })));
+      expect(state.games['game-1'].root.children[0].comment).toBeNull();
+    });
+
+    it('applies comments in seq order during replay', () => {
+      const state = roomReducer(
+        undefined,
+        replayOps([commentAtPly(2, 1, 'Nice'), playedGameOp(1)]),
+      );
+
+      expect(state.games['game-1'].root.children[0].comment).toBe('Nice');
+
+      const next = roomReducer(state, applyOp(commentAtPly(3, 1, 'Risky')));
+      expect(next.games['game-1'].root.children[0].comment).toBe('Risky');
     });
   });
 

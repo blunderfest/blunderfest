@@ -45,7 +45,7 @@ export type ReplaceLineOp = OpBase & {
 
 export type CommentAtPlyOp = OpBase & {
   type: 'comment_at_ply';
-  payload: { ply: number; text: string };
+  payload: { game_id: string; ply: number; text: string };
 };
 
 export type AddArrowOp = OpBase & {

@@ -58,6 +58,8 @@
     "following": "Following presenter",
     "presenting": "You are presenting",
     "playHint": "Click a piece, then a target square to play a move.",
+    "commentPlaceholder": "Add a comment…",
+    "saveComment": "Save comment",
     "shortcutNav": "previous/next move",
     "shortcutJump": "first/last move",
     "shortcutFlip": "flip board",

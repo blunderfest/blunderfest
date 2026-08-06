@@ -6,9 +6,10 @@ import BoardControls from '@/features/analysis/BoardControls';
 import GameInfo from '@/features/analysis/GameInfo';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
+import NodeComment from '@/features/analysis/NodeComment';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
 import { fetchLegalMoves, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
-import type { MoveAtPlyOp } from '@/protocol/ops';
+import type { CommentAtPlyOp, MoveAtPlyOp } from '@/protocol/ops';
 
 export default function Analysis({
   tree,
@@ -20,6 +21,7 @@ export default function Analysis({
   onFollowChange,
   onCursorChange,
   onPlayMove,
+  onComment,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -30,6 +32,7 @@ export default function Analysis({
   onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
   onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => void;
+  onComment?: (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => void;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
@@ -238,6 +241,10 @@ export default function Analysis({
     }
     const parent = byId.get(current.id)?.parent ?? null;
     const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
+        return;
+      }
       let handled = false;
       if (event.key === 'ArrowRight' && current.children[0]) {
         navigate(current.children[0].id);
@@ -330,6 +337,12 @@ export default function Analysis({
           </p>
         )}
       </div>
+
+      <NodeComment
+        comment={current.comment}
+        canEdit={canEdit}
+        onSave={(text) => onComment?.({ ply: current.ply, text })}
+      />
 
       <MoveList rows={rows} currentId={current.id} onSelect={navigate} />
 

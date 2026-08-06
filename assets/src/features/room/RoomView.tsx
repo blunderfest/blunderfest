@@ -9,7 +9,7 @@ import MemberList from '@/features/room/MemberList';
 import RoomHeader from '@/features/room/RoomHeader';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
-import type { MemberRole, MoveAtPlyOp } from '@/protocol/ops';
+import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp } from '@/protocol/ops';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
   selectActiveGame,
@@ -68,6 +68,15 @@ export default function RoomView({
     (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => {
       if (activeGameId !== null) {
         sendOp({ type: 'move_at_ply', payload: { game_id: activeGameId, ...payload } });
+      }
+    },
+    [sendOp, activeGameId],
+  );
+
+  const handleComment = useCallback(
+    (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => {
+      if (activeGameId !== null) {
+        sendOp({ type: 'comment_at_ply', payload: { game_id: activeGameId, ...payload } });
       }
     },
     [sendOp, activeGameId],
@@ -170,6 +179,7 @@ export default function RoomView({
               onFollowChange={setFollowing}
               onCursorChange={handleCursorChange}
               onPlayMove={handlePlayMove}
+              onComment={handleComment}
             />
           )}
         </section>

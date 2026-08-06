@@ -156,7 +156,7 @@ describe('Analysis', () => {
 
     fireEvent.click(screen.getByTestId('analysis-move-3'));
     expect(screen.getByTestId('square-c5')).toHaveTextContent('♟');
-    expect(screen.getByText('Sicilian')).toBeInTheDocument();
+    expect(screen.getByTestId('node-comment')).toHaveTextContent('Sicilian');
   });
 
   it('shows the checkmate status badge', () => {
@@ -442,5 +442,54 @@ describe('Analysis', () => {
 
     expect(screen.getByTestId('square-e2')).not.toHaveTextContent('♙');
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
+  });
+
+  it('lets an editor save a comment on the current position', () => {
+    const onComment = vi.fn();
+    render(<Analysis tree={tree} canEdit onPlayMove={vi.fn()} onComment={onComment} />);
+
+    fireEvent.change(screen.getByTestId('comment-editor'), {
+      target: { value: 'Nice idea' },
+    });
+    fireEvent.click(screen.getByTestId('save-comment'));
+
+    expect(onComment).toHaveBeenCalledWith({ ply: 0, text: 'Nice idea' });
+  });
+
+  it('shows the saved comment after the echo applies it', () => {
+    const onComment = vi.fn();
+    const { rerender } = render(
+      <Analysis tree={tree} canEdit onPlayMove={vi.fn()} onComment={onComment} />,
+    );
+
+    fireEvent.change(screen.getByTestId('comment-editor'), {
+      target: { value: 'Nice idea' },
+    });
+    rerender(
+      <Analysis
+        tree={{ ...tree, root: { ...tree.root, comment: 'Nice idea' } }}
+        canEdit
+        onPlayMove={vi.fn()}
+        onComment={onComment}
+      />,
+    );
+
+    expect(screen.getByTestId('comment-editor')).toHaveValue('Nice idea');
+  });
+
+  it('does not show the editor to viewers, but shows existing comments', () => {
+    render(<Analysis tree={tree} presenterId="p1" selfId="me" />);
+
+    expect(screen.queryByTestId('comment-editor')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('analysis-move-3'));
+    expect(screen.getByTestId('node-comment')).toHaveTextContent('Sicilian');
+  });
+
+  it('shows nothing to viewers when the position has no comment', () => {
+    render(<Analysis tree={tree} presenterId="p1" selfId="me" />);
+
+    expect(screen.queryByTestId('node-comment')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('comment-editor')).not.toBeInTheDocument();
   });
 });
