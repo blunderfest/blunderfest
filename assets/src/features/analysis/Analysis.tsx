@@ -115,17 +115,20 @@ export default function Analysis({
   presenterId = null,
   selfId = null,
   presenterCursorId = null,
+  following = false,
+  onFollowChange,
   onCursorChange,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
   selfId?: string | null;
   presenterCursorId?: number | null;
+  following?: boolean;
+  onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
-  const [following, setFollowing] = useState(false);
 
   const presenterActive = presenterId !== null;
   const amPresenter = selfId !== null && selfId === presenterId;
@@ -155,21 +158,13 @@ export default function Analysis({
   /**
    * Local navigation: breaks away from the presenter and moves the cursor.
    */
-  const navigate = useCallback((id: number) => {
-    setFollowing(false);
-    setCurrentId(id);
-  }, []);
-
-  /**
-   * Follow the presenter: default on whenever someone else presents.
-   */
-  useEffect(() => {
-    if (presenterId === null || (selfId !== null && selfId === presenterId)) {
-      setFollowing(false);
-      return;
-    }
-    setFollowing(true);
-  }, [presenterId, selfId]);
+  const navigate = useCallback(
+    (id: number) => {
+      onFollowChange?.(false);
+      setCurrentId(id);
+    },
+    [onFollowChange],
+  );
 
   /**
    * Snap to the presenter's cursor while following.
@@ -339,7 +334,7 @@ export default function Analysis({
               id="analysis-follow-button"
               className={button({ variant: 'ghost' })}
               aria-pressed={following}
-              onClick={() => setFollowing((value) => !value)}
+              onClick={() => onFollowChange?.(!following)}
             >
               {following ? t('analysis.following') : t('analysis.follow')}
             </button>

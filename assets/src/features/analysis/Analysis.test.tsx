@@ -194,7 +194,7 @@ describe('Analysis', () => {
   });
 
   it('follows the presenter cursor', () => {
-    render(<Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={2} />);
+    render(<Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={2} following />);
 
     expect(screen.getByTestId('square-e5')).toHaveTextContent('♟');
     expect(screen.getByRole('button', { name: 'Following presenter' })).toHaveAttribute(
@@ -204,14 +204,32 @@ describe('Analysis', () => {
   });
 
   it('breaks away from the presenter on local navigation', () => {
+    const onFollowChange = vi.fn();
     const { rerender } = render(
-      <Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={2} />,
+      <Analysis
+        tree={tree}
+        presenterId="p1"
+        selfId="me"
+        presenterCursorId={2}
+        following
+        onFollowChange={onFollowChange}
+      />,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
 
+    expect(onFollowChange).toHaveBeenCalledWith(false);
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
-    rerender(<Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={4} />);
+    rerender(
+      <Analysis
+        tree={tree}
+        presenterId="p1"
+        selfId="me"
+        presenterCursorId={4}
+        following={false}
+        onFollowChange={onFollowChange}
+      />,
+    );
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
     expect(screen.getByRole('button', { name: 'Follow presenter' })).toHaveAttribute(
       'aria-pressed',
@@ -220,14 +238,31 @@ describe('Analysis', () => {
   });
 
   it('re-follows the presenter after breaking away', () => {
+    const onFollowChange = vi.fn();
     const { rerender } = render(
-      <Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={2} />,
+      <Analysis
+        tree={tree}
+        presenterId="p1"
+        selfId="me"
+        presenterCursorId={2}
+        following={false}
+        onFollowChange={onFollowChange}
+      />,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
 
-    rerender(<Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={4} />);
     fireEvent.click(screen.getByRole('button', { name: 'Follow presenter' }));
 
+    expect(onFollowChange).toHaveBeenCalledWith(true);
+    rerender(
+      <Analysis
+        tree={tree}
+        presenterId="p1"
+        selfId="me"
+        presenterCursorId={4}
+        following
+        onFollowChange={onFollowChange}
+      />,
+    );
     expect(screen.getByTestId('square-f3')).toHaveTextContent('♘');
     expect(screen.getByRole('button', { name: 'Following presenter' })).toHaveAttribute(
       'aria-pressed',

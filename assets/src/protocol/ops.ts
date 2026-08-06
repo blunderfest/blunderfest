@@ -16,7 +16,12 @@ export type OpBase = {
 
 export type SetGameOp = OpBase & {
   type: 'set_game';
-  payload: { tree: GameTree };
+  payload: { game_id?: string; tree: GameTree };
+};
+
+export type SelectGameOp = OpBase & {
+  type: 'select_game';
+  payload: { game_id: string };
 };
 
 export type MoveAtPlyOp = OpBase & {
@@ -51,6 +56,7 @@ export type SetCursorOp = OpBase & {
 
 export type Op =
   | SetGameOp
+  | SelectGameOp
   | MoveAtPlyOp
   | ReplaceLineOp
   | CommentAtPlyOp

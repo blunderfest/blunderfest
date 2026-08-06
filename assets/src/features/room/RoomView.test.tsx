@@ -56,13 +56,23 @@ const moveOp: Op = {
   payload: { ply: 1, san: 'e4' },
 };
 
-function setGameOp(seq: number, tree: GameTree): Op {
+function setGameOp(seq: number, tree: GameTree, gameId = 'game-1'): Op {
   return {
     seq,
     author: 'profile-1',
     ts: '2026-01-01T00:00:00Z',
     type: 'set_game',
-    payload: { tree },
+    payload: { game_id: gameId, tree },
+  };
+}
+
+function selectOp(seq: number, gameId: string): Op {
+  return {
+    seq,
+    author: 'profile-1',
+    ts: '2026-01-01T00:00:00Z',
+    type: 'select_game',
+    payload: { game_id: gameId },
   };
 }
 
@@ -107,6 +117,23 @@ const followTree: GameTree = {
   }),
 };
 
+const secondTree: GameTree = {
+  headers: { White: 'Carol', Black: 'Dave' },
+  result: '1-0',
+  setup: null,
+  mainline_ply_count: 2,
+  node_count: 3,
+  root: node({
+    id: 0,
+    ply: 0,
+    san: null,
+    children: [
+      node({ id: 1, ply: 1, san: 'd4', from: 'd2', to: 'd4', fen: 'x' }),
+      node({ id: 2, ply: 2, san: 'd5', from: 'd7', to: 'd5', fen: 'y' }),
+    ],
+  }),
+};
+
 describe('RoomView', () => {
   let channel: FakeChannel;
   let channelFactory: () => FakeChannel;
@@ -126,11 +153,11 @@ describe('RoomView', () => {
     vi.unstubAllGlobals();
   });
 
-  function renderRoom(slug = 'abc12', onLeave = vi.fn()) {
+  function renderRoom(slug = 'abc12', onLeave = vi.fn(), selfId: string | null = null) {
     const store = makeStore();
     const view = render(
       <Provider store={store}>
-        <RoomView slug={slug} onLeave={onLeave} channelFactory={channelFactory} />
+        <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />
       </Provider>,
     );
     return { store, onLeave, view };
@@ -201,7 +228,7 @@ describe('RoomView', () => {
     await waitFor(() => expect(channel.pushes.length).toBe(1));
     expect(channel.pushes[0]).toEqual({
       event: 'op',
-      payload: { type: 'set_game', payload: { tree: gameTree } },
+      payload: { type: 'set_game', payload: { game_id: expect.any(String), tree: gameTree } },
     });
   });
 
@@ -218,24 +245,24 @@ describe('RoomView', () => {
     };
     act(() => channel.emit('new_op', op));
 
-    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument();
+    expect(await screen.findAllByText('Alice – Bob')).toHaveLength(2);
     expect(screen.getByTestId('square-e2')).toHaveTextContent('♙');
     expect(screen.getByText('Imported a game')).toBeInTheDocument();
   });
 
-  it('reopens the import form to replace the game', async () => {
+  it('reopens the import form to add another game', async () => {
     const op: Op = {
       seq: 1,
       author: 'profile-1',
       ts: '2026-01-01T00:00:00Z',
       type: 'set_game',
-      payload: { tree: gameTree },
+      payload: { game_id: 'game-1', tree: gameTree },
     };
     channel.joinReturn = { ops: [op] };
     renderRoom();
 
-    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Import a new game' }));
+    expect(await screen.findByRole('button', { name: 'Alice – Bob' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Import PGN' }));
     expect(screen.getByLabelText('PGN')).toBeInTheDocument();
   });
 
@@ -249,8 +276,8 @@ describe('RoomView', () => {
       }),
     );
 
-    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
-    expect(screen.getByText('Presenting')).toBeInTheDocument();
+    expect(await screen.findAllByText('Brave Otter 42')).toHaveLength(2);
+    expect(screen.getAllByText('Presenting')).toHaveLength(2);
   });
 
   it('keeps cursor ops out of the activity feed', async () => {
@@ -282,5 +309,122 @@ describe('RoomView', () => {
     act(() => channel.emit('new_op', cursorOp(3, 1)));
 
     await waitFor(() => expect(screen.getByTestId('square-e4')).toHaveTextContent('♙'));
+  });
+
+  it('creates an empty game with the New game button', async () => {
+    renderRoom();
+
+    fireEvent.click(screen.getByRole('button', { name: 'New game' }));
+
+    await waitFor(() => expect(channel.pushes.length).toBe(1));
+    const pushed = channel.pushes[0] as {
+      event: string;
+      payload: { type: string; payload: { game_id: string; tree: GameTree } };
+    };
+    expect(pushed.event).toBe('op');
+    expect(pushed.payload.type).toBe('set_game');
+    const gameId = pushed.payload.payload.game_id;
+    expect(gameId).toEqual(expect.any(String));
+    expect(pushed.payload.payload.tree).toEqual(
+      expect.objectContaining({ headers: {}, result: '*', node_count: 1 }),
+    );
+
+    act(() =>
+      channel.emit('new_op', {
+        seq: 1,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'set_game',
+        payload: { game_id: gameId, tree: pushed.payload.payload.tree },
+      }),
+    );
+
+    expect(await screen.findByRole('button', { name: 'Untitled game' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByTestId('square-e2')).toHaveTextContent('♙');
+  });
+
+  it('adds a second game without yanking the current view', async () => {
+    renderRoom();
+
+    act(() => channel.emit('new_op', setGameOp(1, gameTree)));
+    act(() => channel.emit('new_op', setGameOp(2, secondTree, 'game-2')));
+
+    expect(await screen.findByRole('button', { name: /Carol – Dave/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Alice – Bob' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Carol – Dave/ }));
+
+    expect(screen.getByRole('button', { name: /Carol – Dave/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Alice – Bob' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('announces a game switch as the presenter', async () => {
+    channel.joinReturn = {
+      ops: [setGameOp(1, gameTree), setGameOp(2, secondTree, 'game-2')],
+    };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Alice – Bob' }));
+
+    await waitFor(() => expect(channel.pushes.length).toBeGreaterThanOrEqual(2));
+    const pushed = channel.pushes as {
+      event: string;
+      payload: { type: string; payload: Record<string, unknown> };
+    }[];
+    expect(
+      pushed.some(
+        (push) =>
+          push.event === 'op' &&
+          push.payload.type === 'select_game' &&
+          push.payload.payload.game_id === 'game-1',
+      ),
+    ).toBe(true);
+    expect(
+      pushed.some(
+        (push) =>
+          push.event === 'op' &&
+          push.payload.type === 'set_cursor' &&
+          push.payload.payload.node_id === 0,
+      ),
+    ).toBe(true);
+  });
+
+  it('follows the presenter when they switch to another game', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)] };
+    renderRoom();
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    act(() => channel.emit('new_op', setGameOp(2, secondTree, 'game-2')));
+    act(() => channel.emit('new_op', selectOp(3, 'game-2')));
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Carol – Dave/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    );
   });
 });

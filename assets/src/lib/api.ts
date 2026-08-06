@@ -85,3 +85,29 @@ export async function importLichess(url: string): Promise<{ tree: GameTree }> {
     body: JSON.stringify({ url }),
   });
 }
+
+/**
+ * A blank game at the starting position, used for "New game" in rooms.
+ */
+export function emptyGameTree(): GameTree {
+  return {
+    headers: {},
+    result: '*',
+    setup: null,
+    mainline_ply_count: 0,
+    node_count: 1,
+    root: {
+      id: 0,
+      ply: 0,
+      san: null,
+      from: null,
+      to: null,
+      promotion: null,
+      comment: null,
+      nags: [],
+      status: 'active',
+      fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      children: [],
+    },
+  };
+}

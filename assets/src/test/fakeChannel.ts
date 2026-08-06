@@ -46,7 +46,7 @@ export class FakeChannel implements Channel {
       receive: (event: string, handler: Handler) => {
         this.joinReceives.set(event, handler);
         if (event === 'ok') {
-          queueMicrotask(() => handler(this.joinReturn));
+          handler(this.joinReturn);
         }
         return push;
       },

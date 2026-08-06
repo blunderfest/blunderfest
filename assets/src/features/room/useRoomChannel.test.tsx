@@ -123,7 +123,13 @@ describe('useRoomChannel', () => {
     unmount();
 
     expect(channel.joined).toBe(false);
-    expect(store.getState().room).toEqual({ slug: null, ops: [], presence: {}, game: null });
+    expect(store.getState().room).toEqual({
+      slug: null,
+      ops: [],
+      presence: {},
+      games: {},
+      activeGameId: null,
+    });
   });
 
   it('rebuilds the game from a set_game op in the join payload', async () => {
@@ -133,6 +139,7 @@ describe('useRoomChannel', () => {
       ts: '2026-01-01T00:00:00Z',
       type: 'set_game',
       payload: {
+        game_id: 'game-1',
         tree: {
           headers: { White: 'Alice' },
           result: '*',
@@ -161,8 +168,9 @@ describe('useRoomChannel', () => {
       wrapper: wrapper(store),
     });
 
-    await waitFor(() => expect(store.getState().room.game).not.toBeNull());
-    expect(store.getState().room.game?.headers.White).toBe('Alice');
+    await waitFor(() => expect(store.getState().room.games['game-1']).toBeDefined());
+    expect(store.getState().room.games['game-1']?.headers.White).toBe('Alice');
+    expect(store.getState().room.activeGameId).toBe('game-1');
   });
 
   it('sets the game from a set_game op echo', async () => {
@@ -176,6 +184,7 @@ describe('useRoomChannel', () => {
       ts: '2026-01-01T00:00:00Z',
       type: 'set_game',
       payload: {
+        game_id: 'game-2',
         tree: {
           headers: { White: 'Bob' },
           result: '1-0',
@@ -200,6 +209,7 @@ describe('useRoomChannel', () => {
     };
     act(() => channel.emit('new_op', op));
 
-    await waitFor(() => expect(store.getState().room.game?.headers.White).toBe('Bob'));
+    await waitFor(() => expect(store.getState().room.games['game-2']?.headers.White).toBe('Bob'));
+    expect(store.getState().room.activeGameId).toBe('game-2');
   });
 });
