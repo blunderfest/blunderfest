@@ -40,7 +40,7 @@ export default function Board({
   selected = null,
   legalTargets = [],
   arrows = [],
-  arrowColor = '#fbbf24',
+  arrowColor = '#3b82f6',
   onSquareClick,
 }: {
   position: Position;
@@ -206,8 +206,9 @@ export default function Board({
               viewBox="0 0 1 1"
               refX="0.8"
               refY="0.5"
-              markerWidth="0.5"
-              markerHeight="0.5"
+              markerWidth="0.85"
+              markerHeight="0.85"
+              markerUnits="userSpaceOnUse"
               orient="auto-start-reverse"
             >
               <path d="M0,0 L1,0.5 L0,1 Z" fill={arrowColor} />
@@ -216,17 +217,27 @@ export default function Board({
           {arrows.map((arrow) => {
             const line = arrowLine(arrow.from, arrow.to, flipped);
             return (
-              <line
-                key={`${arrow.from}-${arrow.to}`}
-                x1={line.x1}
-                y1={line.y1}
-                x2={line.x2}
-                y2={line.y2}
-                stroke={arrowColor}
-                strokeWidth={0.22}
-                strokeLinecap="round"
-                markerEnd={`url(#${markerId}-head)`}
-              />
+              <g key={`${arrow.from}-${arrow.to}`}>
+                <line
+                  x1={line.x1}
+                  y1={line.y1}
+                  x2={line.x2}
+                  y2={line.y2}
+                  stroke="rgba(20, 22, 27, 0.5)"
+                  strokeWidth={0.38}
+                  strokeLinecap="round"
+                />
+                <line
+                  x1={line.x1}
+                  y1={line.y1}
+                  x2={line.x2}
+                  y2={line.y2}
+                  stroke={arrowColor}
+                  strokeWidth={0.24}
+                  strokeLinecap="round"
+                  markerEnd={`url(#${markerId}-head)`}
+                />
+              </g>
             );
           })}
         </svg>
@@ -242,7 +253,9 @@ function PieceGlyph({ piece }: { piece: Piece }) {
       style={{
         color: piece.color === 'w' ? '#f9f9f9' : '#1a1a1a',
         textShadow:
-          piece.color === 'w' ? '0 1px 3px rgba(0,0,0,0.55)' : '0 1px 1px rgba(255,255,255,0.35)',
+          piece.color === 'w'
+            ? '0 0 2px rgba(26,26,26,0.9), 0 1px 3px rgba(0,0,0,0.55)'
+            : '0 1px 1px rgba(255,255,255,0.35)',
       }}
     >
       {pieceGlyph(piece.color, piece.kind)}

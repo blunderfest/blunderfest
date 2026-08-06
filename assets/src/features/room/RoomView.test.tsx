@@ -281,7 +281,7 @@ describe('RoomView', () => {
     act(() => channel.emit('new_op', op));
 
     expect(await screen.findAllByText('Alice – Bob')).toHaveLength(2);
-    expect(screen.getByTestId('square-e2')).toHaveTextContent('♙');
+    expect(screen.getByTestId('square-e2')).toHaveTextContent('♟');
     expect(screen.getByText('Imported a game')).toBeInTheDocument();
   });
 
@@ -346,7 +346,7 @@ describe('RoomView', () => {
 
     act(() => channel.emit('new_op', cursorOp(3, 1)));
 
-    await waitFor(() => expect(screen.getByTestId('square-e4')).toHaveTextContent('♙'));
+    await waitFor(() => expect(screen.getByTestId('square-e4')).toHaveTextContent('♟'));
   });
 
   it('creates an empty game with the New game button', async () => {
@@ -382,7 +382,7 @@ describe('RoomView', () => {
       'aria-pressed',
       'true',
     );
-    expect(screen.getByTestId('square-e2')).toHaveTextContent('♙');
+    expect(screen.getByTestId('square-e2')).toHaveTextContent('♟');
   });
 
   it('adds a second game without yanking the current view', async () => {
@@ -482,7 +482,7 @@ describe('RoomView', () => {
       }),
     );
 
-    await waitFor(() => expect(screen.getByTestId('square-e2')).toHaveTextContent('♙'));
+    await waitFor(() => expect(screen.getByTestId('square-e2')).toHaveTextContent('♟'));
     fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
 
     act(() => channel.emit('role_update', { member_id: 'profile-1', role: 'viewer' }));

@@ -24,6 +24,15 @@ defmodule BlunderfestWeb.SpaControllerTest do
     assert get_resp_header(conn, "content-type") == ["text/html; charset=utf-8"]
   end
 
+  test "the shell is never cached, so deploys take effect on refresh", %{conn: conn, path: path} do
+    File.write!(path, "<!doctype html><html><body>Blunderfest</body></html>")
+
+    conn = get(conn, "/")
+
+    assert response(conn, 200)
+    assert get_resp_header(conn, "cache-control") == ["no-cache, must-revalidate"]
+  end
+
   test "reports 503 when the frontend has not been built", %{conn: conn} do
     conn = get(conn, "/some/deep/link")
 

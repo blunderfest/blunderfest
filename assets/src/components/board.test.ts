@@ -55,9 +55,9 @@ describe('isLightSquare', () => {
 
 describe('pieceGlyph', () => {
   it('maps every piece kind and color to a glyph', () => {
-    expect(pieceGlyph('w', 'k')).toBe('♔');
+    expect(pieceGlyph('w', 'k')).toBe('♚');
     expect(pieceGlyph('b', 'k')).toBe('♚');
-    expect(pieceGlyph('w', 'p')).toBe('♙');
+    expect(pieceGlyph('w', 'p')).toBe('♟');
     expect(pieceGlyph('b', 'p')).toBe('♟');
   });
 });
