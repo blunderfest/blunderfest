@@ -532,7 +532,7 @@ describe('RoomView', () => {
     );
 
     await waitFor(() => expect(screen.getByText('Swift Falcon 17')).toBeInTheDocument());
-    expect(screen.getByText('Owner')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Owner' })).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('set-role-profile-2'));
 
     await waitFor(() => expect(channel.pushes.length).toBe(1));
@@ -582,7 +582,7 @@ describe('RoomView', () => {
     expect(screen.queryByRole('button', { name: 'Demote' })).not.toBeInTheDocument();
   });
 
-  it('updates member badges when a role_update arrives', async () => {
+  it('updates member role icons when a role_update arrives', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner', 'profile-2': 'viewer' } };
     renderRoom();
 
@@ -593,9 +593,12 @@ describe('RoomView', () => {
       }),
     );
 
-    await waitFor(() => expect(screen.getByText('Viewer')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('img', { name: 'Viewer' })).toBeInTheDocument());
     act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'collaborator' }));
 
-    await waitFor(() => expect(screen.getByText('Collaborator')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('img', { name: 'Collaborator' })).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('img', { name: 'Viewer' })).not.toBeInTheDocument();
   });
 });

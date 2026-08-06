@@ -26,23 +26,30 @@ export default function MemberList({
       <ul className="m-0 flex flex-col gap-2 p-0">
         {members.map((member) => {
           const role = roles[member.id] ?? 'viewer';
+          const isBold = role === 'owner' || role === 'collaborator';
+          const icon = role === 'owner' ? '♔' : role === 'collaborator' ? '♘' : '♙';
+          const iconClass =
+            role === 'owner'
+              ? 'text-warn'
+              : role === 'collaborator'
+                ? 'text-slate-400'
+                : 'text-muted';
           return (
-            <li key={member.id} className="flex items-center gap-2 text-sm">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-ok" />
-              <span className="min-w-0 break-words">{member.name}</span>
+            <li key={member.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              <span role="img" aria-label={t(`room.role.${role}`)} className={iconClass}>
+                {icon}
+              </span>
+              <span className={isBold ? 'font-semibold' : undefined}>{member.name}</span>
               {member.id === presenterId && (
                 <span className="shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-xs text-muted">
                   {t('room.presenting')}
                 </span>
               )}
-              <span className="ml-auto shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-xs text-muted">
-                {t(`room.role.${role}`)}
-              </span>
               {myRole === 'owner' && member.id !== selfId && role !== 'owner' && (
                 <button
                   type="button"
                   data-testid={`set-role-${member.id}`}
-                  className="shrink-0 rounded-lg border border-white/10 px-1.5 py-0.5 text-xs text-ink transition-colors hover:border-white/30"
+                  className="ml-auto shrink-0 rounded-lg border border-white/10 px-1.5 py-0.5 text-xs text-ink transition-colors hover:border-white/30"
                   onClick={() =>
                     onSetRole(member.id, role === 'collaborator' ? 'viewer' : 'collaborator')
                   }
