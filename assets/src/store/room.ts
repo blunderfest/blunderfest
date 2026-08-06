@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { GameTree } from '@/lib/api';
-import type { Op, PresenceMember, SetGameOp } from '@/protocol/ops';
+import type { GameNode, GameTree } from '@/lib/api';
+import type { MoveAtPlyOp, Op, PresenceMember, SetGameOp } from '@/protocol/ops';
 
 /**
  * `game_id` for `set_game` ops from before games had ids.
@@ -22,6 +22,94 @@ const initialState: RoomState = {
   games: {},
   activeGameId: null,
 };
+
+/**
+ * The mainline node at the given ply (the root is ply 0), or null when the
+ * mainline is shorter than the ply.
+ */
+function mainlineNode(tree: GameTree, ply: number): GameNode | null {
+  let node = tree.root;
+  while (node.ply !== ply) {
+    const next = node.children[0];
+    if (next === undefined) {
+      return null;
+    }
+    node = next;
+  }
+  return node;
+}
+
+function maxNodeId(node: GameNode): number {
+  let max = node.id;
+  for (const child of node.children) {
+    max = Math.max(max, maxNodeId(child));
+  }
+  return max;
+}
+
+function replaceNode(root: GameNode, id: number, update: (node: GameNode) => GameNode): GameNode {
+  if (root.id === id) {
+    return update(root);
+  }
+  return { ...root, children: root.children.map((child) => replaceNode(child, id, update)) };
+}
+
+function resultFor(status: string, ply: number): string | null {
+  if (status === 'checkmate') {
+    return ply % 2 === 1 ? '1-0' : '0-1';
+  }
+  if (status === 'stalemate' || status === 'draw') {
+    return '1/2-1/2';
+  }
+  return null;
+}
+
+/**
+ * Appends a move at the given ply to the tree. A move beyond the end of the
+ * mainline extends it; a move into a position that already has children is
+ * inserted as a variation. Node ids are derived deterministically (max + 1)
+ * so every client replays to the same tree.
+ */
+export function applyMoveAtPly(tree: GameTree, payload: MoveAtPlyOp['payload']): GameTree {
+  const parent = mainlineNode(tree, payload.ply - 1);
+  if (parent === null) {
+    return tree;
+  }
+
+  const node: GameNode = {
+    id: maxNodeId(tree.root) + 1,
+    ply: payload.ply,
+    san: payload.san,
+    from: payload.from,
+    to: payload.to,
+    promotion: payload.promotion,
+    comment: null,
+    nags: [],
+    status: payload.status,
+    fen: payload.fen,
+    children: [],
+  };
+
+  const root = replaceNode(tree.root, parent.id, (parent) => ({
+    ...parent,
+    children: [...parent.children, node],
+  }));
+
+  return {
+    ...tree,
+    root,
+    result: resultFor(payload.status, payload.ply) ?? tree.result,
+    mainline_ply_count: Math.max(tree.mainline_ply_count, payload.ply),
+    node_count: tree.node_count + 1,
+  };
+}
+
+function applyOpToGame(state: RoomState, op: MoveAtPlyOp): void {
+  const tree = state.games[op.payload.game_id];
+  if (tree !== undefined) {
+    state.games[op.payload.game_id] = applyMoveAtPly(tree, op.payload);
+  }
+}
 
 export function gameIdOf(op: SetGameOp): string {
   return op.payload.game_id ?? LEGACY_GAME_ID;
@@ -141,6 +229,9 @@ const roomSlice = createSlice({
             state.activeGameId = id;
           }
         }
+        if (op.type === 'move_at_ply') {
+          applyOpToGame(state, op);
+        }
       }
     },
     replayOps(state, action: PayloadAction<Op[]>) {
@@ -152,6 +243,11 @@ const roomSlice = createSlice({
           const id = gameIdOf(op);
           state.games[id] = op.payload.tree;
           newest = id;
+        }
+      }
+      for (const op of state.ops) {
+        if (op.type === 'move_at_ply') {
+          applyOpToGame(state, op);
         }
       }
       state.activeGameId = newest;

@@ -38,7 +38,16 @@ describe('useRoomChannel', () => {
         author: 'profile-1',
         ts: '2026-01-01T00:00:00Z',
         type: 'move_at_ply',
-        payload: { ply: 1, san: 'e4' },
+        payload: {
+          game_id: 'game-1',
+          ply: 1,
+          san: 'e4',
+          from: 'e2',
+          to: 'e4',
+          promotion: null,
+          fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+          status: 'active',
+        },
       },
     ];
     channel.joinReturn = { ops };
@@ -61,7 +70,16 @@ describe('useRoomChannel', () => {
       author: 'profile-1',
       ts: '2026-01-01T00:00:00Z',
       type: 'move_at_ply',
-      payload: { ply: 1, san: 'e4' },
+      payload: {
+        game_id: 'game-1',
+        ply: 1,
+        san: 'e4',
+        from: 'e2',
+        to: 'e4',
+        promotion: null,
+        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+        status: 'active',
+      },
     };
     act(() => channel.emit('new_op', op));
 

@@ -1,7 +1,14 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Analysis from '@/features/analysis/Analysis';
-import type { GameNode, GameTree } from '@/lib/api';
+import type { GameNode, GameTree, LegalMove } from '@/lib/api';
+
+const { fetchLegalMovesMock } = vi.hoisted(() => ({ fetchLegalMovesMock: vi.fn() }));
+
+vi.mock('@/lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/api')>();
+  return { ...actual, fetchLegalMoves: fetchLegalMovesMock };
+});
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -78,7 +85,38 @@ function renderAnalysis() {
   return render(<Analysis tree={tree} />);
 }
 
+const startMoves: LegalMove[] = [
+  {
+    from: 'e2',
+    to: 'e4',
+    promotion: null,
+    san: 'e4',
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+    status: 'active',
+  },
+  {
+    from: 'e2',
+    to: 'e3',
+    promotion: null,
+    san: 'e3',
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+    status: 'active',
+  },
+  {
+    from: 'g1',
+    to: 'f3',
+    promotion: null,
+    san: 'Nf3',
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 1',
+    status: 'active',
+  },
+];
+
 describe('Analysis', () => {
+  beforeEach(() => {
+    fetchLegalMovesMock.mockReset();
+    fetchLegalMovesMock.mockResolvedValue({ moves: [] });
+  });
   it('renders the start position on the board', () => {
     renderAnalysis();
 
@@ -285,5 +323,97 @@ describe('Analysis', () => {
 
     expect(screen.queryByRole('button', { name: 'Follow presenter' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Following presenter' })).not.toBeInTheDocument();
+  });
+
+  it('lets the presenter play a move from the board', async () => {
+    fetchLegalMovesMock.mockResolvedValue({ moves: startMoves });
+    const onPlayMove = vi.fn();
+    render(<Analysis tree={tree} presenterId="p1" selfId="p1" onPlayMove={onPlayMove} />);
+
+    await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalled());
+    fireEvent.click(screen.getByTestId('square-e2'));
+
+    await waitFor(() => expect(screen.getByTestId('selected-e2')).toBeInTheDocument());
+    expect(screen.getByTestId('target-e4')).toBeInTheDocument();
+    expect(screen.getByTestId('target-e3')).toBeInTheDocument();
+    expect(
+      screen.getByText('Click a piece, then a target square to play a move.'),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('square-e4'));
+
+    await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(1));
+    expect(onPlayMove).toHaveBeenCalledWith({
+      ply: 1,
+      san: 'e4',
+      from: 'e2',
+      to: 'e4',
+      promotion: null,
+      fen: startMoves[0].fen,
+      status: 'active',
+    });
+  });
+
+  it('does not let members other than the presenter play moves', () => {
+    const onPlayMove = vi.fn();
+    render(<Analysis tree={tree} presenterId="p1" selfId="me" onPlayMove={onPlayMove} />);
+
+    fireEvent.click(screen.getByTestId('square-e2'));
+    fireEvent.click(screen.getByTestId('square-e4'));
+
+    expect(onPlayMove).not.toHaveBeenCalled();
+    expect(fetchLegalMovesMock).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText('Click a piece, then a target square to play a move.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('stays on a played move before and after the echo applies it', async () => {
+    fetchLegalMovesMock.mockResolvedValue({ moves: startMoves });
+    const onCursorChange = vi.fn();
+    const onPlayMove = vi.fn();
+    const { rerender } = render(
+      <Analysis
+        tree={tree}
+        presenterId="p1"
+        selfId="p1"
+        onCursorChange={onCursorChange}
+        onPlayMove={onPlayMove}
+      />,
+    );
+
+    await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalled());
+    fireEvent.click(screen.getByTestId('square-e2'));
+    await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('square-e4'));
+
+    await waitFor(() => expect(onCursorChange).toHaveBeenCalledWith(5));
+    expect(screen.getByTestId('square-e2')).not.toHaveTextContent('♙');
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
+
+    const echoed: GameNode = {
+      id: 5,
+      ply: 1,
+      san: 'e4',
+      from: 'e2',
+      to: 'e4',
+      promotion: null,
+      comment: null,
+      nags: [],
+      status: 'active',
+      fen: startMoves[0].fen,
+      children: [],
+    };
+    rerender(
+      <Analysis
+        tree={{ ...tree, root: { ...tree.root, children: [...tree.root.children, echoed] } }}
+        presenterId="p1"
+        selfId="p1"
+        onCursorChange={onCursorChange}
+      />,
+    );
+
+    expect(screen.getByTestId('square-e2')).not.toHaveTextContent('♙');
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♙');
   });
 });

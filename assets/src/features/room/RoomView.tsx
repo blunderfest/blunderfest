@@ -6,7 +6,7 @@ import Analysis from '@/features/analysis/Analysis';
 import ImportForm from '@/features/import/ImportForm';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
-import type { Op } from '@/protocol/ops';
+import type { MoveAtPlyOp, Op } from '@/protocol/ops';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
   selectActiveGame,
@@ -66,6 +66,15 @@ export default function RoomView({
   const handleCursorChange = useCallback(
     (nodeId: number) => sendOp({ type: 'set_cursor', payload: { node_id: nodeId } }),
     [sendOp],
+  );
+
+  const handlePlayMove = useCallback(
+    (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => {
+      if (activeGameId !== null) {
+        sendOp({ type: 'move_at_ply', payload: { game_id: activeGameId, ...payload } });
+      }
+    },
+    [sendOp, activeGameId],
   );
 
   const activityOps = ops.filter((op) => op.type !== 'set_cursor' && op.type !== 'select_game');
@@ -262,6 +271,7 @@ export default function RoomView({
             <ImportForm onImported={handleImported} />
           ) : (
             <Analysis
+              key={activeGameId ?? 'none'}
               tree={game}
               presenterId={presenter?.id ?? null}
               selfId={selfId}
@@ -269,6 +279,7 @@ export default function RoomView({
               following={following}
               onFollowChange={setFollowing}
               onCursorChange={handleCursorChange}
+              onPlayMove={handlePlayMove}
             />
           )}
         </section>

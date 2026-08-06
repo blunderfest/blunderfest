@@ -26,7 +26,16 @@ export type SelectGameOp = OpBase & {
 
 export type MoveAtPlyOp = OpBase & {
   type: 'move_at_ply';
-  payload: { ply: number; san: string };
+  payload: {
+    game_id: string;
+    ply: number;
+    san: string;
+    from: string;
+    to: string;
+    promotion: string | null;
+    fen: string;
+    status: string;
+  };
 };
 
 export type ReplaceLineOp = OpBase & {

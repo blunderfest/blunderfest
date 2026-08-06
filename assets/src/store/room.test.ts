@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { GameTree } from '@/lib/api';
-import type { Op, SetGameOp } from '@/protocol/ops';
+import type { GameNode, GameTree } from '@/lib/api';
+import type { MoveAtPlyOp, Op, SetGameOp } from '@/protocol/ops';
 import roomReducer, {
   applyOp,
   enterRoom,
@@ -36,13 +36,22 @@ const tree: GameTree = {
   },
 };
 
-function moveOp(seq: number): Op {
+function moveOp(seq: number, ply = 1, gameId = 'game-1'): Op {
   return {
     seq,
     author: 'author-1',
     ts: '2026-01-01T00:00:00Z',
     type: 'move_at_ply',
-    payload: { ply: 1, san: 'e4' },
+    payload: {
+      game_id: gameId,
+      ply,
+      san: 'e4',
+      from: 'e2',
+      to: 'e4',
+      promotion: null,
+      fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+      status: 'active',
+    },
   };
 }
 
@@ -75,6 +84,88 @@ function setGameOp(seq: number, white: string, gameId = 'game-1'): SetGameOp {
     payload: {
       game_id: gameId,
       tree: { ...tree, headers: { White: white } },
+    },
+  };
+}
+
+function ply(partial: Partial<GameNode>): GameNode {
+  return {
+    id: 0,
+    ply: 0,
+    san: null,
+    from: null,
+    to: null,
+    promotion: null,
+    comment: null,
+    nags: [],
+    status: 'active',
+    fen: null,
+    children: [],
+    ...partial,
+  };
+}
+
+const playedTree: GameTree = {
+  headers: {},
+  result: '*',
+  setup: null,
+  mainline_ply_count: 2,
+  node_count: 3,
+  root: ply({
+    fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    children: [
+      ply({
+        id: 1,
+        ply: 1,
+        san: 'e4',
+        from: 'e2',
+        to: 'e4',
+        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+        children: [
+          ply({
+            id: 2,
+            ply: 2,
+            san: 'e5',
+            from: 'e7',
+            to: 'e5',
+            fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
+          }),
+        ],
+      }),
+    ],
+  }),
+};
+
+function playedGameOp(seq: number): SetGameOp {
+  return {
+    seq,
+    author: 'author-1',
+    ts: '2026-01-01T00:00:00Z',
+    type: 'set_game',
+    payload: { game_id: 'game-1', tree: playedTree },
+  };
+}
+
+function moveAtPly(
+  seq: number,
+  plyNumber: number,
+  payload: Partial<MoveAtPlyOp['payload']> = {},
+): Op {
+  return {
+    seq,
+    author: 'author-1',
+    ts: '2026-01-01T00:00:00Z',
+    type: 'move_at_ply',
+    payload: {
+      game_id: 'game-1',
+      ply: plyNumber,
+      san: 'e4',
+      from: 'e2',
+      to: 'e4',
+      promotion: null,
+      fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+      status: 'active',
+      ...payload,
     },
   };
 }
@@ -201,6 +292,78 @@ describe('room slice', () => {
     expect(state.presence).toEqual({ 'author-1': member });
     state = roomReducer(state, leaveMember({ id: 'author-1' }));
     expect(state.presence).toEqual({});
+  });
+
+  describe('move_at_ply transforms', () => {
+    it('appends a move beyond the end of the mainline', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(moveAtPly(2, 3, { san: 'Nf3', from: 'g1', to: 'f3' })));
+
+      const game = state.games['game-1'];
+      expect(game.mainline_ply_count).toBe(3);
+      expect(game.node_count).toBe(4);
+
+      const last = game.root.children[0].children[0].children[0];
+      expect(last).toMatchObject({ id: 3, ply: 3, san: 'Nf3', from: 'g1', to: 'f3' });
+    });
+
+    it('inserts a mid-line move as a variation', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(moveAtPly(2, 2, { san: 'Nc3', from: 'b1', to: 'c3' })));
+
+      const game = state.games['game-1'];
+      expect(game.mainline_ply_count).toBe(2);
+      expect(game.node_count).toBe(4);
+      expect(game.root.children[0].children.map((c) => c.san)).toEqual(['e5', 'Nc3']);
+      expect(game.root.children[0].children[1]).toMatchObject({ id: 3, ply: 2, san: 'Nc3' });
+    });
+
+    it('sets the result from the final status', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(moveAtPly(2, 3, { san: 'Qh4#', status: 'checkmate' })));
+      expect(state.games['game-1'].result).toBe('1-0');
+
+      state = roomReducer(state, applyOp(moveAtPly(3, 4, { san: 'Qxf7#', status: 'checkmate' })));
+      expect(state.games['game-1'].result).toBe('0-1');
+    });
+
+    it('applies move ops in seq order during replay', () => {
+      const state = roomReducer(
+        undefined,
+        replayOps([moveAtPly(2, 3, { san: 'Nf3', from: 'g1', to: 'f3' }), playedGameOp(1)]),
+      );
+
+      const game = state.games['game-1'];
+      expect(game.root.children[0].children[0].children[0]).toMatchObject({
+        id: 3,
+        san: 'Nf3',
+      });
+
+      const next = roomReducer(
+        state,
+        applyOp(moveAtPly(3, 4, { san: 'Nc6', from: 'b8', to: 'c6' })),
+      );
+      expect(
+        next.games['game-1'].root.children[0].children[0].children[0].children[0],
+      ).toMatchObject({
+        id: 4,
+        san: 'Nc6',
+      });
+    });
+
+    it('ignores move ops for unknown games and legacy payloads without game_id', () => {
+      let state = roomReducer(undefined, applyOp(moveAtPly(1, 3, { game_id: 'nope' })));
+      expect(state.games).toEqual({});
+
+      const legacy = moveAtPly(2, 3) as Op & { payload: { game_id?: string } };
+      delete legacy.payload.game_id;
+      state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(legacy));
+
+      const game = state.games['game-1'];
+      expect(game.mainline_ply_count).toBe(2);
+      expect(game.node_count).toBe(3);
+    });
   });
 
   describe('presenter selectors', () => {

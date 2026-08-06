@@ -86,6 +86,23 @@ export async function importLichess(url: string): Promise<{ tree: GameTree }> {
   });
 }
 
+export type LegalMove = {
+  from: string;
+  to: string;
+  promotion: string | null;
+  san: string;
+  fen: string;
+  status: string;
+};
+
+export async function fetchLegalMoves(fen: string): Promise<{ moves: LegalMove[] }> {
+  return request('/api/games/moves', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fen }),
+  });
+}
+
 /**
  * A blank game at the starting position, used for "New game" in rooms.
  */

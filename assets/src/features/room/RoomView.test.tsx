@@ -53,7 +53,16 @@ const moveOp: Op = {
   author: 'profile-1',
   ts: '2026-01-01T00:00:00Z',
   type: 'move_at_ply',
-  payload: { ply: 1, san: 'e4' },
+  payload: {
+    game_id: 'game-1',
+    ply: 1,
+    san: 'e4',
+    from: 'e2',
+    to: 'e4',
+    promotion: null,
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+    status: 'active',
+  },
 };
 
 function setGameOp(seq: number, tree: GameTree, gameId = 'game-1'): Op {
@@ -426,5 +435,71 @@ describe('RoomView', () => {
         'true',
       ),
     );
+  });
+
+  it('plays a move on the board as the presenter', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)] };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              moves: [
+                {
+                  from: 'e2',
+                  to: 'e4',
+                  promotion: null,
+                  san: 'e4',
+                  fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+                  status: 'active',
+                },
+                {
+                  from: 'g1',
+                  to: 'f3',
+                  promotion: null,
+                  san: 'Nf3',
+                  fen: 'rnbqkbnr/pppppppp/8/8/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 1',
+                  status: 'active',
+                },
+              ],
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } },
+          ),
+        ),
+      ),
+    );
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    fireEvent.click(await screen.findByTestId('square-e2'));
+    await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('square-e4'));
+
+    await waitFor(() => expect(channel.pushes.length).toBeGreaterThanOrEqual(1));
+    const movePush = channel.pushes.find(
+      (push) => (push.payload as { type?: string }).type === 'move_at_ply',
+    );
+    expect(movePush).toEqual({
+      event: 'op',
+      payload: {
+        type: 'move_at_ply',
+        payload: {
+          game_id: 'game-1',
+          ply: 1,
+          san: 'e4',
+          from: 'e2',
+          to: 'e4',
+          promotion: null,
+          fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+          status: 'active',
+        },
+      },
+    });
   });
 });

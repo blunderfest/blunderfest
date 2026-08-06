@@ -1,9 +1,10 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
 import Board from '@/components/Board';
 import { parseFen } from '@/components/board';
-import type { GameNode, GameTree } from '@/lib/api';
+import { fetchLegalMoves, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
+import type { MoveAtPlyOp } from '@/protocol/ops';
 
 const panel = tv({
   base: 'flex w-full max-w-2xl flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-6',
@@ -118,6 +119,7 @@ export default function Analysis({
   following = false,
   onFollowChange,
   onCursorChange,
+  onPlayMove,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -126,9 +128,12 @@ export default function Analysis({
   following?: boolean;
   onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
+  onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => void;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
+  const [legalMoves, setLegalMoves] = useState<LegalMove[] | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
 
   const presenterActive = presenterId !== null;
   const amPresenter = selfId !== null && selfId === presenterId;
@@ -149,11 +154,72 @@ export default function Analysis({
 
   const [currentId, setCurrentId] = useState<number | null>(null);
 
-  useEffect(() => {
-    setCurrentId(tree?.root.id ?? null);
-  }, [tree]);
+  /**
+   * Nodes the presenter played that have been broadcast but not yet applied
+   * back through the echo. Rendered like regular nodes so the board can show
+   * the move immediately; the replayed tree takes precedence once it arrives.
+   */
+  const [pending, setPending] = useState<Map<number, GameNode>>(new Map());
 
-  const current: GameNode | null = currentId === null ? null : (byId.get(currentId)?.node ?? null);
+  const current: GameNode | null = useMemo(
+    () =>
+      currentId === null ? null : (byId.get(currentId)?.node ?? pending.get(currentId) ?? null),
+    [currentId, byId, pending],
+  );
+
+  /**
+   * Keep the cursor where it is while the tree is updated in place (moves,
+   * variations); reset to the root when the tree is replaced wholesale and
+   * the current node is gone (new game, replay of a different op log).
+   */
+  const prevTreeRef = useRef<GameTree | null>(null);
+
+  useEffect(() => {
+    const prev = prevTreeRef.current;
+    prevTreeRef.current = tree;
+    if (tree === null) {
+      setCurrentId(null);
+      setPending(new Map());
+      return;
+    }
+    if (prev === tree) {
+      return;
+    }
+    if (current === null) {
+      setCurrentId(tree.root.id);
+    }
+  }, [tree, current]);
+
+  const canPlay = amPresenter && current !== null && current.status === 'active';
+
+  /**
+   * Fetch legal moves for the position when the presenter can play, so the
+   * board can hint and validate clicks.
+   */
+  useEffect(() => {
+    if (!canPlay) {
+      setLegalMoves(null);
+      setSelected(null);
+      return;
+    }
+    let cancelled = false;
+    setLegalMoves(null);
+    setSelected(null);
+    fetchLegalMoves(current.fen ?? '')
+      .then(({ moves }) => {
+        if (!cancelled) {
+          setLegalMoves(moves);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLegalMoves(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canPlay, current?.fen]);
 
   /**
    * Local navigation: breaks away from the presenter and moves the cursor.
@@ -164,6 +230,90 @@ export default function Analysis({
       setCurrentId(id);
     },
     [onFollowChange],
+  );
+
+  const selectedMoves = useMemo(
+    () => (selected === null ? [] : (legalMoves ?? []).filter((move) => move.from === selected)),
+    [selected, legalMoves],
+  );
+
+  const legalTargets = selectedMoves.map((move) => move.to);
+
+  const maxNodeId = useMemo(() => {
+    let max = -1;
+    for (const { node } of byId.values()) {
+      if (node.id > max) {
+        max = node.id;
+      }
+    }
+    for (const id of pending.keys()) {
+      if (id > max) {
+        max = id;
+      }
+    }
+    return max;
+  }, [byId, pending]);
+
+  /**
+   * Plays a legal move: the presenter broadcasts the op with all node data
+   * and moves to the node every client will derive (max id + 1). The node is
+   * kept in `pending` until the echo applies it to the tree.
+   */
+  const playMove = useCallback(
+    (move: LegalMove) => {
+      if (current === null || onPlayMove === undefined) {
+        return;
+      }
+      const nodeId = maxNodeId + 1;
+      onPlayMove({
+        ply: current.ply + 1,
+        san: move.san,
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion,
+        fen: move.fen,
+        status: move.status,
+      });
+      setPending((previous) => {
+        const next = new Map(previous);
+        next.set(nodeId, {
+          id: nodeId,
+          ply: current.ply + 1,
+          san: move.san,
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion,
+          comment: null,
+          nags: [],
+          status: move.status,
+          fen: move.fen,
+          children: [],
+        });
+        return next;
+      });
+      setSelected(null);
+      setCurrentId(nodeId);
+    },
+    [current, onPlayMove, maxNodeId],
+  );
+
+  const handleSquareClick = useCallback(
+    (square: string) => {
+      if (!canPlay) {
+        return;
+      }
+      const target = selectedMoves.find((move) => move.to === square);
+      if (target !== undefined) {
+        playMove(target);
+        return;
+      }
+      if ((legalMoves ?? []).some((move) => move.from === square)) {
+        setSelected(square);
+      } else {
+        setSelected(null);
+      }
+    },
+    [canPlay, selectedMoves, legalMoves, playMove],
   );
 
   /**
@@ -276,7 +426,16 @@ export default function Analysis({
           lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
           flipped={flipped}
           label={t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') })}
+          interactive={canPlay}
+          selected={selected}
+          legalTargets={legalTargets}
+          onSquareClick={canPlay ? handleSquareClick : undefined}
         />
+        {canPlay && (
+          <p className="m-0 text-xs text-muted" role="status">
+            {t('analysis.playHint')}
+          </p>
+        )}
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             type="button"
