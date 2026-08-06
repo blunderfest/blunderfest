@@ -1,20 +1,24 @@
 /**
  * In-browser Stockfish UCI client, backed by a single classic Web Worker.
  *
- * The worker script is served as a static asset and is told where its .wasm
- * lives via the `#<wasm-url>,worker` hash — the loading convention of the
- * stockfish.js build. `analyze` is tokenized: starting a new search makes any
- * in-flight one stale, and callers must abort the previous search before
- * starting the next (the `useEngine` hook does exactly that).
+ * The worker script and its wasm are served verbatim from `/engine/` (see
+ * `assets/scripts/copy-engine.mjs`): the stockfish.js build locates its wasm
+ * by replacing `.js` with `.wasm` in the worker script's own URL, so the two
+ * files must share a path stem — Vite's content-hashed asset URLs break that
+ * convention, which is why they are copied to stable names instead.
+ *
+ * `analyze` is tokenized: starting a new search makes any in-flight one
+ * stale, and callers must abort the previous search before starting the next
+ * (the `useEngine` hook does exactly that).
  */
-import stockfishWorkerUrl from 'stockfish/bin/stockfish-18-lite-single.js?url';
-import stockfishWasmUrl from 'stockfish/bin/stockfish-18-lite-single.wasm?url';
 import {
   type InfoLine,
   type InfoScore,
   parseBestMove,
   parseInfoLine,
 } from '@/features/analysis/uci';
+
+const STOCKFISH_WORKER_URL = '/engine/stockfish-18-lite-single.js';
 
 export type EngineResult = {
   score: InfoScore;
@@ -47,7 +51,7 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
   const worker: WorkerLike =
     workerFactory !== undefined
       ? workerFactory()
-      : (new Worker(`${stockfishWorkerUrl}#${stockfishWasmUrl},worker`) as unknown as WorkerLike);
+      : (new Worker(STOCKFISH_WORKER_URL) as unknown as WorkerLike);
   let listeners: Array<(line: string) => void> = [];
 
   worker.onmessage = (event) => {
