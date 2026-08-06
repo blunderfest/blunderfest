@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { isLightSquare, parseFen, pieceGlyph, squareName } from '@/components/board';
+import {
+  arrowLine,
+  isLightSquare,
+  parseFen,
+  pieceGlyph,
+  squareName,
+  squarePoint,
+} from '@/components/board';
 
 const start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -52,5 +59,36 @@ describe('pieceGlyph', () => {
     expect(pieceGlyph('b', 'k')).toBe('♚');
     expect(pieceGlyph('w', 'p')).toBe('♙');
     expect(pieceGlyph('b', 'p')).toBe('♟');
+  });
+});
+
+describe('squarePoint', () => {
+  it('centers squares in 8x8 space', () => {
+    expect(squarePoint('a1')).toEqual({ x: 0.5, y: 7.5 });
+    expect(squarePoint('h8')).toEqual({ x: 7.5, y: 0.5 });
+    expect(squarePoint('e4')).toEqual({ x: 4.5, y: 4.5 });
+  });
+
+  it('mirrors the board when flipped', () => {
+    expect(squarePoint('e4', true)).toEqual({ x: 3.5, y: 3.5 });
+    expect(squarePoint('a1', true)).toEqual({ x: 7.5, y: 0.5 });
+  });
+});
+
+describe('arrowLine', () => {
+  it('shortens the line at both ends', () => {
+    const line = arrowLine('e2', 'e4');
+    expect(line.x1).toBeCloseTo(4.5);
+    expect(line.y1).toBeCloseTo(6.2);
+    expect(line.x2).toBeCloseTo(4.5);
+    expect(line.y2).toBeCloseTo(5.1);
+  });
+
+  it('mirrors the arrow when flipped', () => {
+    const line = arrowLine('e2', 'e4', true);
+    expect(line.x1).toBeCloseTo(3.5);
+    expect(line.y1).toBeCloseTo(1.8);
+    expect(line.x2).toBeCloseTo(3.5);
+    expect(line.y2).toBeCloseTo(2.9);
   });
 });

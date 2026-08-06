@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { tv } from 'tailwind-variants';
 import {
+  arrowLine,
   isLightSquare,
   type Piece,
   type Position,
@@ -38,6 +39,8 @@ export default function Board({
   interactive = false,
   selected = null,
   legalTargets = [],
+  arrows = [],
+  arrowColor = '#fbbf24',
   onSquareClick,
 }: {
   position: Position;
@@ -47,12 +50,15 @@ export default function Board({
   interactive?: boolean;
   selected?: string | null;
   legalTargets?: string[];
+  arrows?: { from: string; to: string }[];
+  arrowColor?: string;
   onSquareClick?: (square: string) => void;
 }) {
   const [focusIndex, setFocusIndex] = useState<number>(() =>
     lastMove?.to ? squareIndex(lastMove.to) : squareIndex('e4'),
   );
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const markerId = useId();
 
   function focusSquare(index: number) {
     setFocusIndex(index);
@@ -105,7 +111,7 @@ export default function Board({
     <div
       ref={containerRef}
       data-board-grid
-      className="grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-lg border border-white/10 shadow-lg"
+      className="relative grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-lg border border-white/10 shadow-lg"
       role={interactive ? 'group' : 'img'}
       aria-label={label}
       onKeyDown={handleKeyDown}
@@ -176,6 +182,45 @@ export default function Board({
           </div>
         );
       })}
+
+      {arrows.length > 0 && (
+        <svg
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          viewBox="0 0 8 8"
+          aria-hidden="true"
+          data-testid="board-arrows"
+        >
+          <defs>
+            <marker
+              id={`${markerId}-head`}
+              viewBox="0 0 1 1"
+              refX="0.8"
+              refY="0.5"
+              markerWidth="0.5"
+              markerHeight="0.5"
+              orient="auto-start-reverse"
+            >
+              <path d="M0,0 L1,0.5 L0,1 Z" fill={arrowColor} />
+            </marker>
+          </defs>
+          {arrows.map((arrow) => {
+            const line = arrowLine(arrow.from, arrow.to, flipped);
+            return (
+              <line
+                key={`${arrow.from}-${arrow.to}`}
+                x1={line.x1}
+                y1={line.y1}
+                x2={line.x2}
+                y2={line.y2}
+                stroke={arrowColor}
+                strokeWidth={0.22}
+                strokeLinecap="round"
+                markerEnd={`url(#${markerId}-head)`}
+              />
+            );
+          })}
+        </svg>
+      )}
     </div>
   );
 }

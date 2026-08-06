@@ -1,4 +1,8 @@
 allowBuilds:
   esbuild: true
+  # The stockfish postinstall only creates a bin/stockfish.js symlink; we
+  # import the explicit versioned files (stockfish-18-lite-single.*), so it
+  # is never needed.
+  stockfish: false
 onlyBuiltDependencies:
   - esbuild

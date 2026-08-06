@@ -3,11 +3,15 @@ import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
 import { parseFen } from '@/components/board';
 import BoardControls from '@/features/analysis/BoardControls';
+import EvalBar from '@/features/analysis/EvalBar';
+import type { ChessEngine } from '@/features/analysis/engine';
 import GameInfo from '@/features/analysis/GameInfo';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import NodeComment from '@/features/analysis/NodeComment';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
+import { evalLabel } from '@/features/analysis/uci';
+import { useEngine } from '@/features/analysis/useEngine';
 import { fetchLegalMoves, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
 import type { CommentAtPlyOp, MoveAtPlyOp } from '@/protocol/ops';
 
@@ -18,6 +22,7 @@ export default function Analysis({
   presenterCursorId = null,
   following = false,
   canEdit = false,
+  engine = undefined,
   onFollowChange,
   onCursorChange,
   onPlayMove,
@@ -29,6 +34,7 @@ export default function Analysis({
   presenterCursorId?: number | null;
   following?: boolean;
   canEdit?: boolean;
+  engine?: ChessEngine | null;
   onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
   onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => void;
@@ -90,6 +96,11 @@ export default function Analysis({
   }, [following, presenterCursorId, currentId, byId, pending, tree]);
 
   const canPlay = canEdit && current !== null && current.status === 'active';
+
+  const engineState = useEngine(current?.fen ?? null, {
+    engine,
+    enabled: current?.status === 'active',
+  });
 
   /**
    * Fetch legal moves for the position when the viewer can play, so the
@@ -295,6 +306,11 @@ export default function Analysis({
   const parent = byId.get(current.id)?.parent ?? null;
   const next = current.children[0] ?? null;
   const boardLabel = t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') });
+  const evalBarLabel =
+    engineState.eval !== null
+      ? t('analysis.evalLabel', { value: evalLabel(engineState.eval) })
+      : t('analysis.evalBar');
+  const hintArrows = engineState.bestMove === null ? [] : [engineState.bestMove];
 
   return (
     <div
@@ -312,16 +328,34 @@ export default function Analysis({
       </div>
 
       <div className="flex flex-col items-center gap-4">
-        <Board
-          position={parseFen(current.fen ?? '')}
-          lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
-          flipped={flipped}
-          label={boardLabel}
-          interactive={canPlay}
-          selected={selected}
-          legalTargets={legalTargets}
-          onSquareClick={canPlay ? handleSquareClick : undefined}
-        />
+        <div className="flex items-stretch gap-3">
+          <EvalBar eval={engineState.eval} label={evalBarLabel} />
+          <Board
+            position={parseFen(current.fen ?? '')}
+            lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
+            flipped={flipped}
+            label={boardLabel}
+            interactive={canPlay}
+            selected={selected}
+            legalTargets={legalTargets}
+            arrows={hintArrows}
+            onSquareClick={canPlay ? handleSquareClick : undefined}
+          />
+        </div>
+        {(engineState.status === 'thinking' || engineState.status === 'error') && (
+          <p className="m-0 text-xs text-muted" role="status">
+            {engineState.status === 'thinking'
+              ? t('analysis.engineThinking')
+              : t('analysis.engineUnavailable')}
+          </p>
+        )}
+        {engineState.status === 'ready' &&
+          engineState.eval !== null &&
+          engineState.depth !== null && (
+            <p className="m-0 text-xs text-muted">
+              {evalLabel(engineState.eval)} · {t('analysis.depth', { depth: engineState.depth })}
+            </p>
+          )}
         {canPlay && (
           <p className="m-0 text-xs text-muted" role="status">
             {t('analysis.playHint')}

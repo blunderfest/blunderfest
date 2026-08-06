@@ -505,3 +505,61 @@ describe('Analysis', () => {
     expect(screen.queryByTestId('comment-editor')).not.toBeInTheDocument();
   });
 });
+
+describe('engine analysis', () => {
+  function fakeEngine(
+    result: {
+      score: { type: 'cp'; cp: number } | { type: 'mate'; mate: number };
+      depth: number;
+      pv: string[];
+      bestMove: string;
+    } | null,
+  ): {
+    init: ReturnType<typeof vi.fn>;
+    analyze: ReturnType<typeof vi.fn>;
+    terminate: ReturnType<typeof vi.fn>;
+  } {
+    return {
+      init: vi.fn(() => Promise.resolve()),
+      analyze: vi.fn(async () => result),
+      terminate: vi.fn(),
+    };
+  }
+
+  it('shows the eval bar, label and hint arrow once the engine has analyzed the position', async () => {
+    render(
+      <Analysis
+        tree={tree}
+        engine={fakeEngine({
+          score: { type: 'cp', cp: 42 },
+          depth: 9,
+          pv: ['e2e4'],
+          bestMove: 'e2e4',
+        })}
+      />,
+    );
+
+    expect(await screen.findByText('+0.42')).toBeInTheDocument();
+    expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Engine evaluation: +0.42' })).toBeInTheDocument();
+    expect(screen.getByText('+0.42 · depth 9')).toBeInTheDocument();
+  });
+
+  it('shows no hint when the engine reports no best move', async () => {
+    render(<Analysis tree={tree} engine={fakeEngine(null)} />);
+
+    await waitFor(() => expect(screen.queryByText('Analyzing…')).not.toBeInTheDocument());
+    expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument();
+  });
+
+  it('reports when the engine is unavailable', async () => {
+    const engine = {
+      init: vi.fn(() => Promise.resolve()),
+      analyze: vi.fn(() => Promise.reject(new Error('boom'))),
+      terminate: vi.fn(),
+    };
+    render(<Analysis tree={tree} engine={engine} />);
+
+    expect(await screen.findByText('Engine analysis unavailable')).toBeInTheDocument();
+  });
+});

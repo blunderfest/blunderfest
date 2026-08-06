@@ -74,6 +74,13 @@ shared vocabulary is mirrored in `assets/src/protocol/ops.ts`.
   (navigation, comments, present/follow), `moveList.ts`/`MoveList.tsx`
   (variation tree), `nodeMap.ts` (ply ↔ node index), `BoardControls`,
   `GameInfo`, `NodeComment`.
+- `assets/src/features/analysis/engine.ts` + `useEngine.ts` + `uci.ts` +
+  `EvalBar.tsx` — in-browser Stockfish 18 Lite (WASM, single-threaded, in a
+  classic Web Worker via the `#<wasm-url>,worker` hash convention; ADR-0009).
+  The `ChessEngine` interface (`init`/`analyze`/`terminate`) is injectable for
+  tests; `useEngine` debounces position changes, aborts stale searches, and
+  normalizes scores to white's perspective. The UI is the `EvalBar` beside
+  the board plus the best move as an arrow overlay (`Board`'s `arrows` prop).
 - `assets/src/components/ui.ts` — `tv()`-based component variants (Tailwind
   v4, dark theme); `<.icon>`-style icons are heroicons via the `.icon` /
   `Icon` components.

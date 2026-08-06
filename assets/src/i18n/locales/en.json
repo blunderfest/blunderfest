@@ -52,6 +52,11 @@
   },
   "analysis": {
     "noGame": "Import a game to start analyzing.",
+    "evalBar": "Eval bar",
+    "evalLabel": "Engine evaluation: {{value}}",
+    "engineThinking": "Analyzing…",
+    "engineUnavailable": "Engine analysis unavailable",
+    "depth": "depth {{depth}}",
     "first": "First",
     "prev": "Previous",
     "next": "Next",

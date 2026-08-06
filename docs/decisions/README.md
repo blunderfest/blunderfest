@@ -50,5 +50,5 @@ here, or point to the ADR that superseded this one.
 | [0006](adr-0006-explicit-room-creation-and-join-gating.md) | Rooms are created explicitly via `POST /api/rooms`; joins never create rooms | Accepted (2026-08-06) |
 | [0007](adr-0007-room-code-format.md) | Room codes are 5 chars from an unambiguous alphabet, validated on both ends | Accepted (2026-08-06) |
 | [0008](adr-0008-branch-structure-main-and-backup.md) | `main` is the active branch; `main_backup` archives the old history | Accepted (2026-08-06) |
-| [0009](adr-0009-engine-strategy.md) | Engine strategy: Stockfish WASM in the browser, server-side UCI worker pool for batch analysis | Accepted — implementation pending |
+| [0009](adr-0009-engine-strategy.md) | Engine strategy: Stockfish WASM in the browser, server-side UCI worker pool for batch analysis | Accepted (2026-08-04); interactive layer implemented (2026-08-06), batch pool pending |
 | [0010](adr-0010-weight-agnostic-search-index.md) | Search indexes weight-agnostic piece maps so user-configurable weights never require reindexing | Accepted — implementation pending |

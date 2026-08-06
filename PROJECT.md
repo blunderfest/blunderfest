@@ -72,8 +72,9 @@ Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
    stored PII, bearer auth (ADR-0004).
 3. **Import** — DONE. PGN paste and Lichess URL import → variation tree, shared
    in rooms. (In-memory storage; "DB" only when a DB exists.)
-4. **Solo board** — MOSTLY DONE. Hand-rolled board, navigation, arrows,
-   highlights, comments. Remaining: Stockfish WASM eval bar + best-move hints.
+4. **Solo board** — DONE. Hand-rolled board, navigation, arrows, highlights,
+   comments, Stockfish WASM eval bar + best-move hints (ADR-0009). Remaining
+   from the engine scope: blunder flags while dragging.
 5. **Rooms** — DONE. Channel per slug, op-log sync (ADR-0005), presence, roles,
    cursors, multiple games. Remaining: profile game library.
 6. **Save/export** — annotated PGN export, room/game claiming.

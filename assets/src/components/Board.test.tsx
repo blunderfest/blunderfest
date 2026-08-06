@@ -272,3 +272,27 @@ describe('Board', () => {
     expect(tabStops).toHaveLength(1);
   });
 });
+
+describe('Board arrows', () => {
+  it('renders hint arrows over the board', () => {
+    render(<Board position={emptyPosition()} arrows={[{ from: 'e2', to: 'e4' }]} />);
+    const svg = screen.getByTestId('board-arrows');
+    const line = svg.querySelector('line');
+    expect(line).not.toBeNull();
+    expect(Number(line?.getAttribute('x1'))).toBeCloseTo(4.5);
+    expect(Number(line?.getAttribute('y1'))).toBeCloseTo(6.2);
+    expect(Number(line?.getAttribute('y2'))).toBeCloseTo(5.1);
+  });
+
+  it('mirrors arrows when flipped', () => {
+    render(<Board position={emptyPosition()} flipped arrows={[{ from: 'e2', to: 'e4' }]} />);
+    const line = screen.getByTestId('board-arrows').querySelector('line');
+    expect(Number(line?.getAttribute('x1'))).toBeCloseTo(3.5);
+    expect(Number(line?.getAttribute('y1'))).toBeCloseTo(1.8);
+  });
+
+  it('renders no arrows by default', () => {
+    render(<Board position={emptyPosition()} />);
+    expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument();
+  });
+});
