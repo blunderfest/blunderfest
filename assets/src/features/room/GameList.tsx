@@ -32,7 +32,9 @@ export default function GameList({
   const entries = Object.entries(games);
 
   return (
-    <section className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col`}>
+    <section
+      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col xl:max-h-[45%]`}
+    >
       <div className={panelHeader()}>
         <h2 className="m-0">{t('room.games')}</h2>
         <span className="text-faint tabular-nums">{entries.length}</span>

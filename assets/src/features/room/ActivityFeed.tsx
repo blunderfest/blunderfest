@@ -61,7 +61,9 @@ export default function ActivityFeed({
   const seen = seenRef.current;
 
   return (
-    <section className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col`}>
+    <section
+      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col xl:flex-1`}
+    >
       <div className={panelHeader()}>
         <h2 className="m-0">{t('room.activity')}</h2>
       </div>
