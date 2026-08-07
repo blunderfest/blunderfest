@@ -5,12 +5,14 @@ import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
 import {
   kingInCheckSquare,
+  type Piece,
   type Position,
   parseFen,
+  pieceGlyph,
   positionToFen,
   squareIndex,
 } from '@/components/board';
-import { button } from '@/components/ui';
+import { button, statusDot } from '@/components/ui';
 import BoardControls from '@/features/analysis/BoardControls';
 import CommentPopup from '@/features/analysis/CommentPopup';
 import EngineReadout from '@/features/analysis/EngineReadout';
@@ -20,6 +22,7 @@ import GameInfo from '@/features/analysis/GameInfo';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
+import SidebarTabs from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useEngine } from '@/features/analysis/useEngine';
 import { fetchLegalMoves, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
@@ -240,21 +243,23 @@ export default function Analysis({
 
   /**
    * Free-form position editing (ADR-0011). In edit mode the board accepts
-   * arbitrary piece placement: click a piece to pick it up, click any square
-   * to drop it (replacing whatever is there). "Set position" validates with
-   * chess.js and broadcasts a `set_position` op; the echo lands the setup
-   * node under the current one.
+   * arbitrary piece placement: click a piece to pick it up and drop it
+   * anywhere, or pick a piece from the palette (then every click places it).
+   * The eraser removes pieces. "Done" validates with chess.js and broadcasts
+   * a `set_position` op; the echo lands the setup node under the current one.
    */
   const [editing, setEditing] = useState(false);
   const [editPos, setEditPos] = useState<Position>([]);
   const [editTurn, setEditTurn] = useState<'w' | 'b'>('w');
   const [editSelected, setEditSelected] = useState<string | null>(null);
+  const [editBrush, setEditBrush] = useState<Piece | 'erase' | null>(null);
   const [editError, setEditError] = useState(false);
 
   function enterEditMode() {
     setEditPos(parseFen(current?.fen ?? ''));
     setEditTurn(current?.fen?.split(' ')[1] === 'b' ? 'b' : 'w');
     setEditSelected(null);
+    setEditBrush(null);
     setEditError(false);
     setEditing(true);
   }
@@ -262,13 +267,29 @@ export default function Analysis({
   function exitEditMode() {
     setEditing(false);
     setEditSelected(null);
+    setEditBrush(null);
     setEditError(false);
   }
 
   const handleEditSquareClick = useCallback(
     (square: string) => {
+      const index = squareIndex(square);
+      if (editBrush === 'erase') {
+        if (editPos[index] != null) {
+          const next = [...editPos];
+          next[index] = null;
+          setEditPos(next);
+        }
+        return;
+      }
+      if (editBrush !== null) {
+        const next = [...editPos];
+        next[index] = editBrush;
+        setEditPos(next);
+        return;
+      }
       if (editSelected === null) {
-        if (editPos[squareIndex(square)] != null) {
+        if (editPos[index] != null) {
           setEditSelected(square);
         }
         return;
@@ -279,12 +300,12 @@ export default function Analysis({
       }
       const from = squareIndex(editSelected);
       const next = [...editPos];
-      next[squareIndex(square)] = next[from] ?? null;
+      next[index] = next[from] ?? null;
       next[from] = null;
       setEditPos(next);
       setEditSelected(null);
     },
-    [editPos, editSelected],
+    [editPos, editSelected, editBrush],
   );
 
   function handleSetPosition() {
@@ -437,12 +458,67 @@ export default function Analysis({
           </div>
 
           <div className="flex items-stretch gap-3">
-            <EvalBar
-              eval={engineState.eval}
-              thinking={engineState.status === 'thinking'}
-              unavailable={engineState.status === 'error'}
-              label={evalBarLabel}
-            />
+            {editing ? (
+              <fieldset
+                className="m-0 flex min-w-0 flex-col justify-center gap-1 rounded-control border border-line bg-panel px-1.5 py-2"
+                data-testid="edit-palette"
+              >
+                <legend className="sr-only">{t('analysis.palette')}</legend>
+                {(['w', 'b'] as const).map((color) => (
+                  <div key={color} className="flex flex-col gap-1">
+                    {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
+                      const active =
+                        editBrush !== null &&
+                        editBrush !== 'erase' &&
+                        editBrush.color === color &&
+                        editBrush.kind === kind;
+                      return (
+                        <button
+                          key={kind}
+                          type="button"
+                          aria-pressed={active}
+                          aria-label={t('analysis.pieceLabel', {
+                            color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
+                            piece: t(`analysis.pieces.${kind}`),
+                          })}
+                          className={`grid h-8 w-8 place-items-center rounded-control text-lg leading-none transition-colors ${
+                            active ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
+                          }`}
+                          style={{
+                            color: color === 'w' ? '#f9f9f9' : '#1a1a1a',
+                            textShadow:
+                              color === 'w'
+                                ? '0 0 2px rgba(26,26,26,0.9)'
+                                : '0 1px 1px rgba(255,255,255,0.35)',
+                          }}
+                          onClick={() => setEditBrush(active ? null : { color, kind })}
+                        >
+                          {pieceGlyph(color, kind)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  aria-pressed={editBrush === 'erase'}
+                  aria-label={t('analysis.eraser')}
+                  className={`mt-1 grid h-8 w-8 place-items-center rounded-control border-t border-line pt-1 text-base text-muted transition-colors ${
+                    editBrush === 'erase' ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
+                  }`}
+                  onClick={() => setEditBrush(editBrush === 'erase' ? null : 'erase')}
+                >
+                  ⌫
+                </button>
+              </fieldset>
+            ) : (
+              <EvalBar
+                eval={engineState.eval}
+                thinking={engineState.status === 'thinking'}
+                unavailable={engineState.status === 'error'}
+                label={evalBarLabel}
+              />
+            )}
             <Board
               position={editing ? editPos : parseFen(current.fen ?? '')}
               lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
@@ -475,11 +551,27 @@ export default function Analysis({
                 </button>
                 <button
                   type="button"
+                  className={button({ intent: 'quiet', size: 'sm' })}
+                  onClick={() => setEditPos(new Array(64).fill(null))}
+                  data-testid="edit-clear-button"
+                >
+                  {t('analysis.clearBoard')}
+                </button>
+                <button
+                  type="button"
+                  className={button({ intent: 'quiet', size: 'sm' })}
+                  onClick={() => setEditPos(parseFen(current.fen ?? ''))}
+                  data-testid="edit-reset-button"
+                >
+                  {t('analysis.resetPosition')}
+                </button>
+                <button
+                  type="button"
                   className={button({ intent: 'primary', size: 'sm' })}
                   onClick={handleSetPosition}
                   data-testid="set-position-button"
                 >
-                  {t('analysis.setPosition')}
+                  {t('analysis.done')}
                 </button>
                 <button
                   type="button"
@@ -496,9 +588,19 @@ export default function Analysis({
               )}
             </div>
           )}
-          <div className="w-[min(90vw,34rem)]">
-            <EngineReadout fen={current.fen ?? ''} state={engineState} />
-          </div>
+          {editing ? (
+            <div
+              className="flex h-9 w-[min(90vw,34rem)] items-center gap-2 rounded-control border border-gold/30 bg-gold/10 px-3"
+              data-testid="engine-paused"
+            >
+              <span className={statusDot({ tone: 'warn', pulse: true })} />
+              <span className="text-ui text-gold-hi">{t('analysis.enginePaused')}</span>
+            </div>
+          ) : (
+            <div className="w-[min(90vw,34rem)]">
+              <EngineReadout fen={current.fen ?? ''} state={engineState} />
+            </div>
+          )}
           {current.comment !== null && (
             <div
               className="w-[min(90vw,34rem)] rounded-control border border-line bg-panel p-3 text-body text-ink"
@@ -558,13 +660,25 @@ export default function Analysis({
           here — the space belongs to the move list.
         */}
         <aside className="flex w-full max-w-sm flex-col gap-3 xl:h-[min(90vw,34rem)] xl:w-[340px] xl:max-w-none">
-          <MoveList
-            rows={rows}
-            currentId={current.id}
-            nodeCount={tree.node_count}
-            onSelect={navigate}
+          <SidebarTabs
+            tabs={[
+              {
+                id: 'analysis',
+                label: t('analysis.moves'),
+                content: (
+                  <>
+                    <MoveList
+                      rows={rows}
+                      currentId={current.id}
+                      nodeCount={tree.node_count}
+                      onSelect={navigate}
+                    />
+                    <GameInfo tree={tree} />
+                  </>
+                ),
+              },
+            ]}
           />
-          <GameInfo tree={tree} />
         </aside>
       </div>
 

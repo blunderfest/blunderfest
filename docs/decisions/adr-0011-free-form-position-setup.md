@@ -48,7 +48,6 @@ feature is that everyone in the room sees the same what-if.
   setup nodes to `[FEN "..."]` sections naturally.
 - Edit ops are broadcast to everyone, so one person's edit moves everyone's
   board when they're following — intended, same as moves.
-- v1 limitations: no adding/removing pieces (only moving; dropping on a piece
-  replaces it), and castling/en-passant rights reset. (The initial "no
-  comments on setup nodes" limitation was lifted when comment ops learned to
-  address nodes by `node_id` instead of mainline ply.)
+- v1 limitations: castling/en-passant rights reset. (The initial "no adding
+  pieces" limitation was lifted with the piece palette; "no comments on setup
+  nodes" was lifted when comment ops learned to address nodes by `node_id`.)

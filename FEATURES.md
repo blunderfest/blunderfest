@@ -34,6 +34,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Activity feed (who did what, minus cursor noise)
 - ✅ Room code in the app header (copy to share; joiners land as viewers)
 - ✅ Demo room seeded on boot at `#/r/chess` (annotated Opera Game) — linked from the home page
+- ✅ Sidebar tab shell (Analysis now; Explorer + Search get a home when they land)
 - 💡 Private rooms with owner-approved joins (the `:pending` approval seam already exists — ADR-0006)
 - 💡 Text chat
 - 💡 Per-member cursor/arrow colors (see who points where)
@@ -45,9 +46,12 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 ## Engine
 
 - ✅ Browser Stockfish (lite single-threaded WASM) — instant eval + hint, zero server cost
+- ✅ Floating eval badge at the bar's split point; result display on terminal positions
 - 🚧 Server-side UCI worker pool: whole-game analysis jobs, per-ply evals, eval-curve chart (ADR-0009; consistent truth for all room members)
+  - Visual targets from the design explorations (`design/analysis1.html`): "Game Flow" eval curve with blunder/brilliant markers, per-move eval column in the move list, `!!`/`??` row treatments, inline "Engine Top Line" box
 - 💡 Cloud eval cache (share computed evals across users/rooms)
 - 💡 "Learn from this game" report: mistakes, turning points, best-move diffs
+- 💡 3D board (Three.js) — cool but heavy; the cheap version is a 3D-styled piece sprite theme on the 2D board
 
 ## Games & library
 

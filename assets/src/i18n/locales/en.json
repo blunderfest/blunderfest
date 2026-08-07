@@ -125,6 +125,23 @@
       "checkmate": "Checkmate",
       "stalemate": "Stalemate",
       "draw": "Draw"
+    },
+    "palette": "Piece palette",
+    "eraser": "Eraser",
+    "clearBoard": "Clear board",
+    "resetPosition": "Reset position",
+    "done": "Done",
+    "enginePaused": "Engine paused while editing — Done resumes it.",
+    "sideWhite": "White",
+    "sideBlack": "Black",
+    "pieceLabel": "{{color}} {{piece}}",
+    "pieces": {
+      "k": "king",
+      "q": "queen",
+      "r": "rook",
+      "b": "bishop",
+      "n": "knight",
+      "p": "pawn"
     }
   },
   "room": {

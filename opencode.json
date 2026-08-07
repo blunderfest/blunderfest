@@ -6,7 +6,9 @@
       "command": [
         "pnpm",
         "dlx",
-        "@playwright/mcp@latest"
+        "@playwright/mcp@latest",
+        "--browser",
+        "chromium"
       ],
       "enabled": true
     },

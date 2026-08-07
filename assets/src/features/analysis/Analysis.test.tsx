@@ -640,4 +640,29 @@ describe('position setup (what-if editing)', () => {
     render(<Analysis tree={tree} />);
     expect(screen.queryByRole('button', { name: 'Edit position' })).not.toBeInTheDocument();
   });
+  it('places pieces from the palette, clears and resets the board, and pauses the engine', () => {
+    const onSetPosition = vi.fn();
+    render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    expect(screen.getByTestId('engine-paused')).toBeInTheDocument();
+    expect(screen.queryByTestId('engine-readout')).not.toBeInTheDocument();
+
+    // Clear everything, then place a white king on a4 from the palette.
+    fireEvent.click(screen.getByTestId('edit-clear-button'));
+    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
+    fireEvent.click(screen.getByRole('button', { name: 'White king' }));
+    fireEvent.click(screen.getByTestId('square-a4'));
+    expect(screen.getByTestId('square-a4')).toHaveTextContent('♚');
+
+    // Reset restores the node's position.
+    fireEvent.click(screen.getByTestId('edit-reset-button'));
+    expect(screen.getByTestId('square-a4')).not.toHaveTextContent('♚');
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
+
+    // The eraser removes a single piece.
+    fireEvent.click(screen.getByRole('button', { name: 'Eraser' }));
+    fireEvent.click(screen.getByTestId('square-e4'));
+    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
+  });
 });

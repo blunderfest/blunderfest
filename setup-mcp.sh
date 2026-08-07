@@ -17,9 +17,11 @@ else:
 
 mcp = config.setdefault('mcp', {})
 
+# --browser chromium: use the downloaded chromium build, not a system Chrome
+# (the MCP defaults to the 'chrome' channel, which requires Chrome in /opt).
 mcp['playwright'] = {
     "type": "local",
-    "command": ["pnpm", "dlx", "@playwright/mcp@latest"],
+    "command": ["pnpm", "dlx", "@playwright/mcp@latest", "--browser", "chromium"],
     "enabled": True,
 }
 

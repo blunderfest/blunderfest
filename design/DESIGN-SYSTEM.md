@@ -985,3 +985,22 @@ tokens in `src/app/globals.css`, the `tailwind-variants` definitions in
 `src/ui/variants.ts`, and every component file in `src/components/`. Every
 class named here is a real utility available to developers — no mockup values,
 no unreachable specs.*
+
+---
+
+## Addendum (2026-08-07, from the Stitch explorations)
+
+Adopted after review of `design/analysis1.html` / `analysis2.html`:
+
+- **Eval bar**: the value label is a floating badge (`bg-background/90`,
+  1px white/20 border, backdrop-blur) positioned inside the bar at the
+  white/black split point; it rides the 420ms height transition.
+- **Edit mode**: a translucent piece palette column beside the board (white
+  pieces over black pieces + an eraser), Clear/Reset/Done actions, and an
+  "engine paused" banner replacing the readout while editing.
+- **Sidebar tabs**: panels beyond the move list (future Explorer, Search)
+  dock as tabs in the right sidebar. The tab strip renders only when more
+  than one tab exists — no placeholder tabs.
+
+Not adopted: the mockups' top-nav chrome, Material Symbols font icons, and
+Geist/JetBrains Mono (we stay with Open Sans + system mono + unicode glyphs).
