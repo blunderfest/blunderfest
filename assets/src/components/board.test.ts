@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   arrowLine,
   isLightSquare,
+  kingInCheckSquare,
   parseFen,
   pieceGlyph,
   squareName,
@@ -90,5 +91,21 @@ describe('arrowLine', () => {
     expect(line.y1).toBeCloseTo(1.8);
     expect(line.x2).toBeCloseTo(3.5);
     expect(line.y2).toBeCloseTo(2.9);
+  });
+});
+
+describe('kingInCheckSquare', () => {
+  it('returns the checked king square for a check position', () => {
+    expect(kingInCheckSquare('4k3/8/8/8/8/8/4R3/4K3 b - - 0 1')).toBe('e8');
+  });
+
+  it('returns null when nobody is in check', () => {
+    expect(
+      kingInCheckSquare('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'),
+    ).toBeNull();
+  });
+
+  it('returns null for garbage input instead of throwing', () => {
+    expect(kingInCheckSquare('not a fen')).toBeNull();
   });
 });

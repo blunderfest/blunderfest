@@ -319,3 +319,15 @@ describe('square positioning', () => {
     expect(screen.getByTestId('selected-e2')).toHaveClass('pointer-events-none');
   });
 });
+
+describe('check highlight', () => {
+  it('glows on the checked king square', () => {
+    render(<Board position={emptyPosition()} checkSquare="e8" />);
+    expect(screen.getByTestId('check-e8')).toBeInTheDocument();
+  });
+
+  it('renders no glow without a check', () => {
+    render(<Board position={emptyPosition()} />);
+    expect(screen.queryByTestId('check-e8')).not.toBeInTheDocument();
+  });
+});

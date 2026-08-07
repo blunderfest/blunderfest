@@ -12,6 +12,7 @@ export default function BoardControls({
   onNavigate,
   onFlip,
   onFollowChange,
+  onOpenComment,
 }: {
   targets: { first: number; prev: number | null; next: number | null; last: number | null };
   currentPly: number;
@@ -23,6 +24,7 @@ export default function BoardControls({
   onNavigate: (id: number) => void;
   onFlip: () => void;
   onFollowChange: (following: boolean) => void;
+  onOpenComment?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -97,6 +99,18 @@ export default function BoardControls({
           onClick={() => onFollowChange(!following)}
         >
           {following ? `⇢ ${t('analysis.following')}` : t('analysis.follow')}
+        </button>
+      )}
+      {onOpenComment !== undefined && (
+        <button
+          type="button"
+          id="analysis-comment-button"
+          className={button({ intent: 'ghost', size: 'sm' })}
+          aria-label={t('analysis.commentTitle')}
+          aria-keyshortcuts="c"
+          onClick={onOpenComment}
+        >
+          💬 {t('analysis.commentTitle')}
         </button>
       )}
       {amPresenter && (

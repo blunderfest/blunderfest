@@ -3,9 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { button } from '@/components/ui';
 
 /**
- * The compact room chip rendered in the app header, visible to the room's
- * owner only (they are the one sharing the code). Non-owners leave via the
- * brand link home.
+ * The compact room chip rendered in the app header for everyone in the room:
+ * the code to copy and share (joiners land as viewers anyway) plus leave.
  */
 export default function RoomHeader({ slug, onLeave }: { slug: string; onLeave: () => void }) {
   const { t } = useTranslation();

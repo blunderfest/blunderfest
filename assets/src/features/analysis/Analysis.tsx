@@ -2,15 +2,15 @@ import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
-import { parseFen } from '@/components/board';
+import { kingInCheckSquare, parseFen } from '@/components/board';
 import BoardControls from '@/features/analysis/BoardControls';
+import CommentPopup from '@/features/analysis/CommentPopup';
 import EngineReadout from '@/features/analysis/EngineReadout';
 import EvalBar from '@/features/analysis/EvalBar';
 import type { ChessEngine } from '@/features/analysis/engine';
 import GameInfo from '@/features/analysis/GameInfo';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
-import NodeComment from '@/features/analysis/NodeComment';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useEngine } from '@/features/analysis/useEngine';
@@ -46,6 +46,7 @@ export default function Analysis({
   const [flipped, setFlipped] = useState(false);
   const [legalMoves, setLegalMoves] = useState<LegalMove[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [commentOpen, setCommentOpen] = useState(false);
 
   const presenterActive = presenterId !== null;
   const amPresenter = selfId !== null && selfId === presenterId;
@@ -55,12 +56,17 @@ export default function Analysis({
   const [currentId, setCurrentId] = useState<number | null>(null);
 
   /**
-   * Start at the root once a tree arrives. A one-time write during render
-   * (converges immediately) — subsequent cursor changes come only from
-   * navigation, playing moves, or the presenter cursor.
+   * Start at the mainline tip once a tree arrives: rejoining or refreshing a
+   * room shows the current game state, not the initial position. A one-time
+   * write during render (converges immediately) — subsequent cursor changes
+   * come only from navigation, playing moves, or the presenter cursor.
    */
   if (currentId === null && tree !== null) {
-    setCurrentId(tree.root.id);
+    let tip = tree.root;
+    while (tip.children[0] !== undefined) {
+      tip = tip.children[0];
+    }
+    setCurrentId(tip.id);
   }
 
   /**
@@ -102,6 +108,8 @@ export default function Analysis({
     engine,
     enabled: current?.status === 'active',
   });
+
+  const checkSquare = useMemo(() => kingInCheckSquare(current?.fen ?? ''), [current?.fen]);
 
   /**
    * Fetch legal moves for the position when the viewer can play, so the
@@ -287,13 +295,17 @@ export default function Analysis({
         setFlipped((value) => !value);
         handled = true;
       }
+      if ((event.key === 'c' || event.key === 'C') && canEdit) {
+        setCommentOpen(true);
+        handled = true;
+      }
       if (handled) {
         event.preventDefault();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tree, byId, current, navigate, lastChild]);
+  }, [tree, byId, current, navigate, lastChild, canEdit]);
 
   if (tree === null || current === null) {
     return (
@@ -336,12 +348,21 @@ export default function Analysis({
               selected={selected}
               legalTargets={legalTargets}
               arrows={hintArrows}
+              checkSquare={checkSquare}
               onSquareClick={canPlay ? handleSquareClick : undefined}
             />
           </div>
           <div className="w-[min(90vw,34rem)]">
             <EngineReadout fen={current.fen ?? ''} state={engineState} />
           </div>
+          {current.comment !== null && (
+            <div
+              className="w-[min(90vw,34rem)] rounded-control border border-line bg-panel p-3 text-body text-ink"
+              data-testid="comment-bubble"
+            >
+              {current.comment}
+            </div>
+          )}
           {canPlay && (
             <p className="m-0 text-xs text-muted" role="status">
               {t('analysis.playHint')}
@@ -366,10 +387,12 @@ export default function Analysis({
             onNavigate={navigate}
             onFlip={() => setFlipped((f) => !f)}
             onFollowChange={onFollowChange ?? (() => {})}
+            onOpenComment={canEdit ? () => setCommentOpen(true) : undefined}
           />
           <p className="m-0 text-note text-faint">
             <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
-            {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')}
+            {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')} · <kbd>c</kbd>{' '}
+            {t('analysis.shortcutNote')}
           </p>
           {current.status !== 'active' && (
             <p
@@ -386,18 +409,10 @@ export default function Analysis({
           The sidebar gets a fixed height on wide screens (the board's own
           height), so a long move list scrolls *inside* the sidebar and never
           stretches the page. Below xl it stacks full-width with a capped list.
+          Comments live in a popup (the `c` key or the board controls), not
+          here — the space belongs to the move list.
         */}
         <aside className="flex w-full max-w-sm flex-col gap-3 xl:h-[min(90vw,34rem)] xl:w-[340px] xl:max-w-none">
-          <NodeComment
-            comment={current.comment}
-            moveLabel={
-              current.san
-                ? `${Math.ceil(current.ply / 2)}${current.ply % 2 === 1 ? '.' : '...'} ${current.san}`
-                : null
-            }
-            canEdit={canEdit}
-            onSave={(text) => onComment?.({ ply: current.ply, text })}
-          />
           <MoveList
             rows={rows}
             currentId={current.id}
@@ -407,6 +422,19 @@ export default function Analysis({
           <GameInfo tree={tree} />
         </aside>
       </div>
+
+      {commentOpen && (
+        <CommentPopup
+          comment={current.comment}
+          moveLabel={
+            current.san
+              ? `${Math.ceil(current.ply / 2)}${current.ply % 2 === 1 ? '.' : '...'} ${current.san}`
+              : null
+          }
+          onSave={(text) => onComment?.({ ply: current.ply, text })}
+          onClose={() => setCommentOpen(false)}
+        />
+      )}
     </div>
   );
 }

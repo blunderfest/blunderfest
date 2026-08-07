@@ -140,7 +140,9 @@ export default function MoveList({
   const { t } = useTranslation();
 
   return (
-    <section className={`${panel({ layout: 'none', pad: 'none' })} min-h-0 xl:flex-1`}>
+    <section
+      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col xl:flex-1`}
+    >
       <div className={panelHeader()}>
         <h2 className="m-0">{t('analysis.moves')}</h2>
         <span className="text-faint tabular-nums">

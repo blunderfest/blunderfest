@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Analysis from '@/features/analysis/Analysis';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
@@ -117,18 +117,18 @@ describe('Analysis', () => {
     fetchLegalMovesMock.mockReset();
     fetchLegalMovesMock.mockResolvedValue({ moves: [] });
   });
-  it('renders the start position on the board', () => {
+  it('opens on the latest mainline position (so a refresh restores the game state)', () => {
     renderAnalysis();
 
-    expect(screen.getByTestId('square-e1')).toHaveTextContent('♚');
-    expect(screen.getByTestId('square-e8')).toHaveTextContent('♚');
-    expect(screen.getByTestId('square-d2')).toHaveTextContent('♟');
-    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♞');
+    expect(screen.getByTestId('square-g1')).not.toHaveTextContent('♞');
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
   });
 
   it('navigates forward and backward with the buttons', () => {
     renderAnalysis();
 
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
     expect(screen.getByTestId('square-e2')).not.toHaveTextContent('♟');
@@ -156,7 +156,7 @@ describe('Analysis', () => {
 
     fireEvent.click(screen.getByTestId('analysis-move-3'));
     expect(screen.getByTestId('square-c5')).toHaveTextContent('♟');
-    expect(screen.getByTestId('node-comment')).toHaveTextContent('Sicilian');
+    expect(screen.getByTestId('comment-bubble')).toHaveTextContent('Sicilian');
   });
 
   it('shows the checkmate status badge', () => {
@@ -189,6 +189,7 @@ describe('Analysis', () => {
     renderAnalysis();
     const root = () => screen.getByTestId('analysis-root');
 
+    fireEvent.keyDown(root(), { key: 'Home' });
     fireEvent.keyDown(root(), { key: 'ArrowRight' });
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
 
@@ -199,6 +200,7 @@ describe('Analysis', () => {
   it('navigates with the arrow keys even when focus is outside the analysis region', () => {
     renderAnalysis();
 
+    fireEvent.keyDown(document.body, { key: 'Home' });
     fireEvent.keyDown(document.body, { key: 'ArrowRight' });
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
   });
@@ -206,6 +208,7 @@ describe('Analysis', () => {
   it('navigates the game when arrows are pressed on a square focused by mouse', () => {
     render(<Analysis tree={tree} canEdit onPlayMove={vi.fn()} />);
 
+    fireEvent.keyDown(document.body, { key: 'Home' });
     fireEvent.keyDown(screen.getByTestId('square-e2'), { key: 'ArrowRight' });
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
   });
@@ -213,6 +216,8 @@ describe('Analysis', () => {
   it('ignores the navigation keys while typing in the comment editor', () => {
     render(<Analysis tree={tree} canEdit onComment={vi.fn()} />);
 
+    fireEvent.keyDown(document.body, { key: 'Home' });
+    fireEvent.keyDown(document.body, { key: 'c' });
     fireEvent.keyDown(screen.getByTestId('comment-editor'), { key: 'ArrowRight' });
     expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
   });
@@ -220,6 +225,7 @@ describe('Analysis', () => {
   it('ignores the navigation keys when a modifier is held', () => {
     renderAnalysis();
 
+    fireEvent.keyDown(document.body, { key: 'Home' });
     fireEvent.keyDown(document.body, { key: 'ArrowRight', ctrlKey: true });
     expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
   });
@@ -244,6 +250,7 @@ describe('Analysis', () => {
   it('flips the board with the f key', () => {
     renderAnalysis();
 
+    fireEvent.keyDown(document.body, { key: 'Home' });
     const board = () => screen.getByRole('img', { name: 'Chess board after start position' });
     const squares = () =>
       Array.from(board().querySelectorAll('[data-testid^="square-"]')).map((el) =>
@@ -345,9 +352,9 @@ describe('Analysis', () => {
     const onCursorChange = vi.fn();
     render(<Analysis tree={tree} presenterId="p1" selfId="p1" onCursorChange={onCursorChange} />);
 
-    expect(onCursorChange).toHaveBeenCalledWith(0);
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(onCursorChange).toHaveBeenCalledWith(1);
+    expect(onCursorChange).toHaveBeenCalledWith(4);
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    expect(onCursorChange).toHaveBeenCalledWith(2);
     expect(screen.getByText(/You are presenting/)).toBeInTheDocument();
   });
 
@@ -364,6 +371,9 @@ describe('Analysis', () => {
     render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);
 
     await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalledTimes(2));
+    await act(async () => {});
     fireEvent.click(screen.getByTestId('square-e2'));
 
     await waitFor(() => expect(screen.getByTestId('selected-e2')).toBeInTheDocument());
@@ -478,27 +488,34 @@ describe('Analysis', () => {
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
   });
 
-  it('lets an editor save a comment on the current position', () => {
+  it('lets an editor save a comment on the current position via the note popup', () => {
     const onComment = vi.fn();
     render(<Analysis tree={tree} canEdit onPlayMove={vi.fn()} onComment={onComment} />);
 
+    fireEvent.keyDown(document.body, { key: 'Home' });
+    fireEvent.click(screen.getByRole('button', { name: 'Comment' }));
     fireEvent.change(screen.getByTestId('comment-editor'), {
       target: { value: 'Nice idea' },
     });
     fireEvent.click(screen.getByTestId('save-comment'));
 
     expect(onComment).toHaveBeenCalledWith({ ply: 0, text: 'Nice idea' });
+    expect(screen.queryByTestId('comment-editor')).not.toBeInTheDocument();
   });
 
-  it('shows the saved comment after the echo applies it', () => {
+  it('shows the saved comment in the bubble after the echo applies it', () => {
     const onComment = vi.fn();
     const { rerender } = render(
       <Analysis tree={tree} canEdit onPlayMove={vi.fn()} onComment={onComment} />,
     );
 
+    fireEvent.keyDown(document.body, { key: 'Home' });
+    fireEvent.keyDown(document.body, { key: 'c' });
     fireEvent.change(screen.getByTestId('comment-editor'), {
       target: { value: 'Nice idea' },
     });
+    fireEvent.click(screen.getByTestId('save-comment'));
+
     rerender(
       <Analysis
         tree={{ ...tree, root: { ...tree.root, comment: 'Nice idea' } }}
@@ -508,22 +525,22 @@ describe('Analysis', () => {
       />,
     );
 
-    expect(screen.getByTestId('comment-editor')).toHaveValue('Nice idea');
+    expect(screen.getByTestId('comment-bubble')).toHaveTextContent('Nice idea');
   });
 
-  it('does not show the editor to viewers, but shows existing comments', () => {
+  it('does not offer the note popup to viewers, but shows existing comments in the bubble', () => {
     render(<Analysis tree={tree} presenterId="p1" selfId="me" />);
 
-    expect(screen.queryByTestId('comment-editor')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Comment' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('analysis-move-3'));
-    expect(screen.getByTestId('node-comment')).toHaveTextContent('Sicilian');
+    expect(screen.getByTestId('comment-bubble')).toHaveTextContent('Sicilian');
   });
 
-  it('shows nothing to viewers when the position has no comment', () => {
+  it('shows no bubble to viewers when the position has no comment', () => {
     render(<Analysis tree={tree} presenterId="p1" selfId="me" />);
 
-    expect(screen.queryByTestId('node-comment')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('comment-bubble')).not.toBeInTheDocument();
     expect(screen.queryByTestId('comment-editor')).not.toBeInTheDocument();
   });
 });
@@ -561,9 +578,9 @@ describe('engine analysis', () => {
       />,
     );
 
-    expect(await screen.findByTestId('engine-eval-badge')).toHaveTextContent('+0.42');
+    expect(await screen.findByTestId('engine-eval-badge')).toHaveTextContent('-0.42');
     expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'White is better by 0.42 pawns' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Black is better by 0.42 pawns' })).toBeInTheDocument();
     expect(screen.getByTestId('engine-readout')).toHaveTextContent('Depth 9');
   });
 

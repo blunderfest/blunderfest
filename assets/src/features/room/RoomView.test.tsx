@@ -39,8 +39,22 @@ const gameTree: GameTree = {
     ply: 0,
     san: null,
     children: [
-      node({ id: 1, ply: 1, san: 'e4', from: 'e2', to: 'e4', fen: 'x' }),
-      node({ id: 2, ply: 2, san: 'e5', from: 'e7', to: 'e5', fen: 'y' }),
+      node({
+        id: 1,
+        ply: 1,
+        san: 'e4',
+        from: 'e2',
+        to: 'e4',
+        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+      }),
+      node({
+        id: 2,
+        ply: 2,
+        san: 'e5',
+        from: 'e7',
+        to: 'e5',
+        fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
+      }),
     ],
   }),
 };
@@ -138,8 +152,22 @@ const secondTree: GameTree = {
     ply: 0,
     san: null,
     children: [
-      node({ id: 1, ply: 1, san: 'd4', from: 'd2', to: 'd4', fen: 'x' }),
-      node({ id: 2, ply: 2, san: 'd5', from: 'd7', to: 'd5', fen: 'y' }),
+      node({
+        id: 1,
+        ply: 1,
+        san: 'd4',
+        from: 'd2',
+        to: 'd4',
+        fen: 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1',
+      }),
+      node({
+        id: 2,
+        ply: 2,
+        san: 'd5',
+        from: 'd7',
+        to: 'd5',
+        fen: 'rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2',
+      }),
     ],
   }),
 };
@@ -275,7 +303,7 @@ describe('RoomView', () => {
     act(() => channel.emit('new_op', op));
 
     expect(await screen.findAllByText('Alice – Bob')).toHaveLength(2);
-    expect(screen.getByTestId('square-e2')).toHaveTextContent('♟');
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
     expect(screen.getByText('Imported a game')).toBeInTheDocument();
   });
 
@@ -436,7 +464,7 @@ describe('RoomView', () => {
         (push) =>
           push.event === 'op' &&
           push.payload.type === 'set_cursor' &&
-          push.payload.payload.node_id === 0,
+          push.payload.payload.node_id === 1,
       ),
     ).toBe(true);
   });
@@ -476,9 +504,26 @@ describe('RoomView', () => {
       }),
     );
 
-    await waitFor(() => expect(screen.getByTestId('square-e2')).toHaveTextContent('♟'));
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    // We follow the presenter (profile-1) to their latest game.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Carol – Dave/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    );
+    expect(screen.getByTestId('square-d4')).toHaveTextContent('♟');
 
+    // Breaking away locally returns us to the first game…
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Alice – Bob' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      ),
+    );
+
+    // …and when the presenter role moves and the new presenter switches
+    // games, our view stays broken away on the first game.
     act(() => channel.emit('role_update', { member_id: 'profile-1', role: 'viewer' }));
     act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'owner' }));
     act(() => channel.emit('new_op', selectOp(3, 'game-2', 'profile-2')));
@@ -535,6 +580,8 @@ describe('RoomView', () => {
       }),
     );
 
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    await act(async () => {});
     fireEvent.click(await screen.findByTestId('square-e2'));
     await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('square-e4'));
@@ -572,6 +619,8 @@ describe('RoomView', () => {
       }),
     );
 
+    fireEvent.keyDown(document.body, { key: 'Home' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Comment' }));
     const editor = await screen.findByTestId('comment-editor');
     fireEvent.change(editor, { target: { value: 'Sharp position' } });
     fireEvent.click(screen.getByTestId('save-comment'));

@@ -5,8 +5,6 @@ import Home from '@/features/home/Home';
 import RoomHeader from '@/features/room/RoomHeader';
 import RoomView from '@/features/room/RoomView';
 import { useProfile } from '@/lib/useProfile';
-import { useAppSelector } from '@/store';
-import { selectRoleOf } from '@/store/room';
 
 export type BackendStatus = 'checking' | 'ok' | 'down';
 
@@ -72,7 +70,6 @@ export default function App() {
 
   const selfId = profile.status === 'ready' ? profile.profile.id : null;
   const selfName = profile.status === 'ready' ? profile.profile.name : null;
-  const myRole = useAppSelector((state) => selectRoleOf(state.room, selfId));
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -88,9 +85,7 @@ export default function App() {
         <a href="#/" aria-label={t('app.name')} className="text-ink no-underline">
           <Logo size="sm" />
         </a>
-        {route.screen === 'room' && myRole === 'owner' && (
-          <RoomHeader slug={route.slug} onLeave={navigateHome} />
-        )}
+        {route.screen === 'room' && <RoomHeader slug={route.slug} onLeave={navigateHome} />}
         <p className="m-0 text-ui text-muted" role="status" data-status={profile.status}>
           {name}
         </p>

@@ -1,3 +1,5 @@
+import { Chess } from 'chess.js';
+
 export type PieceColor = 'w' | 'b';
 export type PieceKind = 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
 export type Piece = { color: PieceColor; kind: PieceKind };
@@ -102,4 +104,28 @@ export function arrowLine(
     x2: end.x - ux * headInset,
     y2: end.y - uy * headInset,
   };
+}
+
+/**
+ * The square of the king that is currently in check, or null. Derived from
+ * the FEN via chess.js (the side to move is the side that can be in check).
+ */
+export function kingInCheckSquare(fen: string): string | null {
+  try {
+    const game = new Chess(fen);
+    if (!game.isCheck()) {
+      return null;
+    }
+    const turn = game.turn();
+    for (const row of game.board()) {
+      for (const square of row) {
+        if (square !== null && square.type === 'k' && square.color === turn) {
+          return square.square;
+        }
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }

@@ -48,6 +48,7 @@ export default function Board({
   legalTargets = [],
   arrows = [],
   arrowColor = '#3b82f6',
+  checkSquare = null,
   onSquareClick,
 }: {
   position: Position;
@@ -59,6 +60,7 @@ export default function Board({
   legalTargets?: string[];
   arrows?: { from: string; to: string }[];
   arrowColor?: string;
+  checkSquare?: string | null;
   onSquareClick?: (square: string) => void;
 }) {
   const [focusIndex, setFocusIndex] = useState<number>(() =>
@@ -156,6 +158,12 @@ export default function Board({
               <span className={`${coord({ shade })} right-1 bottom-0.5`}>{name[0]}</span>
             )}
             {piece && <PieceGlyph piece={piece} />}
+            {checkSquare === name && (
+              <div
+                data-testid={`check-${name}`}
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,rgba(224,90,78,0.95)_10%,rgba(224,90,78,0.55)_45%,transparent_72%)]"
+              />
+            )}
             {isSelected && (
               <div
                 data-testid={`selected-${name}`}

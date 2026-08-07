@@ -218,7 +218,7 @@ describe('App', () => {
     expect(await screen.findByText('ABCDE')).toBeInTheDocument();
   });
 
-  it('hides the room code and leave button from non-owners', async () => {
+  it('shows the room code, copy and leave buttons to everyone in the room', async () => {
     window.location.hash = '#/r/abcde';
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
@@ -231,10 +231,9 @@ describe('App', () => {
       </Provider>,
     );
 
-    expect(await screen.findByTestId('member-list')).toBeInTheDocument();
-    expect(screen.queryByText('ABCDE')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Leave room' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument();
+    expect(await screen.findByText('ABCDE')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Leave room' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
   });
 
   it('waits for the identity before joining the room channel', async () => {

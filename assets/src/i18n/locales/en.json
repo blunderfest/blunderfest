@@ -104,6 +104,7 @@
     "shortcutNav": "previous/next move",
     "shortcutJump": "first/last move",
     "shortcutFlip": "flip board",
+    "shortcutNote": "note",
     "boardLabel": "Chess board after {{move}}",
     "selected": "Selected {{square}}",
     "startPosition": "start position",
