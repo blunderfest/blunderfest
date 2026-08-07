@@ -14,7 +14,14 @@ const square = tv({
   base: 'relative flex items-center justify-center aspect-square select-none focus-visible:z-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold-hi',
   variants: {
     shade: { light: 'bg-board-light', dark: 'bg-board-dark' },
+    highlight: { none: '', lastMove: '', selected: '' },
   },
+  compoundVariants: [
+    { shade: 'light', highlight: 'lastMove', class: 'bg-move-from' },
+    { shade: 'dark', highlight: 'lastMove', class: 'bg-move-to' },
+    { shade: 'light', highlight: 'selected', class: 'bg-[#cfe0ff]' },
+    { shade: 'dark', highlight: 'selected', class: 'bg-[#7f93b8]' },
+  ],
 });
 
 const coord = tv({
@@ -137,15 +144,8 @@ export default function Board({
         const isTarget = legalTargets.includes(name);
         const clickable = interactive && onSquareClick !== undefined;
 
-        const squareBg = isSelected
-          ? shade === 'light'
-            ? 'bg-[#cfe0ff]'
-            : 'bg-[#7f93b8]'
-          : isLastMove
-            ? shade === 'light'
-              ? 'bg-move-from'
-              : 'bg-move-to'
-            : square({ shade });
+        const highlight = isSelected ? 'selected' : isLastMove ? 'lastMove' : 'none';
+        const squareBg = square({ shade, highlight });
 
         const content = (
           <>
@@ -159,19 +159,19 @@ export default function Board({
             {isSelected && (
               <div
                 data-testid={`selected-${name}`}
-                className="absolute inset-0 ring-2 ring-select ring-inset"
+                className="pointer-events-none absolute inset-0 ring-2 ring-select ring-inset"
               />
             )}
             {isTarget &&
               (piece ? (
                 <div
                   data-testid={`target-${name}`}
-                  className="absolute inset-[6%] rounded-full border-[5px] border-[rgba(20,22,27,0.35)]"
+                  className="pointer-events-none absolute inset-[6%] rounded-full border-[5px] border-[rgba(20,22,27,0.35)]"
                 />
               ) : (
                 <div
                   data-testid={`target-${name}`}
-                  className="absolute h-[28%] w-[28%] rounded-full bg-[rgba(20,22,27,0.3)]"
+                  className="pointer-events-none absolute h-[28%] w-[28%] rounded-full bg-[rgba(20,22,27,0.3)]"
                 />
               ))}
           </>

@@ -300,3 +300,22 @@ describe('Board arrows', () => {
     expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument();
   });
 });
+
+describe('square positioning', () => {
+  it('keeps selected and last-move squares positioned so overlays stay inside them', () => {
+    render(
+      <Board
+        position={emptyPosition()}
+        interactive
+        selected="e2"
+        lastMove={{ from: 'e7', to: 'e5' }}
+        legalTargets={['e4']}
+        onSquareClick={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('square-e2')).toHaveClass('relative');
+    expect(screen.getByTestId('square-e5')).toHaveClass('relative');
+    expect(screen.getByTestId('selected-e2')).toHaveClass('pointer-events-none');
+  });
+});
