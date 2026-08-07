@@ -40,8 +40,12 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
       ) : (
         <>
           <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
-            {status === 'thinking' ? t('analysis.engineThinking') : t('analysis.depthLabel')}{' '}
-            {status === 'ready' && depth !== null && <span className="text-muted">{depth}</span>}
+            {status === 'thinking' && t('analysis.engineThinking')}
+            {status === 'ready' && depth !== null && (
+              <>
+                {t('analysis.depthLabel')} <span className="text-muted">{depth}</span>
+              </>
+            )}
           </span>
           {white !== null && (
             <span
