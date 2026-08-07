@@ -53,8 +53,13 @@ export function bestMoveSquares(move: string): { from: string; to: string } | nu
 
 /**
  * Evaluation from the side to move, converted to white's perspective.
+ * `result` is for terminal positions (checkmate/stalemate/draw), where there
+ * is no eval to compute — the outcome itself is displayed.
  */
-export type WhiteEval = { type: 'cp'; cp: number } | { type: 'mate'; moves: number };
+export type WhiteEval =
+  | { type: 'cp'; cp: number }
+  | { type: 'mate'; moves: number }
+  | { type: 'result'; result: string };
 
 export function whiteEval(score: InfoScore, sideToMove: 'w' | 'b'): WhiteEval {
   if (score.type === 'mate') {
@@ -64,6 +69,9 @@ export function whiteEval(score: InfoScore, sideToMove: 'w' | 'b'): WhiteEval {
 }
 
 export function evalLabel(white: WhiteEval): string {
+  if (white.type === 'result') {
+    return white.result;
+  }
   if (white.type === 'mate') {
     return white.moves > 0 ? `M${white.moves}` : `-M${-white.moves}`;
   }
@@ -78,6 +86,9 @@ export function evalLabel(white: WhiteEval): string {
 export function whiteShare(white: WhiteEval | null): number {
   if (white === null) {
     return 50;
+  }
+  if (white.type === 'result') {
+    return white.result === '1-0' ? 98 : white.result === '0-1' ? 2 : 50;
   }
   if (white.type === 'mate') {
     return white.moves > 0 ? 98 : 2;

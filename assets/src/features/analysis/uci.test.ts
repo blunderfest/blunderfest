@@ -106,3 +106,15 @@ describe('whiteShare', () => {
     expect(whiteShare({ type: 'mate', moves: -1 })).toBe(2);
   });
 });
+
+describe('result evals (terminal positions)', () => {
+  it('labels results directly', () => {
+    expect(evalLabel({ type: 'result', result: '1-0' })).toBe('1-0');
+  });
+
+  it('maps results onto the bar extremes', () => {
+    expect(whiteShare({ type: 'result', result: '1-0' })).toBe(98);
+    expect(whiteShare({ type: 'result', result: '0-1' })).toBe(2);
+    expect(whiteShare({ type: 'result', result: '1/2-1/2' })).toBe(50);
+  });
+});

@@ -126,3 +126,32 @@ describe('useEngine', () => {
     expect(engine.analyze).not.toHaveBeenCalled();
   });
 });
+
+describe('terminal positions', () => {
+  it('shows the result for a checkmate position without calling the engine', async () => {
+    const { result } = renderHook(() =>
+      useEngine('R6k/5ppp/8/8/8/8/8/R6K b - - 1 1', {
+        engine: null,
+        positionStatus: 'checkmate',
+        debounceMs: 0,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.eval).toEqual({ type: 'result', result: '1-0' });
+    expect(result.current.bestMove).toBeNull();
+  });
+
+  it('shows a draw for stalemate', async () => {
+    const { result } = renderHook(() =>
+      useEngine('7k/5Q2/6K1/8/8/8/8/8 b - - 0 1', {
+        engine: null,
+        positionStatus: 'stalemate',
+        debounceMs: 0,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.eval).toEqual({ type: 'result', result: '1/2-1/2' });
+  });
+});

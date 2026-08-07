@@ -2,11 +2,25 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackendStatus } from '@/app/App';
 import Logo from '@/components/Logo';
-import { button, chip, input, panel, statusDot } from '@/components/ui';
+import { button, input, panel, statusDot } from '@/components/ui';
 import { createRoom } from '@/lib/api';
-import { generateRoomCode, normalizeRoomCode, validRoomCode } from '@/lib/roomCode';
+import {
+  generateRoomCode,
+  normalizeRoomCode,
+  ROOM_ALPHABET,
+  ROOM_CODE_LENGTH,
+  validRoomCode,
+} from '@/lib/roomCode';
 
-const DISALLOWED = /[ilo01]/;
+/** Keep only alphabet characters, lowercased, capped at the code length. */
+function filterCodeInput(value: string): string {
+  return value
+    .toLowerCase()
+    .split('')
+    .filter((char) => ROOM_ALPHABET.includes(char))
+    .join('')
+    .slice(0, ROOM_CODE_LENGTH);
+}
 
 export default function Home({
   backend,
@@ -50,7 +64,6 @@ export default function Home({
   }
 
   const normalized = normalizeRoomCode(code);
-  const hasDisallowed = DISALLOWED.test(code.toLowerCase());
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
@@ -62,11 +75,6 @@ export default function Home({
           </span>
         </h1>
         <p className="m-0 max-w-lg text-lead text-muted">{t('app.tagline')}</p>
-        <div className="mt-2 flex flex-wrap justify-center gap-2">
-          <span className={chip({ tone: 'neutral' })}>{t('home.featTree')}</span>
-          <span className={chip({ tone: 'neutral' })}>{t('home.featComments')}</span>
-          <span className={chip({ tone: 'neutral' })}>{t('home.featEngine')}</span>
-        </div>
       </div>
 
       <div className="flex w-full max-w-3xl flex-col items-stretch gap-4 md:flex-row">
@@ -99,11 +107,11 @@ export default function Home({
             </label>
             <input
               id="join-code-input"
-              className={input({ mono: true, invalid: error })}
+              className={`${input({ mono: true, invalid: error })} text-center text-lead tracking-[0.5em]`}
               placeholder={t('home.joinPlaceholder')}
               value={code}
               onChange={(event) => {
-                setCode(event.target.value);
+                setCode(filterCodeInput(event.target.value));
                 setError(false);
               }}
               onKeyDown={(event) => {
@@ -113,7 +121,7 @@ export default function Home({
               }}
             />
             <p className="m-0 mt-1 text-right text-note text-faint tabular-nums">
-              {t('home.charCount', { count: Math.min(normalized.length, 5) })}
+              {t('home.charCount', { count: normalized.length })}
             </p>
           </div>
           <button
@@ -126,7 +134,7 @@ export default function Home({
           </button>
           {error && (
             <p className="m-0 text-ui text-bad-hi" role="alert">
-              ⚠ {hasDisallowed ? t('home.joinErrorChars') : t('home.joinError')}
+              ⚠ {t('home.joinError')}
             </p>
           )}
         </section>

@@ -46,9 +46,16 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
           {white !== null && (
             <span
               className={`rounded-chip px-1.5 py-0.5 text-note font-semibold tabular-nums ${
-                (white.type === 'cp' && white.cp < 0) || (white.type === 'mate' && white.moves < 0)
-                  ? 'bg-[#1a1d24] text-ink'
-                  : 'bg-[#f4f6fb] text-[#20180a]'
+                white.type === 'result'
+                  ? white.result === '1-0'
+                    ? 'bg-[#f4f6fb] text-[#20180a]'
+                    : white.result === '0-1'
+                      ? 'bg-[#1a1d24] text-ink'
+                      : 'bg-raised text-muted'
+                  : (white.type === 'cp' && white.cp < 0) ||
+                      (white.type === 'mate' && white.moves < 0)
+                    ? 'bg-[#1a1d24] text-ink'
+                    : 'bg-[#f4f6fb] text-[#20180a]'
               } ${status === 'thinking' ? 'opacity-85' : ''}`}
               data-testid="engine-eval-badge"
             >

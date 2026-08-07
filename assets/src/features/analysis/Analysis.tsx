@@ -34,6 +34,7 @@ export default function Analysis({
   following = false,
   canEdit = false,
   engine = undefined,
+  initialCursorId = null,
   onFollowChange,
   onCursorChange,
   onPlayMove,
@@ -47,6 +48,7 @@ export default function Analysis({
   following?: boolean;
   canEdit?: boolean;
   engine?: ChessEngine | null;
+  initialCursorId?: number | null;
   onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
   onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => void;
@@ -67,17 +69,22 @@ export default function Analysis({
   const [currentId, setCurrentId] = useState<number | null>(null);
 
   /**
-   * Start at the mainline tip once a tree arrives: rejoining or refreshing a
-   * room shows the current game state, not the initial position. A one-time
-   * write during render (converges immediately) — subsequent cursor changes
-   * come only from navigation, playing moves, or the presenter cursor.
+   * Start at the move last played (the newest move/setup node, wherever it
+   * lives — variations included) once a tree arrives: a refresh restores the
+   * game as it was. Untouched imports fall back to the mainline tip. A
+   * one-time write during render (converges immediately) — subsequent cursor
+   * changes come only from navigation, playing moves, or the presenter cursor.
    */
   if (currentId === null && tree !== null) {
-    let tip = tree.root;
-    while (tip.children[0] !== undefined) {
-      tip = tip.children[0];
+    if (initialCursorId !== null && byId.has(initialCursorId)) {
+      setCurrentId(initialCursorId);
+    } else {
+      let tip = tree.root;
+      while (tip.children[0] !== undefined) {
+        tip = tip.children[0];
+      }
+      setCurrentId(tip.id);
     }
-    setCurrentId(tip.id);
   }
 
   /**
@@ -117,7 +124,8 @@ export default function Analysis({
 
   const engineState = useEngine(current?.fen ?? null, {
     engine,
-    enabled: current?.status === 'active',
+    enabled: current !== null,
+    positionStatus: current?.status ?? 'active',
   });
 
   const checkSquare = useMemo(() => kingInCheckSquare(current?.fen ?? ''), [current?.fen]);
@@ -499,11 +507,6 @@ export default function Analysis({
               {current.comment}
             </div>
           )}
-          {canPlay && (
-            <p className="m-0 text-xs text-muted" role="status">
-              {t('analysis.playHint')}
-            </p>
-          )}
           <p className="sr-only" role="status">
             {selected !== null ? t('analysis.selected', { square: selected }) : boardLabel}
           </p>
@@ -585,6 +588,13 @@ export default function Analysis({
 function evalAriaLabel(white: WhiteEval | null, t: TFunction): string {
   if (white === null) {
     return t('analysis.evalBar');
+  }
+  if (white.type === 'result') {
+    return white.result === '1-0'
+      ? t('analysis.evalWhiteWon')
+      : white.result === '0-1'
+        ? t('analysis.evalBlackWon')
+        : t('analysis.evalDrawn');
   }
   if (white.type === 'mate') {
     return white.moves > 0

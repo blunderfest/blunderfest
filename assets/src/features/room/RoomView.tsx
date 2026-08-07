@@ -1,8 +1,7 @@
 import type { Channel } from 'phoenix';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Logo from '@/components/Logo';
-import { button, statusDot } from '@/components/ui';
+import { button, chip, panel, statusDot } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
 import ImportDialog from '@/features/import/ImportDialog';
 import ActivityFeed from '@/features/room/ActivityFeed';
@@ -16,6 +15,7 @@ import {
   selectActivityOps,
   selectCanEdit,
   selectFirstGameId,
+  selectLastPlayed,
   selectPresenter,
   selectPresenterCursor,
   selectPresenterGameId,
@@ -75,6 +75,7 @@ export default function RoomView({
     ? (presenterGameId ?? firstGameId)
     : (activeGameId ?? firstGameId);
   const game = effectiveGameId === null ? null : (games[effectiveGameId] ?? null);
+  const lastPlayedId = useAppSelector((state) => selectLastPlayed(state.room, effectiveGameId));
 
   const handleCursorChange = useCallback(
     (nodeId: number) => sendOp({ type: 'set_cursor', payload: { node_id: nodeId } }),
@@ -140,13 +141,22 @@ export default function RoomView({
 
   if (joinError !== null) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-        <Logo size="md" />
-        <p className="m-0 text-display font-semibold">{t('room.notFoundTitle')}</p>
-        <p className="m-0 max-w-md text-center text-body text-muted">{t('room.notFound')}</p>
-        <button type="button" className={button({ intent: 'secondary' })} onClick={onLeave}>
-          {t('room.backHome')}
-        </button>
+      <div className="flex flex-1 items-center justify-center p-8">
+        <div
+          className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-sm animate-pop flex-col items-center gap-4 text-center`}
+        >
+          <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
+            <span className="text-3xl text-bad-hi">⚠</span>
+          </div>
+          <h2 className="m-0 text-display font-bold">{t('room.notFoundTitle')}</h2>
+          <p className="m-0 text-body text-muted">{t('room.notFound')}</p>
+          <code className="w-full rounded-control border border-line-strong bg-surface px-3 py-2 text-center font-mono text-lead tracking-[0.5em] text-faint">
+            {slug.toUpperCase()}
+          </code>
+          <button type="button" className={button({ intent: 'secondary' })} onClick={onLeave}>
+            {t('room.backHome')}
+          </button>
+        </div>
       </div>
     );
   }
@@ -180,40 +190,52 @@ export default function RoomView({
         <section className="flex flex-col items-center gap-4">
           {noGames ? (
             canEdit ? (
-              <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-                <p className="m-0 text-display font-semibold">{t('room.emptyTitle')}</p>
-                <p className="m-0 max-w-md text-center text-body text-muted">
-                  {t('room.emptyOwner')}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    id="empty-import-button"
-                    className={button({ intent: 'primary' })}
-                    onClick={() => setShowImport(true)}
-                  >
-                    {t('room.emptyImport')}
-                  </button>
-                  <button
-                    type="button"
-                    id="empty-new-game-button"
-                    className={button({ intent: 'secondary' })}
-                    onClick={handleNewGame}
-                  >
-                    {t('room.emptyFresh')}
-                  </button>
+              <div className="flex flex-1 items-center justify-center p-8">
+                <div
+                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-sm flex-col items-center gap-4 text-center`}
+                >
+                  <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
+                    <span className="text-3xl text-muted">♟</span>
+                  </div>
+                  <h2 className="m-0 text-display font-bold">{t('room.emptyTitle')}</h2>
+                  <p className="m-0 text-body text-muted">{t('room.emptyOwner')}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      id="empty-import-button"
+                      className={button({ intent: 'primary' })}
+                      onClick={() => setShowImport(true)}
+                    >
+                      {t('room.emptyImport')}
+                    </button>
+                    <button
+                      type="button"
+                      id="empty-new-game-button"
+                      className={button({ intent: 'secondary' })}
+                      onClick={handleNewGame}
+                    >
+                      {t('room.emptyFresh')}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-                <p className="m-0 text-display font-semibold">{t('room.emptyViewerTitle')}</p>
-                <p id="viewer-waiting" className="m-0 max-w-md text-center text-body text-muted">
-                  {t('room.viewerWaiting')}
-                </p>
-                <span className="flex items-center gap-2 text-note text-faint">
-                  <span className={statusDot({ tone: 'warn', pulse: true })} />
-                  {t('room.listening')}
-                </span>
+              <div className="flex flex-1 items-center justify-center p-8">
+                <div
+                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-sm flex-col items-center gap-4 text-center`}
+                >
+                  <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
+                    <span className="text-3xl text-muted">⏳</span>
+                  </div>
+                  <h2 className="m-0 text-display font-bold">{t('room.emptyViewerTitle')}</h2>
+                  <p id="viewer-waiting" className="m-0 text-body text-muted">
+                    {t('room.viewerWaiting')}
+                  </p>
+                  <span className={chip({ tone: 'gold' })}>
+                    <span className={statusDot({ tone: 'warn', pulse: true })} />
+                    {t('room.listening')}
+                  </span>
+                </div>
               </div>
             )
           ) : (
@@ -228,6 +250,7 @@ export default function RoomView({
               onFollowChange={setFollowOverride}
               onCursorChange={handleCursorChange}
               onPlayMove={handlePlayMove}
+              initialCursorId={lastPlayedId}
               onComment={handleComment}
               onSetPosition={handleSetPosition}
             />

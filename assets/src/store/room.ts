@@ -21,6 +21,12 @@ export type RoomState = {
   presence: Record<string, PresenceMember>;
   roles: Record<string, MemberRole>;
   games: Record<string, GameTree>;
+  /**
+   * The node created by the most recent move/setup op per game — the "move
+   * last played", wherever it lives in the tree (variations included).
+   * Drives the initial cursor on join/refresh.
+   */
+  lastPlayed: Record<string, number>;
 };
 
 const initialState: RoomState = {
@@ -29,6 +35,7 @@ const initialState: RoomState = {
   presence: {},
   roles: {},
   games: {},
+  lastPlayed: {},
 };
 
 /**
@@ -243,6 +250,19 @@ export function selectFirstGameId(state: RoomState): string | null {
 }
 
 /**
+ * The node created by the most recent move/setup op in `gameId` — the "move
+ * last played", wherever it lives in the tree. Null when nothing has been
+ * played yet (an untouched import), where callers fall back to the mainline
+ * tip.
+ */
+export function selectLastPlayed(state: RoomState, gameId: string | null): number | null {
+  if (gameId === null) {
+    return null;
+  }
+  return state.lastPlayed[gameId] ?? null;
+}
+
+/**
  * Room members sorted for the member list: owner, then collaborators, then
  * viewers, each group alphabetically by name. Members without a role are
  * treated as viewers.
@@ -375,6 +395,7 @@ const roomSlice = createSlice({
       state.presence = {};
       state.roles = {};
       state.games = {};
+      state.lastPlayed = {};
     },
     leaveRoom(state) {
       state.slug = null;
@@ -382,6 +403,7 @@ const roomSlice = createSlice({
       state.presence = {};
       state.roles = {};
       state.games = {};
+      state.lastPlayed = {};
     },
     setRoles(state, action: PayloadAction<Record<string, MemberRole>>) {
       state.roles = action.payload;
@@ -397,6 +419,12 @@ const roomSlice = createSlice({
         if (op.type === 'set_game') {
           state.games[gameIdOf(op)] = op.payload.tree;
         }
+        if (op.type === 'move_at_ply' || op.type === 'set_position') {
+          const tree = state.games[op.payload.game_id];
+          if (tree !== undefined) {
+            state.lastPlayed[op.payload.game_id] = maxNodeId(tree.root) + 1;
+          }
+        }
         if (
           op.type === 'move_at_ply' ||
           op.type === 'comment_at_ply' ||
@@ -409,12 +437,19 @@ const roomSlice = createSlice({
     replayOps(state, action: PayloadAction<Op[]>) {
       state.ops = [...action.payload].sort((a, b) => a.seq - b.seq);
       state.games = {};
+      state.lastPlayed = {};
       for (const op of state.ops) {
         if (op.type === 'set_game') {
           state.games[gameIdOf(op)] = op.payload.tree;
         }
       }
       for (const op of state.ops) {
+        if (op.type === 'move_at_ply' || op.type === 'set_position') {
+          const tree = state.games[op.payload.game_id];
+          if (tree !== undefined) {
+            state.lastPlayed[op.payload.game_id] = maxNodeId(tree.root) + 1;
+          }
+        }
         if (
           op.type === 'move_at_ply' ||
           op.type === 'comment_at_ply' ||

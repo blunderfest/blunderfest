@@ -279,7 +279,7 @@ describe('RoomView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Import a game' }));
     fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } });
-    await screen.findByText('Alice – Bob');
+    await screen.findByText('Valid PGN');
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
     await waitFor(() => expect(channel.pushes.length).toBe(1));
@@ -771,5 +771,32 @@ describe('RoomView', () => {
     await screen.findAllByText('Alice – Bob');
     const results = await axe(view.container);
     expect(results).toHaveNoViolations();
+  });
+
+  it('opens on the last played move after a rejoin, even in a variation', async () => {
+    // Mainline e4, then a variation move c4 played from the root.
+    const c4Op: Op = {
+      seq: 2,
+      author: 'profile-1',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'move_at_ply',
+      payload: {
+        game_id: 'game-1',
+        ply: 1,
+        san: 'c4',
+        from: 'c2',
+        to: 'c4',
+        promotion: null,
+        fen: 'rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1',
+        status: 'active',
+        parent_id: 0,
+      },
+    };
+    channel.joinReturn = { ops: [setGameOp(1, gameTree), c4Op], roles: {} };
+    renderRoom();
+
+    // The cursor lands on c4 (the move last played), not the mainline tip e4.
+    await waitFor(() => expect(screen.getByTestId('square-c4')).toHaveTextContent('♟'));
+    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
   });
 });

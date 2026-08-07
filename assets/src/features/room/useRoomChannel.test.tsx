@@ -283,6 +283,7 @@ describe('useRoomChannel', () => {
       presence: {},
       roles: {},
       games: {},
+      lastPlayed: {},
     });
   });
 

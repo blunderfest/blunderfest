@@ -29,9 +29,12 @@ export function useEngine(
     enabled?: boolean;
     movetimeMs?: number;
     debounceMs?: number;
+    /** The node's game status; terminal positions skip the engine. */
+    positionStatus?: string;
   } = {},
 ): EngineState {
   const { enabled = true, movetimeMs = 250, debounceMs = 120 } = options;
+  const positionStatus = options.positionStatus ?? 'active';
 
   /**
    * Resolved on first use inside the effect, so the (expensive) engine is
@@ -63,7 +66,27 @@ export function useEngine(
           ? null
           : getSharedEngineLazy();
 
-    if (!enabled || fen === null || engineRef.current === null) {
+    if (!enabled || fen === null) {
+      setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [] });
+      return;
+    }
+
+    // Terminal positions need no engine: a mate bar reads 50/50 ("equal")
+    // without one — show the outcome itself.
+    if (positionStatus !== 'active') {
+      const turn = fen.split(' ')[1];
+      const result = positionStatus === 'checkmate' ? (turn === 'w' ? '0-1' : '1-0') : '1/2-1/2';
+      setState({
+        status: 'ready',
+        eval: { type: 'result', result },
+        bestMove: null,
+        depth: null,
+        pv: [],
+      });
+      return;
+    }
+
+    if (engineRef.current === null) {
       setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [] });
       return;
     }
@@ -109,7 +132,7 @@ export function useEngine(
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [fen, enabled, movetimeMs, debounceMs, options.engine, attempt]);
+  }, [fen, enabled, movetimeMs, debounceMs, options.engine, attempt, positionStatus]);
 
   return { ...state, retry };
 }

@@ -11,6 +11,7 @@ import roomReducer, {
   selectActivityOps,
   selectCanEdit,
   selectFirstGameId,
+  selectLastPlayed,
   selectPresenter,
   selectPresenterCursor,
   selectPresenterGameId,
@@ -203,6 +204,7 @@ describe('room slice', () => {
       presence: {},
       roles: {},
       games: {},
+      lastPlayed: {},
     });
   });
 
@@ -214,6 +216,7 @@ describe('room slice', () => {
         presence: { 'author-1': { id: 'author-1', name: 'Brave Otter 42' } },
         roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
+        lastPlayed: { 'game-1': 1 },
       },
       enterRoom({ slug: 'room-123' }),
     );
@@ -223,6 +226,7 @@ describe('room slice', () => {
       presence: {},
       roles: {},
       games: {},
+      lastPlayed: {},
     });
   });
 
@@ -234,6 +238,7 @@ describe('room slice', () => {
         presence: { 'author-1': { id: 'author-1', name: 'Brave Otter 42' } },
         roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
+        lastPlayed: { 'game-1': 1 },
       },
       leaveRoom(),
     );
@@ -243,6 +248,7 @@ describe('room slice', () => {
       presence: {},
       roles: {},
       games: {},
+      lastPlayed: {},
     });
   });
 
@@ -711,5 +717,31 @@ describe('set_position transforms', () => {
     expect(setupPlyFromFen('8/8/8/8/8/8/4K3/4k3 w - - 0 20')).toBe(38);
     expect(setupPlyFromFen('8/8/8/8/8/8/4K3/4k3 b - - 0 20')).toBe(39);
     expect(setupPlyFromFen('garbage')).toBeNull();
+  });
+});
+
+describe('lastPlayed tracking', () => {
+  it('points at the node created by the latest move op, even in a variation', () => {
+    let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+    expect(selectLastPlayed(state, 'game-1')).toBeNull();
+
+    state = roomReducer(state, applyOp(moveAtPly(2, 3, { san: 'Nf3', parent_id: 2 })));
+    expect(selectLastPlayed(state, 'game-1')).toBe(3);
+
+    // A variation move is "last played" too.
+    state = roomReducer(state, applyOp(moveAtPly(3, 2, { san: 'c5', parent_id: 1 })));
+    expect(selectLastPlayed(state, 'game-1')).toBe(4);
+  });
+
+  it('tracks the newest move across a replay', () => {
+    const state = roomReducer(
+      undefined,
+      replayOps([
+        playedGameOp(1),
+        moveAtPly(2, 3, { san: 'Nf3', parent_id: 2 }),
+        moveAtPly(3, 2, { san: 'c5', parent_id: 1 }),
+      ]),
+    );
+    expect(selectLastPlayed(state, 'game-1')).toBe(4);
   });
 });

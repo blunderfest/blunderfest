@@ -61,7 +61,7 @@ describe('ImportDialog', () => {
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } });
 
-    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument();
+    expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
     expect(onImported).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
@@ -78,7 +78,7 @@ describe('ImportDialog', () => {
       target: { value: 'https://lichess.org/abc123' },
     });
 
-    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument();
+    expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
     expect(screen.getByText('lichess')).toBeInTheDocument();
   });
 
@@ -128,6 +128,6 @@ describe('ImportDialog', () => {
     expect((screen.getByLabelText('PGN') as HTMLTextAreaElement).value).toContain(
       '[Event "Friendly sample"]',
     );
-    expect(await screen.findByText('Alice – Bob')).toBeInTheDocument();
+    expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
   });
 });

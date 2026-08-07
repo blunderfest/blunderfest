@@ -379,9 +379,6 @@ describe('Analysis', () => {
     await waitFor(() => expect(screen.getByTestId('selected-e2')).toBeInTheDocument());
     expect(screen.getByTestId('target-e4')).toBeInTheDocument();
     expect(screen.getByTestId('target-e3')).toBeInTheDocument();
-    expect(
-      screen.getByText('Click a piece, then a target square to play a move.'),
-    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('square-e4'));
 
@@ -407,9 +404,6 @@ describe('Analysis', () => {
 
     expect(onPlayMove).not.toHaveBeenCalled();
     expect(fetchLegalMovesMock).not.toHaveBeenCalled();
-    expect(
-      screen.queryByText('Click a piece, then a target square to play a move.'),
-    ).not.toBeInTheDocument();
   });
 
   it('lets a collaborator play moves without presenting or broadcasting the cursor', async () => {

@@ -142,39 +142,74 @@ export default function ImportDialog({
           </div>
 
           {preview !== null && (
-            <div className="flex flex-col gap-1 rounded-control border border-line bg-panel p-3">
-              <div className="flex items-center gap-2">
-                <span
-                  className={chip({
-                    tone:
-                      state.status === 'preview' && state.source === 'lichess' ? 'info' : 'neutral',
-                  })}
-                >
-                  {state.status === 'preview' && state.source === 'lichess' ? 'lichess' : 'pgn'}
+            <div className="flex flex-col gap-2 overflow-hidden rounded-control border border-line">
+              <div className="flex items-center justify-between gap-2 border-b border-line bg-raised px-3 py-2">
+                <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
+                  {t('import.previewTitle')}
                 </span>
-                <span className="text-ui font-semibold text-ink">
-                  {preview.headers.White ?? '?'} – {preview.headers.Black ?? '?'}
-                </span>
-                <span className={chip({ tone: 'outline' })}>{preview.result}</span>
+                <span className={chip({ tone: 'ok' })}>{t('import.validBadge')}</span>
               </div>
-              <p className="m-0 text-note text-muted">
-                {[
-                  preview.headers.Event,
-                  preview.headers.Date,
-                  t('import.size', {
-                    plies: preview.mainline_ply_count,
-                    nodes: preview.node_count,
-                  }),
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </p>
+              <div className="grid grid-cols-2 gap-3 p-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                    {t('import.players')}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-ui text-ink">
+                    <span className="inline-block h-3 w-3 rounded-[2px] border border-line-strong bg-[#f9f9f9]" />
+                    {preview.headers.White ?? '?'}
+                    <span className="text-faint">vs</span>
+                    <span className="inline-block h-3 w-3 rounded-[2px] border border-line-strong bg-[#1a1a1a]" />
+                    {preview.headers.Black ?? '?'}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                    {t('import.result')}
+                  </span>
+                  <span className="text-ui font-semibold text-ink">{preview.result}</span>
+                </div>
+                {(preview.headers.Event || preview.headers.Date) && (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                      {t('import.eventDate')}
+                    </span>
+                    <span className="text-ui text-ink">
+                      {[preview.headers.Event, preview.headers.Date].filter(Boolean).join(' · ')}
+                    </span>
+                  </div>
+                )}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                    {t('import.stats')}
+                  </span>
+                  <span className="text-ui text-ink tabular-nums">
+                    {t('import.size', {
+                      plies: preview.mainline_ply_count,
+                      nodes: preview.node_count,
+                    })}
+                  </span>
+                </div>
+                <div className="col-span-2">
+                  <span
+                    className={chip({
+                      tone:
+                        state.status === 'preview' && state.source === 'lichess'
+                          ? 'info'
+                          : 'neutral',
+                    })}
+                  >
+                    {state.status === 'preview' && state.source === 'lichess' ? 'lichess' : 'pgn'}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-line px-4 py-3">
-          <span className="text-note text-faint">{t('import.sharedNote')}</span>
+          <span className="text-note text-faint">
+            {t('import.sharedNote')} <kbd>Esc</kbd> {t('import.escToCancel')}
+          </span>
           <div className="flex gap-2">
             <button
               type="button"

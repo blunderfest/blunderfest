@@ -51,18 +51,21 @@ describe('Home', () => {
     expect(onJoin).toHaveBeenCalledWith('abc39');
   });
 
-  it('explains which characters are disallowed in a room code', () => {
-    const { onJoin } = renderHome();
-    fireEvent.change(screen.getByPlaceholderText('Room code'), { target: { value: 'abc12' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Join' }));
-    expect(screen.getByText(/Codes never contain/)).toBeInTheDocument();
-    expect(onJoin).not.toHaveBeenCalled();
+  it('filters disallowed characters and caps the length as you type', () => {
+    renderHome();
+    const field = screen.getByPlaceholderText('Room code');
+
+    fireEvent.change(field, { target: { value: 'abi1o!' } });
+    expect(field).toHaveValue('ab');
+
+    fireEvent.change(field, { target: { value: 'abcdefgh' } });
+    expect(field).toHaveValue('abcde');
   });
 
   it('shows an error when the code has the wrong length', () => {
     const { onJoin } = renderHome();
     fireEvent.change(screen.getByPlaceholderText('Room code'), {
-      target: { value: 'kjhkjhkjhkj' },
+      target: { value: 'abc' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Join' }));
     expect(screen.getByText(/Enter a room code/)).toBeInTheDocument();

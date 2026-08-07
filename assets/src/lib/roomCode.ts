@@ -1,5 +1,8 @@
-const ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
-const CODE_LENGTH = 5;
+export const ROOM_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
+export const ROOM_CODE_LENGTH = 5;
+
+const ALPHABET = ROOM_ALPHABET;
+const CODE_LENGTH = ROOM_CODE_LENGTH;
 
 export function generateRoomCode(): string {
   let code = '';
