@@ -148,7 +148,14 @@
     "engineAnalysis": "Engine analysis",
     "engineAnalysisHint": "Eval bar, readout and best-move hints for the current position.",
     "hintArrows": "Hint arrows",
-    "hintArrowsHint": "Draw the engine's best move on the board."
+    "hintArrowsHint": "Draw the engine's best move on the board.",
+    "drawColor": "Drawing color",
+    "colors": {
+      "0": "Blue",
+      "1": "Green",
+      "2": "Purple",
+      "3": "Red"
+    }
   },
   "room": {
     "connecting": "Connecting...",

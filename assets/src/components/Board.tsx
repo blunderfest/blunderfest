@@ -2,8 +2,8 @@ import { useRef, useState } from 'react';
 import { tv } from 'tailwind-variants';
 import {
   arrowShape,
+  DRAW_COLORS,
   isLightSquare,
-  modifierColor,
   type Piece,
   type Position,
   pieceGlyph,
@@ -61,10 +61,12 @@ export default function Board({
   arrowColor = '#3b82f6',
   highlights = [],
   checkSquare = null,
+  drawColor = '#3b82f6',
   onSquareClick,
   onDragMove,
   onDrawArrow,
   onToggleHighlight,
+  onDrawColorChange,
 }: {
   position: Position;
   lastMove?: { from: string; to: string } | null;
@@ -81,6 +83,8 @@ export default function Board({
   onDragMove?: (from: string, to: string | null) => void;
   onDrawArrow?: (from: string, to: string, color: string) => void;
   onToggleHighlight?: (square: string, color: string) => void;
+  drawColor?: string;
+  onDrawColorChange?: (color: string) => void;
 }) {
   const [focusIndex, setFocusIndex] = useState<number>(() =>
     lastMove?.to ? squareIndex(lastMove.to) : squareIndex('e4'),
@@ -97,7 +101,6 @@ export default function Board({
 
   const [drawFrom, setDrawFrom] = useState<string | null>(null);
   const [drawHover, setDrawHover] = useState<string | null>(null);
-  const [drawColor, setDrawColor] = useState('#3b82f6');
   const [arrowDraft, setArrowDraft] = useState<string | null>(null);
 
   const drawable = onDrawArrow !== undefined || onToggleHighlight !== undefined;
@@ -141,7 +144,7 @@ export default function Board({
     if (event.key === 'h' && onToggleHighlight !== undefined) {
       event.preventDefault();
       event.stopPropagation();
-      onToggleHighlight(squareName(focusIndex), modifierColor(event));
+      onToggleHighlight(squareName(focusIndex), drawColor);
       return;
     }
     if (event.key === 'a' && onDrawArrow !== undefined) {
@@ -152,10 +155,17 @@ export default function Board({
         setArrowDraft(square);
       } else {
         if (square !== arrowDraft) {
-          onDrawArrow(arrowDraft, square, modifierColor(event));
+          onDrawArrow(arrowDraft, square, drawColor);
         }
         setArrowDraft(null);
       }
+      return;
+    }
+    const colorIndex = ['1', '2', '3', '4'].indexOf(event.key);
+    if (colorIndex !== -1 && onDrawColorChange !== undefined) {
+      event.preventDefault();
+      event.stopPropagation();
+      onDrawColorChange(DRAW_COLORS[colorIndex]);
       return;
     }
     if (event.key === 'Escape' && arrowDraft !== null) {
@@ -208,7 +218,6 @@ export default function Board({
       event.preventDefault();
       setDrawFrom(from);
       setDrawHover(from);
-      setDrawColor(modifierColor(event));
       containerRef.current?.setPointerCapture?.(event.pointerId);
       return;
     }
@@ -269,9 +278,9 @@ export default function Board({
     if (drawFrom !== null) {
       const to = pointToSquare(event);
       if (to !== null && to !== drawFrom) {
-        onDrawArrow?.(drawFrom, to, modifierColor(event));
+        onDrawArrow?.(drawFrom, to, drawColor);
       } else if (to !== null) {
-        onToggleHighlight?.(to, modifierColor(event));
+        onToggleHighlight?.(to, drawColor);
       }
       setDrawFrom(null);
       setDrawHover(null);

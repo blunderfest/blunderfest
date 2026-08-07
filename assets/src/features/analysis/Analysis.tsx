@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
 import {
+  DRAW_COLORS,
   kingInCheckSquare,
   type Piece,
   type Position,
@@ -69,6 +70,7 @@ export default function Analysis({
   const [legalMoves, setLegalMoves] = useState<LegalMove[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
+  const [drawColor, setDrawColor] = useState<string>(DRAW_COLORS[0]);
   // Per-viewer engine display toggles; persisted — analysis is a local aid,
   // never shared state.
   const [engineOn, setEngineOn] = useState(
@@ -688,6 +690,8 @@ export default function Analysis({
               onDragMove={editing || canPlay ? handleDragMove : undefined}
               onDrawArrow={canEdit && !editing ? handleDrawArrow : undefined}
               onToggleHighlight={canEdit && !editing ? handleToggleHighlight : undefined}
+              drawColor={drawColor}
+              onDrawColorChange={canEdit && !editing ? setDrawColor : undefined}
             />
           </div>
           {editing && (
@@ -782,6 +786,7 @@ export default function Analysis({
                 : undefined
             }
             editing={editing}
+            drawColorPicker={canEdit ? { current: drawColor, onChange: setDrawColor } : undefined}
           />
           <p className="m-0 text-note text-faint">
             <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}

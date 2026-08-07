@@ -395,17 +395,13 @@ describe('Board pointer interactions', () => {
     expect(screen.queryByTestId('drag-ghost')).not.toBeInTheDocument();
   });
 
-  it('toggles a highlight on right-click, colored by modifiers', () => {
+  it('toggles a highlight on right-click in the current drawing color', () => {
     const onToggleHighlight = vi.fn();
-    const { grid } = renderInteractive({ onToggleHighlight });
+    const { grid } = renderInteractive({ onToggleHighlight, drawColor: '#e05a4e' });
 
     pointer(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
     pointer(grid, 'pointerup', { button: 2, clientX: 450, clientY: 650 });
-    expect(onToggleHighlight).toHaveBeenCalledWith('e2', '#3b82f6');
-
-    pointer(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
-    pointer(grid, 'pointerup', { button: 2, clientX: 450, clientY: 650, shiftKey: true });
-    expect(onToggleHighlight).toHaveBeenCalledWith('e2', '#4caf50');
+    expect(onToggleHighlight).toHaveBeenCalledWith('e2', '#e05a4e');
   });
 
   it('draws an arrow on right-drag', () => {
@@ -414,9 +410,9 @@ describe('Board pointer interactions', () => {
 
     pointer(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
     pointer(grid, 'pointermove', { clientX: 450, clientY: 450 });
-    pointer(grid, 'pointerup', { button: 2, clientX: 450, clientY: 450, altKey: true });
+    pointer(grid, 'pointerup', { button: 2, clientX: 450, clientY: 450 });
 
-    expect(onDrawArrow).toHaveBeenCalledWith('e2', 'e4', '#e05a4e');
+    expect(onDrawArrow).toHaveBeenCalledWith('e2', 'e4', '#3b82f6');
   });
 
   it('toggles highlights with h and draws arrows with a', () => {
@@ -431,8 +427,18 @@ describe('Board pointer interactions', () => {
 
     fireEvent.keyDown(e4, { key: 'a' });
     fireEvent.keyDown(e4, { key: 'ArrowUp' });
-    fireEvent.keyDown(screen.getByTestId('square-e5'), { key: 'a', shiftKey: true });
-    expect(onDrawArrow).toHaveBeenCalledWith('e4', 'e5', '#4caf50');
+    fireEvent.keyDown(screen.getByTestId('square-e5'), { key: 'a' });
+    expect(onDrawArrow).toHaveBeenCalledWith('e4', 'e5', '#3b82f6');
+  });
+
+  it('picks the drawing color with the 1-4 keys', () => {
+    const onDrawColorChange = vi.fn();
+    renderInteractive({ onDrawColorChange });
+
+    const e4 = screen.getByTestId('square-e4');
+    e4.focus();
+    fireEvent.keyDown(e4, { key: '3' });
+    expect(onDrawColorChange).toHaveBeenCalledWith('#a855f7');
   });
 
   it('cancels a keyboard arrow draft with Escape', () => {

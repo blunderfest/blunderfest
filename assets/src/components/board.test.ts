@@ -3,7 +3,6 @@ import {
   arrowShape,
   isLightSquare,
   kingInCheckSquare,
-  modifierColor,
   parseFen,
   pieceGlyph,
   positionToFen,
@@ -160,17 +159,5 @@ describe('squareFromPoint', () => {
   it('returns null outside the board', () => {
     expect(squareFromPoint(rect, -5, 100, false)).toBeNull();
     expect(squareFromPoint(rect, 100, 900, false)).toBeNull();
-  });
-});
-
-describe('modifierColor', () => {
-  const base = { shiftKey: false, ctrlKey: false, metaKey: false, altKey: false };
-
-  it('maps modifiers to colors', () => {
-    expect(modifierColor(base)).toBe('#3b82f6');
-    expect(modifierColor({ ...base, shiftKey: true })).toBe('#4caf50');
-    expect(modifierColor({ ...base, ctrlKey: true })).toBe('#a855f7');
-    expect(modifierColor({ ...base, metaKey: true })).toBe('#a855f7');
-    expect(modifierColor({ ...base, altKey: true })).toBe('#e05a4e');
   });
 });

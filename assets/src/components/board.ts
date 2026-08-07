@@ -199,21 +199,10 @@ export function squareFromPoint(
   return squareName(row * 8 + file);
 }
 
-/** The drawing color for a pointer event's modifiers (blue default). */
-export function modifierColor(event: {
-  shiftKey: boolean;
-  ctrlKey: boolean;
-  metaKey: boolean;
-  altKey: boolean;
-}): string {
-  if (event.shiftKey) {
-    return '#4caf50';
-  }
-  if (event.ctrlKey || event.metaKey) {
-    return '#a855f7';
-  }
-  if (event.altKey) {
-    return '#e05a4e';
-  }
-  return '#3b82f6';
-}
+/**
+ * The drawing colors for board annotations. Chosen for contrast on both
+ * board shades — and deliberately NOT driven by modifier keys: Firefox
+ * force-shows its context menu on Shift+right-click and macOS on
+ * Ctrl+click, so modifiers can't carry color.
+ */
+export const DRAW_COLORS = ['#3b82f6', '#4caf50', '#a855f7', '#e05a4e'] as const;

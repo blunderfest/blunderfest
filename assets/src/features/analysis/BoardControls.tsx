@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { DRAW_COLORS } from '@/components/board';
 import { button } from '@/components/ui';
 
 /**
@@ -16,6 +17,7 @@ export default function BoardControls({
   onOpenComment,
   onToggleEdit,
   editing = false,
+  drawColorPicker,
 }: {
   flipped: boolean;
   presenterActive: boolean;
@@ -26,6 +28,8 @@ export default function BoardControls({
   onOpenComment?: () => void;
   onToggleEdit?: () => void;
   editing?: boolean;
+  /** When set (editors only), a drawing-color picker is shown. */
+  drawColorPicker?: { current: string; onChange: (color: string) => void };
 }) {
   const { t } = useTranslation();
 
@@ -79,6 +83,29 @@ export default function BoardControls({
         >
           ✎ {t('analysis.editPosition')}
         </button>
+      )}
+      {drawColorPicker !== undefined && (
+        <fieldset
+          className="m-0 flex min-w-0 items-center gap-1.5 border-none p-0"
+          data-testid="draw-color-picker"
+        >
+          <legend className="sr-only">{t('analysis.drawColor')}</legend>
+          {DRAW_COLORS.map((color, index) => (
+            <button
+              key={color}
+              type="button"
+              aria-pressed={drawColorPicker.current === color}
+              aria-label={t(`analysis.colors.${index}`)}
+              className={`h-5 w-5 rounded-full transition-transform ${
+                drawColorPicker.current === color
+                  ? 'scale-110 ring-2 ring-ink ring-offset-2 ring-offset-surface'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+              style={{ backgroundColor: color }}
+              onClick={() => drawColorPicker.onChange(color)}
+            />
+          ))}
+        </fieldset>
       )}
       {amPresenter && (
         <p className="m-0 text-note text-muted" role="status">
