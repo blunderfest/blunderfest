@@ -83,3 +83,9 @@ describe('Home', () => {
     expect(onJoin).not.toHaveBeenCalled();
   });
 });
+
+it('joins the demo room from the demo link', () => {
+  const { onJoin } = renderHome();
+  fireEvent.click(screen.getByRole('button', { name: /Peek at the demo room/ }));
+  expect(onJoin).toHaveBeenCalledWith('chess');
+});

@@ -10,6 +10,12 @@ defmodule Blunderfest.Application do
     children = [
       Blunderfest.Profiles,
       Blunderfest.Rooms,
+      # One-shot demo-room seeder; runs once at boot, never restarted.
+      %{
+        id: Blunderfest.DemoRoom,
+        start: {Task, :start_link, [fn -> Blunderfest.DemoRoom.seed() end]},
+        restart: :temporary
+      },
       {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
       BlunderfestWeb.Presence,

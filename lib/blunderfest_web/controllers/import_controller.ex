@@ -1,7 +1,7 @@
 defmodule BlunderfestWeb.ImportController do
   use BlunderfestWeb, :controller
 
-  alias Blunderfest.Game.{Node, Tree}
+  alias Blunderfest.Game.Tree
   alias Blunderfest.Lichess
   alias Blunderfest.PGN
 
@@ -58,30 +58,5 @@ defmodule BlunderfestWeb.ImportController do
     |> json(%{errors: %{code: "invalid_request"}})
   end
 
-  defp tree_json(%Tree{} = tree) do
-    %{
-      headers: tree.headers,
-      result: tree.result,
-      setup: tree.setup,
-      root: node_json(tree.root),
-      mainline_ply_count: Tree.mainline_ply_count(tree),
-      node_count: Tree.node_count(tree)
-    }
-  end
-
-  defp node_json(%Node{} = node) do
-    %{
-      id: node.id,
-      ply: node.ply,
-      san: node.san,
-      from: node.from,
-      to: node.to,
-      promotion: node.promotion,
-      comment: node.comment,
-      nags: node.nags,
-      status: node.status,
-      fen: node.fen,
-      children: Enum.map(node.children, &node_json/1)
-    }
-  end
+  defp tree_json(%Tree{} = tree), do: Tree.to_map(tree)
 end

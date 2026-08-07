@@ -16,12 +16,10 @@ codebases.
 
 ## Findings, by severity
 
-### 1. `SECRET_KEY_BASE` and `RELEASE_COOKIE` are committed in `fly.toml`
+### 1. ~~`SECRET_KEY_BASE` and `RELEASE_COOKIE` are committed in `fly.toml`~~ ✅ DONE (2026-08-07)
 
-The repo is on GitHub. If it's public, the Phoenix signing secret is leaked.
-Today the blast radius is small (no signed session cookies in use), but it's
-a loaded gun the moment tokens/cookies matter. Fix: `fly secrets set`, rotate,
-remove from `fly.toml`. **Highest priority.**
+Rotated and moved to `fly secrets`; `fly.toml` no longer carries them. The
+old values remain in git history but are invalid.
 
 ### 2. The channel's op ingestion trusts the client
 

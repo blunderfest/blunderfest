@@ -32,7 +32,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Presenter/follow mode: cursor + game-selection sync, break-away/re-follow
 - ✅ Multiple games per room: import, new blank game, switch
 - ✅ Activity feed (who did what, minus cursor noise)
-- ✅ Room code in the app header for the owner (copy to share)
+- ✅ Room code in the app header (copy to share; joiners land as viewers)
+- ✅ Demo room seeded on boot at `#/r/chess` (annotated Opera Game) — linked from the home page
 - 💡 Private rooms with owner-approved joins (the `:pending` approval seam already exists — ADR-0006)
 - 💡 Text chat
 - 💡 Per-member cursor/arrow colors (see who points where)

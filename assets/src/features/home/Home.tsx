@@ -146,6 +146,15 @@ export default function Home({
         />
         <span data-status={backend}>{t(`status.${backend}`)}</span>
       </p>
+
+      <button
+        type="button"
+        id="demo-room-link"
+        className={button({ intent: 'quiet', size: 'sm' })}
+        onClick={() => onJoin('chess')}
+      >
+        {t('home.demoLink')}
+      </button>
     </div>
   );
 }

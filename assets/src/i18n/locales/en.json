@@ -30,6 +30,7 @@
     "featTree": "Shared variation tree",
     "featComments": "Per-move comments",
     "featEngine": "Engine eval bar",
+    "demoLink": "Peek at the demo room →",
     "createHint": "A room is a shared analysis board. Anyone with the code can join.",
     "join": "Join a room",
     "joinLabel": "Room code",

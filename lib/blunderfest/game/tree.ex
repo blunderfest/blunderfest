@@ -67,4 +67,35 @@ defmodule Blunderfest.Game.Tree do
 
   defp count(nil), do: 0
   defp count(%{children: children}), do: 1 + Enum.sum(Enum.map(children, &count/1))
+
+  @doc """
+  The plain-map (JSON-ready) shape of the tree — what the API and the demo
+  room seeder send to clients.
+  """
+  def to_map(%__MODULE__{} = tree) do
+    %{
+      headers: tree.headers,
+      result: tree.result,
+      setup: tree.setup,
+      root: node_to_map(tree.root),
+      mainline_ply_count: mainline_ply_count(tree),
+      node_count: node_count(tree)
+    }
+  end
+
+  defp node_to_map(%Blunderfest.Game.Node{} = node) do
+    %{
+      id: node.id,
+      ply: node.ply,
+      san: node.san,
+      from: node.from,
+      to: node.to,
+      promotion: node.promotion,
+      comment: node.comment,
+      nags: node.nags,
+      status: node.status,
+      fen: node.fen,
+      children: Enum.map(node.children, &node_to_map/1)
+    }
+  end
 end
