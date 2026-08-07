@@ -142,7 +142,8 @@
       "b": "bishop",
       "n": "knight",
       "p": "pawn"
-    }
+    },
+    "engineToggle": "Engine"
   },
   "room": {
     "connecting": "Connecting...",

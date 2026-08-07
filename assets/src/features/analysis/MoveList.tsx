@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
-import { panel, panelHeader } from '@/components/ui';
+import { button, panel, panelHeader } from '@/components/ui';
 import type { Row } from '@/features/analysis/moveList';
 import type { GameNode } from '@/lib/api';
 
@@ -144,11 +144,17 @@ export default function MoveList({
   currentId,
   nodeCount,
   onSelect,
+  navTargets,
+  currentPly,
+  totalPly,
 }: {
   rows: Row[];
   currentId: number | null;
   nodeCount: number;
   onSelect: (id: number) => void;
+  navTargets: { first: number; prev: number | null; next: number | null; last: number | null };
+  currentPly: number;
+  totalPly: number;
 }) {
   const { t } = useTranslation();
 
@@ -205,6 +211,55 @@ export default function MoveList({
             />
           ),
         )}
+      </div>
+
+      <div className="flex shrink-0 items-center justify-center gap-1 border-t border-line p-2">
+        <button
+          type="button"
+          id="analysis-first-button"
+          className={button({ intent: 'secondary', size: 'icon' })}
+          aria-label={t('analysis.first')}
+          aria-keyshortcuts="Home"
+          onClick={() => onSelect(navTargets.first)}
+        >
+          ⏮
+        </button>
+        <button
+          type="button"
+          id="analysis-prev-button"
+          className={button({ intent: 'secondary', size: 'icon' })}
+          disabled={navTargets.prev === null}
+          aria-label={t('analysis.prev')}
+          aria-keyshortcuts="ArrowLeft"
+          onClick={() => navTargets.prev !== null && onSelect(navTargets.prev)}
+        >
+          ◀
+        </button>
+        <span className="px-2 text-ui text-muted tabular-nums" data-testid="ply-counter">
+          {t('analysis.position', { ply: currentPly, total: totalPly })}
+        </span>
+        <button
+          type="button"
+          id="analysis-next-button"
+          className={button({ intent: 'secondary', size: 'icon' })}
+          disabled={navTargets.next === null}
+          aria-label={t('analysis.next')}
+          aria-keyshortcuts="ArrowRight"
+          onClick={() => navTargets.next !== null && onSelect(navTargets.next)}
+        >
+          ▶
+        </button>
+        <button
+          type="button"
+          id="analysis-last-button"
+          className={button({ intent: 'secondary', size: 'icon' })}
+          disabled={navTargets.last === null}
+          aria-label={t('analysis.last')}
+          aria-keyshortcuts="End"
+          onClick={() => navTargets.last !== null && onSelect(navTargets.last)}
+        >
+          ⏭
+        </button>
       </div>
     </section>
   );

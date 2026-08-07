@@ -46,7 +46,15 @@ function makeTree(withNested: boolean): GameTree {
 
 function renderList(t: GameTree = makeTree(false)) {
   return render(
-    <MoveList rows={buildRows(t)} currentId={null} nodeCount={t.node_count} onSelect={vi.fn()} />,
+    <MoveList
+      rows={buildRows(t)}
+      currentId={null}
+      nodeCount={t.node_count}
+      onSelect={vi.fn()}
+      navTargets={{ first: 0, prev: null, next: null, last: null }}
+      currentPly={0}
+      totalPly={t.mainline_ply_count}
+    />,
   );
 }
 

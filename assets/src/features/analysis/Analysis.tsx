@@ -63,6 +63,18 @@ export default function Analysis({
   const [legalMoves, setLegalMoves] = useState<LegalMove[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
+  // Per-viewer engine display toggle; persisted — analysis is a local aid,
+  // never shared state.
+  const [engineOn, setEngineOn] = useState(
+    () => localStorage.getItem('blunderfest.engine') !== 'off',
+  );
+
+  function toggleEngine() {
+    setEngineOn((on) => {
+      localStorage.setItem('blunderfest.engine', on ? 'off' : 'on');
+      return !on;
+    });
+  }
 
   const presenterActive = presenterId !== null;
   const amPresenter = selfId !== null && selfId === presenterId;
@@ -127,7 +139,7 @@ export default function Analysis({
 
   const engineState = useEngine(current?.fen ?? null, {
     engine,
-    enabled: current !== null,
+    enabled: engineOn && current !== null,
     positionStatus: current?.status ?? 'active',
   });
 
@@ -444,7 +456,7 @@ export default function Analysis({
   const next = current.children[0] ?? null;
   const boardLabel = t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') });
   const evalBarLabel = evalAriaLabel(engineState.eval, t);
-  const hintArrows = engineState.bestMove === null ? [] : [engineState.bestMove];
+  const hintArrows = !engineOn || engineState.bestMove === null ? [] : [engineState.bestMove];
 
   return (
     <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-6">
@@ -463,6 +475,7 @@ export default function Analysis({
                 className="m-0 flex min-w-0 flex-col justify-center gap-1 rounded-control border border-line bg-panel px-1.5 py-2"
                 data-testid="edit-palette"
               >
+                {' '}
                 <legend className="sr-only">{t('analysis.palette')}</legend>
                 {(['w', 'b'] as const).map((color) => (
                   <div key={color} className="flex flex-col gap-1">
@@ -511,14 +524,14 @@ export default function Analysis({
                   ⌫
                 </button>
               </fieldset>
-            ) : (
+            ) : engineOn ? (
               <EvalBar
                 eval={engineState.eval}
                 thinking={engineState.status === 'thinking'}
                 unavailable={engineState.status === 'error'}
                 label={evalBarLabel}
               />
-            )}
+            ) : null}
             <Board
               position={editing ? editPos : parseFen(current.fen ?? '')}
               lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
@@ -596,11 +609,11 @@ export default function Analysis({
               <span className={statusDot({ tone: 'warn', pulse: true })} />
               <span className="text-ui text-gold-hi">{t('analysis.enginePaused')}</span>
             </div>
-          ) : (
+          ) : engineOn ? (
             <div className="w-[min(90vw,34rem)]">
               <EngineReadout fen={current.fen ?? ''} state={engineState} />
             </div>
-          )}
+          ) : null}
           {current.comment !== null && (
             <div
               className="w-[min(90vw,34rem)] rounded-control border border-line bg-panel p-3 text-body text-ink"
@@ -613,19 +626,10 @@ export default function Analysis({
             {selected !== null ? t('analysis.selected', { square: selected }) : boardLabel}
           </p>
           <BoardControls
-            targets={{
-              first: tree.root.id,
-              prev: parent?.id ?? null,
-              next: next?.id ?? null,
-              last: current.children.length === 0 ? null : lastChild(current).id,
-            }}
-            currentPly={current.ply}
-            totalPly={tree.mainline_ply_count}
             flipped={flipped}
             presenterActive={presenterActive}
             amPresenter={amPresenter}
             following={following}
-            onNavigate={navigate}
             onFlip={() => setFlipped((f) => !f)}
             onFollowChange={onFollowChange ?? (() => {})}
             onOpenComment={canEdit ? () => setCommentOpen(true) : undefined}
@@ -635,6 +639,8 @@ export default function Analysis({
                 : undefined
             }
             editing={editing}
+            engineOn={engineOn}
+            onToggleEngine={toggleEngine}
           />
           <p className="m-0 text-note text-faint">
             <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
@@ -672,6 +678,14 @@ export default function Analysis({
                       currentId={current.id}
                       nodeCount={tree.node_count}
                       onSelect={navigate}
+                      navTargets={{
+                        first: tree.root.id,
+                        prev: parent?.id ?? null,
+                        next: next?.id ?? null,
+                        last: current.children.length === 0 ? null : lastChild(current).id,
+                      }}
+                      currentPly={current.ply}
+                      totalPly={tree.mainline_ply_count}
                     />
                     <GameInfo tree={tree} />
                   </>
