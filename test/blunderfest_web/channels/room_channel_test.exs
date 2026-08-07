@@ -169,6 +169,24 @@ defmodule BlunderfestWeb.RoomChannelTest do
     assert Rooms.ops("room:abcde") == []
   end
 
+  test "viewers cannot push set_position ops", %{} do
+    join_room("room:abcde", %{"profile_id" => "profile-1"})
+    {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})
+
+    ref =
+      push(viewer, "op", %{
+        "type" => "set_position",
+        "payload" => %{
+          "game_id" => "game-1",
+          "parent_id" => 0,
+          "fen" => "8/8/8/8/8/8/4K3/4k3 w - - 0 1"
+        }
+      })
+
+    assert_reply ref, :error, %{reason: :forbidden}
+    assert Rooms.ops("room:abcde") == []
+  end
+
   test "viewers can still push cursor and selection ops", %{} do
     join_room("room:abcde", %{"profile_id" => "profile-1"})
     {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})

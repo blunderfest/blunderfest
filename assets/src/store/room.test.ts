@@ -18,6 +18,7 @@ import roomReducer, {
   selectSortedMembers,
   setMemberRole,
   setRoles,
+  setupPlyFromFen,
 } from './room';
 
 const tree: GameTree = {
@@ -634,5 +635,40 @@ describe('room slice', () => {
         'viewer',
       ]);
     });
+  });
+});
+
+describe('set_position transforms', () => {
+  it('appends a setup node under the parent with the FEN-derived ply', () => {
+    let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+    state = roomReducer(
+      state,
+      applyOp({
+        seq: 2,
+        author: 'author-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'set_position',
+        payload: {
+          game_id: 'game-1',
+          parent_id: 2,
+          fen: 'rnbqkbnr/pppp1ppp/8/4p2P/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 2',
+        },
+      }),
+    );
+
+    const game = state.games['game-1'];
+    const e5 = game.root.children[0].children[0];
+    const setup = e5.children[0];
+    expect(setup).toMatchObject({ id: 3, ply: 3, san: null });
+    expect(setup.fen).toContain('4p2P');
+    expect(game.node_count).toBe(4);
+    expect(game.mainline_ply_count).toBe(2);
+    expect(game.result).toBe('*');
+  });
+
+  it('derives the setup ply so black-to-move setups number correctly', () => {
+    expect(setupPlyFromFen('8/8/8/8/8/8/4K3/4k3 w - - 0 20')).toBe(38);
+    expect(setupPlyFromFen('8/8/8/8/8/8/4K3/4k3 b - - 0 20')).toBe(39);
+    expect(setupPlyFromFen('garbage')).toBeNull();
   });
 });

@@ -46,6 +46,8 @@ function MoveButton({
   showNumber: boolean;
   onSelect: (id: number) => void;
 }) {
+  const { t } = useTranslation();
+  const isSetup = node.san === null;
   return (
     <button
       type="button"
@@ -54,8 +56,14 @@ function MoveButton({
       className={moveButton({ selected, line })}
       onClick={() => onSelect(node.id)}
     >
-      {showNumber && <span className="text-faint">{moveNumber(node)}</span>} {node.san}
-      {node.comment !== null && <CommentDot />}
+      {isSetup ? (
+        <em className="text-muted">⚙ {t('analysis.setupNode')}</em>
+      ) : (
+        <>
+          {showNumber && <span className="text-faint">{moveNumber(node)}</span>} {node.san}
+          {node.comment !== null && <CommentDot />}
+        </>
+      )}
     </button>
   );
 }
@@ -90,7 +98,9 @@ function VariationLine({
       {nodes.map((node) => {
         const showNumber = node.ply % 2 === 1 || interrupted;
         const nestedVariations = node.children.slice(1);
-        interrupted = nestedVariations.length > 0;
+        // A nested variation or a setup node breaks the flow — the next
+        // black move gets its number restated.
+        interrupted = nestedVariations.length > 0 || node.san === null;
         return (
           <Fragment key={node.id}>
             <MoveButton

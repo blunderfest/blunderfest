@@ -5,6 +5,8 @@ import {
   kingInCheckSquare,
   parseFen,
   pieceGlyph,
+  positionToFen,
+  squareIndex,
   squareName,
   squarePoint,
 } from '@/components/board';
@@ -107,5 +109,22 @@ describe('kingInCheckSquare', () => {
 
   it('returns null for garbage input instead of throwing', () => {
     expect(kingInCheckSquare('not a fen')).toBeNull();
+  });
+});
+
+describe('positionToFen', () => {
+  it('serializes the start position', () => {
+    expect(positionToFen(parseFen(start), 'w', 1)).toBe(
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1',
+    );
+  });
+
+  it('serializes an edited position with the side to move', () => {
+    const position = parseFen(start);
+    position[squareIndex('h3')] = position[squareIndex('e2')];
+    position[squareIndex('e2')] = null;
+    expect(positionToFen(position, 'b', 7)).toBe(
+      'rnbqkbnr/pppppppp/8/8/8/7P/PPPP1PPP/RNBQKBNR b - - 0 7',
+    );
   });
 });

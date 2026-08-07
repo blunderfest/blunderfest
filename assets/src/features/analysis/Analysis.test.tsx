@@ -602,3 +602,48 @@ describe('engine analysis', () => {
     expect(await screen.findByText('Engine analysis unavailable')).toBeInTheDocument();
   });
 });
+
+describe('position setup (what-if editing)', () => {
+  beforeEach(() => {
+    fetchLegalMovesMock.mockReset();
+    fetchLegalMovesMock.mockResolvedValue({ moves: [] });
+  });
+
+  it('lets an editor move a piece anywhere and set the position', () => {
+    const onSetPosition = vi.fn();
+    render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    fireEvent.click(screen.getByTestId('square-e4'));
+    fireEvent.click(screen.getByTestId('square-h3'));
+    fireEvent.click(screen.getByTestId('set-position-button'));
+
+    expect(onSetPosition).toHaveBeenCalledTimes(1);
+    const payload = onSetPosition.mock.calls[0][0];
+    expect(payload.parent_id).toBe(4);
+    expect(payload.fen).toContain('5N1P');
+    expect(payload.fen).toContain(' b ');
+    // The pending setup node shows the edited position immediately.
+    expect(screen.getByTestId('square-h3')).toHaveTextContent('♟');
+    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
+  });
+
+  it('rejects an illegal setup and keeps editing', () => {
+    const onSetPosition = vi.fn();
+    render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    // Replace the black king with the white pawn — no black king left.
+    fireEvent.click(screen.getByTestId('square-e4'));
+    fireEvent.click(screen.getByTestId('square-e8'));
+    fireEvent.click(screen.getByTestId('set-position-button'));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/isn't legal/);
+    expect(onSetPosition).not.toHaveBeenCalled();
+  });
+
+  it('does not offer edit mode without edit rights', () => {
+    render(<Analysis tree={tree} />);
+    expect(screen.queryByRole('button', { name: 'Edit position' })).not.toBeInTheDocument();
+  });
+});

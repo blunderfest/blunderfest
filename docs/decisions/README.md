@@ -52,3 +52,4 @@ here, or point to the ADR that superseded this one.
 | [0008](adr-0008-branch-structure-main-and-backup.md) | `main` is the active branch; `main_backup` archives the old history | Accepted (2026-08-06) |
 | [0009](adr-0009-engine-strategy.md) | Engine strategy: Stockfish WASM in the browser, server-side UCI worker pool for batch analysis | Accepted (2026-08-04); interactive layer implemented (2026-08-06), batch pool pending |
 | [0010](adr-0010-weight-agnostic-search-index.md) | Search indexes weight-agnostic piece maps so user-configurable weights never require reindexing | Accepted — implementation pending |
+| [0011](adr-0011-free-form-position-setup.md) | Free-form position editing via a `set_position` op replayed as a tree setup node | Accepted (2026-08-07) |

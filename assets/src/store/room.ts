@@ -7,6 +7,7 @@ import type {
   Op,
   PresenceMember,
   SetGameOp,
+  SetPositionOp,
 } from '@/protocol/ops';
 
 /**
@@ -159,15 +160,64 @@ export function applyCommentAtPly(tree: GameTree, payload: CommentAtPlyOp['paylo
   return { ...tree, root };
 }
 
-function applyOpToGame(state: RoomState, op: MoveAtPlyOp | CommentAtPlyOp): void {
+/**
+ * The ply of a setup node from its FEN: the halfmove *before* the side to
+ * move plays next, so descendants number correctly (white to move at move
+ * N → 2N-2; black to move → 2N-1). Null for malformed FENs.
+ */
+export function setupPlyFromFen(fen: string): number | null {
+  const parts = fen.split(' ');
+  const fullmove = Number.parseInt(parts[5] ?? '', 10);
+  if (Number.isNaN(fullmove) || fullmove < 1) {
+    return null;
+  }
+  return parts[1] === 'b' ? fullmove * 2 - 1 : fullmove * 2 - 2;
+}
+
+/**
+ * Appends a free-form position edit (ADR-0011) as a setup node under the
+ * parent named by `parent_id`. Setup nodes never change the game result or
+ * the mainline ply count.
+ */
+export function applySetPosition(tree: GameTree, payload: SetPositionOp['payload']): GameTree {
+  const parent = findNode(tree.root, payload.parent_id);
+  if (parent === null) {
+    return tree;
+  }
+
+  const node: GameNode = {
+    id: maxNodeId(tree.root) + 1,
+    ply: setupPlyFromFen(payload.fen) ?? parent.ply + 1,
+    san: null,
+    from: null,
+    to: null,
+    promotion: null,
+    comment: null,
+    nags: [],
+    status: 'active',
+    fen: payload.fen,
+    children: [],
+  };
+
+  const root = replaceNode(tree.root, parent.id, (parent) => ({
+    ...parent,
+    children: [...parent.children, node],
+  }));
+
+  return { ...tree, root, node_count: tree.node_count + 1 };
+}
+
+function applyOpToGame(state: RoomState, op: MoveAtPlyOp | CommentAtPlyOp | SetPositionOp): void {
   const tree = state.games[op.payload.game_id];
   if (tree === undefined) {
     return;
   }
   if (op.type === 'move_at_ply') {
     state.games[op.payload.game_id] = applyMoveAtPly(tree, op.payload);
-  } else {
+  } else if (op.type === 'comment_at_ply') {
     state.games[op.payload.game_id] = applyCommentAtPly(tree, op.payload);
+  } else {
+    state.games[op.payload.game_id] = applySetPosition(tree, op.payload);
   }
 }
 
@@ -343,7 +393,11 @@ const roomSlice = createSlice({
         if (op.type === 'set_game') {
           state.games[gameIdOf(op)] = op.payload.tree;
         }
-        if (op.type === 'move_at_ply' || op.type === 'comment_at_ply') {
+        if (
+          op.type === 'move_at_ply' ||
+          op.type === 'comment_at_ply' ||
+          op.type === 'set_position'
+        ) {
           applyOpToGame(state, op);
         }
       }
@@ -357,7 +411,11 @@ const roomSlice = createSlice({
         }
       }
       for (const op of state.ops) {
-        if (op.type === 'move_at_ply' || op.type === 'comment_at_ply') {
+        if (
+          op.type === 'move_at_ply' ||
+          op.type === 'comment_at_ply' ||
+          op.type === 'set_position'
+        ) {
           applyOpToGame(state, op);
         }
       }

@@ -10,7 +10,7 @@ import GameList from '@/features/room/GameList';
 import MemberList from '@/features/room/MemberList';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
-import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp } from '@/protocol/ops';
+import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
 import { useAppSelector } from '@/store';
 import {
   selectActivityOps,
@@ -94,6 +94,15 @@ export default function RoomView({
     (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => {
       if (effectiveGameId !== null) {
         sendOp({ type: 'comment_at_ply', payload: { game_id: effectiveGameId, ...payload } });
+      }
+    },
+    [sendOp, effectiveGameId],
+  );
+
+  const handleSetPosition = useCallback(
+    (payload: Omit<SetPositionOp['payload'], 'game_id'>) => {
+      if (effectiveGameId !== null) {
+        sendOp({ type: 'set_position', payload: { game_id: effectiveGameId, ...payload } });
       }
     },
     [sendOp, effectiveGameId],
@@ -220,6 +229,7 @@ export default function RoomView({
               onCursorChange={handleCursorChange}
               onPlayMove={handlePlayMove}
               onComment={handleComment}
+              onSetPosition={handleSetPosition}
             />
           )}
         </section>

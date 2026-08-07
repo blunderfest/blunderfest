@@ -4,7 +4,7 @@ import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import type { GameNode, GameTree } from '@/lib/api';
 
-function node(id: number, ply: number, san: string, children: GameNode[] = []): GameNode {
+function node(id: number, ply: number, san: string | null, children: GameNode[] = []): GameNode {
   return {
     id,
     ply,
@@ -75,6 +75,13 @@ describe('MoveList move numbers', () => {
     renderList();
     expect(moveText(4)).toBe('2. d4');
     expect(moveText(5)).toBe('cxd4');
+  });
+
+  it('renders a setup node as a Setup token without a move number', () => {
+    const withSetup = makeTree(false);
+    withSetup.root.children[0].children.push(node(8, 2, null));
+    renderList(withSetup);
+    expect(moveText(8)).toBe('⚙ Setup');
   });
 
   it('re-marks a black move after a nested variation interrupts the line', () => {

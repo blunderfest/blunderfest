@@ -1,8 +1,16 @@
+import { Chess } from 'chess.js';
 import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
-import { kingInCheckSquare, parseFen } from '@/components/board';
+import {
+  kingInCheckSquare,
+  type Position,
+  parseFen,
+  positionToFen,
+  squareIndex,
+} from '@/components/board';
+import { button } from '@/components/ui';
 import BoardControls from '@/features/analysis/BoardControls';
 import CommentPopup from '@/features/analysis/CommentPopup';
 import EngineReadout from '@/features/analysis/EngineReadout';
@@ -15,7 +23,8 @@ import { buildNodeMap } from '@/features/analysis/nodeMap';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useEngine } from '@/features/analysis/useEngine';
 import { fetchLegalMoves, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
-import type { CommentAtPlyOp, MoveAtPlyOp } from '@/protocol/ops';
+import type { CommentAtPlyOp, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
+import { setupPlyFromFen } from '@/store/room';
 
 export default function Analysis({
   tree,
@@ -29,6 +38,7 @@ export default function Analysis({
   onCursorChange,
   onPlayMove,
   onComment,
+  onSetPosition,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -41,6 +51,7 @@ export default function Analysis({
   onCursorChange?: (nodeId: number) => void;
   onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => void;
   onComment?: (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => void;
+  onSetPosition?: (payload: Omit<SetPositionOp['payload'], 'game_id'>) => void;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
@@ -219,6 +230,91 @@ export default function Analysis({
     [current, onPlayMove, onFollowChange, maxNodeId],
   );
 
+  /**
+   * Free-form position editing (ADR-0011). In edit mode the board accepts
+   * arbitrary piece placement: click a piece to pick it up, click any square
+   * to drop it (replacing whatever is there). "Set position" validates with
+   * chess.js and broadcasts a `set_position` op; the echo lands the setup
+   * node under the current one.
+   */
+  const [editing, setEditing] = useState(false);
+  const [editPos, setEditPos] = useState<Position>([]);
+  const [editTurn, setEditTurn] = useState<'w' | 'b'>('w');
+  const [editSelected, setEditSelected] = useState<string | null>(null);
+  const [editError, setEditError] = useState(false);
+
+  function enterEditMode() {
+    setEditPos(parseFen(current?.fen ?? ''));
+    setEditTurn(current?.fen?.split(' ')[1] === 'b' ? 'b' : 'w');
+    setEditSelected(null);
+    setEditError(false);
+    setEditing(true);
+  }
+
+  function exitEditMode() {
+    setEditing(false);
+    setEditSelected(null);
+    setEditError(false);
+  }
+
+  const handleEditSquareClick = useCallback(
+    (square: string) => {
+      if (editSelected === null) {
+        if (editPos[squareIndex(square)] != null) {
+          setEditSelected(square);
+        }
+        return;
+      }
+      if (square === editSelected) {
+        setEditSelected(null);
+        return;
+      }
+      const from = squareIndex(editSelected);
+      const next = [...editPos];
+      next[squareIndex(square)] = next[from] ?? null;
+      next[from] = null;
+      setEditPos(next);
+      setEditSelected(null);
+    },
+    [editPos, editSelected],
+  );
+
+  function handleSetPosition() {
+    if (current === null || onSetPosition === undefined) {
+      return;
+    }
+    const fullmove = Number.parseInt(current.fen?.split(' ')[5] ?? '1', 10) || 1;
+    const fen = positionToFen(editPos, editTurn, fullmove);
+    try {
+      new Chess(fen);
+    } catch {
+      setEditError(true);
+      return;
+    }
+    onFollowChange?.(false);
+    const nodeId = maxNodeId + 1;
+    onSetPosition({ parent_id: current.id, fen });
+    setPending((previous) => {
+      const next = new Map(previous);
+      next.set(nodeId, {
+        id: nodeId,
+        ply: setupPlyFromFen(fen) ?? current.ply + 1,
+        san: null,
+        from: null,
+        to: null,
+        promotion: null,
+        comment: null,
+        nags: [],
+        status: 'active',
+        fen,
+        children: [],
+      });
+      return next;
+    });
+    setCurrentId(nodeId);
+    exitEditMode();
+  }
+
   const handleSquareClick = useCallback(
     (square: string) => {
       if (!canPlay) {
@@ -340,18 +436,58 @@ export default function Analysis({
               label={evalBarLabel}
             />
             <Board
-              position={parseFen(current.fen ?? '')}
+              position={editing ? editPos : parseFen(current.fen ?? '')}
               lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
               flipped={flipped}
               label={boardLabel}
-              interactive={canPlay}
-              selected={selected}
-              legalTargets={legalTargets}
-              arrows={hintArrows}
-              checkSquare={checkSquare}
-              onSquareClick={canPlay ? handleSquareClick : undefined}
+              interactive={editing || canPlay}
+              selected={editing ? editSelected : selected}
+              legalTargets={editing ? [] : legalTargets}
+              arrows={editing ? [] : hintArrows}
+              checkSquare={editing ? null : checkSquare}
+              onSquareClick={
+                editing ? handleEditSquareClick : canPlay ? handleSquareClick : undefined
+              }
             />
           </div>
+          {editing && (
+            <div
+              className="flex w-[min(90vw,34rem)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
+              data-testid="edit-toolbar"
+            >
+              <p className="m-0 text-ui text-muted">{t('analysis.editModeHint')}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className={button({ intent: 'quiet', size: 'sm' })}
+                  onClick={() => setEditTurn((turn) => (turn === 'w' ? 'b' : 'w'))}
+                  data-testid="edit-turn-toggle"
+                >
+                  {editTurn === 'w' ? t('analysis.whiteToMove') : t('analysis.blackToMove')}
+                </button>
+                <button
+                  type="button"
+                  className={button({ intent: 'primary', size: 'sm' })}
+                  onClick={handleSetPosition}
+                  data-testid="set-position-button"
+                >
+                  {t('analysis.setPosition')}
+                </button>
+                <button
+                  type="button"
+                  className={button({ intent: 'ghost', size: 'sm' })}
+                  onClick={exitEditMode}
+                >
+                  {t('analysis.cancelEdit')}
+                </button>
+              </div>
+              {editError && (
+                <p className="m-0 text-ui text-bad-hi" role="alert">
+                  ⚠ {t('analysis.invalidSetup')}
+                </p>
+              )}
+            </div>
+          )}
           <div className="w-[min(90vw,34rem)]">
             <EngineReadout fen={current.fen ?? ''} state={engineState} />
           </div>
@@ -388,6 +524,12 @@ export default function Analysis({
             onFlip={() => setFlipped((f) => !f)}
             onFollowChange={onFollowChange ?? (() => {})}
             onOpenComment={canEdit ? () => setCommentOpen(true) : undefined}
+            onToggleEdit={
+              canEdit && onSetPosition !== undefined
+                ? () => (editing ? exitEditMode() : enterEditMode())
+                : undefined
+            }
+            editing={editing}
           />
           <p className="m-0 text-note text-faint">
             <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}

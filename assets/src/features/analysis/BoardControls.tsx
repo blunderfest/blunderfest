@@ -13,6 +13,8 @@ export default function BoardControls({
   onFlip,
   onFollowChange,
   onOpenComment,
+  onToggleEdit,
+  editing = false,
 }: {
   targets: { first: number; prev: number | null; next: number | null; last: number | null };
   currentPly: number;
@@ -25,6 +27,8 @@ export default function BoardControls({
   onFlip: () => void;
   onFollowChange: (following: boolean) => void;
   onOpenComment?: () => void;
+  onToggleEdit?: () => void;
+  editing?: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -111,6 +115,18 @@ export default function BoardControls({
           onClick={onOpenComment}
         >
           💬 {t('analysis.commentTitle')}
+        </button>
+      )}
+      {onToggleEdit !== undefined && (
+        <button
+          type="button"
+          id="analysis-edit-button"
+          className={button({ intent: 'ghost', size: 'sm', active: editing })}
+          aria-label={t('analysis.editPosition')}
+          aria-pressed={editing}
+          onClick={onToggleEdit}
+        >
+          ✎ {t('analysis.editPosition')}
         </button>
       )}
       {amPresenter && (

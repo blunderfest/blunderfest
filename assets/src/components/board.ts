@@ -129,3 +129,32 @@ export function kingInCheckSquare(fen: string): string | null {
     return null;
   }
 }
+
+/**
+ * Serializes a board position to a FEN. Castling and en passant are reset —
+ * free-form setups rarely preserve them (ADR-0011).
+ */
+export function positionToFen(position: Position, turn: PieceColor, fullmove = 1): string {
+  const rows: string[] = [];
+  for (let rank = 0; rank < 8; rank += 1) {
+    let row = '';
+    let empty = 0;
+    for (let file = 0; file < 8; file += 1) {
+      const piece = position[rank * 8 + file];
+      if (piece === null || piece === undefined) {
+        empty += 1;
+        continue;
+      }
+      if (empty > 0) {
+        row += String(empty);
+        empty = 0;
+      }
+      row += piece.color === 'w' ? piece.kind.toUpperCase() : piece.kind;
+    }
+    if (empty > 0) {
+      row += String(empty);
+    }
+    rows.push(row);
+  }
+  return `${rows.join('/')} ${turn} - - 0 ${fullmove}`;
+}

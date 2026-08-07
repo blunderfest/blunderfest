@@ -70,6 +70,14 @@
   "analysis": {
     "noGame": "Import a game to start analyzing.",
     "commentTitle": "Comment",
+    "editPosition": "Edit position",
+    "editModeHint": "Click a piece, then any square to place it. Dropping on a piece replaces it.",
+    "setPosition": "Set position",
+    "cancelEdit": "Cancel",
+    "whiteToMove": "White to move",
+    "blackToMove": "Black to move",
+    "invalidSetup": "That position isn't legal (kings missing, pawns on the back rank, or an impossible check).",
+    "setupNode": "Setup",
     "noCommentYet": "No note on this move yet.",
     "unsaved": "Unsaved · ⌘↵ to save",
     "savedForEveryone": "Saved for everyone",
@@ -135,6 +143,7 @@
     "line": "Line from move {{ply}}",
     "arrow": "Arrow on move {{ply}}",
     "highlight": "Highlight on move {{ply}}",
+    "setup": "Set up a position",
     "role": {
       "owner": "Owner",
       "collaborator": "Collaborator",

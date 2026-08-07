@@ -18,6 +18,8 @@ function opLabel(t: TFunction, op: Op): string {
       return t('room.arrow', { ply: op.payload.ply });
     case 'add_highlight':
       return t('room.highlight', { ply: op.payload.ply });
+    case 'set_position':
+      return t('room.setup');
     default:
       return '';
   }
@@ -31,6 +33,8 @@ function opIcon(op: Op): string {
       return '♟';
     case 'comment_at_ply':
       return '💬';
+    case 'set_position':
+      return '⚙';
     default:
       return '•';
   }

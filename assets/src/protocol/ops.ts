@@ -71,6 +71,15 @@ export type SetCursorOp = OpBase & {
   payload: { node_id: number };
 };
 
+/**
+ * A free-form position edit (ADR-0011): not a move — the resulting position,
+ * however reached, as a FEN. Replays as a setup node under `parent_id`.
+ */
+export type SetPositionOp = OpBase & {
+  type: 'set_position';
+  payload: { game_id: string; parent_id: number; fen: string };
+};
+
 export type Op =
   | SetGameOp
   | SelectGameOp
@@ -79,7 +88,8 @@ export type Op =
   | CommentAtPlyOp
   | AddArrowOp
   | AddHighlightOp
-  | SetCursorOp;
+  | SetCursorOp
+  | SetPositionOp;
 
 export type PresenceMember = {
   id: string;
