@@ -569,6 +569,22 @@ describe('follow-the-tail cursor', () => {
     expect(screen.getByTestId('square-c4')).toHaveTextContent('♟');
   });
 
+  it('does not bounce forward when navigating back to the parent of the last move', () => {
+    render(<Analysis tree={tree} lastPlayedId={4} />);
+    // At the tip (Nf3, id 4); its parent is e5 (id 2).
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♞');
+
+    fireEvent.keyDown(document.body, { key: 'ArrowLeft' });
+    expect(screen.getByTestId('square-f3')).not.toHaveTextContent('♞');
+    expect(screen.getByTestId('square-e5')).toHaveTextContent('♟');
+
+    // Still there a moment later — no bounce back to the tip.
+    fireEvent.keyDown(document.body, { key: 'ArrowRight' });
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♞');
+    fireEvent.keyDown(document.body, { key: 'ArrowLeft' });
+    expect(screen.getByTestId('square-e5')).toHaveTextContent('♟');
+  });
+
   it('stays put when a remote move lands somewhere I am not looking at', () => {
     const { rerender } = render(<Analysis tree={tree} lastPlayedId={4} />);
     expect(screen.getByTestId('square-f3')).toHaveTextContent('♞');

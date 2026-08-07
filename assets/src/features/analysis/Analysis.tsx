@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 import type { TFunction } from 'i18next';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
 import {
@@ -119,16 +119,21 @@ export default function Analysis({
    * continues under your eyes, but browsing mid-history is never yanked
    * forward. Playing my own move is a no-op here (my cursor is already the
    * new node, not its parent).
+   *
+   * The follow only triggers when the newest op CHANGES (a move actually
+   * arrived) — never because the cursor moved. Otherwise navigating back to
+   * the parent of the last move would bounce you forward again.
    */
   const lastPlayedParentId =
     lastPlayedId !== null ? (byId.get(lastPlayedId)?.parent?.id ?? null) : null;
+  const prevLastPlayedRef = useRef<number | null>(null);
   useEffect(() => {
-    if (
-      lastPlayedId !== null &&
-      currentId !== null &&
-      lastPlayedParentId !== null &&
-      lastPlayedParentId === currentId
-    ) {
+    const previous = prevLastPlayedRef.current;
+    prevLastPlayedRef.current = lastPlayedId;
+    if (lastPlayedId === null || lastPlayedId === previous) {
+      return;
+    }
+    if (currentId !== null && lastPlayedParentId === currentId) {
       setCurrentId(lastPlayedId);
     }
   }, [lastPlayedId, lastPlayedParentId, currentId]);

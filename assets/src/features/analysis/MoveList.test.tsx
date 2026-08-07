@@ -44,11 +44,11 @@ function makeTree(withNested: boolean): GameTree {
   };
 }
 
-function renderList(t: GameTree = makeTree(false)) {
+function renderList(t: GameTree = makeTree(false), currentId: number | null = null) {
   return render(
     <MoveList
       rows={buildRows(t)}
-      currentId={null}
+      currentId={currentId}
       nodeCount={t.node_count}
       onSelect={vi.fn()}
       navTargets={{ first: 0, prev: null, next: null, last: null }}
@@ -97,6 +97,19 @@ describe('MoveList move numbers', () => {
     // The line reads: ( 1... c5 2. d4 ( 2... dxe5 ) 2... cxd4 )
     expect(moveText(6)).toBe('2... dxe5');
     expect(moveText(5)).toBe('2... cxd4');
+  });
+});
+
+describe('MoveList scrolling', () => {
+  it('scrolls the current move into view', () => {
+    const scrollSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollSpy;
+    try {
+      renderList(makeTree(false), 3);
+      expect(scrollSpy).toHaveBeenCalled();
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
   });
 });
 

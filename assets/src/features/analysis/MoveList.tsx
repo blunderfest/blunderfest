@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
 import { button, panel, panelHeader } from '@/components/ui';
@@ -179,6 +179,16 @@ export default function MoveList({
   totalPly: number;
 }) {
   const { t } = useTranslation();
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep the current move visible while navigating (jsdom has no
+  // scrollIntoView, hence the optional call).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: currentId is the trigger, not a referenced value
+  useEffect(() => {
+    listRef.current
+      ?.querySelector('[aria-current="true"]')
+      ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }, [currentId]);
 
   return (
     <section
@@ -191,6 +201,7 @@ export default function MoveList({
         </span>
       </div>
       <div
+        ref={listRef}
         id="analysis-move-list"
         className="flex max-h-72 flex-col gap-1 overflow-y-auto p-2 xl:max-h-none xl:min-h-0 xl:flex-1"
       >
