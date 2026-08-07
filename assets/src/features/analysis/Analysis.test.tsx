@@ -539,6 +539,46 @@ describe('Analysis', () => {
   });
 });
 
+describe('follow-the-tail cursor', () => {
+  const c4Node: GameNode = {
+    id: 5,
+    ply: 1,
+    san: 'c4',
+    from: 'c2',
+    to: 'c4',
+    promotion: null,
+    comment: null,
+    nags: [],
+    status: 'active',
+    fen: 'rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1',
+    children: [],
+  };
+  const treeWithC4: GameTree = {
+    ...tree,
+    root: { ...tree.root, children: [...tree.root.children, c4Node] },
+  };
+
+  it('advances when a remote move is played from my current position', () => {
+    const { rerender } = render(<Analysis tree={tree} lastPlayedId={4} />);
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♞');
+
+    fireEvent.keyDown(document.body, { key: 'Home' });
+    expect(screen.getByTestId('square-g1')).toHaveTextContent('♞');
+
+    rerender(<Analysis tree={treeWithC4} lastPlayedId={5} />);
+    expect(screen.getByTestId('square-c4')).toHaveTextContent('♟');
+  });
+
+  it('stays put when a remote move lands somewhere I am not looking at', () => {
+    const { rerender } = render(<Analysis tree={tree} lastPlayedId={4} />);
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♞');
+
+    rerender(<Analysis tree={treeWithC4} lastPlayedId={5} />);
+    expect(screen.getByTestId('square-c4')).not.toHaveTextContent('♟');
+    expect(screen.getByTestId('square-f3')).toHaveTextContent('♞');
+  });
+});
+
 describe('analysis settings tab', () => {
   beforeEach(() => {
     localStorage.clear();

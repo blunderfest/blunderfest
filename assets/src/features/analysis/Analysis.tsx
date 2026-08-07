@@ -38,7 +38,7 @@ export default function Analysis({
   following = false,
   canEdit = false,
   engine = undefined,
-  initialCursorId = null,
+  lastPlayedId = null,
   onFollowChange,
   onCursorChange,
   onPlayMove,
@@ -52,7 +52,7 @@ export default function Analysis({
   following?: boolean;
   canEdit?: boolean;
   engine?: ChessEngine | null;
-  initialCursorId?: number | null;
+  lastPlayedId?: number | null;
   onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
   onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => void;
@@ -102,8 +102,8 @@ export default function Analysis({
    * changes come only from navigation, playing moves, or the presenter cursor.
    */
   if (currentId === null && tree !== null) {
-    if (initialCursorId !== null && byId.has(initialCursorId)) {
-      setCurrentId(initialCursorId);
+    if (lastPlayedId !== null && byId.has(lastPlayedId)) {
+      setCurrentId(lastPlayedId);
     } else {
       let tip = tree.root;
       while (tip.children[0] !== undefined) {
@@ -112,6 +112,26 @@ export default function Analysis({
       setCurrentId(tip.id);
     }
   }
+
+  /**
+   * Follow the tail: when a move/setup lands from someone else, advance only
+   * if my cursor sits on the position it was played from — the game
+   * continues under your eyes, but browsing mid-history is never yanked
+   * forward. Playing my own move is a no-op here (my cursor is already the
+   * new node, not its parent).
+   */
+  const lastPlayedParentId =
+    lastPlayedId !== null ? (byId.get(lastPlayedId)?.parent?.id ?? null) : null;
+  useEffect(() => {
+    if (
+      lastPlayedId !== null &&
+      currentId !== null &&
+      lastPlayedParentId !== null &&
+      lastPlayedParentId === currentId
+    ) {
+      setCurrentId(lastPlayedId);
+    }
+  }, [lastPlayedId, lastPlayedParentId, currentId]);
 
   /**
    * Nodes the editor played that have been broadcast but not yet applied

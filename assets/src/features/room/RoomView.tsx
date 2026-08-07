@@ -250,7 +250,7 @@ export default function RoomView({
               onFollowChange={setFollowOverride}
               onCursorChange={handleCursorChange}
               onPlayMove={handlePlayMove}
-              initialCursorId={lastPlayedId}
+              lastPlayedId={lastPlayedId}
               onComment={handleComment}
               onSetPosition={handleSetPosition}
             />

@@ -773,6 +773,37 @@ describe('RoomView', () => {
     expect(results).toHaveNoViolations();
   });
 
+  it('advances the board when a remote move lands on the viewed position', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: {} };
+    renderRoom();
+
+    // Tip of the mainline (e4), then navigate to the start position.
+    await waitFor(() => expect(screen.getByTestId('square-e4')).toHaveTextContent('♟'));
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
+
+    const c4Op: Op = {
+      seq: 2,
+      author: 'profile-2',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'move_at_ply',
+      payload: {
+        game_id: 'game-1',
+        ply: 1,
+        san: 'c4',
+        from: 'c2',
+        to: 'c4',
+        promotion: null,
+        fen: 'rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1',
+        status: 'active',
+        parent_id: 0,
+      },
+    };
+    act(() => channel.emit('new_op', c4Op));
+
+    await waitFor(() => expect(screen.getByTestId('square-c4')).toHaveTextContent('♟'));
+  });
+
   it('opens on the last played move after a rejoin, even in a variation', async () => {
     // Mainline e4, then a variation move c4 played from the root.
     const c4Op: Op = {
