@@ -11,6 +11,7 @@ import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
 import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
 import { useAppSelector } from '@/store';
+import type { BoardAnnotations } from '@/store/room';
 import {
   selectActivityOps,
   selectCanEdit,
@@ -76,6 +77,9 @@ export default function RoomView({
     : (activeGameId ?? firstGameId);
   const game = effectiveGameId === null ? null : (games[effectiveGameId] ?? null);
   const lastPlayedId = useAppSelector((state) => selectLastPlayed(state.room, effectiveGameId));
+  const gameAnnotations = useAppSelector((state) =>
+    effectiveGameId !== null ? (state.room.annotations[effectiveGameId] ?? {}) : {},
+  );
 
   const handleCursorChange = useCallback(
     (nodeId: number) => sendOp({ type: 'set_cursor', payload: { node_id: nodeId } }),
@@ -104,6 +108,23 @@ export default function RoomView({
     (payload: Omit<SetPositionOp['payload'], 'game_id'>) => {
       if (effectiveGameId !== null) {
         sendOp({ type: 'set_position', payload: { game_id: effectiveGameId, ...payload } });
+      }
+    },
+    [sendOp, effectiveGameId],
+  );
+
+  const handleAnnotations = useCallback(
+    (set: BoardAnnotations, nodeId: number) => {
+      if (effectiveGameId !== null) {
+        sendOp({
+          type: 'set_annotations',
+          payload: {
+            game_id: effectiveGameId,
+            node_id: nodeId,
+            arrows: set.arrows,
+            highlights: set.highlights,
+          },
+        });
       }
     },
     [sendOp, effectiveGameId],
@@ -259,6 +280,8 @@ export default function RoomView({
               lastPlayedId={lastPlayedId}
               onComment={handleComment}
               onSetPosition={handleSetPosition}
+              annotations={gameAnnotations}
+              onAnnotations={handleAnnotations}
             />
           )}
         </section>

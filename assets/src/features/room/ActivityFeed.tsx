@@ -14,10 +14,8 @@ function opLabel(t: TFunction, op: Op): string {
       return t('room.comment', { ply: op.payload.ply, text: op.payload.text });
     case 'replace_line':
       return t('room.line', { ply: op.payload.ply });
-    case 'add_arrow':
-      return t('room.arrow', { ply: op.payload.ply });
-    case 'add_highlight':
-      return t('room.highlight', { ply: op.payload.ply });
+    case 'set_annotations':
+      return t('room.annotate');
     case 'set_position':
       return t('room.setup');
     default:
@@ -35,6 +33,8 @@ function opIcon(op: Op): string {
       return '💬';
     case 'set_position':
       return '⚙';
+    case 'set_annotations':
+      return '✏️';
     default:
       return '•';
   }

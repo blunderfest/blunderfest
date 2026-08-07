@@ -28,7 +28,7 @@ import type { WhiteEval } from '@/features/analysis/uci';
 import { useEngine } from '@/features/analysis/useEngine';
 import { fetchLegalMoves, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
 import type { CommentAtPlyOp, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
-import { setupPlyFromFen } from '@/store/room';
+import { type BoardAnnotations, setupPlyFromFen } from '@/store/room';
 
 export default function Analysis({
   tree,
@@ -44,6 +44,8 @@ export default function Analysis({
   onPlayMove,
   onComment,
   onSetPosition,
+  annotations = {},
+  onAnnotations,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -58,6 +60,9 @@ export default function Analysis({
   onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => void;
   onComment?: (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => void;
   onSetPosition?: (payload: Omit<SetPositionOp['payload'], 'game_id'>) => void;
+  /** Board drawings for the active game, keyed by node id. */
+  annotations?: Record<number, BoardAnnotations>;
+  onAnnotations?: (set: BoardAnnotations, nodeId: number) => void;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
@@ -392,6 +397,42 @@ export default function Analysis({
     exitEditMode();
   }
 
+  /**
+   * Drag & drop. Play mode: a drag to a legal target plays the move; a drag
+   * anywhere else falls back to selecting the piece. Edit mode: free-form
+   * placement, and dropping off the board deletes the piece.
+   */
+  const handleDragMove = useCallback(
+    (from: string, to: string | null) => {
+      if (editing) {
+        const fromIndex = squareIndex(from);
+        const piece = editPos[fromIndex] ?? null;
+        if (piece === null) {
+          return;
+        }
+        const next = [...editPos];
+        next[fromIndex] = null;
+        if (to !== null) {
+          next[squareIndex(to)] = piece;
+        }
+        setEditPos(next);
+        return;
+      }
+      if (!canPlay || to === null) {
+        return;
+      }
+      const move = (legalMoves ?? []).find((m) => m.from === from && m.to === to);
+      if (move !== undefined) {
+        playMove(move);
+        return;
+      }
+      if ((legalMoves ?? []).some((m) => m.from === from)) {
+        setSelected(from);
+      }
+    },
+    [editing, editPos, canPlay, legalMoves, playMove],
+  );
+
   const handleSquareClick = useCallback(
     (square: string) => {
       if (!canPlay) {
@@ -472,13 +513,60 @@ export default function Analysis({
         setCommentOpen(true);
         handled = true;
       }
+      if (event.key === 'Escape') {
+        const drawn = annotations[current.id];
+        if (drawn !== undefined && (drawn.arrows.length > 0 || drawn.highlights.length > 0)) {
+          onAnnotations?.({ arrows: [], highlights: [] }, current.id);
+          handled = true;
+        }
+      }
       if (handled) {
         event.preventDefault();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tree, byId, current, navigate, lastChild, canEdit]);
+  }, [tree, byId, current, navigate, lastChild, canEdit, annotations, onAnnotations]);
+
+  const nodeAnnotations = (current !== null ? annotations[current.id] : undefined) ?? {
+    arrows: [],
+    highlights: [],
+  };
+
+  const handleDrawArrow = useCallback(
+    (from: string, to: string, color: string) => {
+      if (current === null) {
+        return;
+      }
+      onAnnotations?.(
+        {
+          arrows: [...nodeAnnotations.arrows, { from, to, color }],
+          highlights: nodeAnnotations.highlights,
+        },
+        current.id,
+      );
+    },
+    [nodeAnnotations, current, onAnnotations],
+  );
+
+  const handleToggleHighlight = useCallback(
+    (square: string, color: string) => {
+      if (current === null) {
+        return;
+      }
+      const exists = nodeAnnotations.highlights.some((h) => h.square === square);
+      onAnnotations?.(
+        {
+          arrows: nodeAnnotations.arrows,
+          highlights: exists
+            ? nodeAnnotations.highlights.filter((h) => h.square !== square)
+            : [...nodeAnnotations.highlights, { square, color }],
+        },
+        current.id,
+      );
+    },
+    [nodeAnnotations, current, onAnnotations],
+  );
 
   if (tree === null || current === null) {
     return (
@@ -494,6 +582,8 @@ export default function Analysis({
   const evalBarLabel = evalAriaLabel(engineState.eval, t);
   const hintArrows =
     engineOn && arrowsOn && engineState.bestMove !== null ? [engineState.bestMove] : [];
+
+  const boardArrows = [...hintArrows, ...nodeAnnotations.arrows];
 
   return (
     <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-6">
@@ -589,11 +679,15 @@ export default function Analysis({
               interactive={editing || canPlay}
               selected={editing ? editSelected : selected}
               legalTargets={editing ? [] : legalTargets}
-              arrows={editing ? [] : hintArrows}
+              arrows={editing ? [] : boardArrows}
+              highlights={editing ? [] : nodeAnnotations.highlights}
               checkSquare={editing ? null : checkSquare}
               onSquareClick={
                 editing ? handleEditSquareClick : canPlay ? handleSquareClick : undefined
               }
+              onDragMove={editing || canPlay ? handleDragMove : undefined}
+              onDrawArrow={canEdit && !editing ? handleDrawArrow : undefined}
+              onToggleHighlight={canEdit && !editing ? handleToggleHighlight : undefined}
             />
           </div>
           {editing && (
@@ -723,7 +817,6 @@ export default function Analysis({
                     <MoveList
                       rows={rows}
                       currentId={current.id}
-                      nodeCount={tree.node_count}
                       onSelect={navigate}
                       navTargets={{
                         first: tree.root.id,

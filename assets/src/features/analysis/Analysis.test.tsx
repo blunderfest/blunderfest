@@ -539,6 +539,34 @@ describe('Analysis', () => {
   });
 });
 
+describe('board annotations', () => {
+  it("clears the current node's drawings with Escape", () => {
+    const onAnnotations = vi.fn();
+    render(
+      <Analysis
+        tree={tree}
+        canEdit
+        annotations={{
+          4: { arrows: [{ from: 'e2', to: 'e4', color: '#3b82f6' }], highlights: [] },
+        }}
+        onAnnotations={onAnnotations}
+        lastPlayedId={4}
+      />,
+    );
+
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(onAnnotations).toHaveBeenCalledWith({ arrows: [], highlights: [] }, 4);
+  });
+
+  it('does not clear with Escape when nothing is drawn', () => {
+    const onAnnotations = vi.fn();
+    render(<Analysis tree={tree} canEdit onAnnotations={onAnnotations} lastPlayedId={4} />);
+
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(onAnnotations).not.toHaveBeenCalled();
+  });
+});
+
 describe('follow-the-tail cursor', () => {
   const c4Node: GameNode = {
     id: 5,

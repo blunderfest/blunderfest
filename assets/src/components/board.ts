@@ -171,3 +171,49 @@ export function positionToFen(position: Position, turn: PieceColor, fullmove = 1
   }
   return `${rows.join('/')} ${turn} - - 0 ${fullmove}`;
 }
+
+/**
+ * The board square at a client point, or null when outside the board. Used
+ * for drag & drop and right-button drawing, where the event target is not a
+ * square button.
+ */
+export function squareFromPoint(
+  rect: { left: number; top: number; width: number; height: number },
+  x: number,
+  y: number,
+  flipped: boolean,
+): string | null {
+  if (rect.width === 0) {
+    return null;
+  }
+  const size = rect.width / 8;
+  let file = Math.floor((x - rect.left) / size);
+  let row = Math.floor((y - rect.top) / size);
+  if (file < 0 || file > 7 || row < 0 || row > 7) {
+    return null;
+  }
+  if (flipped) {
+    file = 7 - file;
+    row = 7 - row;
+  }
+  return squareName(row * 8 + file);
+}
+
+/** The drawing color for a pointer event's modifiers (blue default). */
+export function modifierColor(event: {
+  shiftKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  altKey: boolean;
+}): string {
+  if (event.shiftKey) {
+    return '#4caf50';
+  }
+  if (event.ctrlKey || event.metaKey) {
+    return '#a855f7';
+  }
+  if (event.altKey) {
+    return '#e05a4e';
+  }
+  return '#3b82f6';
+}

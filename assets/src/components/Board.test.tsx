@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import Board from '@/components/Board';
+import { parseFen } from '@/components/board';
 
 function emptyPosition() {
   return new Array(64).fill(null);
@@ -329,5 +330,105 @@ describe('check highlight', () => {
   it('renders no glow without a check', () => {
     render(<Board position={emptyPosition()} />);
     expect(screen.queryByTestId('check-e8')).not.toBeInTheDocument();
+  });
+});
+
+describe('Board pointer interactions', () => {
+  const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+  function pointer(grid: HTMLElement, type: string, init: MouseEventInit = {}) {
+    fireEvent(grid, new MouseEvent(type, { bubbles: true, cancelable: true, ...init }));
+  }
+
+  function renderInteractive(props: Partial<Parameters<typeof Board>[0]> = {}) {
+    const utils = render(
+      <Board position={parseFen(START)} interactive onSquareClick={vi.fn()} {...props} />,
+    );
+    const grid = utils.container.querySelector('[data-board-grid]') as HTMLElement;
+    grid.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 800,
+        height: 800,
+        right: 800,
+        bottom: 800,
+        x: 0,
+        y: 0,
+      }) as DOMRect;
+    return { grid, ...utils };
+  }
+
+  it('drags a piece to a target square', () => {
+    const onDragMove = vi.fn();
+    const { grid } = renderInteractive({ onDragMove });
+
+    pointer(grid, 'pointerdown', { button: 0, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointermove', { clientX: 455, clientY: 560 });
+    expect(screen.getByTestId('drag-ghost')).toBeInTheDocument();
+    pointer(grid, 'pointerup', { button: 0, clientX: 450, clientY: 450 });
+
+    expect(onDragMove).toHaveBeenCalledWith('e2', 'e4');
+    expect(screen.queryByTestId('drag-ghost')).not.toBeInTheDocument();
+  });
+
+  it('reports null when a piece is dropped off the board', () => {
+    const onDragMove = vi.fn();
+    const { grid } = renderInteractive({ onDragMove });
+
+    pointer(grid, 'pointerdown', { button: 0, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointermove', { clientX: 460, clientY: 200 });
+    pointer(grid, 'pointerup', { button: 0, clientX: 460, clientY: -50 });
+
+    expect(onDragMove).toHaveBeenCalledWith('e2', null);
+  });
+
+  it('does not start a drag without a piece move threshold', () => {
+    const onDragMove = vi.fn();
+    const onSquareClick = vi.fn();
+    const { grid } = renderInteractive({ onDragMove, onSquareClick });
+
+    pointer(grid, 'pointerdown', { button: 0, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointerup', { button: 0, clientX: 451, clientY: 649 });
+
+    expect(onDragMove).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('drag-ghost')).not.toBeInTheDocument();
+  });
+
+  it('toggles a highlight on right-click, colored by modifiers', () => {
+    const onToggleHighlight = vi.fn();
+    const { grid } = renderInteractive({ onToggleHighlight });
+
+    pointer(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointerup', { button: 2, clientX: 450, clientY: 650 });
+    expect(onToggleHighlight).toHaveBeenCalledWith('e2', '#3b82f6');
+
+    pointer(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointerup', { button: 2, clientX: 450, clientY: 650, shiftKey: true });
+    expect(onToggleHighlight).toHaveBeenCalledWith('e2', '#4caf50');
+  });
+
+  it('draws an arrow on right-drag', () => {
+    const onDrawArrow = vi.fn();
+    const { grid } = renderInteractive({ onDrawArrow });
+
+    pointer(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointermove', { clientX: 450, clientY: 450 });
+    pointer(grid, 'pointerup', { button: 2, clientX: 450, clientY: 450, altKey: true });
+
+    expect(onDrawArrow).toHaveBeenCalledWith('e2', 'e4', '#e05a4e');
+  });
+
+  it('renders highlights and colored arrows', () => {
+    render(
+      <Board
+        position={parseFen(START)}
+        highlights={[{ square: 'e4', color: '#4caf50' }]}
+        arrows={[{ from: 'e2', to: 'e4', color: '#e05a4e' }]}
+      />,
+    );
+    expect(screen.getByTestId('highlight-e4')).toBeInTheDocument();
+    const heads = screen.getAllByTestId('arrow-head');
+    expect(heads[heads.length - 1].getAttribute('fill')).toBe('#e05a4e');
   });
 });

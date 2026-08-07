@@ -67,14 +67,22 @@ export type CommentAtPlyOp = OpBase & {
   };
 };
 
-export type AddArrowOp = OpBase & {
-  type: 'add_arrow';
-  payload: { ply: number; from: string; to: string };
-};
+export type DrawnArrow = { from: string; to: string; color: string };
+export type DrawnHighlight = { square: string; color: string };
 
-export type AddHighlightOp = OpBase & {
-  type: 'add_highlight';
-  payload: { ply: number; squares: string[] };
+/**
+ * Board annotations (arrows and square highlights) for one node, broadcast
+ * and replayed for everyone (ADR-0005's "co-thinking" layer). Each op carries
+ * the node's complete new sets — replay is a plain replace, no accumulation.
+ */
+export type SetAnnotationsOp = OpBase & {
+  type: 'set_annotations';
+  payload: {
+    game_id: string;
+    node_id: number;
+    arrows: DrawnArrow[];
+    highlights: DrawnHighlight[];
+  };
 };
 
 export type SetCursorOp = OpBase & {
@@ -97,8 +105,7 @@ export type Op =
   | MoveAtPlyOp
   | ReplaceLineOp
   | CommentAtPlyOp
-  | AddArrowOp
-  | AddHighlightOp
+  | SetAnnotationsOp
   | SetCursorOp
   | SetPositionOp;
 

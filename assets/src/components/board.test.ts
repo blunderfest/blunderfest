@@ -3,9 +3,11 @@ import {
   arrowShape,
   isLightSquare,
   kingInCheckSquare,
+  modifierColor,
   parseFen,
   pieceGlyph,
   positionToFen,
+  squareFromPoint,
   squareIndex,
   squareName,
   squarePoint,
@@ -139,5 +141,36 @@ describe('positionToFen', () => {
     expect(positionToFen(position, 'b', 7)).toBe(
       'rnbqkbnr/pppppppp/8/8/8/7P/PPPP1PPP/RNBQKBNR b - - 0 7',
     );
+  });
+});
+
+describe('squareFromPoint', () => {
+  const rect = { left: 0, top: 0, width: 800, height: 800 };
+
+  it('maps points to squares', () => {
+    expect(squareFromPoint(rect, 450, 650, false)).toBe('e2');
+    expect(squareFromPoint(rect, 450, 450, false)).toBe('e4');
+    expect(squareFromPoint(rect, 5, 5, false)).toBe('a8');
+  });
+
+  it('mirrors when flipped', () => {
+    expect(squareFromPoint(rect, 450, 650, true)).toBe('d7');
+  });
+
+  it('returns null outside the board', () => {
+    expect(squareFromPoint(rect, -5, 100, false)).toBeNull();
+    expect(squareFromPoint(rect, 100, 900, false)).toBeNull();
+  });
+});
+
+describe('modifierColor', () => {
+  const base = { shiftKey: false, ctrlKey: false, metaKey: false, altKey: false };
+
+  it('maps modifiers to colors', () => {
+    expect(modifierColor(base)).toBe('#3b82f6');
+    expect(modifierColor({ ...base, shiftKey: true })).toBe('#4caf50');
+    expect(modifierColor({ ...base, ctrlKey: true })).toBe('#a855f7');
+    expect(modifierColor({ ...base, metaKey: true })).toBe('#a855f7');
+    expect(modifierColor({ ...base, altKey: true })).toBe('#e05a4e');
   });
 });

@@ -22,7 +22,7 @@ defmodule Blunderfest.Rooms do
   @type role :: :owner | :collaborator | :viewer
   @type op :: map()
 
-  @edit_op_types ~w(set_game move_at_ply replace_line comment_at_ply add_arrow add_highlight set_position)
+  @edit_op_types ~w(set_game move_at_ply replace_line comment_at_ply set_annotations set_position)
 
   # Room codes are 5 characters drawn from an unambiguous alphabet
   # (no i/l/o/0/1 to avoid reading errors when codes are exchanged).

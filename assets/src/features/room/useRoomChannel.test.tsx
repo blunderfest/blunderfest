@@ -284,6 +284,7 @@ describe('useRoomChannel', () => {
       roles: {},
       games: {},
       lastPlayed: {},
+      annotations: {},
     });
   });
 

@@ -205,6 +205,7 @@ describe('room slice', () => {
       roles: {},
       games: {},
       lastPlayed: {},
+      annotations: {},
     });
   });
 
@@ -217,6 +218,7 @@ describe('room slice', () => {
         roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
         lastPlayed: { 'game-1': 1 },
+        annotations: {},
       },
       enterRoom({ slug: 'room-123' }),
     );
@@ -227,6 +229,7 @@ describe('room slice', () => {
       roles: {},
       games: {},
       lastPlayed: {},
+      annotations: {},
     });
   });
 
@@ -239,6 +242,7 @@ describe('room slice', () => {
         roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
         lastPlayed: { 'game-1': 1 },
+        annotations: {},
       },
       leaveRoom(),
     );
@@ -249,6 +253,7 @@ describe('room slice', () => {
       roles: {},
       games: {},
       lastPlayed: {},
+      annotations: {},
     });
   });
 
@@ -743,5 +748,34 @@ describe('lastPlayed tracking', () => {
       ]),
     );
     expect(selectLastPlayed(state, 'game-1')).toBe(4);
+  });
+});
+
+describe('set_annotations transforms', () => {
+  const arrow = { from: 'e2', to: 'e4', color: '#3b82f6' };
+  const highlight = { square: 'e4', color: '#e05a4e' };
+
+  function annotationOp(seq: number, arrows = [arrow], highlights = [highlight]): Op {
+    return {
+      seq,
+      author: 'author-1',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'set_annotations',
+      payload: { game_id: 'game-1', node_id: 1, arrows, highlights },
+    };
+  }
+
+  it('stores annotations per node and replaces them wholesale', () => {
+    let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+    state = roomReducer(state, applyOp(annotationOp(2)));
+    expect(state.annotations['game-1'][1]).toEqual({ arrows: [arrow], highlights: [highlight] });
+
+    state = roomReducer(state, applyOp(annotationOp(3, [arrow], [])));
+    expect(state.annotations['game-1'][1]).toEqual({ arrows: [arrow], highlights: [] });
+  });
+
+  it('replays annotations', () => {
+    const state = roomReducer(undefined, replayOps([playedGameOp(1), annotationOp(2)]));
+    expect(state.annotations['game-1'][1].highlights).toEqual([highlight]);
   });
 });

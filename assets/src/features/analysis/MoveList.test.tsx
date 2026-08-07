@@ -49,7 +49,6 @@ function renderList(t: GameTree = makeTree(false), currentId: number | null = nu
     <MoveList
       rows={buildRows(t)}
       currentId={currentId}
-      nodeCount={t.node_count}
       onSelect={vi.fn()}
       navTargets={{ first: 0, prev: null, next: null, last: null }}
       currentPly={0}

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { panel, panelHeader } from '@/components/ui';
+import { panel } from '@/components/ui';
 
 function ToggleRow({
   label,
@@ -65,9 +65,6 @@ export default function SettingsTab({
 
   return (
     <section className={panel({ layout: 'none', pad: 'none' })}>
-      <div className={panelHeader()}>
-        <h2 className="m-0">{t('analysis.settings')}</h2>
-      </div>
       <div className="flex flex-col divide-y divide-line py-1">
         <ToggleRow
           label={t('analysis.engineAnalysis')}

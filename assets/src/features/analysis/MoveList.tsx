@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
-import { button, panel, panelHeader } from '@/components/ui';
+import { button, panel } from '@/components/ui';
 import type { Row } from '@/features/analysis/moveList';
 import type { GameNode } from '@/lib/api';
 
@@ -164,7 +164,6 @@ function NavIcon({ of }: { of: 'first' | 'prev' | 'next' | 'last' }) {
 export default function MoveList({
   rows,
   currentId,
-  nodeCount,
   onSelect,
   navTargets,
   currentPly,
@@ -172,7 +171,6 @@ export default function MoveList({
 }: {
   rows: Row[];
   currentId: number | null;
-  nodeCount: number;
   onSelect: (id: number) => void;
   navTargets: { first: number; prev: number | null; next: number | null; last: number | null };
   currentPly: number;
@@ -198,12 +196,6 @@ export default function MoveList({
     <section
       className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col xl:flex-1`}
     >
-      <div className={panelHeader()}>
-        <h2 className="m-0">{t('analysis.moves')}</h2>
-        <span className="text-faint tabular-nums">
-          {t('analysis.nodeCount', { count: nodeCount })}
-        </span>
-      </div>
       <div
         ref={listRef}
         id="analysis-move-list"

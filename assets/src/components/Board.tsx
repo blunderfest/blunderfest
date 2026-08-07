@@ -3,12 +3,15 @@ import { tv } from 'tailwind-variants';
 import {
   arrowShape,
   isLightSquare,
+  modifierColor,
   type Piece,
   type Position,
   pieceGlyph,
+  squareFromPoint,
   squareIndex,
   squareName,
 } from '@/components/board';
+import type { DrawnHighlight } from '@/protocol/ops';
 
 const square = tv({
   base: 'relative flex items-center justify-center aspect-square select-none focus-visible:z-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold-hi',
@@ -31,12 +34,20 @@ const coord = tv({
   },
 });
 
+export type BoardArrow = { from: string; to: string; color?: string };
+
 /**
  * WAI-ARIA grid pattern for the interactive board: one square in the tab
  * order (the focused square), arrow keys move between squares (flip-
  * invariant, clamped at the board edges), Enter/Space activate a square via
  * the native button behavior. Movement happens in index space, so it is
  * independent of the display order when flipped.
+ *
+ * Pointer interactions: left-drag moves pieces (ghost follows the cursor;
+ * dropping off the board reports `to: null` so edit mode can delete);
+ * right-drag draws an arrow, right-click toggles a square highlight — both
+ * colored by modifier keys (blue default, Shift green, Ctrl/Cmd purple,
+ * Alt red).
  */
 export default function Board({
   position,
@@ -48,8 +59,12 @@ export default function Board({
   legalTargets = [],
   arrows = [],
   arrowColor = '#3b82f6',
+  highlights = [],
   checkSquare = null,
   onSquareClick,
+  onDragMove,
+  onDrawArrow,
+  onToggleHighlight,
 }: {
   position: Position;
   lastMove?: { from: string; to: string } | null;
@@ -58,15 +73,45 @@ export default function Board({
   interactive?: boolean;
   selected?: string | null;
   legalTargets?: string[];
-  arrows?: { from: string; to: string }[];
+  arrows?: BoardArrow[];
   arrowColor?: string;
+  highlights?: DrawnHighlight[];
   checkSquare?: string | null;
   onSquareClick?: (square: string) => void;
+  onDragMove?: (from: string, to: string | null) => void;
+  onDrawArrow?: (from: string, to: string, color: string) => void;
+  onToggleHighlight?: (square: string, color: string) => void;
 }) {
   const [focusIndex, setFocusIndex] = useState<number>(() =>
     lastMove?.to ? squareIndex(lastMove.to) : squareIndex('e4'),
   );
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const dragRef = useRef<{
+    from: string;
+    startX: number;
+    startY: number;
+    dragging: boolean;
+  } | null>(null);
+  const [ghost, setGhost] = useState<{ piece: Piece; left: number; top: number } | null>(null);
+
+  const [drawFrom, setDrawFrom] = useState<string | null>(null);
+  const [drawHover, setDrawHover] = useState<string | null>(null);
+  const [drawColor, setDrawColor] = useState('#3b82f6');
+
+  const drawable = onDrawArrow !== undefined || onToggleHighlight !== undefined;
+
+  function boardRect() {
+    return containerRef.current?.getBoundingClientRect() ?? null;
+  }
+
+  function pointToSquare(event: { clientX: number; clientY: number }): string | null {
+    const rect = boardRect();
+    if (rect === null) {
+      return null;
+    }
+    return squareFromPoint(rect, event.clientX, event.clientY, flipped);
+  }
 
   function focusSquare(index: number) {
     setFocusIndex(index);
@@ -119,13 +164,100 @@ export default function Board({
     focusSquare(next);
   }
 
+  function handlePointerDown(event: React.PointerEvent) {
+    const from = pointToSquare(event);
+    if (from === null) {
+      return;
+    }
+    if (event.button === 2 && drawable) {
+      setDrawFrom(from);
+      setDrawHover(from);
+      setDrawColor(modifierColor(event));
+      containerRef.current?.setPointerCapture?.(event.pointerId);
+      return;
+    }
+    if (event.button === 0 && interactive) {
+      dragRef.current = {
+        from,
+        startX: event.clientX,
+        startY: event.clientY,
+        dragging: false,
+      };
+    }
+  }
+
+  function handlePointerMove(event: React.PointerEvent) {
+    const drag = dragRef.current;
+    if (drag !== null) {
+      if (
+        !drag.dragging &&
+        Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 4
+      ) {
+        drag.dragging = true;
+        const piece = position[squareIndex(drag.from)];
+        if (piece !== null && piece !== undefined) {
+          containerRef.current?.setPointerCapture?.(event.pointerId);
+        }
+      }
+      if (drag.dragging) {
+        const rect = boardRect();
+        const piece = position[squareIndex(drag.from)];
+        if (rect !== null && piece !== null && piece !== undefined) {
+          setGhost({
+            piece,
+            left: event.clientX - rect.left,
+            top: event.clientY - rect.top,
+          });
+        }
+      }
+    }
+    if (drawFrom !== null) {
+      const hover = pointToSquare(event);
+      if (hover !== drawHover) {
+        setDrawHover(hover);
+      }
+    }
+  }
+
+  function handlePointerUp(event: React.PointerEvent) {
+    const drag = dragRef.current;
+    if (drag !== null) {
+      dragRef.current = null;
+      if (drag.dragging) {
+        setGhost(null);
+        const to = pointToSquare(event);
+        onDragMove?.(drag.from, to);
+      }
+      return;
+    }
+    if (drawFrom !== null) {
+      const to = pointToSquare(event);
+      if (to !== null && to !== drawFrom) {
+        onDrawArrow?.(drawFrom, to, modifierColor(event));
+      } else if (to !== null) {
+        onToggleHighlight?.(to, modifierColor(event));
+      }
+      setDrawFrom(null);
+      setDrawHover(null);
+    }
+  }
+
   const indices = flipped ? [...Array(64).keys()].reverse() : [...Array(64).keys()];
   const rankRow = flipped ? 1 : 8;
   const fileCol = flipped ? 7 : 0;
 
+  const highlightOf = (name: string) => highlights.find((h) => h.square === name);
+
+  const allArrows: { from: string; to: string; color: string }[] = [
+    ...arrows.map((arrow) => ({ ...arrow, color: arrow.color ?? arrowColor })),
+    ...(drawFrom !== null && drawHover !== null && drawHover !== drawFrom
+      ? [{ from: drawFrom, to: drawHover, color: drawColor }]
+      : []),
+  ];
+
   return (
     // biome-ignore lint/a11y/useAriaPropsSupportedByRole: role is img or group, both support aria-label
-    // biome-ignore lint/a11y/noStaticElementInteractions: grid container listens for bubbled arrow keys; focus stays on the square buttons
+    // biome-ignore lint/a11y/noStaticElementInteractions: grid container handles bubbled keys and pointer gestures; focus stays on the square buttons
     <div
       ref={containerRef}
       data-board-grid
@@ -133,6 +265,14 @@ export default function Board({
       role={interactive ? 'group' : 'img'}
       aria-label={label}
       onKeyDown={handleKeyDown}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onContextMenu={(event) => {
+        if (interactive || drawable) {
+          event.preventDefault();
+        }
+      }}
     >
       {indices.map((index) => {
         const name = squareName(index);
@@ -144,6 +284,7 @@ export default function Board({
         const isSelected = selected === name;
         const isTarget = legalTargets.includes(name);
         const clickable = interactive && onSquareClick !== undefined;
+        const drawnHighlight = highlightOf(name);
 
         const highlight = isSelected ? 'selected' : isLastMove ? 'lastMove' : 'none';
         const squareBg = square({ shade, highlight });
@@ -155,6 +296,16 @@ export default function Board({
             )}
             {rank === rankRow && (
               <span className={`${coord({ shade })} right-1 bottom-0.5`}>{name[0]}</span>
+            )}
+            {drawnHighlight !== undefined && (
+              <div
+                data-testid={`highlight-${name}`}
+                className="pointer-events-none absolute inset-0.5 rounded-sm"
+                style={{
+                  backgroundColor: `${drawnHighlight.color}59`,
+                  boxShadow: `inset 0 0 0 2px ${drawnHighlight.color}`,
+                }}
+              />
             )}
             {piece && <PieceGlyph piece={piece} />}
             {checkSquare === name && (
@@ -212,20 +363,39 @@ export default function Board({
         );
       })}
 
-      {arrows.length > 0 && (
+      {ghost !== null && (
+        <span
+          data-testid="drag-ghost"
+          className="pointer-events-none absolute z-30 text-[10.4cqi] leading-none"
+          style={{
+            left: ghost.left,
+            top: ghost.top,
+            transform: 'translate(-50%, -50%)',
+            color: ghost.piece.color === 'w' ? '#f9f9f9' : '#1a1a1a',
+            textShadow:
+              ghost.piece.color === 'w'
+                ? '0 0 2px rgba(26,26,26,0.9), 0 1px 3px rgba(0,0,0,0.55)'
+                : '0 1px 1px rgba(255,255,255,0.35)',
+          }}
+        >
+          {pieceGlyph(ghost.piece.color, ghost.piece.kind)}
+        </span>
+      )}
+
+      {allArrows.length > 0 && (
         <svg
-          className="pointer-events-none absolute inset-0 h-full w-full"
+          className="pointer-events-none absolute inset-0 z-20 h-full w-full"
           viewBox="0 0 8 8"
           aria-hidden="true"
           data-testid="board-arrows"
         >
-          {arrows.map((arrow) => {
+          {allArrows.map((arrow) => {
             const shape = arrowShape(arrow.from, arrow.to, flipped);
             if (shape === null) {
               return null;
             }
             return (
-              <g key={`${arrow.from}-${arrow.to}`}>
+              <g key={`${arrow.from}-${arrow.to}-${arrow.color}`}>
                 <line
                   x1={shape.line.x1}
                   y1={shape.line.y1}
@@ -241,11 +411,11 @@ export default function Board({
                   y1={shape.line.y1}
                   x2={shape.line.x2}
                   y2={shape.line.y2}
-                  stroke={arrowColor}
+                  stroke={arrow.color}
                   strokeWidth={0.24}
                   strokeLinecap="round"
                 />
-                <polygon points={shape.head} fill={arrowColor} data-testid="arrow-head" />
+                <polygon points={shape.head} fill={arrow.color} data-testid="arrow-head" />
               </g>
             );
           })}

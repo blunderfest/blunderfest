@@ -2,6 +2,8 @@ import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolki
 import type { GameNode, GameTree } from '@/lib/api';
 import type {
   CommentAtPlyOp,
+  DrawnArrow,
+  DrawnHighlight,
   MemberRole,
   MoveAtPlyOp,
   Op,
@@ -15,12 +17,16 @@ import type {
  */
 export const LEGACY_GAME_ID = 'main';
 
+export type BoardAnnotations = { arrows: DrawnArrow[]; highlights: DrawnHighlight[] };
+
 export type RoomState = {
   slug: string | null;
   ops: Op[];
   presence: Record<string, PresenceMember>;
   roles: Record<string, MemberRole>;
   games: Record<string, GameTree>;
+  /** Board drawings per game and node (gameId → nodeId → arrows+highlights). */
+  annotations: Record<string, Record<number, BoardAnnotations>>;
   /**
    * The node created by the most recent move/setup op per game — the "move
    * last played", wherever it lives in the tree (variations included).
@@ -36,6 +42,7 @@ const initialState: RoomState = {
   roles: {},
   games: {},
   lastPlayed: {},
+  annotations: {},
 };
 
 /**
@@ -396,6 +403,7 @@ const roomSlice = createSlice({
       state.roles = {};
       state.games = {};
       state.lastPlayed = {};
+      state.annotations = {};
     },
     leaveRoom(state) {
       state.slug = null;
@@ -404,6 +412,7 @@ const roomSlice = createSlice({
       state.roles = {};
       state.games = {};
       state.lastPlayed = {};
+      state.annotations = {};
     },
     setRoles(state, action: PayloadAction<Record<string, MemberRole>>) {
       state.roles = action.payload;
@@ -418,6 +427,14 @@ const roomSlice = createSlice({
         state.ops.push(op);
         if (op.type === 'set_game') {
           state.games[gameIdOf(op)] = op.payload.tree;
+        }
+        if (op.type === 'set_annotations') {
+          const byNode = state.annotations[op.payload.game_id] ?? {};
+          state.annotations[op.payload.game_id] = byNode;
+          byNode[op.payload.node_id] = {
+            arrows: op.payload.arrows,
+            highlights: op.payload.highlights,
+          };
         }
         if (op.type === 'move_at_ply' || op.type === 'set_position') {
           const tree = state.games[op.payload.game_id];
@@ -438,9 +455,18 @@ const roomSlice = createSlice({
       state.ops = [...action.payload].sort((a, b) => a.seq - b.seq);
       state.games = {};
       state.lastPlayed = {};
+      state.annotations = {};
       for (const op of state.ops) {
         if (op.type === 'set_game') {
           state.games[gameIdOf(op)] = op.payload.tree;
+        }
+        if (op.type === 'set_annotations') {
+          const byNode = state.annotations[op.payload.game_id] ?? {};
+          state.annotations[op.payload.game_id] = byNode;
+          byNode[op.payload.node_id] = {
+            arrows: op.payload.arrows,
+            highlights: op.payload.highlights,
+          };
         }
       }
       for (const op of state.ops) {
