@@ -21,7 +21,7 @@ export default function EvalBar({
   const share = whiteShare(white);
 
   return (
-    <div className="flex flex-col items-center gap-1" data-testid="eval-bar">
+    <div className="flex flex-1 flex-col items-center gap-1" data-testid="eval-bar">
       <div
         role="img"
         aria-label={label}

@@ -482,68 +482,78 @@ export default function Analysis({
           </div>
 
           <div className="flex items-stretch gap-3">
-            {editing ? (
-              <fieldset
-                className="m-0 flex min-w-0 flex-col justify-center gap-1 rounded-control border border-line bg-panel px-1.5 py-2"
-                data-testid="edit-palette"
-              >
-                {' '}
-                <legend className="sr-only">{t('analysis.palette')}</legend>
-                {(['w', 'b'] as const).map((color) => (
-                  <div key={color} className="flex flex-col gap-1">
-                    {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
-                      const active =
-                        editBrush !== null &&
-                        editBrush !== 'erase' &&
-                        editBrush.color === color &&
-                        editBrush.kind === kind;
-                      return (
-                        <button
-                          key={kind}
-                          type="button"
-                          aria-pressed={active}
-                          aria-label={t('analysis.pieceLabel', {
-                            color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
-                            piece: t(`analysis.pieces.${kind}`),
-                          })}
-                          className={`grid h-8 w-8 place-items-center rounded-control text-lg leading-none transition-colors ${
-                            active ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
-                          }`}
-                          style={{
-                            color: color === 'w' ? '#f9f9f9' : '#1a1a1a',
-                            textShadow:
-                              color === 'w'
-                                ? '0 0 2px rgba(26,26,26,0.9)'
-                                : '0 1px 1px rgba(255,255,255,0.35)',
-                          }}
-                          onClick={() => setEditBrush(active ? null : { color, kind })}
-                        >
-                          {pieceGlyph(color, kind)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  aria-pressed={editBrush === 'erase'}
-                  aria-label={t('analysis.eraser')}
-                  className={`mt-1 grid h-8 w-8 place-items-center rounded-control border-t border-line pt-1 text-base text-muted transition-colors ${
-                    editBrush === 'erase' ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
-                  }`}
-                  onClick={() => setEditBrush(editBrush === 'erase' ? null : 'erase')}
+            {/*
+              Fixed-width slot for the eval bar / edit palette: it keeps its
+              width even when empty (engine off), so the board and sidebar
+              never shift when the engine display toggles.
+            */}
+            <div
+              className="flex w-8 shrink-0 flex-col justify-center self-stretch"
+              data-testid="board-left-slot"
+            >
+              {editing ? (
+                <fieldset
+                  className="m-0 flex min-w-0 flex-col justify-center gap-1 rounded-control border border-line bg-panel px-1.5 py-2"
+                  data-testid="edit-palette"
                 >
-                  ⌫
-                </button>
-              </fieldset>
-            ) : engineOn ? (
-              <EvalBar
-                eval={engineState.eval}
-                thinking={engineState.status === 'thinking'}
-                unavailable={engineState.status === 'error'}
-                label={evalBarLabel}
-              />
-            ) : null}
+                  {' '}
+                  <legend className="sr-only">{t('analysis.palette')}</legend>
+                  {(['w', 'b'] as const).map((color) => (
+                    <div key={color} className="flex flex-col gap-1">
+                      {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
+                        const active =
+                          editBrush !== null &&
+                          editBrush !== 'erase' &&
+                          editBrush.color === color &&
+                          editBrush.kind === kind;
+                        return (
+                          <button
+                            key={kind}
+                            type="button"
+                            aria-pressed={active}
+                            aria-label={t('analysis.pieceLabel', {
+                              color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
+                              piece: t(`analysis.pieces.${kind}`),
+                            })}
+                            className={`grid h-8 w-8 place-items-center rounded-control text-lg leading-none transition-colors ${
+                              active ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
+                            }`}
+                            style={{
+                              color: color === 'w' ? '#f9f9f9' : '#1a1a1a',
+                              textShadow:
+                                color === 'w'
+                                  ? '0 0 2px rgba(26,26,26,0.9)'
+                                  : '0 1px 1px rgba(255,255,255,0.35)',
+                            }}
+                            onClick={() => setEditBrush(active ? null : { color, kind })}
+                          >
+                            {pieceGlyph(color, kind)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    aria-pressed={editBrush === 'erase'}
+                    aria-label={t('analysis.eraser')}
+                    className={`mt-1 grid h-8 w-8 place-items-center rounded-control border-t border-line pt-1 text-base text-muted transition-colors ${
+                      editBrush === 'erase' ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
+                    }`}
+                    onClick={() => setEditBrush(editBrush === 'erase' ? null : 'erase')}
+                  >
+                    ⌫
+                  </button>
+                </fieldset>
+              ) : engineOn ? (
+                <EvalBar
+                  eval={engineState.eval}
+                  thinking={engineState.status === 'thinking'}
+                  unavailable={engineState.status === 'error'}
+                  label={evalBarLabel}
+                />
+              ) : null}
+            </div>
             <Board
               position={editing ? editPos : parseFen(current.fen ?? '')}
               lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}

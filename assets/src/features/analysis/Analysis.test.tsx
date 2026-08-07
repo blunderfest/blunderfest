@@ -572,6 +572,8 @@ describe('analysis settings tab', () => {
 
     await waitFor(() => expect(screen.queryByTestId('engine-readout')).not.toBeInTheDocument());
     expect(screen.queryByTestId('eval-bar')).not.toBeInTheDocument();
+    // The board's left slot keeps its width so the layout doesn't shift.
+    expect(screen.getByTestId('board-left-slot')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.engine')).toBe('off');
 
     fireEvent.click(screen.getByTestId('setting-engine'));
