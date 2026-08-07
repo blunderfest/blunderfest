@@ -1,10 +1,32 @@
-import { tv } from 'tailwind-variants';
+import { createTV } from 'tailwind-variants';
 
 /**
  * Shared visual primitives implementing design/DESIGN-SYSTEM.md — every
  * variant here maps to a spec section (buttons, inputs, chips, panels, list
  * rows, avatars).
+ *
+ * The custom type scale (text-micro/ui/body/…) must be registered as a
+ * font-size group, or the merge classifies it as a *color* and silently
+ * drops real text-color classes wherever both appear (e.g. the primary
+ * button's dark text on gold).
  */
+export const tv = createTV({
+  twMergeConfig: {
+    extend: {
+      classGroups: {
+        'font-size': [
+          'text-micro',
+          'text-note',
+          'text-ui',
+          'text-body',
+          'text-lead',
+          'text-display',
+          'text-hero',
+        ],
+      },
+    },
+  },
+});
 
 export const panel = tv({
   base: 'rounded-panel border border-line bg-panel shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_8px_24px_-16px_rgba(0,0,0,0.9)]',
@@ -45,7 +67,7 @@ export const button = tv({
       iconLg: 'h-10 w-10 text-lead',
     },
     active: {
-      true: 'border-gold/60 bg-gold/15 text-gold-hi hover:bg-gold/20',
+      true: 'border-gold/60 bg-gold/25 text-[#ffe9a8] hover:bg-gold/30',
     },
     block: { true: 'w-full' },
   },
