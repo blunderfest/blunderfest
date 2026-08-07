@@ -8,19 +8,19 @@ export type SidebarTab = {
 };
 
 /**
- * The tabbed container for the analysis sidebar. Built to give future panels
- * (Explorer, Search) a home without fighting the move list for space. The tab
- * strip only renders once more than one tab exists — a single tab shows its
- * content directly, so today's layout is unchanged.
+ * The tabbed container for the analysis sidebar. Gives future panels
+ * (Explorer, Search) a home without fighting the move list for space. The
+ * tab strip is always visible — even with a single tab — so the structure is
+ * there when the new tabs land.
  */
 export default function SidebarTabs({ tabs }: { tabs: SidebarTab[] }) {
   const [active, setActive] = useState(tabs[0]?.id ?? '');
 
-  if (tabs.length === 1) {
-    return <>{tabs[0].content}</>;
-  }
-
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
+
+  if (current === undefined) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

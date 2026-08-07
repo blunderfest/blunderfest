@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import SidebarTabs from '@/features/analysis/SidebarTabs';
 
 describe('SidebarTabs', () => {
-  it('renders a single tab directly without a tab strip', () => {
+  it('shows the tab strip even with a single tab', () => {
     render(<SidebarTabs tabs={[{ id: 'a', label: 'Analysis', content: <p>content-a</p> }]} />);
     expect(screen.getByText('content-a')).toBeInTheDocument();
-    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Analysis' })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('switches between tabs when several exist', () => {
