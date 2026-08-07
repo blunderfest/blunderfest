@@ -66,6 +66,16 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
+### Where we are (2026-08-07)
+
+Milestones 1–5 done. Recently landed: the full design-system port
+(`design/DESIGN-SYSTEM.md` is the UI spec), the in-browser engine (eval bar +
+hint, result display on terminal positions), free-form position setup
+(ADR-0011), comment popup (`c` key), the demo room at `#/r/chess`, secrets in
+`fly secrets`, and a Playwright MCP for browser checks (`setup-mcp.sh`).
+Next candidates: milestone 6 (PGN export, room/game claiming), the remaining
+REVIEW.md items (op validation, re-enable CI), or 💡 ideas in FEATURES.md.
+
 1. **Boot** — DONE. Phoenix 1.8 / React 19 + Vite + TypeScript building into
    `priv/static`, `/api/healthz`, channel socket, i18n scaffold, Dockerized
    release, Fly config, in-memory state (ADR-0001).
