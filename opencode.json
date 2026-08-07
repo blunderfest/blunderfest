@@ -1,0 +1,26 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": [
+        "pnpm",
+        "dlx",
+        "@playwright/mcp@latest"
+      ],
+      "enabled": true
+    },
+    "stitch": {
+      "type": "local",
+      "command": [
+        "pnpm",
+        "dlx",
+        "stitch-mcp@latest"
+      ],
+      "enabled": false,
+      "environment": {
+        "GOOGLE_CLOUD_PROJECT": "YOUR_PROJECT_ID"
+      }
+    }
+  }
+}

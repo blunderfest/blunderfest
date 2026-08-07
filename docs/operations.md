@@ -12,6 +12,10 @@
 
 - Bootstrap once: `./execute.sh` (idempotent; Arch tooling, Postgres init,
   `flyctl`; `mix setup` and `assets` setup included).
+- Agent tooling: `./setup-mcp.sh` configures opencode MCP servers
+  (`opencode.json`): Playwright (browser automation, enabled) and Stitch
+  (UI design fetch, disabled until Google Cloud credentials are set up).
+  Requires an opencode restart to take effect.
 - Backend: `mix phx.server` on `:4000`.
 - Frontend dev server: from `assets/`, Vite on `:5173` with HMR, proxying
   `/api` and `/socket` to Phoenix. Prod runs the bundled SPA from Phoenix.
