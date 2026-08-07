@@ -98,6 +98,7 @@ export default function Board({
   const [drawFrom, setDrawFrom] = useState<string | null>(null);
   const [drawHover, setDrawHover] = useState<string | null>(null);
   const [drawColor, setDrawColor] = useState('#3b82f6');
+  const [arrowDraft, setArrowDraft] = useState<string | null>(null);
 
   const drawable = onDrawArrow !== undefined || onToggleHighlight !== undefined;
 
@@ -133,6 +134,37 @@ export default function Board({
     if (!(event.target instanceof HTMLElement) || !event.target.matches(':focus-visible')) {
       return;
     }
+
+    // Keyboard drawing: h toggles a highlight on the focused square, a starts
+    // and completes an arrow (Esc cancels the draft) — all colored by
+    // modifier keys, same as the pointer gestures.
+    if (event.key === 'h' && onToggleHighlight !== undefined) {
+      event.preventDefault();
+      event.stopPropagation();
+      onToggleHighlight(squareName(focusIndex), modifierColor(event));
+      return;
+    }
+    if (event.key === 'a' && onDrawArrow !== undefined) {
+      event.preventDefault();
+      event.stopPropagation();
+      const square = squareName(focusIndex);
+      if (arrowDraft === null) {
+        setArrowDraft(square);
+      } else {
+        if (square !== arrowDraft) {
+          onDrawArrow(arrowDraft, square, modifierColor(event));
+        }
+        setArrowDraft(null);
+      }
+      return;
+    }
+    if (event.key === 'Escape' && arrowDraft !== null) {
+      event.preventDefault();
+      event.stopPropagation();
+      setArrowDraft(null);
+      return;
+    }
+
     let next: number | null = null;
     switch (event.key) {
       case 'ArrowUp':
@@ -170,6 +202,10 @@ export default function Board({
       return;
     }
     if (event.button === 2 && drawable) {
+      // Preventing the right-button pointerdown default is what actually
+      // suppresses the context menu in Firefox (Shift+right-click bypasses
+      // contextmenu preventDefault there).
+      event.preventDefault();
       setDrawFrom(from);
       setDrawHover(from);
       setDrawColor(modifierColor(event));
@@ -252,6 +288,10 @@ export default function Board({
     ...arrows.map((arrow) => ({ ...arrow, color: arrow.color ?? arrowColor })),
     ...(drawFrom !== null && drawHover !== null && drawHover !== drawFrom
       ? [{ from: drawFrom, to: drawHover, color: drawColor }]
+      : []),
+    // Keyboard draft: preview from the draft source to the focused square.
+    ...(arrowDraft !== null && squareName(focusIndex) !== arrowDraft
+      ? [{ from: arrowDraft, to: squareName(focusIndex), color: drawColor }]
       : []),
   ];
 

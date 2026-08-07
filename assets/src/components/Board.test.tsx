@@ -419,6 +419,35 @@ describe('Board pointer interactions', () => {
     expect(onDrawArrow).toHaveBeenCalledWith('e2', 'e4', '#e05a4e');
   });
 
+  it('toggles highlights with h and draws arrows with a', () => {
+    const onToggleHighlight = vi.fn();
+    const onDrawArrow = vi.fn();
+    renderInteractive({ onToggleHighlight, onDrawArrow });
+
+    const e4 = screen.getByTestId('square-e4');
+    e4.focus();
+    fireEvent.keyDown(e4, { key: 'h' });
+    expect(onToggleHighlight).toHaveBeenCalledWith('e4', '#3b82f6');
+
+    fireEvent.keyDown(e4, { key: 'a' });
+    fireEvent.keyDown(e4, { key: 'ArrowUp' });
+    fireEvent.keyDown(screen.getByTestId('square-e5'), { key: 'a', shiftKey: true });
+    expect(onDrawArrow).toHaveBeenCalledWith('e4', 'e5', '#4caf50');
+  });
+
+  it('cancels a keyboard arrow draft with Escape', () => {
+    const onDrawArrow = vi.fn();
+    renderInteractive({ onDrawArrow });
+
+    const e4 = screen.getByTestId('square-e4');
+    e4.focus();
+    fireEvent.keyDown(e4, { key: 'a' });
+    fireEvent.keyDown(e4, { key: 'Escape' });
+    fireEvent.keyDown(e4, { key: 'a' });
+    fireEvent.keyDown(e4, { key: 'a' });
+    expect(onDrawArrow).not.toHaveBeenCalled();
+  });
+
   it('renders highlights and colored arrows', () => {
     render(
       <Board
