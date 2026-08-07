@@ -91,3 +91,41 @@ describe('MoveList move numbers', () => {
     expect(moveText(5)).toBe('2... cxd4');
   });
 });
+
+describe('MoveList comment placement', () => {
+  it('renders a mainline comment directly under its own move', () => {
+    const t = makeTree(false);
+    t.root.children[0].comment = 'White note';
+    t.root.children[0].children[0].comment = 'Black note';
+    renderList(t);
+
+    const white = screen.getByTestId('analysis-move-1');
+    const black = screen.getByTestId('analysis-move-2');
+    const whiteComment = screen.getByText('White note');
+    const blackComment = screen.getByText('Black note');
+
+    // 1. e4 [White note] e5 [Black note] — each block right after its move.
+    expect(
+      white.compareDocumentPosition(whiteComment) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      whiteComment.compareDocumentPosition(black) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      black.compareDocumentPosition(blackComment) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('shows variation comments inline after the move', () => {
+    const t = makeTree(false);
+    t.root.children[0].children[1].comment = 'The Sicilian';
+    renderList(t);
+
+    expect(document.getElementById('analysis-move-list')).toHaveTextContent('The Sicilian');
+    const c5 = screen.getByTestId('analysis-move-3');
+    expect(
+      c5.compareDocumentPosition(screen.getByText('The Sicilian')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+});

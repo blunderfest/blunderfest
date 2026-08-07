@@ -145,11 +145,15 @@ export function applyMoveAtPly(tree: GameTree, payload: MoveAtPlyOp['payload']):
 }
 
 /**
- * Sets (or clears, with empty text) the comment on the mainline node at the
- * given ply. Comments on variation nodes are out of scope for now.
+ * Sets (or clears, with empty text) a comment. The target is the node named
+ * by `payload.node_id` — variation and setup nodes included; ops from before
+ * variation comments fall back to the mainline node at the given ply.
  */
 export function applyCommentAtPly(tree: GameTree, payload: CommentAtPlyOp['payload']): GameTree {
-  const node = mainlineNode(tree, payload.ply);
+  const node =
+    payload.node_id !== undefined
+      ? findNode(tree.root, payload.node_id)
+      : mainlineNode(tree, payload.ply);
   if (node === null) {
     return tree;
   }

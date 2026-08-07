@@ -53,7 +53,18 @@ export type ReplaceLineOp = OpBase & {
 
 export type CommentAtPlyOp = OpBase & {
   type: 'comment_at_ply';
-  payload: { game_id: string; ply: number; text: string };
+  payload: {
+    game_id: string;
+    ply: number;
+    text: string;
+    /**
+     * The node this comment belongs to. Ply alone only addresses mainline
+     * moves — variation and setup nodes need the deterministic node id.
+     * Absent in logs from before variation comments; those resolve the
+     * mainline node by ply.
+     */
+    node_id?: number;
+  };
 };
 
 export type AddArrowOp = OpBase & {

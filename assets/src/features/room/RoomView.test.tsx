@@ -639,7 +639,7 @@ describe('RoomView', () => {
       event: 'op',
       payload: {
         type: 'comment_at_ply',
-        payload: { game_id: 'game-1', ply: 0, text: 'Sharp position' },
+        payload: { game_id: 'game-1', ply: 0, text: 'Sharp position', node_id: 0 },
       },
     });
   });

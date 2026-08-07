@@ -573,7 +573,7 @@ export default function Analysis({
               ? `${Math.ceil(current.ply / 2)}${current.ply % 2 === 1 ? '.' : '...'} ${current.san}`
               : null
           }
-          onSave={(text) => onComment?.({ ply: current.ply, text })}
+          onSave={(text) => onComment?.({ ply: current.ply, text, node_id: current.id })}
           onClose={() => setCommentOpen(false)}
         />
       )}

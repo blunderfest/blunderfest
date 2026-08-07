@@ -499,7 +499,7 @@ describe('Analysis', () => {
     });
     fireEvent.click(screen.getByTestId('save-comment'));
 
-    expect(onComment).toHaveBeenCalledWith({ ply: 0, text: 'Nice idea' });
+    expect(onComment).toHaveBeenCalledWith({ ply: 0, text: 'Nice idea', node_id: 0 });
     expect(screen.queryByTestId('comment-editor')).not.toBeInTheDocument();
   });
 

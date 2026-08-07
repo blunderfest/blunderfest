@@ -110,6 +110,9 @@ function VariationLine({
               showNumber={showNumber}
               onSelect={onSelect}
             />
+            {node.comment !== null && (
+              <span className="text-note italic text-muted">{node.comment}</span>
+            )}
             {nestedVariations.map((child) => (
               <VariationLine
                 key={child.id}
@@ -165,32 +168,30 @@ export default function MoveList({
       >
         {rows.map((row) =>
           row.type === 'pair' ? (
-            <div key={row.white.id} className="flex flex-col gap-0.5">
-              <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
-                <MoveButton
-                  node={row.white}
-                  selected={row.white.id === currentId}
-                  line="main"
-                  showNumber
-                  onSelect={onSelect}
-                />
-                {row.black && (
-                  <MoveButton
-                    node={row.black}
-                    selected={row.black.id === currentId}
-                    line="main"
-                    showNumber={false}
-                    onSelect={onSelect}
-                  />
-                )}
-              </div>
+            <div key={row.white.id} className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
+              <MoveButton
+                node={row.white}
+                selected={row.white.id === currentId}
+                line="main"
+                showNumber
+                onSelect={onSelect}
+              />
               {row.white.comment && (
-                <div className="border-l-2 border-line-strong pl-2 text-note italic text-muted">
+                <div className="basis-full border-l-2 border-line-strong pl-2 text-note italic text-muted">
                   {row.white.comment}
                 </div>
               )}
+              {row.black && (
+                <MoveButton
+                  node={row.black}
+                  selected={row.black.id === currentId}
+                  line="main"
+                  showNumber={false}
+                  onSelect={onSelect}
+                />
+              )}
               {row.black?.comment && (
-                <div className="border-l-2 border-line-strong pl-2 text-note italic text-muted">
+                <div className="basis-full border-l-2 border-line-strong pl-2 text-note italic text-muted">
                   {row.black.comment}
                 </div>
               )}

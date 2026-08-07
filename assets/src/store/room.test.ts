@@ -485,6 +485,47 @@ describe('room slice', () => {
       expect(move.comment).toBeNull();
     });
 
+    it('targets variation nodes by node_id instead of the mainline ply', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      // 1... c5 as a variation of e4 (id 3), then comment on it by node id.
+      state = roomReducer(state, applyOp(moveAtPly(2, 2, { san: 'c5', parent_id: 1 })));
+      state = roomReducer(state, applyOp(commentAtPly(3, 2, 'The Sicilian!', { node_id: 3 })));
+
+      const game = state.games['game-1'];
+      const e4 = game.root.children[0];
+      expect(e4.children[1].comment).toBe('The Sicilian!');
+      // The mainline node at that ply (e5) stays uncommented.
+      expect(e4.children[0].comment).toBeNull();
+    });
+
+    it('comments on setup nodes by node_id', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(
+        state,
+        applyOp({
+          seq: 2,
+          author: 'author-1',
+          ts: '2026-01-01T00:00:00Z',
+          type: 'set_position',
+          payload: {
+            game_id: 'game-1',
+            parent_id: 2,
+            fen: 'rnbqkbnr/pppp1ppp/8/4p2P/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 2',
+          },
+        }),
+      );
+      state = roomReducer(state, applyOp(commentAtPly(3, 3, 'pawn to h3, see?', { node_id: 3 })));
+
+      const setup = state.games['game-1'].root.children[0].children[0].children[0];
+      expect(setup.comment).toBe('pawn to h3, see?');
+    });
+
+    it('ignores comments whose node_id does not exist', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(commentAtPly(2, 1, 'x', { node_id: 999 })));
+      expect(state.games['game-1'].root.children[0].comment).toBeNull();
+    });
+
     it('ignores comments for plies beyond the mainline and unknown games', () => {
       let state = roomReducer(undefined, applyOp(playedGameOp(1)));
       state = roomReducer(state, applyOp(commentAtPly(2, 99, 'x')));

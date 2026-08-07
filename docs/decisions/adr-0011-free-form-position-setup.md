@@ -49,5 +49,6 @@ feature is that everyone in the room sees the same what-if.
 - Edit ops are broadcast to everyone, so one person's edit moves everyone's
   board when they're following — intended, same as moves.
 - v1 limitations: no adding/removing pieces (only moving; dropping on a piece
-  replaces it), castling/en-passant rights reset, and a setup node can't get
-  a comment via the popup (comment ops address mainline plies).
+  replaces it), and castling/en-passant rights reset. (The initial "no
+  comments on setup nodes" limitation was lifted when comment ops learned to
+  address nodes by `node_id` instead of mainline ply.)
