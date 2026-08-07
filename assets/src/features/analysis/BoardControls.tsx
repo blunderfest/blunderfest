@@ -16,8 +16,6 @@ export default function BoardControls({
   onOpenComment,
   onToggleEdit,
   editing = false,
-  engineOn,
-  onToggleEngine,
 }: {
   flipped: boolean;
   presenterActive: boolean;
@@ -28,13 +26,13 @@ export default function BoardControls({
   onOpenComment?: () => void;
   onToggleEdit?: () => void;
   editing?: boolean;
-  engineOn?: boolean;
-  onToggleEngine?: () => void;
 }) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2">
+    // Capped at the board width so label changes (e.g. the follow toggle)
+    // wrap inside the row instead of stretching the whole layout.
+    <div className="flex w-[min(90vw,34rem)] flex-wrap items-center justify-center gap-2">
       <button
         type="button"
         id="analysis-flip-button"
@@ -50,7 +48,7 @@ export default function BoardControls({
         <button
           type="button"
           id="analysis-follow-button"
-          className={button({ intent: 'ghost', size: 'sm', active: following })}
+          className={`${button({ intent: 'ghost', size: 'sm', active: following })} min-w-[10rem]`}
           aria-label={following ? t('analysis.following') : t('analysis.follow')}
           aria-pressed={following}
           onClick={() => onFollowChange(!following)}
@@ -80,18 +78,6 @@ export default function BoardControls({
           onClick={onToggleEdit}
         >
           ✎ {t('analysis.editPosition')}
-        </button>
-      )}
-      {onToggleEngine !== undefined && (
-        <button
-          type="button"
-          id="analysis-engine-button"
-          className={button({ intent: 'ghost', size: 'sm', active: engineOn })}
-          aria-label={t('analysis.engineToggle')}
-          aria-pressed={engineOn}
-          onClick={onToggleEngine}
-        >
-          ♟ {t('analysis.engineToggle')}
         </button>
       )}
       {amPresenter && (

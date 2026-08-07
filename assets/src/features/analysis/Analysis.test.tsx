@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Analysis from '@/features/analysis/Analysis';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
 
@@ -539,7 +539,64 @@ describe('Analysis', () => {
   });
 });
 
+describe('analysis settings tab', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  const RESULT = {
+    score: { type: 'cp', cp: 42 } as const,
+    depth: 9,
+    pv: ['e2e4'],
+    bestMove: 'e2e4',
+  };
+
+  function makeEngine() {
+    return {
+      init: vi.fn(() => Promise.resolve()),
+      analyze: vi.fn(async () => RESULT),
+      terminate: vi.fn(),
+    };
+  }
+
+  it('turns the engine display off and on from the settings tab', async () => {
+    render(<Analysis tree={tree} engine={makeEngine()} />);
+    expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
+    fireEvent.click(screen.getByTestId('setting-engine'));
+
+    await waitFor(() => expect(screen.queryByTestId('engine-readout')).not.toBeInTheDocument());
+    expect(screen.queryByTestId('eval-bar')).not.toBeInTheDocument();
+    expect(localStorage.getItem('blunderfest.engine')).toBe('off');
+
+    fireEvent.click(screen.getByTestId('setting-engine'));
+    expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();
+  });
+
+  it('turns only the hint arrows off from the settings tab', async () => {
+    render(<Analysis tree={tree} engine={makeEngine()} />);
+    expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
+    fireEvent.click(screen.getByTestId('setting-arrows'));
+
+    await waitFor(() => expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument());
+    // The rest of the engine display stays on.
+    expect(screen.getByTestId('engine-readout')).toBeInTheDocument();
+    expect(localStorage.getItem('blunderfest.hints')).toBe('off');
+  });
+});
+
 describe('engine analysis', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   function fakeEngine(
     result: {
       score: { type: 'cp'; cp: number } | { type: 'mate'; mate: number };

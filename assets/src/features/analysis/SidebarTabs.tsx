@@ -31,7 +31,7 @@ export default function SidebarTabs({ tabs }: { tabs: SidebarTab[] }) {
             type="button"
             role="tab"
             aria-selected={tab.id === current.id}
-            className={`flex-1 border-b-2 py-2 text-center text-ui font-semibold transition-colors ${
+            className={`flex-1 border-b-2 py-2 text-center text-micro font-semibold uppercase tracking-[0.11em] transition-colors ${
               tab.id === current.id
                 ? 'border-gold text-gold-hi'
                 : 'border-transparent text-muted hover:text-ink'

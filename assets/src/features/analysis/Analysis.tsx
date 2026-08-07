@@ -22,6 +22,7 @@ import GameInfo from '@/features/analysis/GameInfo';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
+import SettingsTab from '@/features/analysis/SettingsTab';
 import SidebarTabs from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useEngine } from '@/features/analysis/useEngine';
@@ -63,15 +64,25 @@ export default function Analysis({
   const [legalMoves, setLegalMoves] = useState<LegalMove[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
-  // Per-viewer engine display toggle; persisted — analysis is a local aid,
+  // Per-viewer engine display toggles; persisted — analysis is a local aid,
   // never shared state.
   const [engineOn, setEngineOn] = useState(
     () => localStorage.getItem('blunderfest.engine') !== 'off',
+  );
+  const [arrowsOn, setArrowsOn] = useState(
+    () => localStorage.getItem('blunderfest.hints') !== 'off',
   );
 
   function toggleEngine() {
     setEngineOn((on) => {
       localStorage.setItem('blunderfest.engine', on ? 'off' : 'on');
+      return !on;
+    });
+  }
+
+  function toggleArrows() {
+    setArrowsOn((on) => {
+      localStorage.setItem('blunderfest.hints', on ? 'off' : 'on');
       return !on;
     });
   }
@@ -456,7 +467,8 @@ export default function Analysis({
   const next = current.children[0] ?? null;
   const boardLabel = t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') });
   const evalBarLabel = evalAriaLabel(engineState.eval, t);
-  const hintArrows = !engineOn || engineState.bestMove === null ? [] : [engineState.bestMove];
+  const hintArrows =
+    engineOn && arrowsOn && engineState.bestMove !== null ? [engineState.bestMove] : [];
 
   return (
     <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-6">
@@ -639,8 +651,6 @@ export default function Analysis({
                 : undefined
             }
             editing={editing}
-            engineOn={engineOn}
-            onToggleEngine={toggleEngine}
           />
           <p className="m-0 text-note text-faint">
             <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
@@ -689,6 +699,18 @@ export default function Analysis({
                     />
                     <GameInfo tree={tree} />
                   </>
+                ),
+              },
+              {
+                id: 'settings',
+                label: t('analysis.settings'),
+                content: (
+                  <SettingsTab
+                    engineOn={engineOn}
+                    arrowsOn={arrowsOn}
+                    onToggleEngine={toggleEngine}
+                    onToggleArrows={toggleArrows}
+                  />
                 ),
               },
             ]}
