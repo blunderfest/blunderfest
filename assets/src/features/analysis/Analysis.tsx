@@ -1,8 +1,10 @@
+import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
 import { parseFen } from '@/components/board';
 import BoardControls from '@/features/analysis/BoardControls';
+import EngineReadout from '@/features/analysis/EngineReadout';
 import EvalBar from '@/features/analysis/EvalBar';
 import type { ChessEngine } from '@/features/analysis/engine';
 import GameInfo from '@/features/analysis/GameInfo';
@@ -10,7 +12,7 @@ import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import NodeComment from '@/features/analysis/NodeComment';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
-import { evalLabel } from '@/features/analysis/uci';
+import type { WhiteEval } from '@/features/analysis/uci';
 import { useEngine } from '@/features/analysis/useEngine';
 import { fetchLegalMoves, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
 import type { CommentAtPlyOp, MoveAtPlyOp } from '@/protocol/ops';
@@ -304,10 +306,7 @@ export default function Analysis({
   const parent = byId.get(current.id)?.parent ?? null;
   const next = current.children[0] ?? null;
   const boardLabel = t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') });
-  const evalBarLabel =
-    engineState.eval !== null
-      ? t('analysis.evalLabel', { value: evalLabel(engineState.eval) })
-      : t('analysis.evalBar');
+  const evalBarLabel = evalAriaLabel(engineState.eval, t);
   const hintArrows = engineState.bestMove === null ? [] : [engineState.bestMove];
 
   return (
@@ -315,14 +314,19 @@ export default function Analysis({
       <div className="flex flex-col items-center gap-6 xl:flex-row xl:items-start">
         <div className="flex flex-col items-center gap-4">
           <div className="flex w-full items-baseline justify-between gap-4">
-            <h2 className="m-0 text-2xl tracking-[-0.02em]">
+            <h2 className="m-0 text-display font-bold tracking-[-0.02em]">
               {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
             </h2>
             <p className="m-0 text-muted">{tree.result}</p>
           </div>
 
           <div className="flex items-stretch gap-3">
-            <EvalBar eval={engineState.eval} label={evalBarLabel} />
+            <EvalBar
+              eval={engineState.eval}
+              thinking={engineState.status === 'thinking'}
+              unavailable={engineState.status === 'error'}
+              label={evalBarLabel}
+            />
             <Board
               position={parseFen(current.fen ?? '')}
               lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
@@ -335,20 +339,9 @@ export default function Analysis({
               onSquareClick={canPlay ? handleSquareClick : undefined}
             />
           </div>
-          {/* Always rendered (min-h-4 reserves the line) so engine updates
-              never collapse the layout; the previous eval stays dimmed while
-              the new position is being analyzed. */}
-          <p className="m-0 min-h-4 text-xs text-muted" data-testid="engine-line">
-            {engineState.status === 'error' ? (
-              t('analysis.engineUnavailable')
-            ) : engineState.eval !== null && engineState.depth !== null ? (
-              <span className={engineState.status === 'thinking' ? 'opacity-60' : undefined}>
-                {evalLabel(engineState.eval)} · {t('analysis.depth', { depth: engineState.depth })}
-              </span>
-            ) : engineState.status === 'thinking' ? (
-              t('analysis.engineThinking')
-            ) : null}
-          </p>
+          <div className="w-[min(90vw,34rem)]">
+            <EngineReadout fen={current.fen ?? ''} state={engineState} />
+          </div>
           {canPlay && (
             <p className="m-0 text-xs text-muted" role="status">
               {t('analysis.playHint')}
@@ -364,6 +357,8 @@ export default function Analysis({
               next: next?.id ?? null,
               last: current.children.length === 0 ? null : lastChild(current).id,
             }}
+            currentPly={current.ply}
+            totalPly={tree.mainline_ply_count}
             flipped={flipped}
             presenterActive={presenterActive}
             amPresenter={amPresenter}
@@ -372,12 +367,16 @@ export default function Analysis({
             onFlip={() => setFlipped((f) => !f)}
             onFollowChange={onFollowChange ?? (() => {})}
           />
-          <p className="m-0 text-xs text-muted">
+          <p className="m-0 text-note text-faint">
             <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
             {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')}
           </p>
           {current.status !== 'active' && (
-            <p id="analysis-status" className="m-0 text-sm font-semibold text-warn" role="status">
+            <p
+              id="analysis-status"
+              className="m-0 text-ui font-semibold text-gold-hi"
+              role="status"
+            >
               {t(`analysis.status.${current.status}`)}
             </p>
           )}
@@ -388,16 +387,44 @@ export default function Analysis({
           height), so a long move list scrolls *inside* the sidebar and never
           stretches the page. Below xl it stacks full-width with a capped list.
         */}
-        <aside className="flex w-full max-w-sm flex-col gap-4 xl:h-[min(90vw,34rem)] xl:w-72 xl:max-w-none">
+        <aside className="flex w-full max-w-sm flex-col gap-3 xl:h-[min(90vw,34rem)] xl:w-[340px] xl:max-w-none">
           <NodeComment
             comment={current.comment}
+            moveLabel={
+              current.san
+                ? `${Math.ceil(current.ply / 2)}${current.ply % 2 === 1 ? '.' : '...'} ${current.san}`
+                : null
+            }
             canEdit={canEdit}
             onSave={(text) => onComment?.({ ply: current.ply, text })}
           />
-          <MoveList rows={rows} currentId={current.id} onSelect={navigate} />
+          <MoveList
+            rows={rows}
+            currentId={current.id}
+            nodeCount={tree.node_count}
+            onSelect={navigate}
+          />
           <GameInfo tree={tree} />
         </aside>
       </div>
     </div>
   );
+}
+
+/** The eval bar's aria-label, in words, from white's perspective. */
+function evalAriaLabel(white: WhiteEval | null, t: TFunction): string {
+  if (white === null) {
+    return t('analysis.evalBar');
+  }
+  if (white.type === 'mate') {
+    return white.moves > 0
+      ? t('analysis.evalMateWhite', { count: white.moves })
+      : t('analysis.evalMateBlack', { count: -white.moves });
+  }
+  if (white.cp === 0) {
+    return t('analysis.evalEqual');
+  }
+  return white.cp > 0
+    ? t('analysis.evalWhiteBetter', { value: (white.cp / 100).toFixed(2) })
+    : t('analysis.evalBlackBetter', { value: (-white.cp / 100).toFixed(2) });
 }

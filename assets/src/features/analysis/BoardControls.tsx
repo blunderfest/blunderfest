@@ -3,6 +3,8 @@ import { button } from '@/components/ui';
 
 export default function BoardControls({
   targets,
+  currentPly,
+  totalPly,
   flipped,
   presenterActive,
   amPresenter,
@@ -12,6 +14,8 @@ export default function BoardControls({
   onFollowChange,
 }: {
   targets: { first: number; prev: number | null; next: number | null; last: number | null };
+  currentPly: number;
+  totalPly: number;
   flipped: boolean;
   presenterActive: boolean;
   amPresenter: boolean;
@@ -24,69 +28,80 @@ export default function BoardControls({
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
-      <button
-        type="button"
-        id="analysis-first-button"
-        className={button({ variant: 'ghost', size: 'sm', disabled: 'faint' })}
-        aria-keyshortcuts="Home"
-        onClick={() => onNavigate(targets.first)}
-      >
-        ⏮ {t('analysis.first')}
-      </button>
-      <button
-        type="button"
-        id="analysis-prev-button"
-        className={button({ variant: 'ghost', size: 'sm', disabled: 'faint' })}
-        disabled={targets.prev === null}
-        aria-keyshortcuts="ArrowLeft"
-        onClick={() => targets.prev !== null && onNavigate(targets.prev)}
-      >
-        ◀ {t('analysis.prev')}
-      </button>
-      <button
-        type="button"
-        id="analysis-next-button"
-        className={button({ variant: 'ghost', size: 'sm', disabled: 'faint' })}
-        disabled={targets.next === null}
-        aria-keyshortcuts="ArrowRight"
-        onClick={() => targets.next !== null && onNavigate(targets.next)}
-      >
-        {t('analysis.next')} ▶
-      </button>
-      <button
-        type="button"
-        id="analysis-last-button"
-        className={button({ variant: 'ghost', size: 'sm', disabled: 'faint' })}
-        disabled={targets.last === null}
-        aria-keyshortcuts="End"
-        onClick={() => targets.last !== null && onNavigate(targets.last)}
-      >
-        {t('analysis.last')} ⏭
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          id="analysis-first-button"
+          className={button({ intent: 'secondary', size: 'icon' })}
+          aria-label={t('analysis.first')}
+          aria-keyshortcuts="Home"
+          onClick={() => onNavigate(targets.first)}
+        >
+          ⏮
+        </button>
+        <button
+          type="button"
+          id="analysis-prev-button"
+          className={button({ intent: 'secondary', size: 'icon' })}
+          disabled={targets.prev === null}
+          aria-label={t('analysis.prev')}
+          aria-keyshortcuts="ArrowLeft"
+          onClick={() => targets.prev !== null && onNavigate(targets.prev)}
+        >
+          ◀
+        </button>
+        <span className="px-2 text-ui text-muted tabular-nums" data-testid="ply-counter">
+          {t('analysis.position', { ply: currentPly, total: totalPly })}
+        </span>
+        <button
+          type="button"
+          id="analysis-next-button"
+          className={button({ intent: 'secondary', size: 'icon' })}
+          disabled={targets.next === null}
+          aria-label={t('analysis.next')}
+          aria-keyshortcuts="ArrowRight"
+          onClick={() => targets.next !== null && onNavigate(targets.next)}
+        >
+          ▶
+        </button>
+        <button
+          type="button"
+          id="analysis-last-button"
+          className={button({ intent: 'secondary', size: 'icon' })}
+          disabled={targets.last === null}
+          aria-label={t('analysis.last')}
+          aria-keyshortcuts="End"
+          onClick={() => targets.last !== null && onNavigate(targets.last)}
+        >
+          ⏭
+        </button>
+      </div>
       <button
         type="button"
         id="analysis-flip-button"
-        className={button({ variant: 'ghost', size: 'sm', disabled: 'faint' })}
+        className={button({ intent: 'ghost', size: 'sm' })}
+        aria-label={t('analysis.flip')}
         aria-pressed={flipped}
         aria-keyshortcuts="f"
         onClick={onFlip}
       >
-        {t('analysis.flip')}
+        ⇅ {t('analysis.flip')}
       </button>
       {presenterActive && !amPresenter && (
         <button
           type="button"
           id="analysis-follow-button"
-          className={button({ variant: 'ghost', size: 'sm', disabled: 'faint' })}
+          className={button({ intent: 'ghost', size: 'sm', active: following })}
+          aria-label={following ? t('analysis.following') : t('analysis.follow')}
           aria-pressed={following}
           onClick={() => onFollowChange(!following)}
         >
-          {following ? t('analysis.following') : t('analysis.follow')}
+          {following ? `⇢ ${t('analysis.following')}` : t('analysis.follow')}
         </button>
       )}
       {amPresenter && (
-        <p className="m-0 text-xs text-muted" role="status">
-          {t('analysis.presenting')}
+        <p className="m-0 text-note text-muted" role="status">
+          ◉ {t('analysis.presenting')}
         </p>
       )}
     </div>

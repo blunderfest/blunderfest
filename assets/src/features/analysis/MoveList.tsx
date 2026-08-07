@@ -1,31 +1,48 @@
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
-import { panel } from '@/components/ui';
+import { panel, panelHeader } from '@/components/ui';
 import type { Row } from '@/features/analysis/moveList';
 import type { GameNode } from '@/lib/api';
 
 const moveButton = tv({
-  base: 'rounded-md px-1.5 py-0.5 font-mono text-sm transition-colors',
+  base: 'rounded-control px-1.5 py-0.5 font-mono transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-gold-hi',
   variants: {
-    selected: { true: 'bg-ink/20 text-white', false: 'text-ink hover:bg-white/10' },
-    bold: { true: 'font-bold', false: '' },
+    selected: {
+      true: 'bg-gold/20 text-gold-hi ring-1 ring-gold/50 hover:bg-gold/25',
+      false: '',
+    },
+    line: {
+      main: 'text-ui font-semibold text-ink hover:bg-raised',
+      variation: 'text-note font-normal text-muted hover:bg-raised hover:text-ink',
+    },
   },
 });
 
 const moveNumber = (node: GameNode) =>
   `${Math.ceil(node.ply / 2)}${node.ply % 2 === 1 ? '.' : '...'}`;
 
+function CommentDot() {
+  const { t } = useTranslation();
+  return (
+    <span
+      role="img"
+      aria-label={t('analysis.hasComment')}
+      className="ml-0.5 inline-block h-[9px] w-[9px] rounded-full bg-info align-middle"
+    />
+  );
+}
+
 function MoveButton({
   node,
   selected,
-  bold,
+  line,
   showNumber,
   onSelect,
 }: {
   node: GameNode;
   selected: boolean;
-  bold?: boolean;
+  line: 'main' | 'variation';
   showNumber: boolean;
   onSelect: (id: number) => void;
 }) {
@@ -34,10 +51,11 @@ function MoveButton({
       type="button"
       data-testid={`analysis-move-${node.id}`}
       aria-current={selected ? 'true' : undefined}
-      className={moveButton({ selected, bold: bold ?? false })}
+      className={moveButton({ selected, line })}
       onClick={() => onSelect(node.id)}
     >
-      {showNumber && <span className="text-muted">{moveNumber(node)}</span>} {node.san}
+      {showNumber && <span className="text-faint">{moveNumber(node)}</span>} {node.san}
+      {node.comment !== null && <CommentDot />}
     </button>
   );
 }
@@ -68,22 +86,21 @@ function VariationLine({
   let interrupted = true;
   const content = (
     <Fragment>
-      <span className="text-muted">(</span>
+      <span className="text-faint">(</span>
       {nodes.map((node) => {
         const showNumber = node.ply % 2 === 1 || interrupted;
-        const nested = node.children.slice(1);
-        interrupted = nested.length > 0;
+        const nestedVariations = node.children.slice(1);
+        interrupted = nestedVariations.length > 0;
         return (
           <Fragment key={node.id}>
             <MoveButton
               node={node}
               selected={node.id === currentId}
-              bold={node.id === root.id}
+              line="variation"
               showNumber={showNumber}
               onSelect={onSelect}
             />
-            {node.comment && <span className="text-xs italic text-muted">{node.comment}</span>}
-            {nested.map((child) => (
+            {nestedVariations.map((child) => (
               <VariationLine
                 key={child.id}
                 root={child}
@@ -95,58 +112,75 @@ function VariationLine({
           </Fragment>
         );
       })}
-      <span className="text-muted">)</span>
+      <span className="text-faint">)</span>
     </Fragment>
   );
 
   if (nested) {
     return content;
   }
-  return <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 pl-7">{content}</div>;
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 border-l-2 border-line-strong pl-2">
+      {content}
+    </div>
+  );
 }
 
 export default function MoveList({
   rows,
   currentId,
+  nodeCount,
   onSelect,
 }: {
   rows: Row[];
   currentId: number | null;
+  nodeCount: number;
   onSelect: (id: number) => void;
 }) {
   const { t } = useTranslation();
 
   return (
-    <section className={`${panel()} min-h-0 xl:flex-1`}>
-      <h2 className="m-0 text-sm font-semibold text-muted">{t('analysis.moves')}</h2>
+    <section className={`${panel({ layout: 'none', pad: 'none' })} min-h-0 xl:flex-1`}>
+      <div className={panelHeader()}>
+        <h2 className="m-0">{t('analysis.moves')}</h2>
+        <span className="text-faint tabular-nums">
+          {t('analysis.nodeCount', { count: nodeCount })}
+        </span>
+      </div>
       <div
         id="analysis-move-list"
-        className="flex max-h-72 flex-col gap-0.5 overflow-y-auto xl:max-h-none xl:min-h-0 xl:flex-1"
+        className="flex max-h-72 flex-col gap-1 overflow-y-auto p-2 xl:max-h-none xl:min-h-0 xl:flex-1"
       >
         {rows.map((row) =>
           row.type === 'pair' ? (
-            <div key={row.white.id} className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
-              <MoveButton
-                node={row.white}
-                selected={row.white.id === currentId}
-                showNumber
-                onSelect={onSelect}
-              />
-              {row.white.comment && (
-                <span className="text-xs italic text-muted">{row.white.comment}</span>
-              )}
-              {row.black && (
-                <Fragment>
+            <div key={row.white.id} className="flex flex-col gap-0.5">
+              <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5">
+                <MoveButton
+                  node={row.white}
+                  selected={row.white.id === currentId}
+                  line="main"
+                  showNumber
+                  onSelect={onSelect}
+                />
+                {row.black && (
                   <MoveButton
                     node={row.black}
                     selected={row.black.id === currentId}
+                    line="main"
                     showNumber={false}
                     onSelect={onSelect}
                   />
-                  {row.black.comment && (
-                    <span className="text-xs italic text-muted">{row.black.comment}</span>
-                  )}
-                </Fragment>
+                )}
+              </div>
+              {row.white.comment && (
+                <div className="border-l-2 border-line-strong pl-2 text-note italic text-muted">
+                  {row.white.comment}
+                </div>
+              )}
+              {row.black?.comment && (
+                <div className="border-l-2 border-line-strong pl-2 text-note italic text-muted">
+                  {row.black.comment}
+                </div>
               )}
             </div>
           ) : (

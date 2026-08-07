@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { type ChessEngine, getSharedEngine } from '@/features/analysis/engine';
 import { bestMoveSquares, type WhiteEval, whiteEval } from '@/features/analysis/uci';
 
@@ -9,6 +9,8 @@ export type EngineState = {
   eval: WhiteEval | null;
   bestMove: { from: string; to: string } | null;
   depth: number | null;
+  pv: string[];
+  retry: () => void;
 };
 
 /**
@@ -37,13 +39,17 @@ export function useEngine(
    */
   const engineRef = useRef<ChessEngine | null>(null);
 
-  const [state, setState] = useState<EngineState>({
+  const [state, setState] = useState<Omit<EngineState, 'retry'>>({
     status: 'idle',
     eval: null,
     bestMove: null,
     depth: null,
+    pv: [],
   });
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` re-runs the effect on retry without being referenced inside
   useEffect(() => {
     /**
      * The engine is resolved inside the effect (never during render): an
@@ -58,7 +64,7 @@ export function useEngine(
           : getSharedEngineLazy();
 
     if (!enabled || fen === null || engineRef.current === null) {
-      setState({ status: 'idle', eval: null, bestMove: null, depth: null });
+      setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [] });
       return;
     }
 
@@ -81,7 +87,7 @@ export function useEngine(
             return;
           }
           if (result === null) {
-            setState({ status: 'idle', eval: null, bestMove: null, depth: null });
+            setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [] });
             return;
           }
           setState({
@@ -89,6 +95,7 @@ export function useEngine(
             eval: whiteEval(result.score, sideToMove),
             bestMove: bestMoveSquares(result.bestMove),
             depth: result.depth,
+            pv: result.pv,
           });
         })
         .catch(() => {
@@ -102,9 +109,9 @@ export function useEngine(
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [fen, enabled, movetimeMs, debounceMs, options.engine]);
+  }, [fen, enabled, movetimeMs, debounceMs, options.engine, attempt]);
 
-  return state;
+  return { ...state, retry };
 }
 
 function getSharedEngineLazy(): ChessEngine | null {

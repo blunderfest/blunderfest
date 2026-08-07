@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import Home from '@/features/home/Home';
 
 function renderHome(onJoin = vi.fn()) {
-  const utils = render(<Home backend="ok" onJoin={onJoin} />);
+  const utils = render(<Home backend="ok" userName="Brave Otter 42" onJoin={onJoin} />);
   return { onJoin, ...utils };
 }
 
@@ -40,7 +40,7 @@ describe('Home', () => {
     stubCreateRoom(false);
     const { onJoin } = renderHome();
     fireEvent.click(screen.getByRole('button', { name: 'Create a room' }));
-    expect(await screen.findByText('Could not create the room. Try again.')).toBeInTheDocument();
+    expect(await screen.findByText(/Could not create the room/)).toBeInTheDocument();
     expect(onJoin).not.toHaveBeenCalled();
   });
 
@@ -51,17 +51,21 @@ describe('Home', () => {
     expect(onJoin).toHaveBeenCalledWith('abc39');
   });
 
-  it('shows an error when the code is not a valid 5-character room code', () => {
+  it('explains which characters are disallowed in a room code', () => {
     const { onJoin } = renderHome();
     fireEvent.change(screen.getByPlaceholderText('Room code'), { target: { value: 'abc12' } });
     fireEvent.click(screen.getByRole('button', { name: 'Join' }));
-    expect(screen.getByText('Enter a room code')).toBeInTheDocument();
+    expect(screen.getByText(/Codes never contain/)).toBeInTheDocument();
     expect(onJoin).not.toHaveBeenCalled();
+  });
 
+  it('shows an error when the code has the wrong length', () => {
+    const { onJoin } = renderHome();
     fireEvent.change(screen.getByPlaceholderText('Room code'), {
       target: { value: 'kjhkjhkjhkj' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+    expect(screen.getByText(/Enter a room code/)).toBeInTheDocument();
     expect(onJoin).not.toHaveBeenCalled();
   });
 
@@ -75,7 +79,7 @@ describe('Home', () => {
   it('shows an error when joining with an empty code', () => {
     const { onJoin } = renderHome();
     fireEvent.click(screen.getByRole('button', { name: 'Join' }));
-    expect(screen.getByText('Enter a room code')).toBeInTheDocument();
+    expect(screen.getByText(/Enter a room code/)).toBeInTheDocument();
     expect(onJoin).not.toHaveBeenCalled();
   });
 });

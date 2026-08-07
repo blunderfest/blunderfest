@@ -11,16 +11,16 @@ import {
 } from '@/components/board';
 
 const square = tv({
-  base: 'relative flex items-center justify-center',
+  base: 'relative flex items-center justify-center aspect-square select-none focus-visible:z-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold-hi',
   variants: {
-    shade: { light: 'bg-[#f0d9b5]', dark: 'bg-[#b58863]' },
+    shade: { light: 'bg-board-light', dark: 'bg-board-dark' },
   },
 });
 
 const coord = tv({
   base: 'absolute text-[10px] font-semibold',
   variants: {
-    shade: { light: 'text-[#b58863]', dark: 'text-[#f0d9b5]' },
+    shade: { light: 'text-board-dark', dark: 'text-board-light' },
   },
 });
 
@@ -121,7 +121,7 @@ export default function Board({
     <div
       ref={containerRef}
       data-board-grid
-      className="relative grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-lg border border-white/10 shadow-lg"
+      className="relative grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [container-type:inline-size]"
       role={interactive ? 'group' : 'img'}
       aria-label={label}
       onKeyDown={handleKeyDown}
@@ -137,6 +137,16 @@ export default function Board({
         const isTarget = legalTargets.includes(name);
         const clickable = interactive && onSquareClick !== undefined;
 
+        const squareBg = isSelected
+          ? shade === 'light'
+            ? 'bg-[#cfe0ff]'
+            : 'bg-[#7f93b8]'
+          : isLastMove
+            ? shade === 'light'
+              ? 'bg-move-from'
+              : 'bg-move-to'
+            : square({ shade });
+
         const content = (
           <>
             {file === fileCol && (
@@ -146,20 +156,22 @@ export default function Board({
               <span className={`${coord({ shade })} right-1 bottom-0.5`}>{name[0]}</span>
             )}
             {piece && <PieceGlyph piece={piece} />}
-            {isLastMove && <div className="absolute inset-0 bg-yellow-400/40" />}
             {isSelected && (
-              <div data-testid={`selected-${name}`} className="absolute inset-0 bg-yellow-300/50" />
+              <div
+                data-testid={`selected-${name}`}
+                className="absolute inset-0 ring-2 ring-select ring-inset"
+              />
             )}
             {isTarget &&
               (piece ? (
                 <div
                   data-testid={`target-${name}`}
-                  className="absolute inset-0 rounded-full border-4 border-emerald-400/70"
+                  className="absolute inset-[6%] rounded-full border-[5px] border-[rgba(20,22,27,0.35)]"
                 />
               ) : (
                 <div
                   data-testid={`target-${name}`}
-                  className="absolute h-1/3 w-1/3 rounded-full bg-emerald-400/70"
+                  className="absolute h-[28%] w-[28%] rounded-full bg-[rgba(20,22,27,0.3)]"
                 />
               ))}
           </>
@@ -175,7 +187,7 @@ export default function Board({
               aria-label={name}
               aria-pressed={isSelected}
               tabIndex={focusIndex === index ? 0 : -1}
-              className={`${square({ shade })} cursor-pointer`}
+              className={`${squareBg} cursor-pointer`}
               onClick={() => {
                 setFocusIndex(index);
                 onSquareClick(name);
@@ -187,7 +199,7 @@ export default function Board({
         }
 
         return (
-          <div key={index} data-testid={`square-${name}`} className={square({ shade })}>
+          <div key={index} data-testid={`square-${name}`} className={squareBg}>
             {content}
           </div>
         );
@@ -249,7 +261,7 @@ export default function Board({
 function PieceGlyph({ piece }: { piece: Piece }) {
   return (
     <span
-      className="text-[min(10vw,3.75rem)] leading-none"
+      className="text-[10.4cqi] leading-none"
       style={{
         color: piece.color === 'w' ? '#f9f9f9' : '#1a1a1a',
         textShadow:

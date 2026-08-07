@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { panel } from '@/components/ui';
+import { button, chip, listRow, panel, panelHeader } from '@/components/ui';
 import type { GameTree } from '@/lib/api';
 
 function gameTitle(tree: GameTree, t: (key: string) => string): string {
@@ -29,57 +29,61 @@ export default function GameList({
   onNewGame: () => void;
 }) {
   const { t } = useTranslation();
+  const entries = Object.entries(games);
 
   return (
-    <section className={panel({ layout: 'none', padding: 'tight' })}>
-      <h2 className="m-0 mb-3 text-sm font-semibold text-muted">{t('room.games')}</h2>
-      {Object.keys(games).length === 0 ? (
-        <p className="m-0 text-sm text-muted">{t('room.emptyGames')}</p>
-      ) : (
-        <ul className="m-0 flex flex-col gap-1.5 p-0">
-          {Object.entries(games).map(([id, tree]) => (
-            <li key={id} className="flex flex-col gap-1">
-              <button
-                type="button"
-                aria-pressed={id === activeGameId}
-                className="flex w-full items-center justify-between gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left transition-colors hover:bg-white/5 aria-pressed:border-white/20 aria-pressed:bg-white/10"
-                onClick={() => onSelectGame(id)}
-              >
-                <span className="min-w-0 truncate text-sm">{gameTitle(tree, t)}</span>
-                {presenterGameId === id && <span className="sr-only">{t('room.presenting')}</span>}
-                {tree.result !== '*' && (
-                  <span className="shrink-0 text-xs text-muted">{tree.result}</span>
-                )}
-              </button>
-              {presenterGameId === id && (
-                <span className="px-2 text-xs text-muted">{t('room.presenting')}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="mt-3 flex flex-col gap-2">
-        {canEdit && (
-          <>
-            <button
-              type="button"
-              id="add-game-button"
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-ink transition-colors hover:border-white/30"
-              onClick={onAddGame}
-            >
-              {t('room.addGame')}
-            </button>
-            <button
-              type="button"
-              id="new-game-button"
-              className="rounded-lg border border-white/10 px-3 py-1.5 text-sm text-ink transition-colors hover:border-white/30"
-              onClick={onNewGame}
-            >
-              {t('room.newGame')}
-            </button>
-          </>
+    <section className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col`}>
+      <div className={panelHeader()}>
+        <h2 className="m-0">{t('room.games')}</h2>
+        <span className="text-faint tabular-nums">{entries.length}</span>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        {entries.length === 0 ? (
+          <p className="m-0 p-2 text-ui text-faint">{t('room.emptyGames')}</p>
+        ) : (
+          <ul className="m-0 flex flex-col gap-0.5 p-0">
+            {entries.map(([id, tree]) => (
+              <li key={id}>
+                <button
+                  type="button"
+                  aria-pressed={id === activeGameId}
+                  aria-current={id === activeGameId ? 'true' : undefined}
+                  className={`${listRow({ state: id === activeGameId ? 'selected' : 'default' })} rounded-control`}
+                  onClick={() => onSelectGame(id)}
+                >
+                  <span className="min-w-0 flex-1 truncate">{gameTitle(tree, t)}</span>
+                  {presenterGameId === id && (
+                    <span className={chip({ tone: 'gold' })}>{t('room.presenting')}</span>
+                  )}
+                  {tree.result !== '*' && (
+                    <span className={chip({ tone: 'outline' })}>{tree.result}</span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
+      {canEdit && (
+        <div className="flex gap-2 border-t border-line p-2">
+          <button
+            type="button"
+            id="add-game-button"
+            className={button({ intent: 'quiet', size: 'sm', block: true })}
+            onClick={onAddGame}
+          >
+            {t('room.addGame')}
+          </button>
+          <button
+            type="button"
+            id="new-game-button"
+            className={button({ intent: 'quiet', size: 'sm', block: true })}
+            onClick={onNewGame}
+          >
+            {t('room.newGame')}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

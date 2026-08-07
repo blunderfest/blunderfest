@@ -129,25 +129,25 @@ describe('Analysis', () => {
   it('navigates forward and backward with the buttons', () => {
     renderAnalysis();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
     expect(screen.getByTestId('square-e2')).not.toHaveTextContent('♟');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByTestId('square-e5')).toHaveTextContent('♟');
 
-    fireEvent.click(screen.getByRole('button', { name: '◀ Previous' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
     expect(screen.getByTestId('square-e5')).not.toHaveTextContent('♟');
   });
 
   it('jumps to first and last moves', () => {
     renderAnalysis();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Last ⏭' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Last' }));
     expect(screen.getByTestId('square-f3')).toHaveTextContent('♞');
-    expect(screen.getByTestId('analysis-move-4')).toHaveClass('bg-ink/20');
+    expect(screen.getByTestId('analysis-move-4')).toHaveAttribute('aria-current', 'true');
 
-    fireEvent.click(screen.getByRole('button', { name: '⏮ First' }));
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
     expect(screen.getByTestId('square-g1')).toHaveTextContent('♞');
   });
 
@@ -181,7 +181,7 @@ describe('Analysis', () => {
     };
     render(<Analysis tree={mateTree} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByText('Checkmate')).toBeInTheDocument();
   });
 
@@ -284,7 +284,7 @@ describe('Analysis', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     // The navigation asks the parent to stop following; until the parent
     // confirms (rerender with `following={false}`), the presenter cursor
@@ -346,9 +346,9 @@ describe('Analysis', () => {
     render(<Analysis tree={tree} presenterId="p1" selfId="p1" onCursorChange={onCursorChange} />);
 
     expect(onCursorChange).toHaveBeenCalledWith(0);
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(onCursorChange).toHaveBeenCalledWith(1);
-    expect(screen.getByText('You are presenting')).toBeInTheDocument();
+    expect(screen.getByText(/You are presenting/)).toBeInTheDocument();
   });
 
   it('shows no follow button without a presenter', () => {
@@ -561,10 +561,10 @@ describe('engine analysis', () => {
       />,
     );
 
-    expect(await screen.findByText('+0.42')).toBeInTheDocument();
+    expect(await screen.findByTestId('engine-eval-badge')).toHaveTextContent('+0.42');
     expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Engine evaluation: +0.42' })).toBeInTheDocument();
-    expect(screen.getByText('+0.42 · depth 9')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'White is better by 0.42 pawns' })).toBeInTheDocument();
+    expect(screen.getByTestId('engine-readout')).toHaveTextContent('Depth 9');
   });
 
   it('shows no hint when the engine reports no best move', async () => {

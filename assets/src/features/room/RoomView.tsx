@@ -1,9 +1,10 @@
 import type { Channel } from 'phoenix';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { button } from '@/components/ui';
+import Logo from '@/components/Logo';
+import { button, statusDot } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
-import ImportForm from '@/features/import/ImportForm';
+import ImportDialog from '@/features/import/ImportDialog';
 import ActivityFeed from '@/features/room/ActivityFeed';
 import GameList from '@/features/room/GameList';
 import MemberList from '@/features/room/MemberList';
@@ -126,14 +127,15 @@ export default function RoomView({
     sendRole(memberId, role);
   }
 
-  const showImportForm = Object.keys(games).length === 0 || showImport;
+  const noGames = Object.keys(games).length === 0;
 
   if (joinError !== null) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-        <p className="m-0 text-lg font-semibold">{t('room.notFoundTitle')}</p>
-        <p className="m-0 max-w-md text-center text-sm text-muted">{t('room.notFound')}</p>
-        <button type="button" className={button({ variant: 'ghost' })} onClick={onLeave}>
+        <Logo size="md" />
+        <p className="m-0 text-display font-semibold">{t('room.notFoundTitle')}</p>
+        <p className="m-0 max-w-md text-center text-body text-muted">{t('room.notFound')}</p>
+        <button type="button" className={button({ intent: 'secondary' })} onClick={onLeave}>
           {t('room.backHome')}
         </button>
       </div>
@@ -141,9 +143,9 @@ export default function RoomView({
   }
 
   return (
-    <div className="flex flex-1 flex-col items-stretch gap-6 p-6">
-      <div className="grid flex-1 gap-6 md:grid-cols-[220px_1fr]">
-        <aside className="flex flex-col gap-6">
+    <div className="flex flex-1 flex-col items-stretch gap-3 p-3">
+      <div className="grid flex-1 gap-3 md:grid-cols-[236px_1fr]">
+        <aside className="flex flex-col gap-3">
           <GameList
             games={games}
             activeGameId={effectiveGameId}
@@ -167,13 +169,43 @@ export default function RoomView({
         </aside>
 
         <section className="flex flex-col items-center gap-4">
-          {showImportForm ? (
+          {noGames ? (
             canEdit ? (
-              <ImportForm onImported={handleImported} />
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+                <p className="m-0 text-display font-semibold">{t('room.emptyTitle')}</p>
+                <p className="m-0 max-w-md text-center text-body text-muted">
+                  {t('room.emptyOwner')}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    id="empty-import-button"
+                    className={button({ intent: 'primary' })}
+                    onClick={() => setShowImport(true)}
+                  >
+                    {t('room.emptyImport')}
+                  </button>
+                  <button
+                    type="button"
+                    id="empty-new-game-button"
+                    className={button({ intent: 'secondary' })}
+                    onClick={handleNewGame}
+                  >
+                    {t('room.emptyFresh')}
+                  </button>
+                </div>
+              </div>
             ) : (
-              <p id="viewer-waiting" className="m-0 max-w-md text-center text-sm text-muted">
-                {t('room.viewerWaiting')}
-              </p>
+              <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+                <p className="m-0 text-display font-semibold">{t('room.emptyViewerTitle')}</p>
+                <p id="viewer-waiting" className="m-0 max-w-md text-center text-body text-muted">
+                  {t('room.viewerWaiting')}
+                </p>
+                <span className="flex items-center gap-2 text-note text-faint">
+                  <span className={statusDot({ tone: 'warn', pulse: true })} />
+                  {t('room.listening')}
+                </span>
+              </div>
             )
           ) : (
             <Analysis
@@ -192,6 +224,10 @@ export default function RoomView({
           )}
         </section>
       </div>
+
+      {showImport && (
+        <ImportDialog onImported={handleImported} onClose={() => setShowImport(false)} />
+      )}
     </div>
   );
 }

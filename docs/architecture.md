@@ -83,7 +83,9 @@ shared vocabulary is mirrored in `assets/src/protocol/ops.ts`.
   the board plus the best move as an arrow overlay (`Board`'s `arrows` prop).
 - `assets/src/components/ui.ts` — `tv()`-based component variants (Tailwind
   v4, dark theme); `<.icon>`-style icons are heroicons via the `.icon` /
-  `Icon` components.
+  `Icon` components. The visual language (tokens, states, motion) is specced
+  in `design/DESIGN-SYSTEM.md`, which maps directly onto the `@theme` tokens
+  in `assets/src/app/app.css` and these variants.
 - i18n: `react-i18next`, `assets/src/i18n/locales/en.json` is the
   source-of-truth locale; all copy lives here (ADR-0003).
 

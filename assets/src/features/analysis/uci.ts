@@ -1,3 +1,5 @@
+import { Chess } from 'chess.js';
+
 /**
  * Pure UCI output parsing and eval formatting for the in-browser Stockfish
  * engine. No engine, no DOM — everything here is unit-tested directly.
@@ -82,4 +84,22 @@ export function whiteShare(white: WhiteEval | null): number {
   }
   const share = 50 + (white.cp / 100) * 6;
   return Math.min(97, Math.max(3, share));
+}
+
+/**
+ * Converts a UCI principal variation (`e2e4 e7e5 …`) into SAN moves for
+ * display. Stops at the first move that does not apply cleanly.
+ */
+export function pvToSan(fen: string, pv: string[]): string[] {
+  const game = new Chess(fen);
+  const san: string[] = [];
+  for (const uci of pv) {
+    try {
+      const move = game.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci[4] });
+      san.push(move.san);
+    } catch {
+      break;
+    }
+  }
+  return san;
 }

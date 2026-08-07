@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { tv } from 'tailwind-variants';
 import type { BackendStatus } from '@/app/App';
-import { button, input, panel } from '@/components/ui';
+import Logo from '@/components/Logo';
+import { button, chip, input, panel, statusDot } from '@/components/ui';
 import { createRoom } from '@/lib/api';
 import { generateRoomCode, normalizeRoomCode, validRoomCode } from '@/lib/roomCode';
 
+const DISALLOWED = /[ilo01]/;
+
 export default function Home({
   backend,
+  userName,
   onJoin,
 }: {
   backend: BackendStatus;
+  userName: string | null;
   onJoin: (slug: string) => void;
 }) {
   const { t } = useTranslation();
@@ -45,50 +49,57 @@ export default function Home({
     onJoin(slug);
   }
 
+  const normalized = normalizeRoomCode(code);
+  const hasDisallowed = DISALLOWED.test(code.toLowerCase());
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
-      <div className="flex flex-col items-center gap-2">
-        <h1 className="m-0 text-5xl tracking-[-0.03em]">{t('app.name')}</h1>
-        <p className="m-0 text-muted">{t('app.tagline')}</p>
-        <p
-          className={tv({
-            base: 'm-0 text-sm',
-            variants: { status: { checking: 'text-warn', ok: 'text-ok', down: 'text-bad' } },
-          })({ status: backend })}
-          data-status={backend}
-        >
-          {t(`status.${backend}`)}
-        </p>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <h1 className="m-0">
+          <span className="sr-only">{t('app.name')}</span>
+          <span aria-hidden="true">
+            <Logo size="lg" />
+          </span>
+        </h1>
+        <p className="m-0 max-w-lg text-lead text-muted">{t('app.tagline')}</p>
+        <div className="mt-2 flex flex-wrap justify-center gap-2">
+          <span className={chip({ tone: 'neutral' })}>{t('home.featTree')}</span>
+          <span className={chip({ tone: 'neutral' })}>{t('home.featComments')}</span>
+          <span className={chip({ tone: 'neutral' })}>{t('home.featEngine')}</span>
+        </div>
       </div>
 
-      <div className="flex flex-col items-center gap-4">
-        <section className={panel({ width: 'sm', layout: 'stretch' })}>
+      <div className="flex w-full max-w-3xl flex-col items-stretch gap-4 md:flex-row">
+        <section className={`${panel({ layout: 'stretch', pad: 'lg' })} flex-1`}>
+          <h2 className="m-0 text-lead font-semibold">{t('home.createTitle')}</h2>
+          <p className="m-0 text-ui text-muted">{t('home.createText')}</p>
           <button
             type="button"
             id="create-room-button"
-            className={button({ variant: 'primary' })}
+            className={button({ intent: 'primary', size: 'lg', block: true })}
             onClick={handleCreate}
             disabled={creating}
           >
             {creating ? t('home.creating') : t('home.create')}
           </button>
-          <p className="m-0 text-center text-sm text-muted">{t('home.createHint')}</p>
+          <p className="m-0 text-center text-note text-faint">{t('home.noAccount')}</p>
           {createError && (
-            <p className="m-0 text-sm text-bad" role="alert">
-              {t('home.createError')}
+            <p className="m-0 text-ui text-bad-hi" role="alert">
+              ⚠ {t('home.createError')}
             </p>
           )}
         </section>
 
-        <section className={panel()}>
-          <h2 className="m-0 text-sm font-semibold text-muted">{t('home.join')}</h2>
-          <div className="flex gap-2">
+        <section className={`${panel({ layout: 'stretch', pad: 'lg' })} flex-1`}>
+          <h2 className="m-0 text-lead font-semibold">{t('home.joinTitle')}</h2>
+          <p className="m-0 text-ui text-muted">{t('home.joinText')}</p>
+          <div>
             <label className="sr-only" htmlFor="join-code-input">
               {t('home.joinLabel')}
             </label>
             <input
               id="join-code-input"
-              className={input()}
+              className={input({ mono: true, invalid: error })}
               placeholder={t('home.joinPlaceholder')}
               value={code}
               onChange={(event) => {
@@ -101,22 +112,40 @@ export default function Home({
                 }
               }}
             />
-            <button
-              type="button"
-              id="join-room-button"
-              className={button({ variant: 'ghost' })}
-              onClick={handleJoin}
-            >
-              {t('home.joinButton')}
-            </button>
+            <p className="m-0 mt-1 text-right text-note text-faint tabular-nums">
+              {t('home.charCount', { count: Math.min(normalized.length, 5) })}
+            </p>
           </div>
+          <button
+            type="button"
+            id="join-room-button"
+            className={button({ intent: 'secondary', size: 'lg', block: true })}
+            onClick={handleJoin}
+          >
+            {t('home.joinButton')}
+          </button>
           {error && (
-            <p className="m-0 text-sm text-bad" role="alert">
-              {t('home.joinError')}
+            <p className="m-0 text-ui text-bad-hi" role="alert">
+              ⚠ {hasDisallowed ? t('home.joinErrorChars') : t('home.joinError')}
             </p>
           )}
         </section>
       </div>
+
+      <p className="m-0 flex items-center gap-2 text-ui text-faint">
+        {userName !== null && (
+          <>
+            {t('home.youAre', { name: userName })} · {t('home.anonymous')} ·
+          </>
+        )}
+        <span
+          className={statusDot({
+            tone: backend === 'ok' ? 'ok' : backend === 'down' ? 'bad' : 'warn',
+            pulse: backend === 'checking',
+          })}
+        />
+        <span data-status={backend}>{t(`status.${backend}`)}</span>
+      </p>
     </div>
   );
 }

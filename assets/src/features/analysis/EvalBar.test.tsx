@@ -23,8 +23,6 @@ describe('EvalBar', () => {
   it('gives white the majority of the bar when white is winning', () => {
     render(<EvalBar eval={{ type: 'cp', cp: 200 }} label="" />);
     const white = screen.getByTestId('eval-white');
-    const black = screen.getByTestId('eval-black');
-    expect(white.style.flexGrow).toBe('62');
-    expect(black.style.flexGrow).toBe('38');
+    expect(white.style.height).toBe('62%');
   });
 });

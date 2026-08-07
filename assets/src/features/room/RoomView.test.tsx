@@ -186,7 +186,7 @@ describe('RoomView', () => {
     expect(await screen.findByText('Room not found')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'This room does not exist yet. Ask the host to create it, then check the code.',
+        'No room answers to this code. Codes are 5 characters and never contain i, l, o, 0 or 1 — it may have been mistyped, or the room expired.',
       ),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Back to home' }));
@@ -218,20 +218,20 @@ describe('RoomView', () => {
     expect(await screen.findByText('1. e4')).toBeInTheDocument();
   });
 
-  it('shows the import form when the room has no game', async () => {
+  it('shows the empty state with import and fresh-board actions when the room has no game', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
-    expect(await screen.findByText('Import a game')).toBeInTheDocument();
-    expect(screen.getByLabelText('PGN')).toBeInTheDocument();
+    expect(await screen.findByText('Empty room')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import a game' }));
+    expect(await screen.findByLabelText('PGN')).toBeInTheDocument();
   });
 
   it('shows a waiting message to viewers in an empty room', async () => {
     renderRoom();
-    expect(
-      await screen.findByText('Waiting for the room owner to share a game...'),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Import PGN' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'New game' })).not.toBeInTheDocument();
+    expect(await screen.findByText('Nothing to analyse yet')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Import a game' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Fresh board' })).not.toBeInTheDocument();
   });
 
   it('imports a game by pushing a set_game op', async () => {
@@ -249,7 +249,9 @@ describe('RoomView', () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Import a game' }));
     fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } });
+    await screen.findByText('Alice – Bob');
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
     await waitFor(() => expect(channel.pushes.length).toBe(1));
@@ -304,7 +306,7 @@ describe('RoomView', () => {
     );
 
     expect(await screen.findAllByText('Brave Otter 42')).toHaveLength(2);
-    expect(screen.getAllByText('Presenting')).toHaveLength(3);
+    expect(screen.getAllByText('Presenting')).toHaveLength(2);
   });
 
   it('keeps cursor ops out of the activity feed', async () => {
@@ -475,7 +477,7 @@ describe('RoomView', () => {
     );
 
     await waitFor(() => expect(screen.getByTestId('square-e2')).toHaveTextContent('♟'));
-    fireEvent.click(screen.getByRole('button', { name: 'Next ▶' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     act(() => channel.emit('role_update', { member_id: 'profile-1', role: 'viewer' }));
     act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'owner' }));

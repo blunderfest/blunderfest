@@ -1,65 +1,112 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { button, panel } from '@/components/ui';
+import { button, panel, panelHeader, textarea } from '@/components/ui';
 
 /**
- * Comment on the current position. Editors get a textarea to write or edit
- * the comment (an empty save clears it); viewers only see the text.
+ * Comment on the current position. Editors get a textarea (⌘↵ saves; an
+ * empty save clears the comment); viewers see the text read-only.
+ *
+ * Draft protection: a dirty draft is never clobbered — not by a remote save
+ * and not by switching nodes. A clean editor follows the current node.
  */
 export default function NodeComment({
   comment,
+  moveLabel,
   canEdit,
   onSave,
 }: {
   comment: string | null;
+  moveLabel: string | null;
   canEdit: boolean;
   onSave: (text: string) => void;
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState(comment ?? '');
-  const [lastComment, setLastComment] = useState(comment);
+  const [synced, setSynced] = useState(comment);
 
   /**
-   * Re-sync the draft when the applied comment changes (echo from another
-   * member, or a save of our own). A render-time adjustment — no effect.
+   * Re-sync when the applied comment changes (a remote echo, a node switch,
+   * or our own save landing). Render-time adjustment — no effect.
    */
-  if (comment !== lastComment) {
-    setLastComment(comment);
-    setDraft(comment ?? '');
+  if (comment !== synced) {
+    const wasClean = draft === (synced ?? '');
+    setSynced(comment);
+    if (wasClean) {
+      setDraft(comment ?? '');
+    }
   }
 
-  if (!canEdit && comment === null) {
-    return null;
+  const dirty = draft !== (comment ?? '');
+
+  function save() {
+    onSave(draft.trim());
   }
 
   return (
-    <section className={panel({ width: 'lg' })}>
-      {!canEdit && comment !== null && (
-        <p data-testid="node-comment" className="m-0 text-sm text-ink">
-          {comment}
-        </p>
-      )}
-      {canEdit && (
-        <div className="flex flex-col gap-2">
-          <textarea
-            value={draft}
-            data-testid="comment-editor"
-            aria-label={t('analysis.commentPlaceholder')}
-            placeholder={t('analysis.commentPlaceholder')}
-            rows={3}
-            className="w-full resize-y rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-white/40 focus:outline-none"
-            onChange={(event) => setDraft(event.target.value)}
-          />
-          <button
-            type="button"
-            data-testid="save-comment"
-            className={button({ variant: 'primary', size: 'sm' })}
-            onClick={() => onSave(draft.trim())}
-          >
-            {t('analysis.saveComment')}
-          </button>
-        </div>
-      )}
+    <section className={panel({ layout: 'none', pad: 'none' })}>
+      <div className={panelHeader()}>
+        <h2 className="m-0">{t('analysis.commentTitle')}</h2>
+        {moveLabel !== null && (
+          <span className="normal-case tracking-normal text-gold-hi tabular-nums">{moveLabel}</span>
+        )}
+      </div>
+      <div className="flex flex-col gap-2 p-3">
+        {!canEdit && comment !== null && (
+          <p data-testid="node-comment" className="m-0 text-body text-ink">
+            {comment}
+          </p>
+        )}
+        {!canEdit && comment === null && (
+          <p className="m-0 text-ui text-faint">{t('analysis.noCommentYet')}</p>
+        )}
+        {canEdit && (
+          <>
+            <textarea
+              value={draft}
+              data-testid="comment-editor"
+              aria-label={t('analysis.commentPlaceholder')}
+              placeholder={t('analysis.commentPlaceholder')}
+              rows={3}
+              className={textarea()}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                  event.preventDefault();
+                  save();
+                }
+              }}
+            />
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-note text-faint" role="status">
+                {dirty ? t('analysis.unsaved') : comment !== null && t('analysis.savedForEveryone')}
+              </span>
+              <div className="flex gap-2">
+                {(comment !== null || dirty) && (
+                  <button
+                    type="button"
+                    data-testid="clear-comment"
+                    className={button({ intent: 'quiet', size: 'sm' })}
+                    onClick={() => {
+                      setDraft('');
+                      onSave('');
+                    }}
+                  >
+                    {t('analysis.clearComment')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  data-testid="save-comment"
+                  className={button({ intent: 'primary', size: 'sm' })}
+                  onClick={save}
+                >
+                  {t('analysis.saveComment')}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </section>
   );
 }

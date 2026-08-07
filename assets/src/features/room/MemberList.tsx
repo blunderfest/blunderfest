@@ -1,6 +1,42 @@
 import { useTranslation } from 'react-i18next';
-import { panel } from '@/components/ui';
+import { button, chip, panel, panelHeader } from '@/components/ui';
 import type { MemberRole, PresenceMember } from '@/protocol/ops';
+
+/** A stable, distinct presence colour per member, derived from the id. */
+function hueOf(id: string): number {
+  let hash = 0;
+  for (const char of id) {
+    hash = (hash * 31 + char.charCodeAt(0)) % 360;
+  }
+  return hash;
+}
+
+function initialsOf(name: string): string {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((word) => word[0] ?? '')
+    .join('')
+    .toUpperCase();
+}
+
+function Avatar({ member, presenting }: { member: PresenceMember; presenting: boolean }) {
+  const hue = hueOf(member.id);
+  return (
+    <span
+      aria-hidden="true"
+      className={`grid h-7 w-7 shrink-0 animate-pop place-items-center rounded-full border text-micro font-bold uppercase ${
+        presenting ? 'border-gold ring-2 ring-gold/35' : 'border-line'
+      }`}
+      style={{
+        backgroundColor: `hsl(${hue} 45% 22%)`,
+        color: `hsl(${hue} 80% 78%)`,
+      }}
+    >
+      {initialsOf(member.name)}
+    </span>
+  );
+}
 
 /**
  * The member list. `members` is expected to be pre-sorted (see
@@ -24,41 +60,50 @@ export default function MemberList({
   const { t } = useTranslation();
 
   return (
-    <section className={panel({ layout: 'none', padding: 'tight' })}>
-      <h2 className="m-0 mb-3 text-sm font-semibold text-muted">{t('room.members')}</h2>
-      <ul data-testid="member-list" className="m-0 flex flex-col gap-2 p-0">
+    <section className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col`}>
+      <div className={panelHeader()}>
+        <h2 className="m-0">{t('room.members')}</h2>
+        <span className="text-faint tabular-nums">{members.length}</span>
+      </div>
+      <ul
+        data-testid="member-list"
+        className="m-0 min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2"
+      >
         {members.map((member) => {
           const role = roles[member.id] ?? 'viewer';
           const isBold = role === 'owner' || role === 'collaborator';
-          // Filled piece glyphs read much better than outline ones at small
-          // sizes; the color ramp separates the roles at a glance.
           const icon = role === 'owner' ? '♚' : role === 'collaborator' ? '♞' : '♟';
           const iconClass =
             role === 'owner'
-              ? 'text-warn'
+              ? 'text-gold-hi'
               : role === 'collaborator'
-                ? 'text-slate-200'
-                : 'text-slate-400';
+                ? 'text-silver'
+                : 'text-faint';
           return (
-            <li key={member.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <li
+              key={member.id}
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-control px-2 py-1.5 text-ui"
+            >
+              <Avatar member={member} presenting={member.id === presenterId} />
               <span
                 role="img"
                 aria-label={t(`room.role.${role}`)}
-                className={`inline-block w-5 shrink-0 text-center text-lg leading-none ${iconClass}`}
+                title={t(`room.role.${role}`)}
+                className={`inline-block w-4 shrink-0 text-center text-base leading-none ${iconClass}`}
               >
                 {icon}
               </span>
-              <span className={isBold ? 'font-semibold' : undefined}>{member.name}</span>
+              <span className={isBold ? 'font-semibold text-ink' : 'text-muted'}>
+                {member.name}
+              </span>
               {member.id === presenterId && (
-                <span className="shrink-0 rounded bg-white/10 px-1.5 py-0.5 text-xs text-muted">
-                  {t('room.presenting')}
-                </span>
+                <span className={chip({ tone: 'gold' })}>{t('room.presenting')}</span>
               )}
               {myRole === 'owner' && member.id !== selfId && role !== 'owner' && (
                 <button
                   type="button"
                   data-testid={`set-role-${member.id}`}
-                  className="ml-auto shrink-0 rounded-lg border border-white/10 px-1.5 py-0.5 text-xs text-ink transition-colors hover:border-white/30"
+                  className={`${button({ intent: 'quiet', size: 'xs' })} ml-auto`}
                   onClick={() =>
                     onSetRole(member.id, role === 'collaborator' ? 'viewer' : 'collaborator')
                   }
@@ -69,7 +114,7 @@ export default function MemberList({
             </li>
           );
         })}
-        {members.length === 0 && <li className="text-sm text-muted">...</li>}
+        {members.length === 0 && <li className="p-2 text-ui text-faint">...</li>}
       </ul>
     </section>
   );

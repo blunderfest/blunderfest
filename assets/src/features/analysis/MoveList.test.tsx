@@ -45,7 +45,9 @@ function makeTree(withNested: boolean): GameTree {
 }
 
 function renderList(t: GameTree = makeTree(false)) {
-  return render(<MoveList rows={buildRows(t)} currentId={null} onSelect={vi.fn()} />);
+  return render(
+    <MoveList rows={buildRows(t)} currentId={null} nodeCount={t.node_count} onSelect={vi.fn()} />,
+  );
 }
 
 function moveText(id: number): string {

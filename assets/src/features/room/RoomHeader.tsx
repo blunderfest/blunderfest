@@ -41,7 +41,7 @@ export default function RoomHeader({ slug, onLeave }: { slug: string; onLeave: (
       <button
         type="button"
         id="leave-room-button"
-        className={button({ variant: 'ghost', size: 'sm' })}
+        className={button({ intent: 'ghost', size: 'sm' })}
         onClick={onLeave}
       >
         {t('room.leave')}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import Logo from '@/components/Logo';
 import Home from '@/features/home/Home';
 import RoomHeader from '@/features/room/RoomHeader';
 import RoomView from '@/features/room/RoomView';
@@ -83,21 +84,25 @@ export default function App() {
       >
         {t('app.skipToBoard')}
       </button>
-      <header className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-3">
-        <a href="#/" className="text-sm font-semibold tracking-[-0.01em] text-ink no-underline">
-          {t('app.name')}
+      <header className="flex items-center justify-between gap-4 border-b border-line bg-surface px-4 py-2">
+        <a href="#/" aria-label={t('app.name')} className="text-ink no-underline">
+          <Logo size="sm" />
         </a>
         {route.screen === 'room' && myRole === 'owner' && (
           <RoomHeader slug={route.slug} onLeave={navigateHome} />
         )}
-        <p className="m-0 text-sm text-muted" role="status" data-status={profile.status}>
+        <p className="m-0 text-ui text-muted" role="status" data-status={profile.status}>
           {name}
         </p>
       </header>
 
       <main id="main" ref={mainRef} tabIndex={-1} className="flex flex-1 flex-col">
         {route.screen === 'home' ? (
-          <Home backend={backend} onJoin={navigateToRoom} />
+          <Home
+            backend={backend}
+            userName={profile.status === 'ready' ? name : null}
+            onJoin={navigateToRoom}
+          />
         ) : profile.status === 'loading' ? (
           // Wait for the identity before joining the room channel: joining
           // anonymously and rejoining once the profile loads leaves a ghost
