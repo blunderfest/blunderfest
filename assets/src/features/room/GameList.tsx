@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { button, chip, listRow, panel, panelHeader } from '@/components/ui';
+import { button, chip, listRow, panel, panelHeader, statusDot } from '@/components/ui';
 import type { GameTree } from '@/lib/api';
 
 function gameTitle(tree: GameTree, t: (key: string) => string): string {
@@ -53,7 +53,12 @@ export default function GameList({
                 >
                   <span className="min-w-0 flex-1 truncate">{gameTitle(tree, t)}</span>
                   {presenterGameId === id && (
-                    <span className={chip({ tone: 'gold' })}>{t('room.presenting')}</span>
+                    <span
+                      role="img"
+                      aria-label={t('room.presenting')}
+                      title={t('room.presenting')}
+                      className={statusDot({ tone: 'warn' })}
+                    />
                   )}
                   {tree.result !== '*' && (
                     <span className={chip({ tone: 'outline' })}>{tree.result}</span>

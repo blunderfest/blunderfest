@@ -181,13 +181,17 @@ export default function MoveList({
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  // Keep the current move visible while navigating (jsdom has no
-  // scrollIntoView, hence the optional call).
+  // Keep the current move visible while navigating; at the root (no move is
+  // current) scroll back to the beginning of the list. (jsdom has no
+  // scrollIntoView/scrollTo, hence the optional calls.)
   // biome-ignore lint/correctness/useExhaustiveDependencies: currentId is the trigger, not a referenced value
   useEffect(() => {
-    listRef.current
-      ?.querySelector('[aria-current="true"]')
-      ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    const current = listRef.current?.querySelector('[aria-current="true"]');
+    if (current !== undefined && current !== null) {
+      current.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    } else {
+      listRef.current?.scrollTo?.({ top: 0 });
+    }
   }, [currentId]);
 
   return (

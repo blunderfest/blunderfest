@@ -113,6 +113,17 @@ describe('MoveList scrolling', () => {
   });
 });
 
+it('scrolls back to the top when the root position is current', () => {
+  const scrollSpy = vi.fn();
+  Element.prototype.scrollTo = scrollSpy;
+  try {
+    renderList(makeTree(false), 0);
+    expect(scrollSpy).toHaveBeenCalledWith({ top: 0 });
+  } finally {
+    delete (Element.prototype as { scrollTo?: unknown }).scrollTo;
+  }
+});
+
 describe('MoveList comment placement', () => {
   it('renders a mainline comment directly under its own move', () => {
     const t = makeTree(false);

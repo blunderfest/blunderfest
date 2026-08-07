@@ -334,7 +334,9 @@ describe('RoomView', () => {
     );
 
     expect(await screen.findAllByText('Brave Otter 42')).toHaveLength(2);
-    expect(screen.getAllByText('Presenting')).toHaveLength(2);
+    expect(screen.getAllByText('Presenting')).toHaveLength(1);
+    // …and the games list marks the presented game with a compact gold dot.
+    expect(screen.getByRole('img', { name: 'Presenting' })).toBeInTheDocument();
   });
 
   it('keeps cursor ops out of the activity feed', async () => {

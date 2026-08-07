@@ -75,7 +75,7 @@ export default function ActivityFeed({
           className="min-h-0 flex-1 overflow-y-auto"
         >
           <ul className="m-0 flex flex-col gap-0.5 p-2">
-            {ops.map((op) => {
+            {[...ops].reverse().map((op) => {
               const arrived = !seen.has(op.seq);
               if (arrived) {
                 seen.add(op.seq);

@@ -544,11 +544,13 @@ export default function Analysis({
                               active ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
                             }`}
                             style={{
-                              color: color === 'w' ? '#f9f9f9' : '#1a1a1a',
+                              // On the dark palette, "black" pieces render in
+                              // a light silver so they stay visible.
+                              color: color === 'w' ? '#f9f9f9' : '#b6bdcc',
                               textShadow:
                                 color === 'w'
                                   ? '0 0 2px rgba(26,26,26,0.9)'
-                                  : '0 1px 1px rgba(255,255,255,0.35)',
+                                  : '0 0 2px rgba(10,10,12,0.8)',
                             }}
                             onClick={() => setEditBrush(active ? null : { color, kind })}
                           >
@@ -648,7 +650,7 @@ export default function Analysis({
               )}
             </div>
           )}
-          {editing ? (
+          {editing && engineOn ? (
             <div
               className="flex h-9 w-[min(90vw,34rem)] items-center gap-2 rounded-control border border-gold/30 bg-gold/10 px-3"
               data-testid="engine-paused"
@@ -656,7 +658,7 @@ export default function Analysis({
               <span className={statusDot({ tone: 'warn', pulse: true })} />
               <span className="text-ui text-gold-hi">{t('analysis.enginePaused')}</span>
             </div>
-          ) : engineOn ? (
+          ) : editing ? null : engineOn ? (
             <div className="w-[min(90vw,34rem)]">
               <EngineReadout fen={current.fen ?? ''} state={engineState} />
             </div>

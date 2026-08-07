@@ -164,7 +164,12 @@ export default function RoomView({
   return (
     <div className="flex flex-1 flex-col items-stretch gap-3 p-3">
       <div className="grid flex-1 gap-3 md:grid-cols-[236px_1fr]">
-        <aside className="flex flex-col gap-3">
+        {/*
+          On wide screens the rail is pinned to the board's height and split
+          into fixed rows, so each panel scrolls inside itself and the page
+          never grows a body scrollbar (the activity feed is the long one).
+        */}
+        <aside className="flex flex-col gap-3 xl:grid xl:h-[min(90vw,34rem)] xl:grid-rows-[minmax(0,0.85fr)_minmax(0,1fr)_minmax(0,1.15fr)]">
           <GameList
             games={games}
             activeGameId={effectiveGameId}
