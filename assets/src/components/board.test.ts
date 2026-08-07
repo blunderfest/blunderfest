@@ -88,13 +88,13 @@ describe('arrowShape', () => {
     expect(line.x1).toBeCloseTo(4.5);
     expect(line.y1).toBeCloseTo(6.2);
     expect(line.x2).toBeCloseTo(4.5);
-    expect(line.y2).toBeCloseTo(5.35);
+    expect(line.y2).toBeCloseTo(5.2);
 
     const [tip, baseA, baseB] = head.split(' ').map((point) => point.split(',').map(Number));
     expect(tip[0]).toBeCloseTo(4.5);
-    expect(tip[1]).toBeCloseTo(4.65);
-    expect(baseA[1]).toBeCloseTo(5.35);
-    expect(baseB[1]).toBeCloseTo(5.35);
+    expect(tip[1]).toBeCloseTo(4.5);
+    expect(baseA[1]).toBeCloseTo(5.2);
+    expect(baseB[1]).toBeCloseTo(5.2);
   });
 
   it('mirrors the arrow when flipped', () => {
@@ -105,7 +105,7 @@ describe('arrowShape', () => {
     expect(shape.line.x1).toBeCloseTo(3.5);
     expect(shape.line.y1).toBeCloseTo(1.8);
     expect(shape.line.x2).toBeCloseTo(3.5);
-    expect(shape.line.y2).toBeCloseTo(2.65);
+    expect(shape.line.y2).toBeCloseTo(2.8);
   });
 });
 

@@ -87,7 +87,7 @@ export function arrowShape(
   to: string,
   flipped = false,
   tailInset = 0.3,
-  tipInset = 0.15,
+  tipInset = 0,
   headLength = 0.7,
   headWidth = 0.55,
 ): { line: { x1: number; y1: number; x2: number; y2: number }; head: string } | null {
