@@ -77,33 +77,46 @@ export function squarePoint(square: string, flipped = false): { x: number; y: nu
 }
 
 /**
- * A board arrow from `from` to `to` in 8×8 SVG space, shortened at both ends
- * so the tail clears the origin piece and the arrowhead sits inside the
- * target square.
+ * A board arrow from `from` to `to` in 8×8 SVG space: the line shortened at
+ * the tail, and the arrowhead as an explicit polygon whose base is exactly
+ * the line's end and whose tip sits inside the target square. Explicit
+ * geometry — SVG marker refX/orient quirks put the tip in the wrong place.
  */
-export function arrowLine(
+export function arrowShape(
   from: string,
   to: string,
   flipped = false,
   tailInset = 0.3,
-  headInset = 0.6,
-): { x1: number; y1: number; x2: number; y2: number } {
+  tipInset = 0.45,
+  headLength = 0.7,
+  headWidth = 0.55,
+): { line: { x1: number; y1: number; x2: number; y2: number }; head: string } | null {
   const start = squarePoint(from, flipped);
   const end = squarePoint(to, flipped);
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const length = Math.hypot(dx, dy);
   if (length === 0) {
-    return { x1: start.x, y1: start.y, x2: end.x, y2: end.y };
+    return null;
   }
   const ux = dx / length;
   const uy = dy / length;
-  return {
+
+  const tipX = end.x - ux * tipInset;
+  const tipY = end.y - uy * tipInset;
+  const baseX = tipX - ux * headLength;
+  const baseY = tipY - uy * headLength;
+  const perpX = -uy;
+  const perpY = ux;
+
+  const line = {
     x1: start.x + ux * tailInset,
     y1: start.y + uy * tailInset,
-    x2: end.x - ux * headInset,
-    y2: end.y - uy * headInset,
+    x2: baseX,
+    y2: baseY,
   };
+  const head = `${tipX},${tipY} ${baseX + perpX * (headWidth / 2)},${baseY + perpY * (headWidth / 2)} ${baseX - perpX * (headWidth / 2)},${baseY - perpY * (headWidth / 2)}`;
+  return { line, head };
 }
 
 /**

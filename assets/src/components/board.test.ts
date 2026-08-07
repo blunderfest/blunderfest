@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  arrowLine,
+  arrowShape,
   isLightSquare,
   kingInCheckSquare,
   parseFen,
@@ -78,21 +78,34 @@ describe('squarePoint', () => {
   });
 });
 
-describe('arrowLine', () => {
-  it('shortens the line at both ends', () => {
-    const line = arrowLine('e2', 'e4');
+describe('arrowShape', () => {
+  it('ends the line exactly at the arrowhead base, tip inside the target square', () => {
+    const shape = arrowShape('e2', 'e4');
+    if (shape === null) {
+      throw new Error('expected a shape');
+    }
+    const { line, head } = shape;
     expect(line.x1).toBeCloseTo(4.5);
     expect(line.y1).toBeCloseTo(6.2);
     expect(line.x2).toBeCloseTo(4.5);
-    expect(line.y2).toBeCloseTo(5.1);
+    expect(line.y2).toBeCloseTo(5.65);
+
+    const [tip, baseA, baseB] = head.split(' ').map((point) => point.split(',').map(Number));
+    expect(tip[0]).toBeCloseTo(4.5);
+    expect(tip[1]).toBeCloseTo(4.95);
+    expect(baseA[1]).toBeCloseTo(5.65);
+    expect(baseB[1]).toBeCloseTo(5.65);
   });
 
   it('mirrors the arrow when flipped', () => {
-    const line = arrowLine('e2', 'e4', true);
-    expect(line.x1).toBeCloseTo(3.5);
-    expect(line.y1).toBeCloseTo(1.8);
-    expect(line.x2).toBeCloseTo(3.5);
-    expect(line.y2).toBeCloseTo(2.9);
+    const shape = arrowShape('e2', 'e4', true);
+    if (shape === null) {
+      throw new Error('expected a shape');
+    }
+    expect(shape.line.x1).toBeCloseTo(3.5);
+    expect(shape.line.y1).toBeCloseTo(1.8);
+    expect(shape.line.x2).toBeCloseTo(3.5);
+    expect(shape.line.y2).toBeCloseTo(2.35);
   });
 });
 

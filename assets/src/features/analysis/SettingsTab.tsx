@@ -7,15 +7,19 @@ function ToggleRow({
   on,
   onToggle,
   testid,
+  disabled = false,
 }: {
   label: string;
   hint: string;
   on: boolean;
   onToggle: () => void;
   testid: string;
+  disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+    <div
+      className={`flex items-center justify-between gap-3 px-3 py-2.5 ${disabled ? 'opacity-40' : ''}`}
+    >
       <div className="flex flex-col gap-0.5">
         <span className="text-ui text-ink">{label}</span>
         <span className="text-note text-faint">{hint}</span>
@@ -26,9 +30,10 @@ function ToggleRow({
         aria-checked={on}
         aria-label={label}
         data-testid={testid}
+        disabled={disabled}
         className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
           on ? 'bg-gold' : 'bg-raised border border-line-strong'
-        }`}
+        } ${disabled ? 'cursor-not-allowed' : ''}`}
         onClick={onToggle}
       >
         <span
@@ -77,6 +82,7 @@ export default function SettingsTab({
           on={arrowsOn}
           onToggle={onToggleArrows}
           testid="setting-arrows"
+          disabled={!engineOn}
         />
       </div>
     </section>

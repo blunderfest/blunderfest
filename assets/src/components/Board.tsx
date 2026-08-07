@@ -1,7 +1,7 @@
-import { useId, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { tv } from 'tailwind-variants';
 import {
-  arrowLine,
+  arrowShape,
   isLightSquare,
   type Piece,
   type Position,
@@ -67,7 +67,6 @@ export default function Board({
     lastMove?.to ? squareIndex(lastMove.to) : squareIndex('e4'),
   );
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const markerId = useId();
 
   function focusSquare(index: number) {
     setFocusIndex(index);
@@ -220,43 +219,33 @@ export default function Board({
           aria-hidden="true"
           data-testid="board-arrows"
         >
-          <defs>
-            <marker
-              id={`${markerId}-head`}
-              viewBox="0 0 1 1"
-              refX="0.8"
-              refY="0.5"
-              markerWidth="0.85"
-              markerHeight="0.85"
-              markerUnits="userSpaceOnUse"
-              orient="auto-start-reverse"
-            >
-              <path d="M0,0 L1,0.5 L0,1 Z" fill={arrowColor} />
-            </marker>
-          </defs>
           {arrows.map((arrow) => {
-            const line = arrowLine(arrow.from, arrow.to, flipped);
+            const shape = arrowShape(arrow.from, arrow.to, flipped);
+            if (shape === null) {
+              return null;
+            }
             return (
               <g key={`${arrow.from}-${arrow.to}`}>
                 <line
-                  x1={line.x1}
-                  y1={line.y1}
-                  x2={line.x2}
-                  y2={line.y2}
+                  x1={shape.line.x1}
+                  y1={shape.line.y1}
+                  x2={shape.line.x2}
+                  y2={shape.line.y2}
                   stroke="rgba(20, 22, 27, 0.5)"
                   strokeWidth={0.38}
                   strokeLinecap="round"
                 />
+                <polygon points={shape.head} fill="rgba(20, 22, 27, 0.5)" />
                 <line
-                  x1={line.x1}
-                  y1={line.y1}
-                  x2={line.x2}
-                  y2={line.y2}
+                  x1={shape.line.x1}
+                  y1={shape.line.y1}
+                  x2={shape.line.x2}
+                  y2={shape.line.y2}
                   stroke={arrowColor}
                   strokeWidth={0.24}
                   strokeLinecap="round"
-                  markerEnd={`url(#${markerId}-head)`}
                 />
+                <polygon points={shape.head} fill={arrowColor} data-testid="arrow-head" />
               </g>
             );
           })}

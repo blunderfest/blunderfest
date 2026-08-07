@@ -636,6 +636,26 @@ describe('analysis settings tab', () => {
     expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();
   });
 
+  it('disables the hint-arrow switch while the engine is off (not the reverse)', async () => {
+    render(<Analysis tree={tree} engine={makeEngine()} />);
+    expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
+    const arrowsSwitch = screen.getByTestId('setting-arrows');
+    expect(arrowsSwitch).not.toBeDisabled();
+
+    fireEvent.click(screen.getByTestId('setting-engine'));
+    await waitFor(() => expect(screen.getByTestId('setting-arrows')).toBeDisabled());
+    // Engine off hides everything, arrows preference is kept but inert.
+    await waitFor(() => expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument());
+    expect(localStorage.getItem('blunderfest.hints')).not.toBe('off');
+
+    // Re-enabling the engine restores the arrows.
+    fireEvent.click(screen.getByTestId('setting-engine'));
+    await waitFor(() => expect(screen.getByTestId('setting-arrows')).not.toBeDisabled());
+    expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
+  });
+
   it('turns only the hint arrows off from the settings tab', async () => {
     render(<Analysis tree={tree} engine={makeEngine()} />);
     expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();

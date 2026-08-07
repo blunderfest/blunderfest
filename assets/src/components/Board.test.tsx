@@ -285,7 +285,7 @@ describe('Board arrows', () => {
     expect(line).not.toBeNull();
     expect(Number(line?.getAttribute('x1'))).toBeCloseTo(4.5);
     expect(Number(line?.getAttribute('y1'))).toBeCloseTo(6.2);
-    expect(Number(line?.getAttribute('y2'))).toBeCloseTo(5.1);
+    expect(Number(line?.getAttribute('y2'))).toBeCloseTo(5.65);
   });
 
   it('mirrors arrows when flipped', () => {
