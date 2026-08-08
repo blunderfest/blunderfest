@@ -678,7 +678,7 @@ export default function Analysis({
               lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
               flipped={flipped}
               label={boardLabel}
-              interactive={editing || canPlay}
+              interactive={editing || canPlay || canEdit}
               selected={editing ? editSelected : selected}
               legalTargets={editing ? [] : legalTargets}
               arrows={editing ? [] : boardArrows}

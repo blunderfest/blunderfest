@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
 import { button, panel } from '@/components/ui';
@@ -38,23 +38,32 @@ function MoveButton({
   selected,
   line,
   showNumber,
+  tabIndex,
   onSelect,
+  onFocusMove,
 }: {
   node: GameNode;
   selected: boolean;
   line: 'main' | 'variation';
   showNumber: boolean;
+  tabIndex: 0 | -1;
   onSelect: (id: number) => void;
+  onFocusMove: (id: number) => void;
 }) {
   const { t } = useTranslation();
   const isSetup = node.san === null;
   return (
     <button
       type="button"
+      role="option"
+      aria-selected={selected}
       data-testid={`analysis-move-${node.id}`}
+      data-move-id={node.id}
       aria-current={selected ? 'true' : undefined}
+      tabIndex={tabIndex}
       className={moveButton({ selected, line })}
       onClick={() => onSelect(node.id)}
+      onFocus={() => onFocusMove(node.id)}
     >
       {isSetup ? (
         <em className="text-muted">⚙ {t('analysis.setupNode')}</em>
@@ -71,11 +80,15 @@ function MoveButton({
 function VariationLine({
   root,
   currentId,
+  activeOptionId,
+  onFocusMove,
   onSelect,
   nested = false,
 }: {
   root: GameNode;
   currentId: number | null;
+  activeOptionId: number | null;
+  onFocusMove: (id: number) => void;
   onSelect: (id: number) => void;
   nested?: boolean;
 }) {
@@ -108,7 +121,9 @@ function VariationLine({
               selected={node.id === currentId}
               line="variation"
               showNumber={showNumber}
+              tabIndex={node.id === activeOptionId ? 0 : -1}
               onSelect={onSelect}
+              onFocusMove={onFocusMove}
             />
             {node.comment !== null && (
               <span className="text-note italic text-muted">{node.comment}</span>
@@ -118,6 +133,8 @@ function VariationLine({
                 key={child.id}
                 root={child}
                 currentId={currentId}
+                activeOptionId={activeOptionId}
+                onFocusMove={onFocusMove}
                 onSelect={onSelect}
                 nested
               />
@@ -178,6 +195,21 @@ export default function MoveList({
 }) {
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement | null>(null);
+  const [listFocusId, setListFocusId] = useState<number | null>(null);
+
+  const firstMoveId = useMemo(() => {
+    for (const row of rows) {
+      return row.type === 'pair' ? row.white.id : row.root.id;
+    }
+    return null;
+  }, [rows]);
+
+  /**
+   * One tab stop for the whole list (WAI-ARIA listbox): the option with the
+   * tab stop is the internal roving focus if set, else the current move,
+   * else the first move.
+   */
+  const activeOptionId = listFocusId ?? currentId ?? firstMoveId;
 
   // Keep the current move visible while navigating; at the root (no move is
   // current) scroll back to the beginning of the list. (jsdom has no
@@ -190,7 +222,41 @@ export default function MoveList({
     } else {
       listRef.current?.scrollTo?.({ top: 0 });
     }
+    setListFocusId(null);
   }, [currentId]);
+
+  function handleListKeyDown(event: React.KeyboardEvent) {
+    if (listRef.current === null || activeOptionId === null) {
+      return;
+    }
+    const buttons = Array.from(listRef.current.querySelectorAll<HTMLElement>('[data-move-id]'));
+    if (buttons.length === 0) {
+      return;
+    }
+    const activeIndex = Math.max(
+      0,
+      buttons.findIndex((button) => Number(button.dataset.moveId) === activeOptionId),
+    );
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      event.stopPropagation();
+      const nextIndex =
+        event.key === 'ArrowDown'
+          ? Math.min(activeIndex + 1, buttons.length - 1)
+          : Math.max(activeIndex - 1, 0);
+      const nextId = Number(buttons[nextIndex].dataset.moveId);
+      setListFocusId(nextId);
+      buttons[nextIndex].focus();
+      buttons[nextIndex].scrollIntoView?.({ block: 'nearest' });
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      event.stopPropagation();
+      onSelect(activeOptionId);
+    }
+  }
 
   return (
     <section
@@ -199,7 +265,10 @@ export default function MoveList({
       <div
         ref={listRef}
         id="analysis-move-list"
+        role="listbox"
+        aria-label={t('analysis.moves')}
         className="flex max-h-72 flex-col gap-1 overflow-y-auto p-2 xl:max-h-none xl:min-h-0 xl:flex-1"
+        onKeyDown={handleListKeyDown}
       >
         {rows.map((row) =>
           row.type === 'pair' ? (
@@ -209,7 +278,9 @@ export default function MoveList({
                 selected={row.white.id === currentId}
                 line="main"
                 showNumber
+                tabIndex={row.white.id === activeOptionId ? 0 : -1}
                 onSelect={onSelect}
+                onFocusMove={setListFocusId}
               />
               {row.white.comment && (
                 <div className="basis-full border-l-2 border-line-strong pl-2 text-note italic text-muted">
@@ -222,7 +293,9 @@ export default function MoveList({
                   selected={row.black.id === currentId}
                   line="main"
                   showNumber={false}
+                  tabIndex={row.black.id === activeOptionId ? 0 : -1}
                   onSelect={onSelect}
+                  onFocusMove={setListFocusId}
                 />
               )}
               {row.black?.comment && (
@@ -236,6 +309,8 @@ export default function MoveList({
               key={row.root.id}
               root={row.root}
               currentId={currentId}
+              activeOptionId={activeOptionId}
+              onFocusMove={setListFocusId}
               onSelect={onSelect}
             />
           ),

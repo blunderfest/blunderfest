@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
@@ -96,6 +96,42 @@ describe('MoveList move numbers', () => {
     // The line reads: ( 1... c5 2. d4 ( 2... dxe5 ) 2... cxd4 )
     expect(moveText(6)).toBe('2... dxe5');
     expect(moveText(5)).toBe('2... cxd4');
+  });
+});
+
+describe('MoveList keyboard navigation (listbox pattern)', () => {
+  it('keeps a single move in the tab order and roves with the arrow keys', () => {
+    renderList(makeTree(false), 1);
+    const buttons = screen
+      .getAllByRole('option')
+      .filter((el) => el.getAttribute('data-testid')?.startsWith('analysis-move-'));
+    const tabStops = buttons.filter((el) => el.tabIndex === 0);
+    expect(tabStops).toHaveLength(1);
+    expect(tabStops[0]).toBe(screen.getByTestId('analysis-move-1'));
+
+    const list = screen.getByRole('listbox');
+    fireEvent.keyDown(list, { key: 'ArrowDown' });
+    expect(screen.getByTestId('analysis-move-2')).toHaveFocus();
+    expect(screen.getByTestId('analysis-move-2').tabIndex).toBe(0);
+    expect(screen.getByTestId('analysis-move-1').tabIndex).toBe(-1);
+  });
+
+  it('selects the focused move with Enter', () => {
+    const onSelect = vi.fn();
+    render(
+      <MoveList
+        rows={buildRows(makeTree(false))}
+        currentId={1}
+        onSelect={onSelect}
+        navTargets={{ first: 0, prev: null, next: null, last: null }}
+        currentPly={1}
+        totalPly={2}
+      />,
+    );
+    const list = screen.getByRole('listbox');
+    fireEvent.keyDown(list, { key: 'ArrowDown' });
+    fireEvent.keyDown(list, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith(2);
   });
 });
 
