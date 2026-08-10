@@ -18,7 +18,7 @@ defmodule Blunderfest.Room do
   @max_ops_per_room 5_000
 
   def start_link({registry, slug}) do
-    GenServer.start_link(__MODULE__, slug, name: {:via, Registry, {registry, slug}})
+    GenServer.start_link(__MODULE__, slug, name: {:via, Horde.Registry, {registry, slug}})
   end
 
   @impl true

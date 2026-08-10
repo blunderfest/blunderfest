@@ -1,10 +1,11 @@
 defmodule Blunderfest.Rooms do
   @moduledoc """
   Facade for room state (ADR-0012). Each room is its own `Blunderfest.Room`
-  GenServer, registered by slug in a Registry and started on demand under a
-  DynamicSupervisor — ops for different rooms never serialize through one
-  process. State is in-memory and rebuilt on boot, so a scale-to-zero
-  instance loses nothing critical (ADR-0001).
+  GenServer, registered by slug in a Horde Registry and started on demand
+  under a Horde DynamicSupervisor on some node of the cluster (ADR-0013) —
+  ops for different rooms never serialize through one process, and a room is
+  reachable from every region. State is in-memory and rebuilt on boot, so a
+  scale-to-zero instance loses nothing critical (ADR-0001).
 
   Ops are JSON-shaped maps (`%{"type" => ..., "payload" => ...}`) coming from
   channel payloads; the room process stamps them with `seq` and `ts`.
@@ -84,7 +85,7 @@ defmodule Blunderfest.Rooms do
 
     case lookup(slug, scope) do
       nil ->
-        if Registry.count(registry) < @max_rooms do
+        if Horde.Registry.count(registry) < @max_rooms do
           {:ok, pid} = do_start(slug, registry, supervisor)
           GenServer.call(pid, {:register, profile_id})
         else
@@ -111,8 +112,10 @@ defmodule Blunderfest.Rooms do
     {registry, supervisor} = scope
 
     supervisor
-    |> DynamicSupervisor.which_children()
-    |> Enum.each(fn {_, pid, _, _} -> DynamicSupervisor.terminate_child(supervisor, pid) end)
+    |> Horde.DynamicSupervisor.which_children()
+    |> Enum.each(fn {_, pid, _, _} ->
+      Horde.DynamicSupervisor.terminate_child(supervisor, pid)
+    end)
 
     # Registry cleanup lags behind the (synchronous) termination; wait for it
     # so the next lookup can't find a dead pid.
@@ -210,7 +213,7 @@ defmodule Blunderfest.Rooms do
   defp wait_until_drained(_registry, 0), do: :ok
 
   defp wait_until_drained(registry, attempts) do
-    if Registry.count(registry) == 0 do
+    if Horde.Registry.count(registry) == 0 do
       :ok
     else
       Process.sleep(10)
@@ -219,7 +222,7 @@ defmodule Blunderfest.Rooms do
   end
 
   defp lookup(slug, {registry, _supervisor}) do
-    case Registry.lookup(registry, slug) do
+    case Horde.Registry.lookup(registry, slug) do
       [{pid, _}] -> pid
       [] -> nil
     end
@@ -233,7 +236,7 @@ defmodule Blunderfest.Rooms do
   end
 
   defp do_start(slug, registry, supervisor) do
-    case DynamicSupervisor.start_child(supervisor, {Room, {registry, slug}}) do
+    case Horde.DynamicSupervisor.start_child(supervisor, {Room, {registry, slug}}) do
       {:ok, pid} -> {:ok, pid}
       {:error, {:already_started, pid}} -> {:ok, pid}
     end

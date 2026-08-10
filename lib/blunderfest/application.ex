@@ -9,10 +9,13 @@ defmodule Blunderfest.Application do
   def start(_type, _args) do
     children = [
       Blunderfest.Profiles,
-      # One process per room (ADR-0012): rooms register by slug in the
-      # Registry and are started on demand under the DynamicSupervisor.
-      {Registry, keys: :unique, name: Blunderfest.RoomRegistry},
-      {DynamicSupervisor, name: Blunderfest.RoomSupervisor, strategy: :one_for_one},
+      # One process per room (ADR-0012), distributed across the cluster
+      # (ADR-0013): rooms register by slug in the Horde Registry and are
+      # started on demand under the Horde DynamicSupervisor on some node;
+      # membership follows DNSCluster (`members: :auto`).
+      {Horde.Registry, keys: :unique, name: Blunderfest.RoomRegistry, members: :auto},
+      {Horde.DynamicSupervisor,
+       name: Blunderfest.RoomSupervisor, strategy: :one_for_one, members: :auto},
       # One-shot demo-room seeder; runs once at boot, never restarted.
       %{
         id: Blunderfest.DemoRoom,

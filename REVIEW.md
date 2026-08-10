@@ -33,9 +33,9 @@ client can still push illegal moves, just well-formed ones.
 ### 3. Unbounded in-memory growth — ⚠️ PARTIAL (2026-08-10)
 
 Hard caps landed: `@max_rooms 1_000` (create returns 429 `room_limit`) and
-`@max_ops_per_room 5_000` (`op_limit`). Still open: ops are stored appended
-(O(n) per append), rooms are never evicted, and `POST /api/rooms` has no
-rate limit beyond the global cap.
+`@max_ops_per_room 5_000` (`op_limit`). Ops are now stored prepended with a
+counter, so appends are O(1) (done with ADR-0012). Still open: rooms are
+never evicted, and `POST /api/rooms` has no rate limit beyond the global cap.
 
 ### 4. CI is disabled — 🚫 WON'T FIX (2026-08-10)
 
@@ -64,12 +64,16 @@ status via isCheckmate/isStalemate/isDraw). `Analysis.tsx` memoizes them per
 position; `fetchLegalMoves` and its server round-trip are gone. (The
 read-only `/api/games/moves` endpoint still exists server-side, unused.)
 
-### 7. One global GenServer for all rooms
+### 7. ~~One global GenServer for all rooms~~ ✅ DONE (2026-08-10)
 
-Every op, join, and read across every room serializes through a single
-process. Fine today; it's the known future bottleneck. One process per room
-under a DynamicSupervisor is the natural evolution — and it pairs with
-per-room eviction, which also addresses finding 3.
+Each room is now its own temporary `Blunderfest.Room` process behind the
+unchanged `Rooms` facade (ADR-0012): registered by slug, started on demand,
+ops stored prepended with a counter. On top of that the Fly machines form an
+Erlang cluster and the registry/supervisor are Horde's (ADR-0013), so a room
+is reachable from every region — which also fixes the latent split-brain
+between `ams` and `ord`. Remaining caveat (documented in ADR-0013): during a
+netsplit the same code can briefly exist on both nodes, and one side's ops
+are discarded on heal.
 
 ## Smaller items
 
@@ -98,6 +102,6 @@ factories). Good design.
 1. ~~`fly secrets set SECRET_KEY_BASE` + rotate + remove from `fly.toml`.~~ ✅
 2. ~~Server-side op payload validation + size caps.~~ ✅
 3. ~~Re-enable CI.~~ 🚫 won't fix — checks/deploys stay local by decision.
-4. Op storage prepend + room eviction (caps landed; these two remain).
+4. Room eviction (caps and O(1) storage landed; eviction remains).
 5. ~~chess.js locally for solo play.~~ ✅
-6. One process per room under a DynamicSupervisor (finding 7).
+6. ~~One process per room under a DynamicSupervisor (finding 7).~~ ✅ (and clustered via Horde)

@@ -8,8 +8,12 @@ defmodule Blunderfest.RoomsTest do
     # room processes never leak between async tests.
     registry = :"room_registry_#{System.unique_integer([:positive])}"
     supervisor = :"room_supervisor_#{System.unique_integer([:positive])}"
-    start_supervised!({Registry, keys: :unique, name: registry})
-    start_supervised!({DynamicSupervisor, name: supervisor, strategy: :one_for_one})
+    start_supervised!({Horde.Registry, keys: :unique, name: registry, members: :auto})
+
+    start_supervised!(
+      {Horde.DynamicSupervisor, name: supervisor, strategy: :one_for_one, members: :auto}
+    )
+
     %{store: {registry, supervisor}}
   end
 
@@ -214,8 +218,8 @@ defmodule Blunderfest.RoomsTest do
     Rooms.create("aaaaa", "anonymous", store)
     Rooms.create("bbbbb", "anonymous", store)
 
-    [{pid_a, _}] = Registry.lookup(registry, "aaaaa")
-    [{pid_b, _}] = Registry.lookup(registry, "bbbbb")
+    [{pid_a, _}] = Horde.Registry.lookup(registry, "aaaaa")
+    [{pid_b, _}] = Horde.Registry.lookup(registry, "bbbbb")
     assert pid_a != pid_b
   end
 
@@ -240,7 +244,7 @@ defmodule Blunderfest.RoomsTest do
     Rooms.append("aaaaa", %{"type" => "set_cursor"}, store)
     Rooms.create("bbbbb", "anonymous", store)
 
-    [{pid, _}] = Registry.lookup(registry, "aaaaa")
+    [{pid, _}] = Horde.Registry.lookup(registry, "aaaaa")
     ref = Process.monitor(pid)
     GenServer.stop(pid)
     assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
@@ -256,11 +260,13 @@ defmodule Blunderfest.RoomsTest do
   defp assert_unregistered(registry, slug, attempts \\ 50)
 
   defp assert_unregistered(registry, slug, 0) do
-    flunk("expected #{slug} to be unregistered, got #{inspect(Registry.lookup(registry, slug))}")
+    flunk(
+      "expected #{slug} to be unregistered, got #{inspect(Horde.Registry.lookup(registry, slug))}"
+    )
   end
 
   defp assert_unregistered(registry, slug, attempts) do
-    case Registry.lookup(registry, slug) do
+    case Horde.Registry.lookup(registry, slug) do
       [] ->
         :ok
 

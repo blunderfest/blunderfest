@@ -12,6 +12,8 @@ kill_signal = 'SIGTERM'
 [env]
   PHX_HOST = 'blunderfest.org'
   PORT = '8080'
+  # Nodes find each other over the private network (ADR-0013).
+  DNS_CLUSTER_QUERY = 'blunderfest.internal'
   # SECRET_KEY_BASE and RELEASE_COOKIE live in `fly secrets` (never in the repo).
 
 [http_service]

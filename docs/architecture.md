@@ -9,7 +9,7 @@ Browser (React SPA)
    │                        │
    │ JSON /api/*            │ Phoenix Channels (websocket /socket)
    ▼                        ▼
-Phoenix backend ── GenServers: Profiles, Rooms (in-memory state)
+Phoenix backend ── one `Room` GenServer per room (Horde cluster, ADR-0013); Profiles (in-memory state)
 ```
 
 ## Backend (Phoenix, no UI)
@@ -18,10 +18,14 @@ See ADR-0002. The backend is an API and a socket; the SPA is bundled into the
 release and served by a catch-all (`SpaController`).
 
 - `lib/blunderfest/` — pure domain logic and state, no HTTP:
-  - `Rooms` (GenServer): per-slug room state `%{seq, ops, owner, roles}`.
+  - `Rooms` (facade): per-slug room state `%{seq, ops, owner, roles}` lives in
+    one `Room` GenServer per room (ADR-0012), registered by slug in a Horde
+    Registry and started on demand under a Horde DynamicSupervisor —
+    cluster-wide, so rooms are reachable from every Fly region (ADR-0013).
     `create/2`, `claim/2`, `append/2`, `ops/1`, `roles/1`, `valid_code?/1`,
     `room_exists?/1`, `approval_status/3`. The op log is the room's
     authoritative state (ADR-0005); joins never create rooms (ADR-0006).
+    Ops are stored prepended with a counter (O(1) append).
   - `Profiles` (GenServer): anonymous profiles with salted device-secret
     hashes (ADR-0004), `authenticate/2`, fun-name generation.
   - `pgn.ex`, `game/tree.ex`, `game/moves.ex` — PGN parsing to a variation
@@ -42,7 +46,9 @@ release and served by a catch-all (`SpaController`).
 ### State lifecycle
 
 No database (ADR-0001). `Rooms` and `Profiles` start empty on boot and are
-rebuilt by use; a scale-to-zero instance loses nothing critical.
+rebuilt by use; a scale-to-zero instance loses nothing critical. The Fly
+machines form one Erlang cluster (DNSCluster + `DNS_CLUSTER_QUERY`), so a
+room process running in `ams` is reachable from `ord` and vice versa.
 
 ### Channel protocol
 
