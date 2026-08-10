@@ -37,10 +37,12 @@ Hard caps landed: `@max_rooms 1_000` (create returns 429 `room_limit`) and
 (O(n) per append), rooms are never evicted, and `POST /api/rooms` has no
 rate limit beyond the global cap.
 
-### 4. ~~CI is disabled~~ ✅ DONE (2026-08-10)
+### 4. CI is disabled — 🚫 WON'T FIX (2026-08-10)
 
-`.github/workflows/ci.yml` restored (backend: format/compile/test; frontend:
-lint/typecheck/vitest/build) on push to main and PRs.
+Deliberate product decision: GitHub Actions' limits bit us before, so checks
+run locally (`mix precommit`, `pnpm lint && pnpm typecheck && pnpm exec
+vitest run --pool=forks && pnpm build`) and deploys are local via `flyctl
+deploy`. A restored workflow landed and was removed again the same day.
 
 ### 5. The chess core rides on a 0.1 library with workarounds
 
@@ -95,7 +97,7 @@ factories). Good design.
 
 1. ~~`fly secrets set SECRET_KEY_BASE` + rotate + remove from `fly.toml`.~~ ✅
 2. ~~Server-side op payload validation + size caps.~~ ✅
-3. ~~Re-enable CI.~~ ✅
+3. ~~Re-enable CI.~~ 🚫 won't fix — checks/deploys stay local by decision.
 4. Op storage prepend + room eviction (caps landed; these two remain).
 5. ~~chess.js locally for solo play.~~ ✅
 6. One process per room under a DynamicSupervisor (finding 7).
