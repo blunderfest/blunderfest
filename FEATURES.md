@@ -14,8 +14,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Keyboard navigation everywhere (`←` `→` `Home` `End`, `f` flip); square-level keyboard play via `:focus-visible` grid navigation
 - ✅ Engine eval bar + best-move hint arrow (Stockfish 18 Lite WASM, in-browser, per-viewer)
 - ✅ Free-form position setup ("what if the pawn were on h3?") — edit mode moves any piece anywhere; syncs as a setup node in the tree (ADR-0011)
-- 💡 Draw arrows/highlights on the board (op types `add_arrow`/`add_highlight` already exist in the protocol; UI missing)
-- 💡 Drag-and-drop pieces (currently click-click)
+- ✅ Drag-and-drop pieces (palette drag + off-board delete in edit mode); click-click also works
+- ✅ Draw arrows/highlights on the board (`set_annotations` op): right-drag / right-click on desktop, long-press on touch/pen, `h`/`a` + `1`-`4` keys; engine hint arrows render as translucent ghosts so they can't be confused with user drawings; `Esc` or the ⌫ button clears a position's drawings
 - 💡 NAG glyphs (`!`, `?`, `!?`) — display and entry
 - 💡 Engine lines panel (MultiPV top-N lines, click to insert as a variation)
 - 💡 Blunder flags on moves (auto `?`/`??` from eval swings) — in ADR-0009's original scope

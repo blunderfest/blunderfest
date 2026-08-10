@@ -85,6 +85,7 @@
     "unsaved": "Unsaved · ⌘↵ to save",
     "savedForEveryone": "Saved for everyone",
     "clearComment": "Clear",
+    "clearDrawings": "Clear drawings",
     "hasComment": "has a note",
     "nodeCount": "{{count}} nodes",
     "position": "ply {{ply}}/{{total}}",

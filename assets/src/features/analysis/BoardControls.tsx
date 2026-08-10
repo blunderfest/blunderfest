@@ -18,6 +18,7 @@ export default function BoardControls({
   onToggleEdit,
   editing = false,
   drawColorPicker,
+  clearDrawings,
   onShowShortcuts,
 }: {
   flipped: boolean;
@@ -31,6 +32,8 @@ export default function BoardControls({
   editing?: boolean;
   /** When set (editors only), a drawing-color picker is shown. */
   drawColorPicker?: { current: string; onChange: (color: string) => void };
+  /** When set (editors only), a clear-all-drawings button is shown. */
+  clearDrawings?: { disabled: boolean; onClear: () => void };
   onShowShortcuts?: () => void;
 }) {
   const { t } = useTranslation();
@@ -108,6 +111,18 @@ export default function BoardControls({
             />
           ))}
         </fieldset>
+      )}
+      {clearDrawings !== undefined && (
+        <button
+          type="button"
+          data-testid="clear-drawings-button"
+          className={button({ intent: 'ghost', size: 'sm' })}
+          aria-label={t('analysis.clearDrawings')}
+          disabled={clearDrawings.disabled}
+          onClick={clearDrawings.onClear}
+        >
+          ⌫ {t('analysis.clearDrawings')}
+        </button>
       )}
       {onShowShortcuts !== undefined && (
         <button

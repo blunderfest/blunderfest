@@ -824,6 +824,21 @@ export default function Analysis({
             }
             editing={editing}
             drawColorPicker={canEdit ? { current: drawColor, onChange: setDrawColor } : undefined}
+            clearDrawings={
+              canEdit
+                ? {
+                    disabled:
+                      current === null ||
+                      (nodeAnnotations.arrows.length === 0 &&
+                        nodeAnnotations.highlights.length === 0),
+                    onClear: () => {
+                      if (current !== null) {
+                        onAnnotations?.({ arrows: [], highlights: [] }, current.id);
+                      }
+                    },
+                  }
+                : undefined
+            }
           />
           <p className="m-0 text-note text-faint">
             <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}

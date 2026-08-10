@@ -563,6 +563,38 @@ describe('board annotations', () => {
     fireEvent.keyDown(document.body, { key: 'Escape' });
     expect(onAnnotations).not.toHaveBeenCalled();
   });
+
+  it('clears drawings via the clear button (the mobile stand-in for Escape)', () => {
+    const onAnnotations = vi.fn();
+    render(
+      <Analysis
+        tree={tree}
+        canEdit
+        annotations={{
+          4: { arrows: [{ from: 'e2', to: 'e4', color: '#3b82f6' }], highlights: [] },
+        }}
+        onAnnotations={onAnnotations}
+        lastPlayedId={4}
+      />,
+    );
+
+    const button = screen.getByTestId('clear-drawings-button');
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+    expect(onAnnotations).toHaveBeenCalledWith({ arrows: [], highlights: [] }, 4);
+  });
+
+  it('disables the clear button when nothing is drawn', () => {
+    render(<Analysis tree={tree} canEdit onAnnotations={vi.fn()} lastPlayedId={4} />);
+
+    expect(screen.getByTestId('clear-drawings-button')).toBeDisabled();
+  });
+
+  it('hides the clear button from viewers', () => {
+    render(<Analysis tree={tree} onAnnotations={vi.fn()} lastPlayedId={4} />);
+
+    expect(screen.queryByTestId('clear-drawings-button')).not.toBeInTheDocument();
+  });
 });
 
 describe('follow-the-tail cursor', () => {
