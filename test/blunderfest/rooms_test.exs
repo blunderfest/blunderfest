@@ -4,9 +4,13 @@ defmodule Blunderfest.RoomsTest do
   alias Blunderfest.Rooms
 
   setup do
-    store = :"rooms_#{System.unique_integer([:positive])}"
-    start_supervised!({Blunderfest.Rooms, name: store})
-    %{store: store}
+    # Each test gets an isolated registry+supervisor pair (a "scope") so
+    # room processes never leak between async tests.
+    registry = :"room_registry_#{System.unique_integer([:positive])}"
+    supervisor = :"room_supervisor_#{System.unique_integer([:positive])}"
+    start_supervised!({Registry, keys: :unique, name: registry})
+    start_supervised!({DynamicSupervisor, name: supervisor, strategy: :one_for_one})
+    %{store: {registry, supervisor}}
   end
 
   test "ops returns an empty list for an unknown room", %{store: store} do
@@ -204,5 +208,65 @@ defmodule Blunderfest.RoomsTest do
                %{"type" => "set_cursor", "payload" => %{"node_id" => 2}},
                store
              )
+  end
+
+  test "each room runs as its own registered process", %{store: {registry, _sup} = store} do
+    Rooms.create("aaaaa", "anonymous", store)
+    Rooms.create("bbbbb", "anonymous", store)
+
+    [{pid_a, _}] = Registry.lookup(registry, "aaaaa")
+    [{pid_b, _}] = Registry.lookup(registry, "bbbbb")
+    assert pid_a != pid_b
+  end
+
+  test "appends to different rooms proceed independently", %{store: store} do
+    Rooms.create("aaaaa", "anonymous", store)
+    Rooms.create("bbbbb", "anonymous", store)
+
+    tasks =
+      for slug <- ["aaaaa", "bbbbb"], _ <- 1..50 do
+        Task.async(fn -> Rooms.append(slug, %{"type" => "set_cursor"}, store) end)
+      end
+
+    assert tasks |> Task.await_many() |> Enum.all?(&match?({:ok, _}, &1))
+    assert Enum.map(Rooms.ops("aaaaa", store), & &1["seq"]) == Enum.to_list(1..50)
+    assert Enum.map(Rooms.ops("bbbbb", store), & &1["seq"]) == Enum.to_list(1..50)
+  end
+
+  test "a stopped room is gone (temporary) and leaves other rooms alone", %{
+    store: {registry, _sup} = store
+  } do
+    Rooms.create("aaaaa", "anonymous", store)
+    Rooms.append("aaaaa", %{"type" => "set_cursor"}, store)
+    Rooms.create("bbbbb", "anonymous", store)
+
+    [{pid, _}] = Registry.lookup(registry, "aaaaa")
+    ref = Process.monitor(pid)
+    GenServer.stop(pid)
+    assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
+    assert_unregistered(registry, "aaaaa")
+
+    refute Rooms.room_exists?("aaaaa", store)
+    assert Rooms.ops("aaaaa", store) == []
+    assert Rooms.room_exists?("bbbbb", store)
+  end
+
+  # Registry unregisters a dead process asynchronously; poll briefly so the
+  # assertions above can't race the cleanup.
+  defp assert_unregistered(registry, slug, attempts \\ 50)
+
+  defp assert_unregistered(registry, slug, 0) do
+    flunk("expected #{slug} to be unregistered, got #{inspect(Registry.lookup(registry, slug))}")
+  end
+
+  defp assert_unregistered(registry, slug, attempts) do
+    case Registry.lookup(registry, slug) do
+      [] ->
+        :ok
+
+      _ ->
+        Process.sleep(10)
+        assert_unregistered(registry, slug, attempts - 1)
+    end
   end
 end

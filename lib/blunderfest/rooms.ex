@@ -1,12 +1,17 @@
 defmodule Blunderfest.Rooms do
   @moduledoc """
-  In-memory room state: the op log plus membership roles. The authoritative
-  state of a room is its operation log (`ops`): a monotonically increasing
-  `seq` per room. State is rebuilt on boot, so a scale-to-zero instance loses
-  nothing critical.
+  Facade for room state (ADR-0012). Each room is its own `Blunderfest.Room`
+  GenServer, registered by slug in a Registry and started on demand under a
+  DynamicSupervisor — ops for different rooms never serialize through one
+  process. State is in-memory and rebuilt on boot, so a scale-to-zero
+  instance loses nothing critical (ADR-0001).
 
   Ops are JSON-shaped maps (`%{"type" => ..., "payload" => ...}`) coming from
-  channel payloads; the store stamps them with `seq` and `ts`.
+  channel payloads; the room process stamps them with `seq` and `ts`.
+
+  All functions take an optional `scope` — a `{registry, supervisor}` pair —
+  so tests can run isolated sets of rooms. The default scope uses the
+  application-wide `Blunderfest.RoomRegistry` / `Blunderfest.RoomSupervisor`.
 
   ## Roles
 
@@ -17,21 +22,25 @@ defmodule Blunderfest.Rooms do
   reserved for owners and collaborators.
   """
 
-  use GenServer
+  alias Blunderfest.Room
 
   @type role :: :owner | :collaborator | :viewer
   @type op :: map()
+  @typedoc "A `{registry, supervisor}` pair isolating a set of rooms."
+  @type scope :: {atom(), atom()}
 
-  # Growth caps (REVIEW.md #3): rooms and per-room op logs are bounded so a
-  # busy or hostile instance can't grow memory without limit.
+  # Growth cap (REVIEW.md #3): the number of rooms is bounded so a busy or
+  # hostile instance can't grow memory without limit.
   @max_rooms 1_000
-  @max_ops_per_room 5_000
 
   @edit_op_types ~w(set_game move_at_ply replace_line comment_at_ply set_annotations set_position)
 
   # Room codes are 5 characters drawn from an unambiguous alphabet
   # (no i/l/o/0/1 to avoid reading errors when codes are exchanged).
   @code_regex ~r/^[abcdefghjkmnpqrstuvwxyz23456789]{5}$/
+
+  @doc "The application-wide `{registry, supervisor}` scope."
+  def default_scope, do: {Blunderfest.RoomRegistry, Blunderfest.RoomSupervisor}
 
   @doc "Room codes are exactly 5 characters from the canonical alphabet."
   def valid_code?(slug) do
@@ -46,21 +55,22 @@ defmodule Blunderfest.Rooms do
   owner) instead of replying `:approved` unconditionally.
   """
   @spec approval_status(String.t(), String.t()) :: :approved | :pending
-  def approval_status(slug, profile_id, server \\ __MODULE__) do
-    GenServer.call(server, {:approval_status, slug, profile_id})
+  def approval_status(slug, profile_id, scope \\ default_scope())
+
+  def approval_status(_slug, _profile_id, _scope) do
+    # Public rooms approve every join automatically. Private rooms will
+    # consult room metadata (and the owner) here instead.
+    :approved
   end
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, %{}, name: Keyword.get(opts, :name, __MODULE__))
+  @doc "Whether a room with `slug` exists (has a live room process)."
+  def room_exists?(slug, scope \\ default_scope()) do
+    lookup(slug, scope) != nil
   end
 
-  def ops(slug, server \\ __MODULE__) do
-    GenServer.call(server, {:ops, slug})
-  end
-
-  @doc "Whether a room with `slug` has been created."
-  def room_exists?(slug, server \\ __MODULE__) do
-    GenServer.call(server, {:room_exists?, slug})
+  @doc "The room's op log in append order (empty for unknown rooms)."
+  def ops(slug, scope \\ default_scope()) do
+    with_pid(slug, scope, [], fn pid -> GenServer.call(pid, :ops) end)
   end
 
   @doc """
@@ -69,16 +79,45 @@ defmodule Blunderfest.Rooms do
   Idempotent — re-creating an existing slug keeps its state. The first
   profiled creator becomes the owner; anonymous creators are not recorded.
   """
-  def create(slug, profile_id, server \\ __MODULE__) do
-    GenServer.call(server, {:create, slug, profile_id})
+  def create(slug, profile_id, scope \\ default_scope()) do
+    {registry, supervisor} = scope
+
+    case lookup(slug, scope) do
+      nil ->
+        if Registry.count(registry) < @max_rooms do
+          {:ok, pid} = do_start(slug, registry, supervisor)
+          GenServer.call(pid, {:register, profile_id})
+        else
+          {:error, :room_limit}
+        end
+
+      pid ->
+        call_register(slug, scope, pid, profile_id)
+    end
   end
 
-  def append(slug, op, server \\ __MODULE__) do
-    GenServer.call(server, {:append, slug, op})
+  @doc """
+  Appends `op` to the room's log, stamping it with `seq` and `ts`. Returns
+  `{:ok, stamped_op}` or `{:error, :op_limit}` when the room is full.
+  Materializes the room if needed (channel joins gate on `room_exists?/2`,
+  so this only matters for internal callers and tests).
+  """
+  def append(slug, op, scope \\ default_scope()) do
+    ensure_and_call(slug, scope, {:append, op})
   end
 
-  def reset(server \\ __MODULE__) do
-    GenServer.call(server, :reset)
+  @doc "Stops all room processes in the scope (test seam)."
+  def reset(scope \\ default_scope()) do
+    {registry, supervisor} = scope
+
+    supervisor
+    |> DynamicSupervisor.which_children()
+    |> Enum.each(fn {_, pid, _, _} -> DynamicSupervisor.terminate_child(supervisor, pid) end)
+
+    # Registry cleanup lags behind the (synchronous) termination; wait for it
+    # so the next lookup can't find a dead pid.
+    wait_until_drained(registry)
+    :ok
   end
 
   @doc """
@@ -87,21 +126,21 @@ defmodule Blunderfest.Rooms do
   already a collaborator/owner, so roles survive reconnects). Anonymous members are
   never recorded and can never own a room. Safe to call on every join.
   """
-  def claim(slug, profile_id, server \\ __MODULE__) do
-    GenServer.call(server, {:claim, slug, profile_id})
+  def claim(slug, profile_id, scope \\ default_scope()) do
+    ensure_and_call(slug, scope, {:register, profile_id})
   end
 
-  def owner(slug, server \\ __MODULE__) do
-    GenServer.call(server, {:owner, slug})
+  def owner(slug, scope \\ default_scope()) do
+    with_pid(slug, scope, nil, fn pid -> GenServer.call(pid, :owner) end)
   end
 
   @doc "Returns the room's `profile_id => role` map (empty for unknown rooms)."
-  def roles(slug, server \\ __MODULE__) do
-    GenServer.call(server, {:roles, slug})
+  def roles(slug, scope \\ default_scope()) do
+    with_pid(slug, scope, %{}, fn pid -> GenServer.call(pid, :roles) end)
   end
 
-  def role_for(slug, profile_id, server \\ __MODULE__) do
-    GenServer.call(server, {:role_for, slug, profile_id})
+  def role_for(slug, profile_id, scope \\ default_scope()) do
+    with_pid(slug, scope, :viewer, fn pid -> GenServer.call(pid, {:role_for, profile_id}) end)
   end
 
   @doc """
@@ -109,17 +148,20 @@ defmodule Blunderfest.Rooms do
   owner may do this, and the owner's own role can't be changed. Returns
   `{:ok, role}` or `{:error, :forbidden | :invalid_role | :invalid_member}`.
   """
-  def set_role(slug, actor_id, member_id, role, server \\ __MODULE__)
+  def set_role(slug, actor_id, member_id, role, scope \\ default_scope())
 
-  def set_role(slug, actor_id, member_id, role, server) when role in [:collaborator, :viewer] do
-    GenServer.call(server, {:set_role, slug, actor_id, member_id, role})
+  def set_role(slug, actor_id, member_id, role, scope) when role in [:collaborator, :viewer] do
+    case lookup(slug, scope) do
+      nil -> {:error, :forbidden}
+      pid -> GenServer.call(pid, {:set_role, actor_id, member_id, role})
+    end
   end
 
-  def set_role(_slug, _actor_id, _member_id, _role, _server), do: {:error, :invalid_role}
+  def set_role(_slug, _actor_id, _member_id, _role, _scope), do: {:error, :invalid_role}
 
   @doc "Whether `profile_id` may push edit ops in this room (owner or collaborator)."
-  def can_edit?(slug, profile_id, server \\ __MODULE__) do
-    GenServer.call(server, {:can_edit?, slug, profile_id})
+  def can_edit?(slug, profile_id, scope \\ default_scope()) do
+    with_pid(slug, scope, false, fn pid -> GenServer.call(pid, {:can_edit?, profile_id}) end)
   end
 
   @doc "Whether an op payload counts as a room edit (moves, comments, etc.)."
@@ -128,104 +170,72 @@ defmodule Blunderfest.Rooms do
   def edit_op?(op) when is_map(op), do: op["type"] in @edit_op_types
   def edit_op?(_op), do: false
 
-  @impl true
-  def init(_args) do
-    {:ok, %{}}
+  defp call_register(slug, scope, pid, profile_id) do
+    GenServer.call(pid, {:register, profile_id})
+  catch
+    # The room died between lookup and call; start fresh and register there.
+    :exit, _ -> ensure_and_call(slug, scope, {:register, profile_id})
   end
 
-  @impl true
-  def handle_call({:ops, slug}, _from, state) do
-    {:reply, Map.get(state, slug, empty_room()).ops, state}
+  defp with_pid(slug, scope, default, fun) do
+    case lookup(slug, scope) do
+      nil ->
+        default
+
+      pid ->
+        try do
+          fun.(pid)
+        catch
+          # The room died between lookup and call (crash or reset).
+          :exit, _ -> default
+        end
+    end
   end
 
-  def handle_call({:room_exists?, slug}, _from, state) do
-    {:reply, Map.has_key?(state, slug), state}
+  defp ensure_and_call(slug, scope, message) do
+    {:ok, pid} = ensure_room(slug, scope)
+
+    try do
+      GenServer.call(pid, message)
+    catch
+      # The room died between lookup and call; start fresh and try once more
+      # (by now the registry has dropped the dead pid).
+      :exit, _ ->
+        {:ok, pid} = ensure_room(slug, scope)
+        GenServer.call(pid, message)
+    end
   end
 
-  def handle_call({:create, slug, profile_id}, _from, state) do
-    if Map.has_key?(state, slug) or map_size(state) < @max_rooms do
-      room = Map.get(state, slug, empty_room())
-      {:reply, :ok, Map.put(state, slug, register_member(room, profile_id))}
+  defp wait_until_drained(registry, attempts \\ 50)
+  defp wait_until_drained(_registry, 0), do: :ok
+
+  defp wait_until_drained(registry, attempts) do
+    if Registry.count(registry) == 0 do
+      :ok
     else
-      {:reply, {:error, :room_limit}, state}
+      Process.sleep(10)
+      wait_until_drained(registry, attempts - 1)
     end
   end
 
-  def handle_call({:approval_status, _slug, _profile_id}, _from, state) do
-    # Public rooms approve every join automatically. Private rooms will
-    # consult room metadata (and the owner) here instead.
-    {:reply, :approved, state}
-  end
-
-  def handle_call({:append, slug, op}, _from, state) do
-    room = Map.get(state, slug, empty_room())
-
-    if length(room.ops) >= @max_ops_per_room do
-      {:reply, {:error, :op_limit}, state}
-    else
-      op = Map.merge(op, %{"seq" => room.seq + 1, "ts" => DateTime.utc_now()})
-      room = %{room | seq: room.seq + 1, ops: room.ops ++ [op]}
-      {:reply, {:ok, op}, Map.put(state, slug, room)}
+  defp lookup(slug, {registry, _supervisor}) do
+    case Registry.lookup(registry, slug) do
+      [{pid, _}] -> pid
+      [] -> nil
     end
   end
 
-  def handle_call({:claim, slug, profile_id}, _from, state) do
-    room = Map.get(state, slug, empty_room())
-    {:reply, :ok, Map.put(state, slug, register_member(room, profile_id))}
-  end
-
-  def handle_call({:owner, slug}, _from, state) do
-    {:reply, Map.get(state, slug, empty_room()).owner, state}
-  end
-
-  def handle_call({:roles, slug}, _from, state) do
-    {:reply, Map.get(state, slug, empty_room()).roles, state}
-  end
-
-  def handle_call({:role_for, slug, profile_id}, _from, state) do
-    room = Map.get(state, slug, empty_room())
-    {:reply, Map.get(room.roles, profile_id, :viewer), state}
-  end
-
-  def handle_call({:set_role, slug, actor_id, member_id, role}, _from, state) do
-    room = Map.get(state, slug, empty_room())
-
-    cond do
-      room.owner != actor_id ->
-        {:reply, {:error, :forbidden}, state}
-
-      member_id == room.owner or member_id == "anonymous" ->
-        {:reply, {:error, :invalid_member}, state}
-
-      true ->
-        room = %{room | roles: Map.put(room.roles, member_id, role)}
-        {:reply, {:ok, role}, Map.put(state, slug, room)}
+  defp ensure_room(slug, {registry, supervisor} = scope) do
+    case lookup(slug, scope) do
+      nil -> do_start(slug, registry, supervisor)
+      pid -> {:ok, pid}
     end
   end
 
-  def handle_call({:can_edit?, slug, profile_id}, _from, state) do
-    room = Map.get(state, slug, empty_room())
-    {:reply, Map.get(room.roles, profile_id, :viewer) in [:owner, :collaborator], state}
-  end
-
-  def handle_call(:reset, _from, _state) do
-    {:reply, :ok, %{}}
-  end
-
-  defp register_member(room, profile_id) do
-    cond do
-      profile_id == "anonymous" or Map.has_key?(room.roles, profile_id) ->
-        room
-
-      room.owner == nil ->
-        %{room | owner: profile_id, roles: Map.put(room.roles, profile_id, :owner)}
-
-      true ->
-        %{room | roles: Map.put(room.roles, profile_id, :viewer)}
+  defp do_start(slug, registry, supervisor) do
+    case DynamicSupervisor.start_child(supervisor, {Room, {registry, slug}}) do
+      {:ok, pid} -> {:ok, pid}
+      {:error, {:already_started, pid}} -> {:ok, pid}
     end
-  end
-
-  defp empty_room do
-    %{seq: 0, ops: [], owner: nil, roles: %{}}
   end
 end

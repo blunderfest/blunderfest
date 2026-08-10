@@ -36,28 +36,23 @@ defmodule BlunderfestWeb.RoomChannel do
   defp approve_join(slug, params, socket) do
     profile_id = params["profile_id"] || "anonymous"
 
-    case Rooms.approval_status(slug, profile_id) do
-      :approved ->
-        Rooms.claim(slug, profile_id)
+    # Every room is public today, so approval_status/2 always approves. For
+    # private rooms this becomes a case on its `:pending` verdict: reply
+    # `%{status: "pending"}`, skip presence/op replay, and wait for an
+    # explicit approval push. The seam is the call, not a dead branch.
+    :approved = Rooms.approval_status(slug, profile_id)
 
-        socket =
-          socket
-          |> assign(:slug, slug)
-          |> assign(:profile_id, profile_id)
-          |> assign(:profile_name, profile_name_for(profile_id, params["name"]))
+    Rooms.claim(slug, profile_id)
 
-        send(self(), :after_join)
+    socket =
+      socket
+      |> assign(:slug, slug)
+      |> assign(:profile_id, profile_id)
+      |> assign(:profile_name, profile_name_for(profile_id, params["name"]))
 
-        {:ok, %{ops: Rooms.ops(slug), roles: stringify_roles(Rooms.roles(slug))}, socket}
+    send(self(), :after_join)
 
-      :pending ->
-        # Private rooms: the owner must approve the join first. The client
-        # stays joined on a `%{status: "pending"}` reply and waits for an
-        # explicit approval push before tracking presence or replaying ops.
-        # Unreachable until private rooms exist; kept as the approval seam.
-        socket = assign(socket, :slug, slug)
-        {:ok, %{status: "pending"}, socket}
-    end
+    {:ok, %{ops: Rooms.ops(slug), roles: stringify_roles(Rooms.roles(slug))}, socket}
   end
 
   @impl true
