@@ -52,7 +52,13 @@ defmodule BlunderfestWeb.RoomChannel do
 
     send(self(), :after_join)
 
-    {:ok, %{ops: Rooms.ops(slug), roles: stringify_roles(Rooms.roles(slug))}, socket}
+    {:ok,
+     %{
+       ops: Rooms.ops(slug),
+       roles: stringify_roles(Rooms.roles(slug)),
+       region: Blunderfest.NodeInfo.region(),
+       room_region: Rooms.room_region(slug)
+     }, socket}
   end
 
   @impl true

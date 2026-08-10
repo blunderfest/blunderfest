@@ -29,6 +29,7 @@ function navigateHome() {
 export default function App() {
   const { t } = useTranslation();
   const [backend, setBackend] = useState<BackendStatus>('checking');
+  const [region, setRegion] = useState<string | null>(null);
   const [route, setRoute] = useState<Route>(readHashRoute);
   const profile = useProfile();
   const mainRef = useRef<HTMLElement | null>(null);
@@ -38,7 +39,17 @@ export default function App() {
     const controller = new AbortController();
 
     fetch('/api/healthz', { signal: controller.signal })
-      .then((response) => setBackend(response.ok ? 'ok' : 'down'))
+      .then(async (response) => {
+        if (response.ok) {
+          const body = (await response.json().catch(() => null)) as {
+            region?: string;
+          } | null;
+          setRegion(body?.region ?? null);
+          setBackend('ok');
+        } else {
+          setBackend('down');
+        }
+      })
       .catch(() => setBackend('down'));
 
     return () => controller.abort();
@@ -95,6 +106,7 @@ export default function App() {
         {route.screen === 'home' ? (
           <Home
             backend={backend}
+            region={region}
             userName={profile.status === 'ready' ? name : null}
             onJoin={navigateToRoom}
           />

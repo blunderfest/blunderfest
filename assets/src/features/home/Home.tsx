@@ -4,6 +4,7 @@ import type { BackendStatus } from '@/app/App';
 import Logo from '@/components/Logo';
 import { button, input, panel, statusDot } from '@/components/ui';
 import { createRoom } from '@/lib/api';
+import { formatRegion } from '@/lib/region';
 import {
   generateRoomCode,
   normalizeRoomCode,
@@ -24,10 +25,12 @@ function filterCodeInput(value: string): string {
 
 export default function Home({
   backend,
+  region = null,
   userName,
   onJoin,
 }: {
   backend: BackendStatus;
+  region?: string | null;
   userName: string | null;
   onJoin: (slug: string) => void;
 }) {
@@ -153,6 +156,11 @@ export default function Home({
           })}
         />
         <span data-status={backend}>{t(`status.${backend}`)}</span>
+        {formatRegion(region) !== null && (
+          <span data-testid="home-region">
+            · {t('home.connectedTo', { region: formatRegion(region) })}
+          </span>
+        )}
       </p>
 
       <button

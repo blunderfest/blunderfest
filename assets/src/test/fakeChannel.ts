@@ -9,7 +9,12 @@ export class FakeChannel implements Channel {
   pushes: { event: string; payload: unknown }[] = [];
   joined = false;
   joinParams: Record<string, string> = {};
-  joinReturn: { ops: Op[]; roles?: Record<string, MemberRole> } = { ops: [] };
+  joinReturn: {
+    ops: Op[];
+    roles?: Record<string, MemberRole>;
+    region?: string;
+    room_region?: string;
+  } = { ops: [] };
   joinError: { reason?: string } | null = null;
   joinReceives = new Map<string, Handler>();
   state = 'joined' as ChannelState;

@@ -18,7 +18,11 @@ defmodule Blunderfest.Room do
   @max_ops_per_room 5_000
 
   def start_link({registry, slug}) do
-    GenServer.start_link(__MODULE__, slug, name: {:via, Horde.Registry, {registry, slug}})
+    # The node's region rides as the registry value, so "which region hosts
+    # this room?" is a local lookup on any node (see Rooms.room_region/2).
+    GenServer.start_link(__MODULE__, slug,
+      name: {:via, Horde.Registry, {registry, slug, Blunderfest.NodeInfo.region()}}
+    )
   end
 
   @impl true

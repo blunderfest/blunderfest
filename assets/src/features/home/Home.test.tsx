@@ -21,6 +21,16 @@ afterEach(() => {
 });
 
 describe('Home', () => {
+  it('shows the connected server region when known', () => {
+    render(<Home backend="ok" region="ams" userName="Brave Otter 42" onJoin={vi.fn()} />);
+    expect(screen.getByTestId('home-region')).toHaveTextContent('Connected to 🇳🇱 Amsterdam');
+  });
+
+  it('omits the region line while it is unknown', () => {
+    renderHome();
+    expect(screen.queryByTestId('home-region')).not.toBeInTheDocument();
+  });
+
   it('creates a room on the server before joining with the code', async () => {
     const fetchMock = stubCreateRoom();
     const { onJoin } = renderHome();

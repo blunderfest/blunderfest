@@ -18,6 +18,7 @@
     "create": "Create a room",
     "creating": "Creating...",
     "createError": "Could not create the room. Try again.",
+    "connectedTo": "Connected to {{region}}",
     "createTitle": "Start a study",
     "createText": "Creates a room, makes you the owner, hands you a code to share.",
     "noAccount": "No account needed.",
@@ -170,6 +171,8 @@
   "room": {
     "connecting": "Connecting...",
     "codeLabel": "Room code",
+    "regionLabel": "Server region",
+    "roomPrefix": "room",
     "copied": "Copied!",
     "copy": "Copy",
     "members": "Members",

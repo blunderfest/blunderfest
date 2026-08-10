@@ -12,6 +12,7 @@ import {
   replayOps,
   setMemberRole,
   setRoles,
+  setServerInfo,
 } from '@/store/room';
 
 type PresenceState = Record<string, { metas: { name?: string }[] }>;
@@ -95,14 +96,28 @@ export function useRoomChannel(
 
     channel
       .join()
-      .receive('ok', (payload: { ops: Op[]; roles?: Record<string, MemberRole> }) => {
-        if (channelRef.current === channel) {
-          setJoinError(null);
-          dispatch(replayOps(payload.ops));
-          dispatch(setRoles(payload.roles ?? {}));
-          setJoined(true);
-        }
-      })
+      .receive(
+        'ok',
+        (payload: {
+          ops: Op[];
+          roles?: Record<string, MemberRole>;
+          region?: string;
+          room_region?: string;
+        }) => {
+          if (channelRef.current === channel) {
+            setJoinError(null);
+            dispatch(replayOps(payload.ops));
+            dispatch(setRoles(payload.roles ?? {}));
+            dispatch(
+              setServerInfo({
+                region: payload.region ?? null,
+                roomRegion: payload.room_region ?? null,
+              }),
+            );
+            setJoined(true);
+          }
+        },
+      )
       .receive('error', (payload: { reason?: string }) => {
         if (channelRef.current === channel) {
           setJoined(false);

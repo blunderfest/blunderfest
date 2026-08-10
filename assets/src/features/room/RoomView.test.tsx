@@ -207,6 +207,15 @@ describe('RoomView', () => {
     expect(await screen.findByTestId('member-list')).toBeInTheDocument();
   });
 
+  it('stores the server regions from the join reply', async () => {
+    channel.joinReturn = { ops: [], region: 'ord', room_region: 'ams' };
+    const { store } = renderRoom();
+
+    await waitFor(() =>
+      expect(store.getState().room.serverInfo).toEqual({ region: 'ord', roomRegion: 'ams' }),
+    );
+  });
+
   it('shows a not-found screen and a way home when the join is rejected', async () => {
     channel.joinError = { reason: 'room_not_found' };
     const onLeave = vi.fn();

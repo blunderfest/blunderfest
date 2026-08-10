@@ -69,6 +69,14 @@ defmodule Blunderfest.Rooms do
     lookup(slug, scope) != nil
   end
 
+  @doc "The Fly region of the machine hosting the room process (nil for unknown rooms)."
+  def room_region(slug, {registry, _supervisor} \\ default_scope()) do
+    case Horde.Registry.lookup(registry, slug) do
+      [{_pid, region}] -> region
+      [] -> nil
+    end
+  end
+
   @doc "The room's op log in append order (empty for unknown rooms)."
   def ops(slug, scope \\ default_scope()) do
     with_pid(slug, scope, [], fn pid -> GenServer.call(pid, :ops) end)

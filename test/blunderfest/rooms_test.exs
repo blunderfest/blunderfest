@@ -214,6 +214,12 @@ defmodule Blunderfest.RoomsTest do
              )
   end
 
+  test "room_region returns the hosting node's region (nil for unknown rooms)", %{store: store} do
+    assert Rooms.room_region("aaaaa", store) == nil
+    Rooms.create("aaaaa", "anonymous", store)
+    assert Rooms.room_region("aaaaa", store) == "local"
+  end
+
   test "each room runs as its own registered process", %{store: {registry, _sup} = store} do
     Rooms.create("aaaaa", "anonymous", store)
     Rooms.create("bbbbb", "anonymous", store)

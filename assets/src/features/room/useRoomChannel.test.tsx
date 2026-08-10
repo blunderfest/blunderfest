@@ -285,6 +285,7 @@ describe('useRoomChannel', () => {
       games: {},
       lastPlayed: {},
       annotations: {},
+      serverInfo: { region: null, roomRegion: null },
     });
   });
 
