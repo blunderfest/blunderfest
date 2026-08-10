@@ -1,12 +1,12 @@
 import { tv } from 'tailwind-variants';
 
 const tile = tv({
-  base: 'relative grid shrink-0 place-items-center rounded-control bg-gold text-[#20180a] select-none',
+  base: 'relative grid shrink-0 place-items-center overflow-hidden rounded-control bg-gold text-[#20180a] select-none',
   variants: {
     size: {
-      sm: 'h-6 w-6 text-sm',
-      md: 'h-8 w-8 text-lg',
-      lg: 'h-12 w-12 text-2xl',
+      sm: 'h-6 w-6',
+      md: 'h-8 w-8',
+      lg: 'h-12 w-12',
     },
   },
   defaultVariants: { size: 'sm' },
@@ -25,19 +25,22 @@ const wordmark = tv({
 });
 
 /**
- * The Blunderfest mark: a gold knight tile with a red "?!" badge (dropped at
- * small sizes) plus the two-tone wordmark.
+ * The Blunderfest mark: a gold tile with the knight silhouette knocked out
+ * by a question mark (a blunder, in one glyph) plus the two-tone wordmark.
+ * The knight path was traced from the brand artwork; `currentColor` keeps
+ * the tile's foreground themeable.
  */
+const KNIGHT_PATH =
+  'M333 851.8L333.1 832.5L349.5 820.1L366 807.8L366.1 787.1L366.1 766.5L397.3 741.9L428.5 717.3L428.8 696.9L429 676.5L406.9 649.5C371.5 606.3 366 599.4 366 598.2C366 597.5 371.7 589.7 378.7 580.7C385.6 571.8 393.6 561.6 396.4 558C399.1 554.4 406.8 544.5 413.5 536C420.1 527.5 429.7 515.1 434.8 508.5C457.3 478.9 469.6 462.9 485 443.1C504.9 417.3 506.3 415.6 514 405.8C517.3 401.5 519.8 398 519.4 398C518.6 398 504.9 406.2 481 421.1L459.5 434.5L434.4 435L409.3 435.5L394.9 449C387 456.4 376.1 466.6 370.7 471.7L360.9 481L345.4 481C336.9 481 329 480.5 328 480C327 479.4 324.4 475.8 322.3 472C318.5 465 318.5 464.9 307.9 459.5C302.1 456.5 296.8 453.4 296.1 452.6C294.8 451.1 292.6 434.3 291.6 418.5L291 409.5L306.2 392.4C314.6 383 335.1 360 351.7 341.3L382 307.2L382.2 283.4L382.5 259.7L400 247.3C409.6 240.5 423.4 230.8 430.7 225.7C438 220.6 443.9 216.1 443.9 215.5C443.9 214.9 441.7 210.9 439 206.5L434 198.5L434 161.8C434 141.5 434.3 125 434.6 125C435 125 442.3 130.7 450.9 137.7C459.5 144.6 476.3 158.2 488.4 167.9L510.3 185.4L534.9 185.5C555.7 185.6 561.2 186 570.5 187.8C635.2 200.4 687.2 240.1 717.1 299.9C741.4 348.3 745.5 404.4 728.4 455.7C726.5 461.3 720.7 475.4 715.4 487.2C700.5 520.2 695.7 537.1 694.3 561.5C693.6 575.5 695.8 591.7 700.6 605.8C707.3 626 719.3 642.3 736.5 654.4C737.6 655.2 738.3 656 738 656.2C737.7 656.5 719 661.7 696.5 668C674 674.2 654 679.7 652.2 680.2L649 681.1L649 699L649 716.9L655 721.9C658.2 724.6 666.7 731.4 673.7 736.9C680.7 742.4 692.1 751.3 699 756.8L711.5 766.6L711.6 779.6C711.7 786.7 711.8 796.1 711.9 800.5L712.1 808.5L728 820.4L744 832.3L744 851.7L744 871L538.5 871L333 871L333 851.8ZM550.5 657.5C571 653.2 585.8 637.8 589.1 617.3C594.4 584.1 563.9 556.1 531.5 564.5C519.4 567.7 509.4 574.6 502.9 584.2C497.2 592.5 494.8 599.8 494.3 610C493.4 625.8 500.2 639.9 512.9 649.3C518.8 653.6 523.1 655.5 532 657.5C539.4 659.2 542.3 659.2 550.5 657.5ZM571 538.5C571 523.8 575.5 509.5 583.9 497.3C588.8 490.1 602.8 476.4 618.5 463.4C633.2 451.2 652.8 432.4 658.5 424.9C670.7 409.2 676.8 391.6 677.6 370.5C678.6 344.7 667.1 318.8 645.5 298.2C635.2 288.3 625 281.7 611 275.8C593.3 268.3 578.9 265.6 557 265.6C531.9 265.7 511.2 270.5 491.3 280.9C480.1 286.9 463.5 299.4 457.8 306.3C455.4 309.2 453.3 311.7 452.9 312C450.5 314 440.6 329.4 436 338.5C430.2 349.8 424.1 366.4 425.3 367.6C426.1 368.4 430.3 369.3 449 372.6C457 373.9 468 376 473.4 377.1C478.9 378.1 483.4 378.9 483.6 378.8C483.7 378.6 484.6 375.6 485.5 372C490.6 351.9 505.3 332.8 521.5 325.1C529.3 321.4 543.3 318 550.7 318C564.3 318 582.2 324.3 591.8 332.5C596.7 336.8 602.9 345.5 605.3 351.8C610 363.8 609.4 380.4 603.8 391.5C597.8 403.3 592.5 409.4 571 429C551.1 447.2 536.9 461.9 530.7 470.7C523.2 481.3 515.8 497 512.6 509C510.3 517.7 508 534.4 508 542.6L508 546L539.5 546L571 546L571 538.5Z';
+
 export default function Logo({ size = 'sm' }: { size?: 'sm' | 'md' | 'lg' }) {
   return (
     <span className="inline-flex items-center gap-2">
       <span className={tile({ size })} aria-hidden="true">
-        ♞
-        {size !== 'sm' && (
-          <span className="absolute -top-1 -right-1 grid h-3.5 w-3.5 place-items-center rounded-full bg-bad text-[8px] font-bold text-white">
-            ?
-          </span>
-        )}
+        {/** biome-ignore lint/a11y/noSvgWithoutTitle: decorative — the parent is aria-hidden and the wordmark carries the name */}
+        <svg viewBox="0 0 1024 1024" className="h-full w-full">
+          <path d={KNIGHT_PATH} fill="currentColor" fillRule="evenodd" />
+        </svg>
       </span>
       <span className={wordmark({ size })}>
         <span className="text-ink">Blunder</span>

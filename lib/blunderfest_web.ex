@@ -6,7 +6,7 @@ defmodule BlunderfestWeb do
       use BlunderfestWeb, :channel
   """
 
-  def static_paths, do: ~w(assets engine fonts images favicon.ico robots.txt)
+  def static_paths, do: ~w(assets engine fonts images favicon.png favicon.ico robots.txt)
 
   def router do
     quote do
