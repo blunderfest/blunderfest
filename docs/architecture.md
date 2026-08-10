@@ -58,8 +58,8 @@ shared vocabulary is mirrored in `assets/src/protocol/ops.ts`.
 - `assets/src/app/App.tsx` — hash routing (`#/r/<code>` rooms, anything else
   home; strict code regex, ADR-0007), backend health check, profile bootstrap.
 - `assets/src/lib/` — API client (`api.ts`: `request<T>`, `ApiError`,
-  `createProfile`, `fetchProfile`, `createRoom`, `importPgn`, `importLichess`,
-  `fetchLegalMoves`), device secret in `localStorage` (`device.ts`,
+  `createProfile`, `fetchProfile`, `createRoom`, `importPgn`, `importLichess`),
+  device secret in `localStorage` (`device.ts`,
   `blunderfest.device`), profile hook (`useProfile.ts`), room code helpers
   (`roomCode.ts`), Phoenix socket wiring (`socket.ts`).
 - `assets/src/store/room.ts` — Redux Toolkit room store: mirrors the op log
@@ -71,7 +71,9 @@ shared vocabulary is mirrored in `assets/src/protocol/ops.ts`.
   `GameList`, `ActivityFeed`.
 - `assets/src/features/analysis/` — the board: hand-rolled `Board.tsx`
   (keyboard-playable squares, drag, arrows, highlights, roles), `Analysis`
-  (navigation, comments, present/follow), `moveList.ts`/`MoveList.tsx`
+  (navigation, comments, present/follow), `legalMoves.ts` (client-side legal
+  moves + resulting fen/status via chess.js — no server round trip),
+  `moveList.ts`/`MoveList.tsx`
   (variation tree), `nodeMap.ts` (ply ↔ node index), `BoardControls`,
   `GameInfo`, `NodeComment`.
 - `assets/src/features/analysis/engine.ts` + `useEngine.ts` + `uci.ts` +

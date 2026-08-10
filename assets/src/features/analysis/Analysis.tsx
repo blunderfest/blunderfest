@@ -21,6 +21,7 @@ import EngineReadout from '@/features/analysis/EngineReadout';
 import EvalBar from '@/features/analysis/EvalBar';
 import type { ChessEngine } from '@/features/analysis/engine';
 import GameInfo from '@/features/analysis/GameInfo';
+import { legalMovesFor } from '@/features/analysis/legalMoves';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
@@ -29,7 +30,7 @@ import ShortcutsDialog from '@/features/analysis/ShortcutsDialog';
 import SidebarTabs from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useEngine } from '@/features/analysis/useEngine';
-import { fetchLegalMoves, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
+import type { GameNode, GameTree, LegalMove } from '@/lib/api';
 import type { CommentAtPlyOp, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
 import { type BoardAnnotations, setupPlyFromFen } from '@/store/room';
 
@@ -69,7 +70,6 @@ export default function Analysis({
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
-  const [legalMoves, setLegalMoves] = useState<LegalMove[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
   const [drawColor, setDrawColor] = useState<string>(DRAW_COLORS[0]);
@@ -192,33 +192,25 @@ export default function Analysis({
   const checkSquare = useMemo(() => kingInCheckSquare(current?.fen ?? ''), [current?.fen]);
 
   /**
-   * Fetch legal moves for the position when the viewer can play, so the
-   * board can hint and validate clicks.
+   * Legal moves are computed locally with chess.js — no server round trip.
    */
-  useEffect(() => {
-    if (!canPlay) {
-      setLegalMoves(null);
-      setSelected(null);
-      return;
+  const legalMoves = useMemo(() => {
+    if (!canPlay || current === null) {
+      return null;
     }
-    let cancelled = false;
-    setLegalMoves(null);
+    return legalMovesFor(current.fen ?? '');
+  }, [canPlay, current]);
+
+  /**
+   * Reset the square selection whenever the position changes. Uses the
+   * React-recommended "adjust state during render" pattern instead of an
+   * effect, so no extra render pass is needed.
+   */
+  const [prevCurrent, setPrevCurrent] = useState(current);
+  if (current !== prevCurrent) {
+    setPrevCurrent(current);
     setSelected(null);
-    fetchLegalMoves(current.fen ?? '')
-      .then(({ moves }) => {
-        if (!cancelled) {
-          setLegalMoves(moves);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setLegalMoves(null);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [canPlay, current?.fen]);
+  }
 
   /**
    * Local navigation: breaks away from the presenter and moves the cursor.

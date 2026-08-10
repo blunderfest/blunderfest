@@ -1,14 +1,7 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Analysis from '@/features/analysis/Analysis';
-import type { GameNode, GameTree, LegalMove } from '@/lib/api';
-
-const { fetchLegalMovesMock } = vi.hoisted(() => ({ fetchLegalMovesMock: vi.fn() }));
-
-vi.mock('@/lib/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/api')>();
-  return { ...actual, fetchLegalMoves: fetchLegalMovesMock };
-});
+import type { GameNode, GameTree } from '@/lib/api';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -85,38 +78,7 @@ function renderAnalysis() {
   return render(<Analysis tree={tree} />);
 }
 
-const startMoves: LegalMove[] = [
-  {
-    from: 'e2',
-    to: 'e4',
-    promotion: null,
-    san: 'e4',
-    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
-    status: 'active',
-  },
-  {
-    from: 'e2',
-    to: 'e3',
-    promotion: null,
-    san: 'e3',
-    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
-    status: 'active',
-  },
-  {
-    from: 'g1',
-    to: 'f3',
-    promotion: null,
-    san: 'Nf3',
-    fen: 'rnbqkbnr/pppppppp/8/8/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 1',
-    status: 'active',
-  },
-];
-
 describe('Analysis', () => {
-  beforeEach(() => {
-    fetchLegalMovesMock.mockReset();
-    fetchLegalMovesMock.mockResolvedValue({ moves: [] });
-  });
   it('opens on the latest mainline position (so a refresh restores the game state)', () => {
     renderAnalysis();
 
@@ -367,17 +329,13 @@ describe('Analysis', () => {
   });
 
   it('lets an editor play a move from the board', async () => {
-    fetchLegalMovesMock.mockResolvedValue({ moves: startMoves });
     const onPlayMove = vi.fn();
     render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);
 
-    await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('button', { name: 'First' }));
-    await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalledTimes(2));
-    await act(async () => {});
     fireEvent.click(screen.getByTestId('square-e2'));
 
-    await waitFor(() => expect(screen.getByTestId('selected-e2')).toBeInTheDocument());
+    expect(screen.getByTestId('selected-e2')).toBeInTheDocument();
     expect(screen.getByTestId('target-e4')).toBeInTheDocument();
     expect(screen.getByTestId('target-e3')).toBeInTheDocument();
 
@@ -390,7 +348,7 @@ describe('Analysis', () => {
       from: 'e2',
       to: 'e4',
       promotion: null,
-      fen: startMoves[0].fen,
+      fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
       status: 'active',
       parent_id: tree.root.id,
     });
@@ -404,11 +362,9 @@ describe('Analysis', () => {
     fireEvent.click(screen.getByTestId('square-e4'));
 
     expect(onPlayMove).not.toHaveBeenCalled();
-    expect(fetchLegalMovesMock).not.toHaveBeenCalled();
   });
 
   it('lets a collaborator play moves without presenting or broadcasting the cursor', async () => {
-    fetchLegalMovesMock.mockResolvedValue({ moves: startMoves });
     const onCursorChange = vi.fn();
     const onPlayMove = vi.fn();
     render(
@@ -422,7 +378,7 @@ describe('Analysis', () => {
       />,
     );
 
-    await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
     fireEvent.click(screen.getByTestId('square-e2'));
     await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('square-e4'));
@@ -434,7 +390,6 @@ describe('Analysis', () => {
   });
 
   it('stays on a played move before and after the echo applies it', async () => {
-    fetchLegalMovesMock.mockResolvedValue({ moves: startMoves });
     const onCursorChange = vi.fn();
     const onPlayMove = vi.fn();
     const { rerender } = render(
@@ -448,7 +403,7 @@ describe('Analysis', () => {
       />,
     );
 
-    await waitFor(() => expect(fetchLegalMovesMock).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
     fireEvent.click(screen.getByTestId('square-e2'));
     await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('square-e4'));
@@ -467,7 +422,7 @@ describe('Analysis', () => {
       comment: null,
       nags: [],
       status: 'active',
-      fen: startMoves[0].fen,
+      fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
       children: [],
     };
     rerender(
@@ -804,11 +759,6 @@ describe('engine analysis', () => {
 });
 
 describe('position setup (what-if editing)', () => {
-  beforeEach(() => {
-    fetchLegalMovesMock.mockReset();
-    fetchLegalMovesMock.mockResolvedValue({ moves: [] });
-  });
-
   it('lets an editor move a piece anywhere and set the position', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);

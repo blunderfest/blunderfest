@@ -45,7 +45,7 @@ const gameTree: GameTree = {
         san: 'e4',
         from: 'e2',
         to: 'e4',
-        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
       }),
       node({
         id: 2,
@@ -75,7 +75,7 @@ const moveOp: Op = {
     from: 'e2',
     to: 'e4',
     promotion: null,
-    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
     status: 'active',
   },
 };
@@ -127,7 +127,7 @@ const followTree: GameTree = {
         san: 'e4',
         from: 'e2',
         to: 'e4',
-        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
       }),
       node({
         id: 2,
@@ -542,37 +542,6 @@ describe('RoomView', () => {
   });
 
   it('plays a move on the board as the presenter', async () => {
-    channel.joinReturn = { ops: [setGameOp(1, gameTree)] };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(() =>
-        Promise.resolve(
-          new Response(
-            JSON.stringify({
-              moves: [
-                {
-                  from: 'e2',
-                  to: 'e4',
-                  promotion: null,
-                  san: 'e4',
-                  fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
-                  status: 'active',
-                },
-                {
-                  from: 'g1',
-                  to: 'f3',
-                  promotion: null,
-                  san: 'Nf3',
-                  fen: 'rnbqkbnr/pppppppp/8/8/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 1',
-                  status: 'active',
-                },
-              ],
-            }),
-            { status: 200, headers: { 'Content-Type': 'application/json' } },
-          ),
-        ),
-      ),
-    );
     channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
@@ -603,7 +572,7 @@ describe('RoomView', () => {
           from: 'e2',
           to: 'e4',
           promotion: null,
-          fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+          fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
           status: 'active',
           parent_id: 0,
         },
