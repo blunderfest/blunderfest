@@ -205,11 +205,12 @@ describe('Analysis', () => {
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
   });
 
-  it('navigates the game when arrows are pressed on a square focused by mouse', () => {
+  it('navigates the game with arrows after clicking a square (clicks never focus the board)', () => {
     render(<Analysis tree={tree} canEdit onPlayMove={vi.fn()} />);
 
     fireEvent.keyDown(document.body, { key: 'Home' });
-    fireEvent.keyDown(screen.getByTestId('square-e2'), { key: 'ArrowRight' });
+    fireEvent.click(screen.getByTestId('square-e2'));
+    fireEvent.keyDown(document.body, { key: 'ArrowRight' });
     expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
   });
 
@@ -540,6 +541,48 @@ describe('Analysis', () => {
 });
 
 describe('board annotations', () => {
+  function pointerOn(grid: HTMLElement, type: string, init: MouseEventInit = {}) {
+    fireEvent(grid, new MouseEvent(type, { bubbles: true, cancelable: true, ...init }));
+  }
+
+  function stubBoardRect() {
+    const grid = document.querySelector('[data-board-grid]') as HTMLElement;
+    grid.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 800,
+        height: 800,
+        right: 800,
+        bottom: 800,
+        x: 0,
+        y: 0,
+      }) as DOMRect;
+    return grid;
+  }
+
+  it('removes an arrow by drawing the same arrow again', () => {
+    const onAnnotations = vi.fn();
+    render(
+      <Analysis
+        tree={tree}
+        canEdit
+        lastPlayedId={4}
+        annotations={{
+          4: { arrows: [{ from: 'e2', to: 'e4', color: '#3b82f6' }], highlights: [] },
+        }}
+        onAnnotations={onAnnotations}
+      />,
+    );
+
+    const grid = stubBoardRect();
+    pointerOn(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 450, clientY: 450 }));
+    fireEvent(window, new MouseEvent('pointerup', { button: 2, clientX: 450, clientY: 450 }));
+
+    expect(onAnnotations).toHaveBeenCalledWith({ arrows: [], highlights: [] }, 4);
+  });
+
   it("clears the current node's drawings with Escape", () => {
     const onAnnotations = vi.fn();
     render(
@@ -797,6 +840,33 @@ describe('position setup (what-if editing)', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent(/isn't legal/);
     expect(onSetPosition).not.toHaveBeenCalled();
+  });
+
+  it('places a palette piece by dragging it onto the board', () => {
+    const onSetPosition = vi.fn();
+    render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    const grid = document.querySelector('[data-board-grid]') as HTMLElement;
+    grid.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 800,
+        height: 800,
+        right: 800,
+        bottom: 800,
+        x: 0,
+        y: 0,
+      }) as DOMRect;
+
+    fireEvent(
+      screen.getByRole('button', { name: 'White king' }),
+      new MouseEvent('pointerdown', { button: 0, bubbles: true }),
+    );
+    fireEvent(window, new MouseEvent('pointerup', { clientX: 50, clientY: 450 }));
+
+    expect(screen.getByTestId('square-a4')).toHaveTextContent('♚');
   });
 
   it('does not offer edit mode without edit rights', () => {

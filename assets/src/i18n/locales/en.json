@@ -155,7 +155,16 @@
       "1": "Green",
       "2": "Purple",
       "3": "Red"
-    }
+    },
+    "shortcuts": "Keyboard shortcuts",
+    "shortcutsGlobalTitle": "Anywhere",
+    "shortcutsBoardTitle": "With a square focused (Tab into the board)",
+    "shortcutSquareNav": "move the square cursor",
+    "shortcutPlay": "select / play",
+    "shortcutHighlight": "highlight the square",
+    "shortcutArrow": "start + finish an arrow",
+    "shortcutColors": "drawing color",
+    "shortcutCancel": "cancel draft / clear drawings"
   },
   "room": {
     "connecting": "Connecting...",

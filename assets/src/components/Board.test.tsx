@@ -219,7 +219,7 @@ describe('Board', () => {
     expect(onSquareClick).toHaveBeenCalledTimes(2);
   });
 
-  it('skips square navigation when the square was focused by mouse, keeping arrows free for game navigation', () => {
+  it('never takes keyboard focus on a mouse click, keeping arrows free for game navigation', () => {
     render(
       <Board
         position={emptyPosition()}
@@ -231,11 +231,7 @@ describe('Board', () => {
     );
 
     fireEvent.click(screen.getByTestId('square-g5'));
-    expect(screen.getByTestId('square-g5')).toHaveAttribute('tabindex', '0');
-
-    fireEvent.keyDown(screen.getByTestId('square-g5'), { key: 'ArrowRight' });
-    expect(screen.getByTestId('square-g5')).toHaveAttribute('tabindex', '0');
-    expect(screen.getByTestId('square-h5')).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByTestId('square-g5')).not.toHaveFocus();
   });
 
   it('renders plain squares when not interactive', () => {

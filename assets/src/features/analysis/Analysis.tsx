@@ -11,6 +11,7 @@ import {
   parseFen,
   pieceGlyph,
   positionToFen,
+  squareFromPoint,
   squareIndex,
 } from '@/components/board';
 import { button, statusDot } from '@/components/ui';
@@ -24,6 +25,7 @@ import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
 import SettingsTab from '@/features/analysis/SettingsTab';
+import ShortcutsDialog from '@/features/analysis/ShortcutsDialog';
 import SidebarTabs from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useEngine } from '@/features/analysis/useEngine';
@@ -71,6 +73,7 @@ export default function Analysis({
   const [selected, setSelected] = useState<string | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
   const [drawColor, setDrawColor] = useState<string>(DRAW_COLORS[0]);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // Per-viewer engine display toggles; persisted — analysis is a local aid,
   // never shared state.
   const [engineOn, setEngineOn] = useState(
@@ -363,6 +366,38 @@ export default function Analysis({
     [editPos, editSelected, editBrush],
   );
 
+  /**
+   * Dragging a piece out of the palette: the brush is set on pointerdown,
+   * and releasing over a board square places the piece there. A plain click
+   * still toggles the brush (the release lands on the palette, not the
+   * board, so nothing is placed).
+   */
+  function handlePalettePointerDown(piece: Piece, event: React.PointerEvent) {
+    if (event.button !== 0) {
+      return;
+    }
+    setEditBrush(piece);
+    const onUp = (up: PointerEvent) => {
+      window.removeEventListener('pointerup', onUp);
+      const board = document.querySelector('[data-board-grid]');
+      if (board === null) {
+        return;
+      }
+      const target = squareFromPoint(
+        board.getBoundingClientRect(),
+        up.clientX,
+        up.clientY,
+        flipped,
+      );
+      if (target !== null) {
+        const next = [...editPos];
+        next[squareIndex(target)] = piece;
+        setEditPos(next);
+      }
+    };
+    window.addEventListener('pointerup', onUp);
+  }
+
   function handleSetPosition() {
     if (current === null || onSetPosition === undefined) {
       return;
@@ -540,9 +575,14 @@ export default function Analysis({
       if (current === null) {
         return;
       }
+      // Redrawing an identical arrow removes it (lichess/chess.com style).
+      const existing = nodeAnnotations.arrows.find((a) => a.from === from && a.to === to);
       onAnnotations?.(
         {
-          arrows: [...nodeAnnotations.arrows, { from, to, color }],
+          arrows:
+            existing !== undefined
+              ? nodeAnnotations.arrows.filter((a) => a !== existing)
+              : [...nodeAnnotations.arrows, { from, to, color }],
           highlights: nodeAnnotations.highlights,
         },
         current.id,
@@ -644,6 +684,9 @@ export default function Analysis({
                                   ? '0 0 2px rgba(26,26,26,0.9)'
                                   : '0 0 2px rgba(10,10,12,0.8)',
                             }}
+                            onPointerDown={(event) =>
+                              handlePalettePointerDown({ color, kind }, event)
+                            }
                             onClick={() => setEditBrush(active ? null : { color, kind })}
                           >
                             {pieceGlyph(color, kind)}
@@ -852,6 +895,8 @@ export default function Analysis({
           />
         </aside>
       </div>
+
+      {shortcutsOpen && <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
 
       {commentOpen && (
         <CommentPopup

@@ -18,6 +18,7 @@ export default function BoardControls({
   onToggleEdit,
   editing = false,
   drawColorPicker,
+  onShowShortcuts,
 }: {
   flipped: boolean;
   presenterActive: boolean;
@@ -30,6 +31,7 @@ export default function BoardControls({
   editing?: boolean;
   /** When set (editors only), a drawing-color picker is shown. */
   drawColorPicker?: { current: string; onChange: (color: string) => void };
+  onShowShortcuts?: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -106,6 +108,17 @@ export default function BoardControls({
             />
           ))}
         </fieldset>
+      )}
+      {onShowShortcuts !== undefined && (
+        <button
+          type="button"
+          id="analysis-shortcuts-button"
+          className={button({ intent: 'ghost', size: 'sm' })}
+          aria-label={t('analysis.shortcuts')}
+          onClick={onShowShortcuts}
+        >
+          ?
+        </button>
       )}
       {amPresenter && (
         <p className="m-0 text-note text-muted" role="status">

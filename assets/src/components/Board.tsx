@@ -14,7 +14,7 @@ import {
 import type { DrawnHighlight } from '@/protocol/ops';
 
 const square = tv({
-  base: 'relative flex items-center justify-center aspect-square select-none focus-visible:z-20 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold-hi',
+  base: 'relative flex items-center justify-center aspect-square select-none focus-visible:z-20 focus-visible:shadow-[inset_0_0_0_2px_#14161b,inset_0_0_0_4px_#e8c14f]',
   variants: {
     shade: { light: 'bg-board-light', dark: 'bg-board-dark' },
     highlight: { none: '', lastMove: '', selected: '' },
@@ -99,8 +99,11 @@ export default function Board({
   } | null>(null);
   const [ghost, setGhost] = useState<{ piece: Piece; left: number; top: number } | null>(null);
 
-  const [drawFrom, setDrawFrom] = useState<string | null>(null);
-  const [drawHover, setDrawHover] = useState<string | null>(null);
+  // Right-button drawing is tracked with window-level listeners while active:
+  // some browsers (Vivaldi's mouse gestures, Firefox's menu) interfere with
+  // right-button drags, and the sequence must always complete.
+  const drawRef = useRef<{ from: string; hover: string | null } | null>(null);
+  const [drawPreview, setDrawPreview] = useState<{ from: string; to: string } | null>(null);
   const [arrowDraft, setArrowDraft] = useState<string | null>(null);
 
   const drawable = onDrawArrow !== undefined || onToggleHighlight !== undefined;
@@ -129,12 +132,16 @@ export default function Board({
       return;
     }
     /**
-     * Square-by-square arrow navigation is reserved for keyboard users: a
-     * square reached via Tab matches :focus-visible, one focused by a mouse
-     * click does not. Mouse users keep global game navigation — the event
-     * falls through to the analysis handler (which listens on window).
+     * Square keys apply whenever a square is focused. Pointer interaction
+     * never focuses squares (see handlePointerDown), so focus always means
+     * keyboard intent — no :focus-visible heuristics, which Firefox drops
+     * for programmatic focus.
      */
-    if (!(event.target instanceof HTMLElement) || !event.target.matches(':focus-visible')) {
+    if (
+      !(event.target instanceof HTMLElement) ||
+      event.target.closest('[data-board-grid]') === null ||
+      event.target.closest('[data-square-index]') === null
+    ) {
       return;
     }
 
@@ -211,14 +218,15 @@ export default function Board({
     if (from === null) {
       return;
     }
-    if (event.button === 2 && drawable) {
-      // Preventing the right-button pointerdown default is what actually
-      // suppresses the context menu in Firefox (Shift+right-click bypasses
-      // contextmenu preventDefault there).
+    // Mouse/pointer interaction never takes keyboard focus: a focused square
+    // always means keyboard intent, which keeps square navigation working in
+    // Firefox (its :focus-visible heuristics drop programmatic focus).
+    if (event.button !== 2 && interactive) {
       event.preventDefault();
-      setDrawFrom(from);
-      setDrawHover(from);
-      containerRef.current?.setPointerCapture?.(event.pointerId);
+    }
+    if (event.button === 2 && drawable) {
+      event.preventDefault();
+      startDraw(from, event.pointerId);
       return;
     }
     if (event.button === 0 && interactive) {
@@ -229,6 +237,49 @@ export default function Board({
         dragging: false,
       };
     }
+  }
+
+  /**
+   * Right-button drawing is tracked on window listeners so the gesture
+   * always completes — browser gesture layers (Vivaldi) and context menus
+   * interfere with container-level right-drag sequences.
+   */
+  function startDraw(from: string, pointerId: number) {
+    drawRef.current = { from, hover: from };
+    containerRef.current?.setPointerCapture?.(pointerId);
+
+    const onMove = (event: PointerEvent) => {
+      const draw = drawRef.current;
+      if (draw === null) {
+        return;
+      }
+      draw.hover = pointToSquare(event);
+      setDrawPreview(
+        draw.hover !== null && draw.hover !== draw.from
+          ? { from: draw.from, to: draw.hover }
+          : null,
+      );
+    };
+    const onEnd = (event: PointerEvent) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
+      const draw = drawRef.current;
+      drawRef.current = null;
+      setDrawPreview(null);
+      if (draw === null || event.type === 'pointercancel') {
+        return;
+      }
+      const to = pointToSquare(event);
+      if (to !== null && to !== draw.from) {
+        onDrawArrow?.(draw.from, to, drawColor);
+      } else if (to !== null) {
+        onToggleHighlight?.(to, drawColor);
+      }
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
   }
 
   function handlePointerMove(event: React.PointerEvent) {
@@ -256,12 +307,6 @@ export default function Board({
         }
       }
     }
-    if (drawFrom !== null) {
-      const hover = pointToSquare(event);
-      if (hover !== drawHover) {
-        setDrawHover(hover);
-      }
-    }
   }
 
   function handlePointerUp(event: React.PointerEvent) {
@@ -273,18 +318,12 @@ export default function Board({
         const to = pointToSquare(event);
         onDragMove?.(drag.from, to);
       }
-      return;
     }
-    if (drawFrom !== null) {
-      const to = pointToSquare(event);
-      if (to !== null && to !== drawFrom) {
-        onDrawArrow?.(drawFrom, to, drawColor);
-      } else if (to !== null) {
-        onToggleHighlight?.(to, drawColor);
-      }
-      setDrawFrom(null);
-      setDrawHover(null);
-    }
+  }
+
+  function handlePointerCancel() {
+    dragRef.current = null;
+    setGhost(null);
   }
 
   const indices = flipped ? [...Array(64).keys()].reverse() : [...Array(64).keys()];
@@ -295,8 +334,8 @@ export default function Board({
 
   const allArrows: { from: string; to: string; color: string }[] = [
     ...arrows.map((arrow) => ({ ...arrow, color: arrow.color ?? arrowColor })),
-    ...(drawFrom !== null && drawHover !== null && drawHover !== drawFrom
-      ? [{ from: drawFrom, to: drawHover, color: drawColor }]
+    ...(drawPreview !== null
+      ? [{ from: drawPreview.from, to: drawPreview.to, color: drawColor }]
       : []),
     // Keyboard draft: preview from the draft source to the focused square.
     ...(arrowDraft !== null && squareName(focusIndex) !== arrowDraft
@@ -310,13 +349,14 @@ export default function Board({
     <div
       ref={containerRef}
       data-board-grid
-      className="relative grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [container-type:inline-size]"
+      className={`relative grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
       role={interactive ? 'group' : 'img'}
       aria-label={label}
       onKeyDown={handleKeyDown}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       onContextMenu={(event) => {
         if (interactive || drawable) {
           event.preventDefault();
