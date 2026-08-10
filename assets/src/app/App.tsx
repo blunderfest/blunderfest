@@ -90,7 +90,7 @@ export default function App() {
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-2 focus:text-surface"
         onClick={() => mainRef.current?.focus()}
       >
-        {t('app.skipToBoard')}
+        {t('app.skipToContent')}
       </button>
       <header className="flex items-center justify-between gap-4 border-b border-line bg-surface px-4 py-2">
         <a href="#/" aria-label={t('app.name')} className="text-ink no-underline">
