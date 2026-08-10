@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Board from '@/components/Board';
 import { parseFen } from '@/components/board';
 
@@ -357,8 +357,21 @@ describe('check highlight', () => {
 describe('Board pointer interactions', () => {
   const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
-  function pointer(grid: HTMLElement, type: string, init: MouseEventInit = {}) {
-    fireEvent(grid, new MouseEvent(type, { bubbles: true, cancelable: true, ...init }));
+  function pointer(
+    grid: HTMLElement,
+    type: string,
+    init: MouseEventInit & { pointerType?: string; pointerId?: number } = {},
+  ) {
+    const event = new MouseEvent(type, { bubbles: true, cancelable: true, ...init });
+    // jsdom has no PointerEvent: React reads these through from the native
+    // event, and the window draw listeners see the native event directly.
+    if (init.pointerType !== undefined) {
+      Object.defineProperty(event, 'pointerType', { value: init.pointerType });
+    }
+    if (init.pointerId !== undefined) {
+      Object.defineProperty(event, 'pointerId', { value: init.pointerId });
+    }
+    fireEvent(grid, event);
   }
 
   function renderInteractive(props: Partial<Parameters<typeof Board>[0]> = {}) {
@@ -462,6 +475,202 @@ describe('Board pointer interactions', () => {
 
     expect(onToggleHighlight).toHaveBeenCalledWith('e2', '#3b82f6');
     expect(onToggleHighlight).toHaveBeenCalledTimes(1);
+  });
+
+  describe('long-press drawing (touch/pen)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('toggles a highlight on a touch long-press, suppressing the release click', () => {
+      const onToggleHighlight = vi.fn();
+      const onSquareClick = vi.fn();
+      const { grid } = renderInteractive({ onToggleHighlight, onSquareClick });
+
+      pointer(grid, 'pointerdown', {
+        button: 0,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 450,
+        clientY: 650,
+      });
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      pointer(grid, 'pointerup', {
+        button: 0,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 450,
+        clientY: 650,
+      });
+
+      expect(onToggleHighlight).toHaveBeenCalledWith('e2', '#3b82f6');
+
+      // The browser still fires a click after the release; it must not act.
+      fireEvent.click(screen.getByTestId('square-e2'));
+      expect(onSquareClick).not.toHaveBeenCalled();
+    });
+
+    it('draws an arrow on long-press + drag, with a live preview and no piece ghost', () => {
+      const onDrawArrow = vi.fn();
+      const onToggleHighlight = vi.fn();
+      const { grid } = renderInteractive({ onDrawArrow, onToggleHighlight });
+
+      pointer(grid, 'pointerdown', {
+        button: 0,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 450,
+        clientY: 650,
+      });
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      // Finger travels with the contact still down (touch moves report buttons=1).
+      pointer(grid, 'pointermove', {
+        buttons: 1,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 450,
+        clientY: 450,
+      });
+      expect(screen.getByTestId('board-arrows')).toBeInTheDocument();
+      expect(screen.queryByTestId('drag-ghost')).not.toBeInTheDocument();
+
+      pointer(grid, 'pointerup', {
+        button: 0,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 450,
+        clientY: 450,
+      });
+
+      expect(onDrawArrow).toHaveBeenCalledWith('e2', 'e4', '#3b82f6');
+      expect(onToggleHighlight).not.toHaveBeenCalled();
+    });
+
+    it('starts a piece drag when the finger moves before the long-press fires', () => {
+      const onDrawArrow = vi.fn();
+      const onToggleHighlight = vi.fn();
+      const onDragMove = vi.fn();
+      const { grid } = renderInteractive({ onDrawArrow, onToggleHighlight, onDragMove });
+
+      pointer(grid, 'pointerdown', {
+        button: 0,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 450,
+        clientY: 650,
+      });
+      pointer(grid, 'pointermove', {
+        buttons: 1,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 470,
+        clientY: 630,
+      });
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(screen.getByTestId('drag-ghost')).toBeInTheDocument();
+
+      pointer(grid, 'pointerup', {
+        button: 0,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 450,
+        clientY: 450,
+      });
+
+      expect(onDrawArrow).not.toHaveBeenCalled();
+      expect(onToggleHighlight).not.toHaveBeenCalled();
+      expect(onDragMove).toHaveBeenCalledWith('e2', 'e4');
+    });
+
+    it('keeps quick taps as plain clicks', () => {
+      const onSquareClick = vi.fn();
+      const onToggleHighlight = vi.fn();
+      const { grid } = renderInteractive({ onSquareClick, onToggleHighlight });
+
+      pointer(grid, 'pointerdown', {
+        button: 0,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 450,
+        clientY: 650,
+      });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      pointer(grid, 'pointerup', {
+        button: 0,
+        pointerType: 'touch',
+        pointerId: 7,
+        clientX: 450,
+        clientY: 650,
+      });
+      fireEvent.click(screen.getByTestId('square-e2'));
+
+      expect(onSquareClick).toHaveBeenCalledWith('e2');
+      expect(onToggleHighlight).not.toHaveBeenCalled();
+    });
+
+    it('arms the long-press for pen input too', () => {
+      const onToggleHighlight = vi.fn();
+      const { grid } = renderInteractive({ onToggleHighlight });
+
+      pointer(grid, 'pointerdown', {
+        button: 0,
+        pointerType: 'pen',
+        pointerId: 3,
+        clientX: 450,
+        clientY: 650,
+      });
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      pointer(grid, 'pointerup', {
+        button: 0,
+        pointerType: 'pen',
+        pointerId: 3,
+        clientX: 450,
+        clientY: 650,
+      });
+
+      expect(onToggleHighlight).toHaveBeenCalledWith('e2', '#3b82f6');
+    });
+
+    it('does not arm the long-press for the mouse', () => {
+      const onSquareClick = vi.fn();
+      const onToggleHighlight = vi.fn();
+      const { grid } = renderInteractive({ onSquareClick, onToggleHighlight });
+
+      pointer(grid, 'pointerdown', {
+        button: 0,
+        pointerType: 'mouse',
+        pointerId: 1,
+        clientX: 450,
+        clientY: 650,
+      });
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      pointer(grid, 'pointerup', {
+        button: 0,
+        pointerType: 'mouse',
+        pointerId: 1,
+        clientX: 450,
+        clientY: 650,
+      });
+      fireEvent.click(screen.getByTestId('square-e2'));
+
+      expect(onSquareClick).toHaveBeenCalledWith('e2');
+      expect(onToggleHighlight).not.toHaveBeenCalled();
+    });
   });
 
   it('toggles highlights with h and draws arrows with a', () => {

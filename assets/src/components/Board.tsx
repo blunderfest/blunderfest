@@ -36,6 +36,11 @@ const coord = tv({
 
 export type BoardArrow = { from: string; to: string; color?: string; hint?: boolean };
 
+/** Touch/pen drawing: hold this long without moving to start a draw. */
+const LONG_PRESS_MS = 350;
+/** Finger travel that cancels a pending long-press (and keeps the drag). */
+const LONG_PRESS_TOLERANCE_PX = 10;
+
 /**
  * WAI-ARIA grid pattern for the interactive board: one square in the tab
  * order (the focused square), arrow keys move between squares (flip-
@@ -101,10 +106,26 @@ export default function Board({
 
   // Right-button drawing is tracked with window-level listeners while active:
   // some browsers (Vivaldi's mouse gestures, Firefox's menu) interfere with
-  // right-button drags, and the sequence must always complete.
-  const drawRef = useRef<{ from: string; hover: string | null } | null>(null);
+  // right-button drags, and the sequence must always complete. Touch and pen
+  // input (no right button) starts the same gesture via long-press instead.
+  const drawRef = useRef<{
+    from: string;
+    hover: string | null;
+    pointerId: number;
+    fromRightButton: boolean;
+  } | null>(null);
   const [drawPreview, setDrawPreview] = useState<{ from: string; to: string } | null>(null);
   const [arrowDraft, setArrowDraft] = useState<string | null>(null);
+  // A finished long-press draw suppresses the synthetic click that the
+  // release still produces, so lifting the finger doesn't also select/move.
+  const suppressClickRef = useRef(false);
+  const longPressRef = useRef<{
+    pointerId: number;
+    from: string;
+    startX: number;
+    startY: number;
+    timer: number;
+  } | null>(null);
 
   const drawable = onDrawArrow !== undefined || onToggleHighlight !== undefined;
 
@@ -218,6 +239,9 @@ export default function Board({
     if (from === null) {
       return;
     }
+    // A new press means any pending click suppression has served its purpose
+    // (the suppressed click always fires right after the draw's release).
+    suppressClickRef.current = false;
     // Mouse/pointer interaction never takes keyboard focus: a focused square
     // always means keyboard intent, which keeps square navigation working in
     // Firefox (its :focus-visible heuristics drop programmatic focus).
@@ -226,7 +250,7 @@ export default function Board({
     }
     if (event.button === 2 && drawable) {
       event.preventDefault();
-      startDraw(from, event.pointerId);
+      startDraw(from, event.pointerId, true);
       return;
     }
     if (event.button === 0 && interactive) {
@@ -236,16 +260,35 @@ export default function Board({
         startY: event.clientY,
         dragging: false,
       };
+      // Touch and pen have no right button: long-press starts the drawing
+      // gesture instead. Moving early wins the piece drag; releasing early
+      // stays a plain tap.
+      if (drawable && (event.pointerType === 'touch' || event.pointerType === 'pen')) {
+        const pointerId = event.pointerId;
+        longPressRef.current = {
+          pointerId,
+          from,
+          startX: event.clientX,
+          startY: event.clientY,
+          timer: window.setTimeout(() => {
+            longPressRef.current = null;
+            dragRef.current = null;
+            setGhost(null);
+            startDraw(from, pointerId, false);
+          }, LONG_PRESS_MS),
+        };
+      }
     }
   }
 
   /**
-   * Right-button drawing is tracked on window listeners so the gesture
-   * always completes — browser gesture layers (Vivaldi) and context menus
-   * interfere with container-level right-drag sequences.
+   * Drawing is tracked on window listeners so the gesture always completes —
+   * browser gesture layers (Vivaldi) and context menus interfere with
+   * container-level right-drag sequences. Events are matched by pointerId so
+   * touch/pen long-press draws (whose pointerup has button 0) work too.
    */
-  function startDraw(from: string, pointerId: number) {
-    drawRef.current = { from, hover: from };
+  function startDraw(from: string, pointerId: number, fromRightButton: boolean) {
+    drawRef.current = { from, hover: from, pointerId, fromRightButton };
     containerRef.current?.setPointerCapture?.(pointerId);
 
     const finish = (to: string | null) => {
@@ -258,6 +301,9 @@ export default function Board({
       if (draw === null || to === null) {
         return;
       }
+      if (!draw.fromRightButton) {
+        suppressClickRef.current = true;
+      }
       if (to !== draw.from) {
         onDrawArrow?.(draw.from, to, drawColor);
       } else {
@@ -266,14 +312,16 @@ export default function Board({
     };
     const onMove = (event: PointerEvent) => {
       const draw = drawRef.current;
-      if (draw === null) {
+      if (draw === null || event.pointerId !== draw.pointerId) {
         return;
       }
       // Vivaldi's mouse-gesture layer swallows the whole right-button drag,
       // pointerup included; the first event delivered after the button was
       // released arrives with buttons=0. Treat "right button no longer held"
-      // as the end of the draw, committing at the current position.
-      if ((event.buttons & 2) === 0) {
+      // as the end of the draw, committing at the current position. Only for
+      // mouse-initiated draws: touch/pen moves never carry the right-button
+      // bit while the contact is still down.
+      if (draw.fromRightButton && (event.buttons & 2) === 0) {
         finish(pointToSquare(event));
         return;
       }
@@ -285,12 +333,15 @@ export default function Board({
       );
     };
     const onEnd = (event: PointerEvent) => {
-      if (event.button !== 2) {
+      if (event.pointerId !== drawRef.current?.pointerId) {
         return;
       }
       finish(pointToSquare(event));
     };
-    const onCancel = () => {
+    const onCancel = (event: PointerEvent) => {
+      if (event.pointerId !== drawRef.current?.pointerId) {
+        return;
+      }
       finish(null);
     };
     window.addEventListener('pointermove', onMove);
@@ -298,7 +349,23 @@ export default function Board({
     window.addEventListener('pointercancel', onCancel);
   }
 
+  function cancelLongPress() {
+    const lp = longPressRef.current;
+    if (lp !== null) {
+      window.clearTimeout(lp.timer);
+      longPressRef.current = null;
+    }
+  }
+
   function handlePointerMove(event: React.PointerEvent) {
+    const lp = longPressRef.current;
+    if (
+      lp !== null &&
+      event.pointerId === lp.pointerId &&
+      Math.hypot(event.clientX - lp.startX, event.clientY - lp.startY) > LONG_PRESS_TOLERANCE_PX
+    ) {
+      cancelLongPress();
+    }
     const drag = dragRef.current;
     if (drag !== null) {
       if (
@@ -326,6 +393,7 @@ export default function Board({
   }
 
   function handlePointerUp(event: React.PointerEvent) {
+    cancelLongPress();
     const drag = dragRef.current;
     if (drag !== null) {
       dragRef.current = null;
@@ -338,6 +406,7 @@ export default function Board({
   }
 
   function handlePointerCancel() {
+    cancelLongPress();
     dragRef.current = null;
     setGhost(null);
   }
@@ -365,7 +434,7 @@ export default function Board({
     <div
       ref={containerRef}
       data-board-grid
-      className={`relative grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
+      className={`relative grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [-webkit-touch-callout:none] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
       role={interactive ? 'group' : 'img'}
       aria-label={label}
       onKeyDown={handleKeyDown}
@@ -452,6 +521,10 @@ export default function Board({
               tabIndex={focusIndex === index ? 0 : -1}
               className={`${squareBg} cursor-pointer`}
               onClick={() => {
+                if (suppressClickRef.current) {
+                  suppressClickRef.current = false;
+                  return;
+                }
                 setFocusIndex(index);
                 onSquareClick(name);
               }}
