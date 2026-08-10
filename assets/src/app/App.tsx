@@ -92,12 +92,16 @@ export default function App() {
       >
         {t('app.skipToContent')}
       </button>
-      <header className="flex items-center justify-between gap-4 border-b border-line bg-surface px-4 py-2">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line bg-surface px-4 py-2">
         <a href="#/" aria-label={t('app.name')} className="text-ink no-underline">
           <Logo size="sm" />
         </a>
         {route.screen === 'room' && <RoomHeader slug={route.slug} onLeave={navigateHome} />}
-        <p className="m-0 text-ui text-muted" role="status" data-status={profile.status}>
+        <p
+          className="m-0 hidden text-ui text-muted md:block"
+          role="status"
+          data-status={profile.status}
+        >
           {name}
         </p>
       </header>

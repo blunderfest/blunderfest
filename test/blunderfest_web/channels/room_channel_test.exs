@@ -30,10 +30,9 @@ defmodule BlunderfestWeb.RoomChannelTest do
     assert reply.ops == []
   end
 
-  test "join replies with the node's region and the room's region", %{} do
+  test "join replies with the node's region", %{} do
     {:ok, reply, _socket} = join_room("room:abcde")
     assert reply.region == "local"
-    assert reply.room_region == "local"
   end
 
   test "rejects joins with malformed room codes", %{} do

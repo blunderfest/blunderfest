@@ -56,8 +56,7 @@ defmodule BlunderfestWeb.RoomChannel do
      %{
        ops: Rooms.ops(slug),
        roles: stringify_roles(Rooms.roles(slug)),
-       region: Blunderfest.NodeInfo.region(),
-       room_region: Rooms.room_region(slug)
+       region: Blunderfest.NodeInfo.region()
      }, socket}
   end
 

@@ -1,20 +1,19 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button } from '@/components/ui';
-import { formatRegion } from '@/lib/region';
+import { formatRegion, regionFlag } from '@/lib/region';
 import { useAppSelector } from '@/store';
 
 /**
  * The compact room chip rendered in the app header for everyone in the room:
  * the code to copy and share (joiners land as viewers anyway) plus leave.
- * Also shows the server regions when known: the machine this client is
- * connected to, and — only when it differs — the machine hosting the room
- * process (ADR-0013).
+ * Also shows the region of the machine you're connected to (ADR-0013) — the
+ * flag on small screens, flag + name from sm up.
  */
 export default function RoomHeader({ slug, onLeave }: { slug: string; onLeave: () => void }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
-  const serverInfo = useAppSelector((state) => state.room.serverInfo);
+  const region = useAppSelector((state) => state.room.region);
 
   async function handleCopy() {
     if (!navigator.clipboard) {
@@ -51,24 +50,18 @@ export default function RoomHeader({ slug, onLeave }: { slug: string; onLeave: (
       >
         {t('room.leave')}
       </button>
-      <RegionChip serverInfo={serverInfo} />
+      <RegionChip region={region} />
     </div>
   );
 }
 
-function RegionChip({
-  serverInfo,
-}: {
-  serverInfo: { region: string | null; roomRegion: string | null };
-}) {
+function RegionChip({ region: code }: { region: string | null }) {
   const { t } = useTranslation();
-  const region = formatRegion(serverInfo.region);
-  if (region === null) {
+  const text = formatRegion(code);
+  if (text === null) {
     return null;
   }
-  const roomRegion = formatRegion(serverInfo.roomRegion);
-  const split = roomRegion !== null && roomRegion !== region;
-  const text = split ? `${region} · ${t('room.roomPrefix')} ${roomRegion}` : region;
+  const flag = regionFlag(code);
 
   return (
     <span
@@ -77,7 +70,8 @@ function RegionChip({
       className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-muted"
     >
       <span className="sr-only">{t('room.regionLabel')} </span>
-      {text}
+      {flag !== null ? <span className="sm:hidden">{flag}</span> : null}
+      <span className={flag !== null ? 'max-sm:hidden' : undefined}>{text}</span>
     </span>
   );
 }

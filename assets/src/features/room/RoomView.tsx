@@ -164,7 +164,7 @@ export default function RoomView({
     return (
       <div className="flex flex-1 items-center justify-center p-8">
         <div
-          className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-sm animate-pop flex-col items-center gap-4 text-center`}
+          className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] animate-pop flex-col items-center gap-4 text-center`}
         >
           <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
             <span className="text-3xl text-bad-hi">⚠</span>
@@ -184,7 +184,7 @@ export default function RoomView({
 
   return (
     <div className="flex flex-1 flex-col items-stretch gap-3 p-3">
-      <div className="grid flex-1 gap-3 md:grid-cols-[236px_1fr]">
+      <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-[236px_1fr]">
         {/*
           On wide screens the rail is pinned to the board's height: Games
           caps at a share of it, Members sizes to content, and Activity takes
@@ -219,7 +219,7 @@ export default function RoomView({
             canEdit ? (
               <div className="flex flex-1 items-center justify-center p-8">
                 <div
-                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-sm flex-col items-center gap-4 text-center`}
+                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] flex-col items-center gap-4 text-center`}
                 >
                   <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
                     <span className="text-3xl text-muted">♟</span>
@@ -249,7 +249,7 @@ export default function RoomView({
             ) : (
               <div className="flex flex-1 items-center justify-center p-8">
                 <div
-                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-sm flex-col items-center gap-4 text-center`}
+                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] flex-col items-center gap-4 text-center`}
                 >
                   <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
                     <span className="text-3xl text-muted">⏳</span>

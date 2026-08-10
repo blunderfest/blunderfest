@@ -33,12 +33,8 @@ export type RoomState = {
    * Drives the initial cursor on join/refresh.
    */
   lastPlayed: Record<string, number>;
-  /**
-   * Server regions from the join reply: `region` is the machine this client
-   * is connected to, `roomRegion` the machine hosting the room process (they
-   * can differ on the cluster, ADR-0013).
-   */
-  serverInfo: { region: string | null; roomRegion: string | null };
+  /** The Fly region of the machine this client is connected to (join reply). */
+  region: string | null;
 };
 
 const initialState: RoomState = {
@@ -49,7 +45,7 @@ const initialState: RoomState = {
   games: {},
   lastPlayed: {},
   annotations: {},
-  serverInfo: { region: null, roomRegion: null },
+  region: null,
 };
 
 /**
@@ -411,7 +407,7 @@ const roomSlice = createSlice({
       state.games = {};
       state.lastPlayed = {};
       state.annotations = {};
-      state.serverInfo = { region: null, roomRegion: null };
+      state.region = null;
     },
     leaveRoom(state) {
       state.slug = null;
@@ -421,16 +417,13 @@ const roomSlice = createSlice({
       state.games = {};
       state.lastPlayed = {};
       state.annotations = {};
-      state.serverInfo = { region: null, roomRegion: null };
+      state.region = null;
     },
     setRoles(state, action: PayloadAction<Record<string, MemberRole>>) {
       state.roles = action.payload;
     },
-    setServerInfo(
-      state,
-      action: PayloadAction<{ region: string | null; roomRegion: string | null }>,
-    ) {
-      state.serverInfo = action.payload;
+    setRegion(state, action: PayloadAction<string | null>) {
+      state.region = action.payload;
     },
     setMemberRole(state, action: PayloadAction<{ member_id: string; role: MemberRole }>) {
       state.roles[action.payload.member_id] = action.payload.role;
@@ -513,7 +506,7 @@ export const {
   enterRoom,
   leaveRoom,
   setRoles,
-  setServerInfo,
+  setRegion,
   setMemberRole,
   applyOp,
   replayOps,

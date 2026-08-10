@@ -18,3 +18,11 @@ export function formatRegion(code: string | null | undefined): string | null {
   const known = KNOWN_REGIONS[code];
   return known !== undefined ? `${known.flag} ${known.name}` : code;
 }
+
+/** Just the flag for a region (null for local/unknown). */
+export function regionFlag(code: string | null | undefined): string | null {
+  if (code === null || code === undefined || code === '') {
+    return null;
+  }
+  return KNOWN_REGIONS[code]?.flag ?? null;
+}

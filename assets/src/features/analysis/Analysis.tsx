@@ -622,8 +622,8 @@ export default function Analysis({
   const boardArrows = [...hintArrows, ...nodeAnnotations.arrows];
 
   return (
-    <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-6">
-      <div className="flex flex-col items-center gap-6 xl:flex-row xl:items-start">
+    <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-3 md:gap-6">
+      <div className="flex flex-col items-center gap-4 xl:flex-row xl:items-start xl:gap-6">
         <div className="flex flex-col items-center gap-4">
           <div className="flex w-full items-baseline justify-between gap-4">
             <h2 className="m-0 text-display font-bold tracking-[-0.02em]">
@@ -840,7 +840,7 @@ export default function Analysis({
                 : undefined
             }
           />
-          <p className="m-0 text-note text-faint">
+          <p className="m-0 hidden text-note text-faint md:block">
             <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
             {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')} · <kbd>c</kbd>{' '}
             {t('analysis.shortcutNote')}
@@ -863,7 +863,7 @@ export default function Analysis({
           Comments live in a popup (the `c` key or the board controls), not
           here — the space belongs to the move list.
         */}
-        <aside className="flex w-full max-w-sm flex-col gap-3 xl:h-[min(90vw,34rem)] xl:w-[340px] xl:max-w-none">
+        <aside className="flex w-full max-w-[min(100%,24rem)] flex-col gap-3 xl:h-[min(90vw,34rem)] xl:w-[340px]">
           <SidebarTabs
             tabs={[
               {

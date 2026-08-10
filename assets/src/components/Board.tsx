@@ -429,12 +429,15 @@ export default function Board({
   ];
 
   return (
+    // Board width: viewport minus the page padding (1.5rem), the eval/palette
+    // slot (2rem) and the row gap (0.75rem), capped at 34rem — the board row
+    // never overflows a phone.
     // biome-ignore lint/a11y/useAriaPropsSupportedByRole: role is img or group, both support aria-label
     // biome-ignore lint/a11y/noStaticElementInteractions: grid container handles bubbled keys and pointer gestures; focus stays on the square buttons
     <div
       ref={containerRef}
       data-board-grid
-      className={`relative grid aspect-square w-[min(90vw,34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [-webkit-touch-callout:none] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
+      className={`relative grid aspect-square w-[min(calc(100vw-4.25rem),34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [-webkit-touch-callout:none] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
       role={interactive ? 'group' : 'img'}
       aria-label={label}
       onKeyDown={handleKeyDown}

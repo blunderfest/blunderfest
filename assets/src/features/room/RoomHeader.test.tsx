@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { describe, expect, it, vi } from 'vitest';
 import RoomHeader from '@/features/room/RoomHeader';
-import roomReducer, { setServerInfo } from '@/store/room';
+import roomReducer, { setRegion } from '@/store/room';
 
-function renderHeader(serverInfo: { region: string | null; roomRegion: string | null }) {
+function renderHeader(region: string | null) {
   const store = configureStore({ reducer: { room: roomReducer } });
-  store.dispatch(setServerInfo(serverInfo));
+  store.dispatch(setRegion(region));
   return render(
     <Provider store={store}>
       <RoomHeader slug="abcde" onLeave={vi.fn()} />
@@ -16,20 +16,20 @@ function renderHeader(serverInfo: { region: string | null; roomRegion: string | 
 }
 
 describe('RoomHeader region chip', () => {
-  it('shows the connection region', () => {
-    renderHeader({ region: 'ams', roomRegion: 'ams' });
-    const chip = screen.getByTestId('region-chip');
-    expect(chip).toHaveTextContent('🇳🇱 Amsterdam');
-    expect(chip).not.toHaveTextContent('room');
+  it('shows the connection region (flag + name)', () => {
+    renderHeader('ams');
+    expect(screen.getByTestId('region-chip')).toHaveTextContent('🇳🇱 Amsterdam');
   });
 
-  it('shows both regions when the room process lives elsewhere', () => {
-    renderHeader({ region: 'ord', roomRegion: 'ams' });
-    expect(screen.getByTestId('region-chip')).toHaveTextContent('🇺🇸 Chicago · room 🇳🇱 Amsterdam');
+  it('shows unknown region codes as-is, without a flag variant', () => {
+    renderHeader('syd');
+    const chip = screen.getByTestId('region-chip');
+    expect(chip).toHaveTextContent('syd');
+    expect(chip.querySelectorAll('span[class*="sm:hidden"]')).toHaveLength(0);
   });
 
   it('renders nothing before the join reply arrives', () => {
-    renderHeader({ region: null, roomRegion: null });
+    renderHeader(null);
     expect(screen.queryByTestId('region-chip')).not.toBeInTheDocument();
   });
 });
