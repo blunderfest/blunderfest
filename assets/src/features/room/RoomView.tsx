@@ -214,7 +214,7 @@ export default function RoomView({
           <ActivityFeed ops={activityOps} presence={storePresence} />
         </aside>
 
-        <section className="flex flex-col items-center gap-4">
+        <section className="order-first flex flex-col items-center gap-4 md:order-none">
           {noGames ? (
             canEdit ? (
               <div className="flex flex-1 items-center justify-center p-8">
