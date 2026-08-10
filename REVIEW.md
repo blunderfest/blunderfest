@@ -21,31 +21,26 @@ codebases.
 Rotated and moved to `fly secrets`; `fly.toml` no longer carries them. The
 old values remain in git history but are invalid.
 
-### 2. The channel's op ingestion trusts the client
+### 2. ~~The channel's op ingestion trusts the client~~ ✅ DONE (2026-08-10)
 
-`RoomChannel.handle_in("op")` checks the edit role and then appends *whatever*
-arrived: no payload shape validation, no size cap, no move-legality check —
-despite a commit message claiming "server-validated legal moves" (that
-validation only lives in the read-only `/api/games/moves` endpoint). The op
-log is the source of truth and it's write-what-you-want: a bad actor (or a
-buggy client) can inject huge payloads or malformed moves that get broadcast
-to every client. `Blunderfest.Game.Moves` exists — validating `move_at_ply`
-server-side is right there.
+`Blunderfest.Ops.validate/1` now shape-checks every op type (squares, colors,
+annotation caps, per-type payloads) and rejects anything over 256 KB
+(`invalid_op` / `op_too_large` error codes). `RoomChannel.handle_in("op")`
+runs validate → permission → append. Note: *move-legality* is enforced
+client-side via chess.js (see #6), not re-checked server-side — a malicious
+client can still push illegal moves, just well-formed ones.
 
-### 3. Unbounded in-memory growth
+### 3. Unbounded in-memory growth — ⚠️ PARTIAL (2026-08-10)
 
-Rooms are never evicted; `ops ++ [op]` is O(n) per append, so a busy room
-degrades quadratically; `POST /api/rooms` is unauthenticated with no rate
-limit; profiles likewise. Scale-to-zero restarts mask all of this — but one
-busy week or one bored attacker OOMs the 1 GB machine. Cheap fixes: store ops
-prepended (O(1) append, reverse on read), cap ops per room, cap total rooms.
+Hard caps landed: `@max_rooms 1_000` (create returns 429 `room_limit`) and
+`@max_ops_per_room 5_000` (`op_limit`). Still open: ops are stored appended
+(O(n) per append), rooms are never evicted, and `POST /api/rooms` has no
+rate limit beyond the global cap.
 
-### 4. CI is disabled
+### 4. ~~CI is disabled~~ ✅ DONE (2026-08-10)
 
-"Checks and deploys are done locally" means nothing guards `main` except
-discipline. Re-enabling is nearly free and catches the "works on my machine"
-class (hit twice already: the pnpm-root-dir failure, the Vite-hash worker
-issue).
+`.github/workflows/ci.yml` restored (backend: format/compile/test; frontend:
+lint/typecheck/vitest/build) on push to main and PRs.
 
 ### 5. The chess core rides on a 0.1 library with workarounds
 
@@ -59,13 +54,13 @@ by real tests, but golden fixtures specifically for SAN disambiguation and
 castling would be worthwhile, and Echecs' maturity should be watched
 (vendor/replace if it stalls).
 
-### 6. Legal moves are a server round-trip per position
+### 6. ~~Legal moves are a server round-trip per position~~ ✅ DONE (2026-08-10)
 
-`fetchLegalMoves` fires on every cursor change when the user can edit —
-latency on every click in solo play and pointless chatter. `chess.js` is
-named in PROJECT.md but isn't in `package.json`. Suggestion: run chess.js (or
-a small local validator) client-side for interactivity and keep the server as
-the write-time authority.
+`assets/src/features/analysis/legalMoves.ts` computes legal moves locally with
+chess.js (`legalMovesFor(fen)` → from/to/promotion/san + resulting fen +
+status via isCheckmate/isStalemate/isDraw). `Analysis.tsx` memoizes them per
+position; `fetchLegalMoves` and its server round-trip are gone. (The
+read-only `/api/games/moves` endpoint still exists server-side, unused.)
 
 ### 7. One global GenServer for all rooms
 
@@ -98,8 +93,9 @@ factories). Good design.
 
 ## Suggested order of work
 
-1. `fly secrets set SECRET_KEY_BASE` + rotate + remove from `fly.toml`.
-2. Server-side op payload validation + size caps.
-3. Re-enable CI.
-4. Op storage prepend + room caps/eviction.
-5. chess.js locally for solo play.
+1. ~~`fly secrets set SECRET_KEY_BASE` + rotate + remove from `fly.toml`.~~ ✅
+2. ~~Server-side op payload validation + size caps.~~ ✅
+3. ~~Re-enable CI.~~ ✅
+4. Op storage prepend + room eviction (caps landed; these two remain).
+5. ~~chess.js locally for solo play.~~ ✅
+6. One process per room under a DynamicSupervisor (finding 7).
