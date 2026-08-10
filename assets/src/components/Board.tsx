@@ -34,7 +34,7 @@ const coord = tv({
   },
 });
 
-export type BoardArrow = { from: string; to: string; color?: string };
+export type BoardArrow = { from: string; to: string; color?: string; hint?: boolean };
 
 /**
  * WAI-ARIA grid pattern for the interactive board: one square in the tab
@@ -348,7 +348,7 @@ export default function Board({
 
   const highlightOf = (name: string) => highlights.find((h) => h.square === name);
 
-  const allArrows: { from: string; to: string; color: string }[] = [
+  const allArrows: { from: string; to: string; color: string; hint?: boolean }[] = [
     ...arrows.map((arrow) => ({ ...arrow, color: arrow.color ?? arrowColor })),
     ...(drawPreview !== null
       ? [{ from: drawPreview.from, to: drawPreview.to, color: drawColor }]
@@ -499,6 +499,25 @@ export default function Board({
             if (shape === null) {
               return null;
             }
+            // Engine hint arrows are "ghosts": thinner and translucent, no
+            // bold outline, so they can never be confused with the solid
+            // user-drawn annotations — even when the colors match.
+            if (arrow.hint === true) {
+              return (
+                <g key={`${arrow.from}-${arrow.to}-${arrow.color}`} opacity={0.55}>
+                  <line
+                    x1={shape.line.x1}
+                    y1={shape.line.y1}
+                    x2={shape.line.x2}
+                    y2={shape.line.y2}
+                    stroke={arrow.color}
+                    strokeWidth={0.14}
+                    strokeLinecap="round"
+                  />
+                  <polygon points={shape.head} fill={arrow.color} data-testid="arrow-head" />
+                </g>
+              );
+            }
             return (
               <g key={`${arrow.from}-${arrow.to}-${arrow.color}`}>
                 <line
@@ -506,18 +525,8 @@ export default function Board({
                   y1={shape.line.y1}
                   x2={shape.line.x2}
                   y2={shape.line.y2}
-                  stroke="rgba(20, 22, 27, 0.5)"
-                  strokeWidth={0.38}
-                  strokeLinecap="round"
-                />
-                <polygon points={shape.head} fill="rgba(20, 22, 27, 0.5)" />
-                <line
-                  x1={shape.line.x1}
-                  y1={shape.line.y1}
-                  x2={shape.line.x2}
-                  y2={shape.line.y2}
                   stroke={arrow.color}
-                  strokeWidth={0.24}
+                  strokeWidth={0.28}
                   strokeLinecap="round"
                 />
                 <polygon points={shape.head} fill={arrow.color} data-testid="arrow-head" />

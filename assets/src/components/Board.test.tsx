@@ -296,6 +296,31 @@ describe('Board arrows', () => {
     render(<Board position={emptyPosition()} />);
     expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument();
   });
+
+  it('renders hint arrows as ghosts — translucent and thinner than solid annotations', () => {
+    render(
+      <Board
+        position={emptyPosition()}
+        arrows={[
+          { from: 'e2', to: 'e4', hint: true },
+          { from: 'd2', to: 'd4' },
+        ]}
+      />,
+    );
+    const svg = screen.getByTestId('board-arrows');
+    const groups = svg.querySelectorAll('g');
+    expect(groups).toHaveLength(2);
+
+    // The hint arrow: ghost group with a thin line.
+    const hint = groups[0];
+    expect(hint.getAttribute('opacity')).toBe('0.55');
+    expect(hint.querySelector('line')?.getAttribute('stroke-width')).toBe('0.14');
+
+    // The user arrow: flat and solid — same family, no outline, full weight.
+    const solid = groups[1];
+    expect(solid.getAttribute('opacity')).toBeNull();
+    expect(solid.querySelector('line')?.getAttribute('stroke-width')).toBe('0.28');
+  });
 });
 
 describe('square positioning', () => {

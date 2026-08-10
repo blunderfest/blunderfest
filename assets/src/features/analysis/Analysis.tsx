@@ -615,7 +615,9 @@ export default function Analysis({
   const boardLabel = t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') });
   const evalBarLabel = evalAriaLabel(engineState.eval, t);
   const hintArrows =
-    engineOn && arrowsOn && engineState.bestMove !== null ? [engineState.bestMove] : [];
+    engineOn && arrowsOn && engineState.bestMove !== null
+      ? [{ ...engineState.bestMove, hint: true }]
+      : [];
 
   const boardArrows = [...hintArrows, ...nodeAnnotations.arrows];
 
