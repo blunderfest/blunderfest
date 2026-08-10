@@ -248,9 +248,33 @@ export default function Board({
     drawRef.current = { from, hover: from };
     containerRef.current?.setPointerCapture?.(pointerId);
 
+    const finish = (to: string | null) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onCancel);
+      const draw = drawRef.current;
+      drawRef.current = null;
+      setDrawPreview(null);
+      if (draw === null || to === null) {
+        return;
+      }
+      if (to !== draw.from) {
+        onDrawArrow?.(draw.from, to, drawColor);
+      } else {
+        onToggleHighlight?.(to, drawColor);
+      }
+    };
     const onMove = (event: PointerEvent) => {
       const draw = drawRef.current;
       if (draw === null) {
+        return;
+      }
+      // Vivaldi's mouse-gesture layer swallows the whole right-button drag,
+      // pointerup included; the first event delivered after the button was
+      // released arrives with buttons=0. Treat "right button no longer held"
+      // as the end of the draw, committing at the current position.
+      if ((event.buttons & 2) === 0) {
+        finish(pointToSquare(event));
         return;
       }
       draw.hover = pointToSquare(event);
@@ -261,25 +285,17 @@ export default function Board({
       );
     };
     const onEnd = (event: PointerEvent) => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onEnd);
-      window.removeEventListener('pointercancel', onEnd);
-      const draw = drawRef.current;
-      drawRef.current = null;
-      setDrawPreview(null);
-      if (draw === null || event.type === 'pointercancel') {
+      if (event.button !== 2) {
         return;
       }
-      const to = pointToSquare(event);
-      if (to !== null && to !== draw.from) {
-        onDrawArrow?.(draw.from, to, drawColor);
-      } else if (to !== null) {
-        onToggleHighlight?.(to, drawColor);
-      }
+      finish(pointToSquare(event));
+    };
+    const onCancel = () => {
+      finish(null);
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onEnd);
-    window.addEventListener('pointercancel', onEnd);
+    window.addEventListener('pointercancel', onCancel);
   }
 
   function handlePointerMove(event: React.PointerEvent) {

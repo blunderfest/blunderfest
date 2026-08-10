@@ -405,10 +405,38 @@ describe('Board pointer interactions', () => {
     const { grid } = renderInteractive({ onDrawArrow });
 
     pointer(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
-    pointer(grid, 'pointermove', { clientX: 450, clientY: 450 });
+    pointer(grid, 'pointermove', { buttons: 2, clientX: 450, clientY: 450 });
     pointer(grid, 'pointerup', { button: 2, clientX: 450, clientY: 450 });
 
     expect(onDrawArrow).toHaveBeenCalledWith('e2', 'e4', '#3b82f6');
+  });
+
+  it('commits the arrow when a released-button move arrives without pointerup (Vivaldi gestures)', () => {
+    const onDrawArrow = vi.fn();
+    const { grid } = renderInteractive({ onDrawArrow });
+
+    // Vivaldi's gesture layer swallows the whole right-drag, pointerup
+    // included; the first event after the release is a plain move (buttons=0).
+    pointer(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointermove', { buttons: 0, clientX: 450, clientY: 450 });
+
+    expect(onDrawArrow).toHaveBeenCalledTimes(1);
+    expect(onDrawArrow).toHaveBeenCalledWith('e2', 'e4', '#3b82f6');
+
+    // The draw is over: further moves do not commit again.
+    pointer(grid, 'pointermove', { buttons: 0, clientX: 250, clientY: 250 });
+    expect(onDrawArrow).toHaveBeenCalledTimes(1);
+  });
+
+  it('toggles a highlight when the released-button move lands on the start square (Vivaldi right-click)', () => {
+    const onToggleHighlight = vi.fn();
+    const { grid } = renderInteractive({ onToggleHighlight });
+
+    pointer(grid, 'pointerdown', { button: 2, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointermove', { buttons: 0, clientX: 451, clientY: 649 });
+
+    expect(onToggleHighlight).toHaveBeenCalledWith('e2', '#3b82f6');
+    expect(onToggleHighlight).toHaveBeenCalledTimes(1);
   });
 
   it('toggles highlights with h and draws arrows with a', () => {
