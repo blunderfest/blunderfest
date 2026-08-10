@@ -16,7 +16,7 @@ defmodule BlunderfestWeb.RoomChannel do
 
   use BlunderfestWeb, :channel
 
-  alias Blunderfest.{Profiles, Rooms}
+  alias Blunderfest.{Ops, Profiles, Rooms}
 
   @impl true
   def join("room:" <> slug, params, socket) do
@@ -75,13 +75,13 @@ defmodule BlunderfestWeb.RoomChannel do
 
   @impl true
   def handle_in("op", op, socket) do
-    if Rooms.edit_op?(op) and not Rooms.can_edit?(socket.assigns.slug, socket.assigns.profile_id) do
-      {:reply, {:error, %{reason: :forbidden}}, socket}
-    else
-      op = Map.merge(op, %{"author" => socket.assigns.profile_id})
-      op = Rooms.append(socket.assigns.slug, op)
+    with :ok <- Ops.validate(op),
+         :ok <- check_edit_permission(op, socket),
+         {:ok, op} <- append_op(op, socket) do
       broadcast!(socket, "new_op", op)
       {:reply, :ok, socket}
+    else
+      {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
     end
   end
 
@@ -99,6 +99,19 @@ defmodule BlunderfestWeb.RoomChannel do
 
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
+    end
+  end
+
+  defp append_op(op, socket) do
+    op = Map.merge(op, %{"author" => socket.assigns.profile_id})
+    Rooms.append(socket.assigns.slug, op)
+  end
+
+  defp check_edit_permission(op, socket) do
+    if Rooms.edit_op?(op) and not Rooms.can_edit?(socket.assigns.slug, socket.assigns.profile_id) do
+      {:error, :forbidden}
+    else
+      :ok
     end
   end
 

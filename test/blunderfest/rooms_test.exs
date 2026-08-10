@@ -41,7 +41,7 @@ defmodule Blunderfest.RoomsTest do
   end
 
   test "append stamps seq starting at 1 and ts", %{store: store} do
-    op =
+    {:ok, op} =
       Rooms.append(
         "room-a",
         %{"type" => "move_at_ply", "payload" => %{"ply" => 1, "san" => "e4"}},
@@ -51,7 +51,9 @@ defmodule Blunderfest.RoomsTest do
     assert op["seq"] == 1
     assert is_struct(op["ts"], DateTime)
 
-    op2 = Rooms.append("room-a", %{"type" => "set_cursor", "payload" => %{"ply" => 2}}, store)
+    {:ok, op2} =
+      Rooms.append("room-a", %{"type" => "set_cursor", "payload" => %{"ply" => 2}}, store)
+
     assert op2["seq"] == 2
   end
 
@@ -64,7 +66,7 @@ defmodule Blunderfest.RoomsTest do
 
   test "seq counters are per-room", %{store: store} do
     Rooms.append("room-a", %{"type" => "move_at_ply"}, store)
-    op = Rooms.append("room-b", %{"type" => "move_at_ply"}, store)
+    {:ok, op} = Rooms.append("room-b", %{"type" => "move_at_ply"}, store)
     assert op["seq"] == 1
   end
 
@@ -181,5 +183,26 @@ defmodule Blunderfest.RoomsTest do
 
     assert Rooms.roles("room-a", store) == %{"profile-1" => :owner, "profile-2" => :collaborator}
     assert Rooms.roles("room-b", store) == %{}
+  end
+
+  test "rooms are capped", %{store: store} do
+    for i <- 1..1000 do
+      Rooms.create("room#{i}", "anonymous", store)
+    end
+
+    assert {:error, :room_limit} = Rooms.create("onemore", "anonymous", store)
+  end
+
+  test "ops per room are capped", %{store: store} do
+    for _ <- 1..5_000 do
+      Rooms.append("full", %{"type" => "set_cursor", "payload" => %{"node_id" => 1}}, store)
+    end
+
+    assert {:error, :op_limit} =
+             Rooms.append(
+               "full",
+               %{"type" => "set_cursor", "payload" => %{"node_id" => 2}},
+               store
+             )
   end
 end

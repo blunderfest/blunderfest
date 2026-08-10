@@ -22,6 +22,11 @@ defmodule Blunderfest.Rooms do
   @type role :: :owner | :collaborator | :viewer
   @type op :: map()
 
+  # Growth caps (REVIEW.md #3): rooms and per-room op logs are bounded so a
+  # busy or hostile instance can't grow memory without limit.
+  @max_rooms 1_000
+  @max_ops_per_room 5_000
+
   @edit_op_types ~w(set_game move_at_ply replace_line comment_at_ply set_annotations set_position)
 
   # Room codes are 5 characters drawn from an unambiguous alphabet
@@ -138,8 +143,12 @@ defmodule Blunderfest.Rooms do
   end
 
   def handle_call({:create, slug, profile_id}, _from, state) do
-    room = Map.get(state, slug, empty_room())
-    {:reply, :ok, Map.put(state, slug, register_member(room, profile_id))}
+    if Map.has_key?(state, slug) or map_size(state) < @max_rooms do
+      room = Map.get(state, slug, empty_room())
+      {:reply, :ok, Map.put(state, slug, register_member(room, profile_id))}
+    else
+      {:reply, {:error, :room_limit}, state}
+    end
   end
 
   def handle_call({:approval_status, _slug, _profile_id}, _from, state) do
@@ -150,9 +159,14 @@ defmodule Blunderfest.Rooms do
 
   def handle_call({:append, slug, op}, _from, state) do
     room = Map.get(state, slug, empty_room())
-    op = Map.merge(op, %{"seq" => room.seq + 1, "ts" => DateTime.utc_now()})
-    room = %{room | seq: room.seq + 1, ops: room.ops ++ [op]}
-    {:reply, op, Map.put(state, slug, room)}
+
+    if length(room.ops) >= @max_ops_per_room do
+      {:reply, {:error, :op_limit}, state}
+    else
+      op = Map.merge(op, %{"seq" => room.seq + 1, "ts" => DateTime.utc_now()})
+      room = %{room | seq: room.seq + 1, ops: room.ops ++ [op]}
+      {:reply, {:ok, op}, Map.put(state, slug, room)}
+    end
   end
 
   def handle_call({:claim, slug, profile_id}, _from, state) do

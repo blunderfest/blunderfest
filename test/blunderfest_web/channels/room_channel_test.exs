@@ -75,7 +75,7 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "authors without a profile fall back to anonymous", %{} do
     {:ok, _reply, socket} = join_room("room:abcde")
 
-    ref = push(socket, "op", %{"type" => "set_cursor", "payload" => %{"ply" => 3}})
+    ref = push(socket, "op", %{"type" => "set_cursor", "payload" => %{"node_id" => 3}})
     assert_reply ref, :ok
 
     assert_broadcast "new_op", %{"author" => "anonymous"}
@@ -191,7 +191,7 @@ defmodule BlunderfestWeb.RoomChannelTest do
     join_room("room:abcde", %{"profile_id" => "profile-1"})
     {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})
 
-    ref = push(viewer, "op", %{"type" => "set_cursor", "payload" => %{"ply" => 3}})
+    ref = push(viewer, "op", %{"type" => "set_cursor", "payload" => %{"node_id" => 3}})
     assert_reply ref, :ok
     assert_broadcast "new_op", %{"type" => "set_cursor"}
   end

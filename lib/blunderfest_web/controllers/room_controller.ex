@@ -11,11 +11,18 @@ defmodule BlunderfestWeb.RoomController do
   def create(conn, %{"code" => code}) do
     if Rooms.valid_code?(code) do
       profile_id = creator_profile_id(conn, conn.body_params["profile_id"])
-      Rooms.create(code, profile_id)
 
-      conn
-      |> put_status(:created)
-      |> json(%{code: code})
+      case Rooms.create(code, profile_id) do
+        :ok ->
+          conn
+          |> put_status(:created)
+          |> json(%{code: code})
+
+        {:error, :room_limit} ->
+          conn
+          |> put_status(:too_many_requests)
+          |> json(%{errors: %{code: "room_limit"}})
+      end
     else
       conn
       |> put_status(:unprocessable_entity)
