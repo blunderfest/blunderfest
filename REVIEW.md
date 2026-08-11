@@ -52,7 +52,7 @@ run locally (`mix precommit`, `pnpm lint && pnpm typecheck && pnpm exec
 vitest run --pool=forks && pnpm build`) and deploys are local via `flyctl
 deploy`. A restored workflow landed and was removed again the same day.
 
-### 5. The chess core rides on a 0.1 library with workarounds
+### 5. The chess core rides on a 0.1 library with workarounds — 👀 WATCH (assessed 2026-08-11)
 
 `echecs ~> 0.1.4` needs a precompile hack
 (`scripts/ensure_echecs_magic_cache.exs`), and the app already hand-rolls
@@ -64,10 +64,19 @@ by real tests, but golden fixtures specifically for SAN disambiguation and
 castling would be worthwhile, and Echecs' maturity should be watched
 (vendor/replace if it stalls).
 
-**Update (2026-08-11):** the SAN/castling fixture gap is addressed —
-`test/blunderfest/game/moves_test.exs` covers file/rank disambiguation and
-castling (including castling out of check). What remains is the library
-watch itself and the precompile hack.
+**Assessment (2026-08-11):** contained, not a problem today. The library is
+used only in `pgn.ex` (server-side import parsing); everything interactive
+runs on chess.js in the browser. Failures on this path are loud (a 422 at
+import), never silent corruption. Upstream validates movegen against
+Lichess-DB replay; our 26 parser fixtures cover castling, en passant,
+promotions, and disambiguation. The one legality gap in echecs's SAN path
+(castling via pseudo-legal moves) is exactly the case we bypass; its
+standard SAN path does verify legality (`find_move` filters through
+`Game.verify_move/2`). GPL-3.0 is compatible — our LICENSE is GPL-3.0 too.
+The real risk is abandonment (single author, 2 releases, near-zero
+activity): if a future Elixir/OTP breaks it or hex loses it, fork/vendor
+into the repo (it's ~4k lines). A chess.js client-side parser is the only
+real alternative and isn't worth rewriting a golden-tested parser for.
 
 ### 6. ~~Legal moves are a server round-trip per position~~ ✅ DONE (2026-08-10)
 
