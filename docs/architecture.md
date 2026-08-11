@@ -112,6 +112,13 @@ list.
   tests; `useEngine` debounces position changes, aborts stale searches, and
   normalizes scores to white's perspective. The UI is the `EvalBar` beside
   the board plus the best move as an arrow overlay (`Board`'s `arrows` prop).
+- `assets/src/features/analysis/openings.ts` — opening classification
+  (ECO + name under the players): a static book (lichess-org/chess-openings,
+  CC0) built at `pnpm build` into `public/openings.json` by
+  `scripts/build-openings.mjs` — position keys (placement + side + castling)
+  to `ECO|Name`, so transpositions match and the en-passant-field convention
+  can't break lookups. The name is the deepest book position on the *viewed*
+  line, so it refines going deeper, sticks off-book, and follows variations.
 - `assets/src/components/ui.ts` — `tv()`-based component variants (Tailwind
   v4, dark theme); `<.icon>`-style icons are heroicons via the `.icon` /
   `Icon` components. The visual language (tokens, states, motion) is specced

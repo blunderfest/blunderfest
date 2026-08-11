@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
 import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceGlyph } from '@/components/board';
@@ -14,6 +14,7 @@ import { legalMovesFor } from '@/features/analysis/legalMoves';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
+import { classifyOpening, loadOpeningBook, type OpeningBook } from '@/features/analysis/openings';
 import SettingsTab from '@/features/analysis/SettingsTab';
 import ShortcutsDialog from '@/features/analysis/ShortcutsDialog';
 import SidebarTabs from '@/features/analysis/SidebarTabs';
@@ -97,6 +98,20 @@ export default function Analysis({
 
   const byId = useMemo(() => buildNodeMap(tree), [tree]);
 
+  // The opening book loads once per session; the name follows the viewed line.
+  const [book, setBook] = useState<OpeningBook | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    void loadOpeningBook().then((loaded) => {
+      if (mounted) {
+        setBook(loaded);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const { current, navigate, maxNodeId, addPending, rollbackPending } = useCursor({
     tree,
     byId,
@@ -107,6 +122,12 @@ export default function Analysis({
     onCursorChange,
     onFollowChange,
   });
+
+  /** The opening of the viewed line, once the book has loaded. */
+  const opening = useMemo(
+    () => (book === null ? null : classifyOpening(book, byId, current)),
+    [book, byId, current],
+  );
 
   const canPlay = canEdit && current !== null && current.status === 'active';
 
@@ -348,6 +369,17 @@ export default function Analysis({
             </h2>
             <p className="m-0 text-muted">{tree.result}</p>
           </div>
+          {/*
+            Fixed-height slot: the board must never shift when the name
+            appears or changes — empty at the start position.
+          */}
+          <p
+            data-testid="opening-name"
+            aria-hidden={opening === null}
+            className="m-0 -mt-2 h-[1.125rem] w-full text-note font-semibold text-gold-hi"
+          >
+            {opening === null ? '' : `${opening.eco} · ${opening.name}`}
+          </p>
 
           <div className="flex items-stretch gap-3">
             {/*
