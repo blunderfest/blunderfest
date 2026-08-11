@@ -1,0 +1,4 @@
+The chess piece images in this directory are the "cburnett" piece set by
+Colin M.L. Burnett (https://en.wikipedia.org/wiki/User:Cburnett), as
+distributed by the lila project (https://github.com/lichess-org/lila),
+licensed GPLv2+.

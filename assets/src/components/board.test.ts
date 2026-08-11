@@ -4,7 +4,7 @@ import {
   isLightSquare,
   kingInCheckSquare,
   parseFen,
-  pieceGlyph,
+  pieceSrc,
   positionToFen,
   squareFromPoint,
   squareIndex,
@@ -57,12 +57,12 @@ describe('isLightSquare', () => {
   });
 });
 
-describe('pieceGlyph', () => {
-  it('maps every piece kind and color to a glyph', () => {
-    expect(pieceGlyph('w', 'k')).toBe('♚');
-    expect(pieceGlyph('b', 'k')).toBe('♚');
-    expect(pieceGlyph('w', 'p')).toBe('♟');
-    expect(pieceGlyph('b', 'p')).toBe('♟');
+describe('pieceSrc', () => {
+  it('maps every piece kind and color to its SVG', () => {
+    expect(pieceSrc({ color: 'w', kind: 'k' })).toBe('/pieces/cburnett/wK.svg');
+    expect(pieceSrc({ color: 'b', kind: 'k' })).toBe('/pieces/cburnett/bK.svg');
+    expect(pieceSrc({ color: 'w', kind: 'p' })).toBe('/pieces/cburnett/wP.svg');
+    expect(pieceSrc({ color: 'b', kind: 'p' })).toBe('/pieces/cburnett/bP.svg');
   });
 });
 

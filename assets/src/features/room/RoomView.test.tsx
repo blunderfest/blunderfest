@@ -172,6 +172,12 @@ const secondTree: GameTree = {
   }),
 };
 
+function pieceAt(testId: string): string | null {
+  return (
+    screen.getByTestId(testId).querySelector('[data-piece]')?.getAttribute('data-piece') ?? null
+  );
+}
+
 describe('RoomView', () => {
   let channel: FakeChannel;
   let channelFactory: () => FakeChannel;
@@ -356,7 +362,7 @@ describe('RoomView', () => {
     act(() => channel.emit('new_op', op));
 
     expect(await screen.findAllByText('Alice – Bob')).toHaveLength(2);
-    expect(screen.getByTestId('square-e4')).toHaveTextContent('♟');
+    expect(pieceAt('square-e4')).toBe('wp');
     expect(screen.getByText('Imported a game')).toBeInTheDocument();
   });
 
@@ -415,7 +421,7 @@ describe('RoomView', () => {
       }),
     );
 
-    await waitFor(() => expect(screen.getByTestId('square-e5')).toHaveTextContent('♟'));
+    await waitFor(() => expect(pieceAt('square-e5')).toBe('bp'));
     expect(screen.getByRole('button', { name: 'Following presenter' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -423,7 +429,7 @@ describe('RoomView', () => {
 
     act(() => channel.emit('new_op', cursorOp(3, 1)));
 
-    await waitFor(() => expect(screen.getByTestId('square-e4')).toHaveTextContent('♟'));
+    await waitFor(() => expect(pieceAt('square-e4')).toBe('wp'));
   });
 
   it('creates an empty game with the New game button', async () => {
@@ -459,7 +465,7 @@ describe('RoomView', () => {
       'aria-pressed',
       'true',
     );
-    expect(screen.getByTestId('square-e2')).toHaveTextContent('♟');
+    expect(pieceAt('square-e2')).toBe('wp');
   });
 
   it('adds a second game without yanking the current view', async () => {
@@ -566,7 +572,7 @@ describe('RoomView', () => {
         'true',
       ),
     );
-    expect(screen.getByTestId('square-d4')).toHaveTextContent('♟');
+    expect(pieceAt('square-d4')).toBe('wp');
 
     // Breaking away locally returns us to the first game…
     fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
@@ -648,7 +654,7 @@ describe('RoomView', () => {
     // The rejected move never becomes a phantom: the board snaps back to
     // the position it was played from.
     expect(await screen.findByLabelText('Chess board after start position')).toBeInTheDocument();
-    expect(screen.getByTestId('square-e4')).toHaveTextContent('');
+    expect(pieceAt('square-e4')).toBeNull();
   });
 
   it('saves a comment on the current position as a comment_at_ply op', async () => {
@@ -820,9 +826,9 @@ describe('RoomView', () => {
     renderRoom();
 
     // Tip of the mainline (e4), then navigate to the start position.
-    await waitFor(() => expect(screen.getByTestId('square-e4')).toHaveTextContent('♟'));
+    await waitFor(() => expect(pieceAt('square-e4')).toBe('wp'));
     fireEvent.click(screen.getByRole('button', { name: 'First' }));
-    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
+    expect(pieceAt('square-e4')).toBeNull();
 
     const c4Op: Op = {
       seq: 2,
@@ -843,7 +849,7 @@ describe('RoomView', () => {
     };
     act(() => channel.emit('new_op', c4Op));
 
-    await waitFor(() => expect(screen.getByTestId('square-c4')).toHaveTextContent('♟'));
+    await waitFor(() => expect(pieceAt('square-c4')).toBe('wp'));
   });
 
   it('opens on the last played move after a rejoin, even in a variation', async () => {
@@ -869,7 +875,7 @@ describe('RoomView', () => {
     renderRoom();
 
     // The cursor lands on c4 (the move last played), not the mainline tip e4.
-    await waitFor(() => expect(screen.getByTestId('square-c4')).toHaveTextContent('♟'));
-    expect(screen.getByTestId('square-e4')).not.toHaveTextContent('♟');
+    await waitFor(() => expect(pieceAt('square-c4')).toBe('wp'));
+    expect(pieceAt('square-e4')).toBeNull();
   });
 });

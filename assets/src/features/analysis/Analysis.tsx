@@ -2,7 +2,7 @@ import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
-import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceGlyph } from '@/components/board';
+import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceSrc } from '@/components/board';
 import { button, statusDot } from '@/components/ui';
 import BoardControls from '@/features/analysis/BoardControls';
 import CommentPopup from '@/features/analysis/CommentPopup';
@@ -388,12 +388,12 @@ export default function Analysis({
               never shift when the engine display toggles.
             */}
             <div
-              className="flex w-8 shrink-0 flex-col justify-center self-stretch"
+              className="flex w-10 shrink-0 flex-col justify-center self-stretch"
               data-testid="board-left-slot"
             >
               {editor.editing ? (
                 <fieldset
-                  className="m-0 flex min-w-0 flex-col justify-center gap-1 rounded-control border border-line bg-panel px-1.5 py-2"
+                  className="m-0 flex min-w-0 flex-col justify-center gap-1 rounded-control border border-line bg-panel px-1 py-2"
                   data-testid="edit-palette"
                 >
                   {' '}
@@ -415,24 +415,20 @@ export default function Analysis({
                               color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
                               piece: t(`analysis.pieces.${kind}`),
                             })}
-                            className={`grid h-8 w-8 place-items-center rounded-control text-lg leading-none transition-colors ${
+                            className={`grid h-9 w-9 place-items-center rounded-control leading-none transition-colors ${
                               active ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
                             }`}
-                            style={{
-                              // On the dark palette, "black" pieces render in
-                              // a light silver so they stay visible.
-                              color: color === 'w' ? '#f9f9f9' : '#b6bdcc',
-                              textShadow:
-                                color === 'w'
-                                  ? '0 0 2px rgba(26,26,26,0.9)'
-                                  : '0 0 2px rgba(10,10,12,0.8)',
-                            }}
                             onPointerDown={(event) =>
                               editor.handlePalettePointerDown({ color, kind }, event)
                             }
                             onClick={() => editor.toggleBrush({ color, kind })}
                           >
-                            {pieceGlyph(color, kind)}
+                            <img
+                              src={pieceSrc({ color, kind })}
+                              alt=""
+                              draggable={false}
+                              className="h-7 w-7 select-none"
+                            />
                           </button>
                         );
                       })}
@@ -662,6 +658,17 @@ export default function Analysis({
           />
         </aside>
       </div>
+
+      {editor.paletteGhost !== null && (
+        <img
+          src={pieceSrc(editor.paletteGhost.piece)}
+          alt=""
+          draggable={false}
+          data-testid="palette-ghost"
+          className="pointer-events-none fixed z-50 h-12 w-12 -translate-x-1/2 -translate-y-1/2 select-none"
+          style={{ left: editor.paletteGhost.x, top: editor.paletteGhost.y }}
+        />
+      )}
 
       {shortcutsOpen && <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
 

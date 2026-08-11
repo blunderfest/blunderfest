@@ -7,16 +7,13 @@ export type Piece = { color: PieceColor; kind: PieceKind };
 // Index 0 = a8 ... index 63 = h1 (same convention as the backend)
 export type Position = (Piece | null)[];
 
-// Filled glyphs for both sides: piece color comes from CSS (white pieces get
-// a light fill with a dark outline) — solid silhouettes stay readable at any
-// size, while outline glyphs fade against the board.
-const glyphs: Record<PieceColor, Record<PieceKind, string>> = {
-  w: { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' },
-  b: { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' },
-};
-
-export function pieceGlyph(color: PieceColor, kind: PieceKind): string {
-  return glyphs[color][kind];
+/**
+ * The piece image: the cburnett SVG set (GPLv2+, attribution in
+ * public/pieces/cburnett/NOTICE.txt). Crisp at any size and identical on
+ * every platform, unlike font glyphs.
+ */
+export function pieceSrc(piece: Piece): string {
+  return `/pieces/cburnett/${piece.color}${piece.kind.toUpperCase()}.svg`;
 }
 
 export function parseFen(fen: string): Position {

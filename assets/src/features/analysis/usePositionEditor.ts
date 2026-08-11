@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   type Piece,
   type Position,
@@ -26,6 +26,27 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
   const [editSelected, setEditSelected] = useState<string | null>(null);
   const [editBrush, setEditBrush] = useState<Piece | 'erase' | null>(null);
   const [editError, setEditError] = useState(false);
+  /** The piece following the pointer while dragging out of the palette. */
+  const [paletteGhost, setPaletteGhost] = useState<{
+    piece: Piece;
+    x: number;
+    y: number;
+  } | null>(null);
+  const paletteListeners = useRef<{
+    move: (e: PointerEvent) => void;
+    up: (e: PointerEvent) => void;
+  } | null>(null);
+
+  // Palette drags attach window listeners; release them on unmount.
+  useEffect(() => {
+    return () => {
+      const listeners = paletteListeners.current;
+      if (listeners !== null) {
+        window.removeEventListener('pointermove', listeners.move);
+        window.removeEventListener('pointerup', listeners.up);
+      }
+    };
+  }, []);
 
   function enterEditMode(fen: string | null) {
     setEditPos(parseFen(fen ?? ''));
@@ -103,8 +124,16 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
       return;
     }
     setEditBrush(piece);
+    setPaletteGhost({ piece, x: event.clientX, y: event.clientY });
+
+    const onMove = (move: PointerEvent) => {
+      setPaletteGhost({ piece, x: move.clientX, y: move.clientY });
+    };
     const onUp = (up: PointerEvent) => {
+      window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      paletteListeners.current = null;
+      setPaletteGhost(null);
       const board = document.querySelector('[data-board-grid]');
       if (board === null) {
         return;
@@ -121,6 +150,8 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
         setEditPos(next);
       }
     };
+    paletteListeners.current = { move: onMove, up: onUp };
+    window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
   }
 
@@ -157,6 +188,7 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
     editSelected,
     editBrush,
     editError,
+    paletteGhost,
     enterEditMode,
     exitEditMode,
     handleEditSquareClick,

@@ -6,7 +6,7 @@ import {
   isLightSquare,
   type Piece,
   type Position,
-  pieceGlyph,
+  pieceSrc,
   squareFromPoint,
   squareIndex,
   squareName,
@@ -450,14 +450,14 @@ export default function Board({
 
   return (
     // Board width: viewport minus the page padding (1.5rem), the eval/palette
-    // slot (2rem) and the row gap (0.75rem), capped at 34rem — the board row
+    // slot (2.5rem) and the row gap (0.75rem), capped at 34rem — the board row
     // never overflows a phone.
     // biome-ignore lint/a11y/useAriaPropsSupportedByRole: role is img or group, both support aria-label
     // biome-ignore lint/a11y/noStaticElementInteractions: grid container handles bubbled keys and pointer gestures; focus stays on the square buttons
     <div
       ref={containerRef}
       data-board-grid
-      className={`relative grid aspect-square w-[min(calc(100vw-4.25rem),34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [-webkit-touch-callout:none] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
+      className={`relative grid aspect-square w-[min(calc(100vw-4.75rem),34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [-webkit-touch-callout:none] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
       role={interactive ? 'group' : 'img'}
       aria-label={label}
       onKeyDown={handleKeyDown}
@@ -567,19 +567,20 @@ export default function Board({
       {ghost !== null && (
         <span
           data-testid="drag-ghost"
-          className="pointer-events-none absolute z-30 text-[10.4cqi] leading-none"
+          className="pointer-events-none absolute z-30 leading-none"
           style={{
             left: ghost.left,
             top: ghost.top,
             transform: 'translate(-50%, -50%)',
-            color: ghost.piece.color === 'w' ? '#f9f9f9' : '#1a1a1a',
-            textShadow:
-              ghost.piece.color === 'w'
-                ? '0 0 2px rgba(26,26,26,0.9), 0 1px 3px rgba(0,0,0,0.55)'
-                : '0 1px 1px rgba(255,255,255,0.35)',
           }}
         >
-          {pieceGlyph(ghost.piece.color, ghost.piece.kind)}
+          <img
+            src={pieceSrc(ghost.piece)}
+            alt=""
+            draggable={false}
+            data-piece={`${ghost.piece.color}${ghost.piece.kind}`}
+            className="w-[10.4cqi] select-none"
+          />
         </span>
       )}
 
@@ -637,17 +638,12 @@ export default function Board({
 
 function PieceGlyph({ piece }: { piece: Piece }) {
   return (
-    <span
-      className="text-[10.4cqi] leading-none"
-      style={{
-        color: piece.color === 'w' ? '#f9f9f9' : '#1a1a1a',
-        textShadow:
-          piece.color === 'w'
-            ? '0 0 2px rgba(26,26,26,0.9), 0 1px 3px rgba(0,0,0,0.55)'
-            : '0 1px 1px rgba(255,255,255,0.35)',
-      }}
-    >
-      {pieceGlyph(piece.color, piece.kind)}
-    </span>
+    <img
+      src={pieceSrc(piece)}
+      alt=""
+      draggable={false}
+      data-piece={`${piece.color}${piece.kind}`}
+      className="pointer-events-none h-[85%] w-[85%] select-none"
+    />
   );
 }
