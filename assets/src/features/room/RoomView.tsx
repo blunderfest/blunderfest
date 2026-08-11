@@ -24,6 +24,13 @@ import {
   selectSortedMembers,
 } from '@/store/room';
 
+/**
+ * Shared empty fallback for the annotations lookup below. Allocating `{}`
+ * inside the selector would return a new reference on every dispatch,
+ * causing spurious re-renders (and react-redux dev warnings).
+ */
+const NO_ANNOTATIONS: Record<number, BoardAnnotations> = {};
+
 export default function RoomView({
   slug,
   onLeave,
@@ -79,7 +86,9 @@ export default function RoomView({
   const game = effectiveGameId === null ? null : (games[effectiveGameId] ?? null);
   const lastPlayedId = useAppSelector((state) => selectLastPlayed(state.room, effectiveGameId));
   const gameAnnotations = useAppSelector((state) =>
-    effectiveGameId !== null ? (state.room.annotations[effectiveGameId] ?? {}) : {},
+    effectiveGameId !== null
+      ? (state.room.annotations[effectiveGameId] ?? NO_ANNOTATIONS)
+      : NO_ANNOTATIONS,
   );
 
   const handleCursorChange = useCallback(
