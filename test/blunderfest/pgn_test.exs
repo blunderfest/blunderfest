@@ -252,6 +252,21 @@ defmodule Blunderfest.PGNTest do
                PGN.parse("1. O-O *\n")
     end
 
+    test "a bad SAN after valid moves is an error, never a crash" do
+      assert {:error, %{reason: :invalid_san_format, san: "garbage", ply: 2}} =
+               PGN.parse("1. e4 garbage\n")
+    end
+
+    test "a bad SAN deep in the game is an error, never a crash" do
+      assert {:error, %{reason: :invalid_san_format, san: "garbage", ply: 6}} =
+               PGN.parse("1. e4 e5 2. Nf3 Nc6 3. Bb5 garbage\n")
+    end
+
+    test "a bad SAN inside a variation is an error, never a crash" do
+      assert {:error, %{reason: :invalid_san_format, san: "garbage"}} =
+               PGN.parse("1. e4 e5 (2. garbage) 2. Nf3 *\n")
+    end
+
     test "move count helpers" do
       tree =
         parse!("""

@@ -90,7 +90,9 @@ describe('ImportDialog', () => {
 
     fireEvent.change(screen.getByLabelText('PGN'), { target: { value: 'not pgn' } });
 
-    expect(await screen.findByText('⚠ This PGN could not be parsed.')).toBeInTheDocument();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent("Couldn't import it");
+    expect(alert).toHaveTextContent('This PGN could not be parsed.');
     expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled();
   });
 
@@ -129,5 +131,56 @@ describe('ImportDialog', () => {
       '[Event "Friendly sample"]',
     );
     expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
+  });
+
+  it('excludes engine annotations by default and variations on uncheck', async () => {
+    // 1. e4 {[%eval] comment} with mainline e5 and a variation c5.
+    const annotated = {
+      ...tree,
+      root: {
+        ...tree.root,
+        children: [
+          {
+            ...tree.root,
+            id: 1,
+            ply: 1,
+            san: 'e4',
+            from: 'e2',
+            to: 'e4',
+            comment: '[%eval 0.3] Sharp.',
+            children: [
+              { ...tree.root, id: 2, ply: 2, san: 'e5', from: 'e7', to: 'e5' },
+              { ...tree.root, id: 3, ply: 2, san: 'c5', from: 'c7', to: 'c5' },
+            ],
+          },
+        ],
+      },
+    };
+    stubFetch({
+      '/api/import/pgn': () => jsonResponse({ tree: annotated }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: pgn } });
+    expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
+
+    // Checked = kept. Engine annotations are the one exclusion by default.
+    expect(
+      screen.getByRole('checkbox', { name: 'Engine annotations (eval, clock)' }),
+    ).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Comments' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Names & event' })).toBeChecked();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Variations' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    const imported = onImported.mock.calls[0][0] as typeof annotated;
+    const first = imported.root.children[0];
+    // The eval marker is gone but the human comment survives...
+    expect(first.comment).toBe('Sharp.');
+    // ...and only the mainline remains.
+    expect(first.children).toHaveLength(1);
+    expect(first.children[0].san).toBe('e5');
   });
 });

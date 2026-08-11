@@ -288,16 +288,19 @@ defmodule Blunderfest.PGN do
       {:ok, _, _} ->
         {content, rest_after} = split_rav_block(rest)
 
-        {:ok, rav_nodes, rav_alts, rav_result, _} =
-          parse_moves(content, game, ply, %{pending: nil, result: nil}, {[], []})
+        case parse_moves(content, game, ply, %{pending: nil, result: nil}, {[], []}) do
+          {:ok, rav_nodes, rav_alts, rav_result, _} ->
+            parse_moves(
+              rest_after,
+              game,
+              ply,
+              %{st | result: rav_result || st.result},
+              {nodes ++ Enum.reverse(rav_nodes), alts ++ Enum.reverse(rav_alts)}
+            )
 
-        parse_moves(
-          rest_after,
-          game,
-          ply,
-          %{st | result: rav_result || st.result},
-          {nodes ++ Enum.reverse(rav_nodes), alts ++ Enum.reverse(rav_alts)}
-        )
+          {:error, _} = error ->
+            error
+        end
     end
   end
 
@@ -327,27 +330,28 @@ defmodule Blunderfest.PGN do
 
           {rest1, node} = attach_post_tokens(rest, node)
 
-          {:ok, rav_from_game, alt_children, rav_result, rest2} =
-            parse_ravs(rest1, game, new_game, ply, node.ply, {[], [], nil})
+          # Nested parses can fail (a bad SAN deeper in the game or in a
+          # variation): propagate the error instead of crashing the match.
+          with {:ok, rav_from_game, alt_children, rav_result, rest2} <-
+                 parse_ravs(rest1, game, new_game, ply, node.ply, {[], [], nil}),
+               {:ok, continuation, continuation_alts, result, rest3} <-
+                 parse_moves(rest2, new_game, node.ply, st, {[], []}) do
+            children =
+              case continuation do
+                [mainline | _] -> [mainline]
+                [] -> []
+              end
 
-          {:ok, continuation, continuation_alts, result, rest3} =
-            parse_moves(rest2, new_game, node.ply, st, {[], []})
+            node = %{node | children: children ++ alt_children ++ continuation_alts}
 
-          children =
-            case continuation do
-              [mainline | _] -> [mainline]
-              [] -> []
-            end
-
-          node = %{node | children: children ++ alt_children ++ continuation_alts}
-
-          parse_moves(
-            rest3,
-            game,
-            ply,
-            %{st | result: rav_result || result || st.result},
-            {[node | nodes], Enum.reverse(rav_from_game) ++ alts}
-          )
+            parse_moves(
+              rest3,
+              game,
+              ply,
+              %{st | result: rav_result || result || st.result},
+              {[node | nodes], Enum.reverse(rav_from_game) ++ alts}
+            )
+          end
       end
     end
   end
@@ -370,26 +374,34 @@ defmodule Blunderfest.PGN do
       {:ok, first_san, _inner} ->
         {content, rest_after} = split_rav_block(rest)
 
-        {from_game_nodes, alt_nodes, rav_result} =
+        {from_game?, parse_result} =
           case resolve_san(game, first_san) do
             {:ok, _} ->
-              {:ok, nodes, alts, res, _} =
-                parse_moves(content, game, ply, %{pending: nil, result: nil}, {[], []})
-
-              {nodes ++ alts, [], res}
+              {true, parse_moves(content, game, ply, %{pending: nil, result: nil}, {[], []})}
 
             _ ->
-              {:ok, nodes, alts, res, _} =
-                parse_moves(content, new_game, node_ply, %{pending: nil, result: nil}, {[], []})
-
-              {[], nodes ++ alts, res}
+              {false,
+               parse_moves(content, new_game, node_ply, %{pending: nil, result: nil}, {[], []})}
           end
 
-        parse_ravs(rest_after, game, new_game, ply, node_ply, {
-          f ++ from_game_nodes,
-          a ++ alt_nodes,
-          rav_result || r
-        })
+        case parse_result do
+          {:ok, nodes, alts, res, _} ->
+            {from_game_nodes, alt_nodes} =
+              if from_game? do
+                {nodes ++ alts, []}
+              else
+                {[], nodes ++ alts}
+              end
+
+            parse_ravs(rest_after, game, new_game, ply, node_ply, {
+              f ++ from_game_nodes,
+              a ++ alt_nodes,
+              res || r
+            })
+
+          {:error, _} = error ->
+            error
+        end
     end
   end
 
