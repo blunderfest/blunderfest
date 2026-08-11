@@ -293,33 +293,75 @@ export default function ImportDialog({
                     strippable.comments ||
                     strippable.variations ||
                     strippable.metadata) && (
-                    <div className="col-span-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-2">
-                      <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                    <fieldset className="col-span-2 m-0 border-0 border-t border-line p-0 pt-2">
+                      <legend className="mb-1.5 text-micro font-semibold uppercase tracking-[0.08em] text-faint">
                         {t('import.keepLabel')}
-                      </span>
-                      {(
-                        [
-                          ['comments', t('import.keepComments'), strippable.comments],
-                          ['variations', t('import.keepVariations'), strippable.variations],
-                          ['metadata', t('import.keepMetadata'), strippable.metadata],
-                          ['evaluations', t('import.keepEvaluations'), strippable.evaluations],
-                        ] as const
-                      ).map(([key, label, applicable]) =>
-                        applicable ? (
-                          <label key={key} className="flex items-center gap-1.5 text-ui text-muted">
-                            <input
-                              type="checkbox"
-                              className="accent-gold"
-                              checked={keep[key]}
-                              onChange={(event) =>
-                                setKeep({ ...keep, [key]: event.target.checked })
-                              }
-                            />
-                            {label}
-                          </label>
-                        ) : null,
-                      )}
-                    </div>
+                      </legend>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(
+                          [
+                            [
+                              'comments',
+                              t('import.keepComments'),
+                              t('import.keepCommentsDesc'),
+                              strippable.comments,
+                            ],
+                            [
+                              'variations',
+                              t('import.keepVariations'),
+                              t('import.keepVariationsDesc'),
+                              strippable.variations,
+                            ],
+                            [
+                              'metadata',
+                              t('import.keepMetadata'),
+                              t('import.keepMetadataDesc'),
+                              strippable.metadata,
+                            ],
+                            [
+                              'evaluations',
+                              t('import.keepEvaluations'),
+                              t('import.keepEvaluationsDesc'),
+                              strippable.evaluations,
+                            ],
+                          ] as const
+                        ).map(([key, title, description, applicable]) =>
+                          applicable ? (
+                            <label
+                              key={key}
+                              className="group/card flex cursor-pointer items-start gap-2 rounded-control border border-line bg-raised p-2.5 transition-colors has-[:checked]:border-gold/60 has-[:checked]:bg-gold/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-gold-hi"
+                            >
+                              <input
+                                type="checkbox"
+                                className="sr-only"
+                                aria-label={title}
+                                checked={keep[key]}
+                                onChange={(event) =>
+                                  setKeep({ ...keep, [key]: event.target.checked })
+                                }
+                              />
+                              <span
+                                aria-hidden="true"
+                                className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border border-line-strong transition-colors group-has-[:checked]/card:border-gold group-has-[:checked]/card:bg-gold"
+                              >
+                                {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative tick — the wrapping span is aria-hidden and the real checkbox carries the state */}
+                                <svg
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                  className="h-3 w-3 text-[#20180a] opacity-0 transition-opacity group-has-[:checked]/card:opacity-100"
+                                >
+                                  <path d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.8 3.8 6.8-6.8a1 1 0 0 1 1.4 0Z" />
+                                </svg>
+                              </span>
+                              <span className="flex min-w-0 flex-col">
+                                <span className="text-ui font-semibold text-ink">{title}</span>
+                                <span className="text-note text-faint">{description}</span>
+                              </span>
+                            </label>
+                          ) : null,
+                        )}
+                      </div>
+                    </fieldset>
                   )}
               </div>
             </div>

@@ -166,9 +166,7 @@ describe('ImportDialog', () => {
     expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
 
     // Checked = kept. Engine annotations are the one exclusion by default.
-    expect(
-      screen.getByRole('checkbox', { name: 'Engine annotations (eval, clock)' }),
-    ).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Engine annotations' })).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Comments' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Names & event' })).toBeChecked();
     fireEvent.click(screen.getByRole('checkbox', { name: 'Variations' }));
