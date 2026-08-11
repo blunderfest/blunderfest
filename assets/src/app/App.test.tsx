@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -309,6 +309,76 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();
     expect(socketMocks.channelFor).not.toHaveBeenCalled();
+  });
+
+  it('resets the selected game when switching rooms without leaving', async () => {
+    const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    const gameOp = (seq: number, gameId: string, white: string) => ({
+      seq,
+      author: 'profile-1',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'set_game' as const,
+      payload: {
+        game_id: gameId,
+        tree: {
+          headers: { White: white, Black: 'Bob' },
+          result: '*',
+          setup: null,
+          mainline_ply_count: 0,
+          node_count: 1,
+          root: {
+            id: 0,
+            ply: 0,
+            san: null,
+            from: null,
+            to: null,
+            promotion: null,
+            comment: null,
+            nags: [],
+            status: 'active',
+            fen: START_FEN,
+            children: [],
+          },
+        },
+      },
+    });
+
+    window.location.hash = '#/r/aaaaa';
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
+    });
+    const channelA = new FakeChannel();
+    channelA.joinReturn = {
+      ops: [gameOp(1, 'game-a1', 'Alice'), gameOp(2, 'game-a2', 'Carol')],
+      roles: { 'profile-1': 'owner' },
+    };
+    const channelB = new FakeChannel();
+    channelB.joinReturn = {
+      ops: [gameOp(1, 'game-b1', 'Zoe')],
+      roles: { 'profile-1': 'owner' },
+    };
+    socketMocks.channelFor.mockImplementation((topic: string) =>
+      topic === 'room:aaaaa' ? channelA : channelB,
+    );
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    // In room A, select the second game explicitly.
+    fireEvent.click(await screen.findByRole('button', { name: 'Carol – Bob' }));
+    expect(await screen.findByRole('heading', { name: 'Carol – Bob' })).toBeInTheDocument();
+
+    // Switch rooms via a hash change (no Leave in between): the selected
+    // game from room A must not leak into room B — its first game shows.
+    act(() => {
+      window.location.hash = '#/r/bbbbb';
+    });
+
+    expect(await screen.findByRole('heading', { name: 'Zoe – Bob' })).toBeInTheDocument();
+    expect(screen.queryByText('Import a game to start analyzing.')).not.toBeInTheDocument();
   });
 
   it('leaves a room back to the home screen', async () => {

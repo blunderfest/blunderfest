@@ -122,7 +122,16 @@ export default function App() {
             <p className="m-0 text-muted">{t('profile.loading')}</p>
           </div>
         ) : (
-          <RoomView slug={route.slug} onLeave={navigateHome} selfId={selfId} selfName={selfName} />
+          // Keyed by slug: switching rooms without leaving (a hash change
+          // room→room) must remount, not carry over the previous room's
+          // local state (selected game, follow override).
+          <RoomView
+            key={route.slug}
+            slug={route.slug}
+            onLeave={navigateHome}
+            selfId={selfId}
+            selfName={selfName}
+          />
         )}
       </main>
     </div>
