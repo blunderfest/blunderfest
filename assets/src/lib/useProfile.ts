@@ -23,7 +23,7 @@ export function useProfile(): ProfileState {
 
       if (device) {
         try {
-          const profile = await fetchProfile(device);
+          const profile = await fetchProfile(device, signal);
           if (!signal.aborted) {
             setState({ status: 'ready', profile, error: null });
           }
@@ -45,7 +45,7 @@ export function useProfile(): ProfileState {
       }
 
       try {
-        const { profile, secret } = await createProfile();
+        const { profile, secret } = await createProfile(signal);
         saveDevice({ id: profile.id, secret });
         if (!signal.aborted) {
           setState({ status: 'ready', profile, error: null });

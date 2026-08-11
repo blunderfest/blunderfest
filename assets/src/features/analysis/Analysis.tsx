@@ -542,7 +542,7 @@ export default function Analysis({
         setCommentOpen(true);
         handled = true;
       }
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && canEdit) {
         const drawn = annotations[current.id];
         if (drawn !== undefined && (drawn.arrows.length > 0 || drawn.highlights.length > 0)) {
           onAnnotations?.({ arrows: [], highlights: [] }, current.id);

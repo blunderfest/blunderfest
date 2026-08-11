@@ -36,8 +36,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function createProfile(): Promise<{ profile: Profile; secret: string }> {
-  return request('/api/profiles', { method: 'POST' });
+export async function createProfile(
+  signal?: AbortSignal,
+): Promise<{ profile: Profile; secret: string }> {
+  return request('/api/profiles', { method: 'POST', signal });
 }
 
 /** Explicitly creates a room on the server; rooms never exist until this returns. */
@@ -49,9 +51,10 @@ export async function createRoom(code: string): Promise<{ code: string }> {
   });
 }
 
-export async function fetchProfile(device: Device): Promise<Profile> {
+export async function fetchProfile(device: Device, signal?: AbortSignal): Promise<Profile> {
   const body = await request<{ profile: Profile }>(`/api/profiles/${device.id}`, {
     headers: { Authorization: `Bearer ${device.secret}` },
+    signal,
   });
   return body.profile;
 }

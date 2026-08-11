@@ -52,6 +52,7 @@ export default function RoomView({
     channelFactory,
   );
   const storePresence = useAppSelector((state) => state.room.presence);
+  const names = useAppSelector((state) => state.room.names);
   const members = useAppSelector((state) => selectSortedMembers(state.room));
   const roles = useAppSelector((state) => state.room.roles);
   const games = useAppSelector((state) => state.room.games);
@@ -242,7 +243,7 @@ export default function RoomView({
               onSetRole={handleSetRole}
             />
           )}
-          <ActivityFeed ops={activityOps} presence={storePresence} />
+          <ActivityFeed ops={activityOps} presence={storePresence} names={names} />
         </aside>
 
         <section className="order-first flex flex-col items-center gap-4 md:order-none">

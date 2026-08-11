@@ -35,7 +35,7 @@ export type WorkerLike = {
 };
 
 export interface ChessEngine {
-  /** Runs the UCI handshake once; idempotent. */
+  /** Runs the UCI handshake once; retried after a failure. */
   init(): Promise<void>;
   analyze(
     fen: string,
@@ -43,6 +43,8 @@ export interface ChessEngine {
     signal: AbortSignal,
   ): Promise<EngineResult | null>;
   terminate(): void;
+  /** True once the worker died fatally (script/wasm/exception) — it will never answer again. */
+  hasFailed?(): boolean;
 }
 
 function abortError(): DOMException {
@@ -125,15 +127,23 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
 
   function initialize(): Promise<void> {
     initialized ??= (async () => {
-      worker.postMessage('uci');
-      await waitForLine((line) => line === 'uciok', 30_000);
-      worker.postMessage('isready');
-      await waitForLine((line) => line === 'readyok', 30_000);
+      try {
+        worker.postMessage('uci');
+        await waitForLine((line) => line === 'uciok', 30_000);
+        worker.postMessage('isready');
+        await waitForLine((line) => line === 'readyok', 30_000);
+      } catch (error) {
+        // A failed handshake (timeout, hiccup) may be retried; a fatal
+        // worker error stays fatal — `hasFailed()` reports that.
+        initialized = null;
+        throw error;
+      }
     })();
     return initialized;
   }
 
   let currentSearch = 0;
+  let cancelCurrentSearch: (() => void) | null = null;
 
   async function analyze(
     fen: string,
@@ -144,6 +154,10 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
     if (signal.aborted) {
       throw abortError();
     }
+
+    // A new search supersedes any in-flight one: stop it and drop its
+    // listener even when the caller forgot to abort it first.
+    cancelCurrentSearch?.();
 
     const search = ++currentSearch;
     let latest: InfoLine | null = null;
@@ -166,6 +180,9 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
           bestMove = move;
           off();
           signal.removeEventListener('abort', onAbort);
+          if (cancelCurrentSearch === onAbort) {
+            cancelCurrentSearch = null;
+          }
           if (search !== currentSearch) {
             return;
           }
@@ -184,9 +201,13 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
 
       const onAbort = () => {
         off();
+        if (cancelCurrentSearch === onAbort) {
+          cancelCurrentSearch = null;
+        }
         worker.postMessage('stop');
         reject(abortError());
       };
+      cancelCurrentSearch = onAbort;
       signal.addEventListener('abort', onAbort, { once: true });
 
       worker.postMessage(`position fen ${fen}`);
@@ -200,12 +221,21 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
     terminate() {
       worker.terminate();
     },
+    hasFailed() {
+      return fatal !== null;
+    },
   };
 }
 
 let shared: ChessEngine | null = null;
 
 export function getSharedEngine(): ChessEngine {
+  // A fatally failed worker can never answer again — replace it, so the UI's
+  // retry path actually recovers.
+  if (shared !== null && shared.hasFailed?.() === true) {
+    shared.terminate();
+    shared = null;
+  }
   shared ??= createStockfishEngine();
   return shared;
 }

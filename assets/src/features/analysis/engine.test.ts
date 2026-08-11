@@ -137,17 +137,25 @@ describe('createStockfishEngine', () => {
     worker.emit('info depth 9 score cp 99 pv g1f3');
   });
 
-  it('only the newest search resolves when searches overlap', async () => {
+  it('cancels the superseded search when searches overlap', async () => {
     const worker = new FakeWorker();
     const engine = await bootReady(worker);
 
     const controllerA = new AbortController();
-    void engine.analyze(START_FEN, { movetimeMs: 250 }, controllerA.signal);
+    const first = engine.analyze(START_FEN, { movetimeMs: 250 }, controllerA.signal);
     await flush();
+    // Attach the rejection expectation before the second search cancels the
+    // first, so the rejection never goes unhandled.
+    const firstRejected = expect(first).rejects.toThrow('Engine search aborted');
 
     const controllerB = new AbortController();
     const second = engine.analyze(START_FEN, { movetimeMs: 250 }, controllerB.signal);
     await flush();
+
+    // The first search is cancelled outright (not left hanging): its
+    // listener is dropped and the worker is told to stop.
+    await firstRejected;
+    expect(worker.messages).toContain('stop');
 
     worker.emit('info depth 4 score cp 8 pv e2e4');
     worker.emit('bestmove e2e4');

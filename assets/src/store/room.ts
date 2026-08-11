@@ -23,6 +23,12 @@ export type RoomState = {
   slug: string | null;
   ops: Op[];
   presence: Record<string, PresenceMember>;
+  /**
+   * Display names of everyone seen this room session, including members who
+   * have since left — so historical entries (the activity feed) don't decay
+   * to raw profile ids when someone departs.
+   */
+  names: Record<string, string>;
   roles: Record<string, MemberRole>;
   games: Record<string, GameTree>;
   /** Board drawings per game and node (gameId → nodeId → arrows+highlights). */
@@ -46,6 +52,7 @@ const initialState: RoomState = {
   slug: null,
   ops: [],
   presence: {},
+  names: {},
   roles: {},
   games: {},
   lastPlayed: {},
@@ -330,76 +337,85 @@ export function selectCanEdit(state: RoomState, profileId: string | null): boole
  * as long as they are still in the room. Nobody presents until an owner is
  * present.
  */
-export function selectPresenter(state: RoomState): PresenceMember | null {
-  let ownerId: string | null = null;
-  for (const [id, role] of Object.entries(state.roles)) {
-    if (role === 'owner') {
-      ownerId = id;
-      break;
+export const selectPresenter = createSelector(
+  [(state: RoomState) => state.roles, (state: RoomState) => state.presence],
+  (roles, presence) => {
+    let ownerId: string | null = null;
+    for (const [id, role] of Object.entries(roles)) {
+      if (role === 'owner') {
+        ownerId = id;
+        break;
+      }
     }
-  }
-  if (ownerId === null) {
-    return null;
-  }
-  return state.presence[ownerId] ?? null;
-}
+    if (ownerId === null) {
+      return null;
+    }
+    return presence[ownerId] ?? null;
+  },
+);
 
 /**
  * The game the presenter is currently viewing — the target of their last
  * focus op (their own import, or a `select_game` announcing a switch). Falls
  * back to the newest imported game when the owner has not focused anything.
+ * Memoized: it scans the op log, which would otherwise re-run on every
+ * dispatch (cursor ops make dispatches frequent).
  */
-export function selectPresenterGameId(state: RoomState): string | null {
-  const presenter = selectPresenter(state);
-  if (presenter === null) {
-    return null;
-  }
-  let focus: string | null = null;
-  let newest: string | null = null;
-  for (const op of state.ops) {
-    if (op.type === 'set_game') {
-      newest = gameIdOf(op);
-      if (op.author === presenter.id) {
-        focus = gameIdOf(op);
+export const selectPresenterGameId = createSelector(
+  [(state: RoomState) => state.ops, selectPresenter],
+  (ops, presenter) => {
+    if (presenter === null) {
+      return null;
+    }
+    let focus: string | null = null;
+    let newest: string | null = null;
+    for (const op of ops) {
+      if (op.type === 'set_game') {
+        newest = gameIdOf(op);
+        if (op.author === presenter.id) {
+          focus = gameIdOf(op);
+        }
+      }
+      if (op.type === 'select_game' && op.author === presenter.id) {
+        focus = op.payload.game_id;
       }
     }
-    if (op.type === 'select_game' && op.author === presenter.id) {
-      focus = op.payload.game_id;
-    }
-  }
-  return focus ?? newest;
-}
+    return focus ?? newest;
+  },
+);
 
 /**
  * The presenter's most recent cursor, restricted to ops after the game they
  * are currently viewing — cursor ops from other members, or from a previous
- * game, are ignored.
+ * game, are ignored. Memoized for the same reason as selectPresenterGameId.
  */
-export function selectPresenterCursor(state: RoomState): number | null {
-  const presenter = selectPresenter(state);
-  if (presenter === null) {
-    return null;
-  }
-  let focusSeq = -1;
-  for (const op of state.ops) {
-    if (op.author !== presenter.id) {
-      continue;
+export const selectPresenterCursor = createSelector(
+  [(state: RoomState) => state.ops, selectPresenter],
+  (ops, presenter) => {
+    if (presenter === null) {
+      return null;
     }
-    if (op.type === 'set_game' || op.type === 'select_game') {
-      focusSeq = op.seq;
+    let focusSeq = -1;
+    for (const op of ops) {
+      if (op.author !== presenter.id) {
+        continue;
+      }
+      if (op.type === 'set_game' || op.type === 'select_game') {
+        focusSeq = op.seq;
+      }
     }
-  }
-  let cursor: number | null = null;
-  for (const op of state.ops) {
-    if (op.seq <= focusSeq) {
-      continue;
+    let cursor: number | null = null;
+    for (const op of ops) {
+      if (op.seq <= focusSeq) {
+        continue;
+      }
+      if (op.type === 'set_cursor' && op.author === presenter.id) {
+        cursor = op.payload.node_id;
+      }
     }
-    if (op.type === 'set_cursor' && op.author === presenter.id) {
-      cursor = op.payload.node_id;
-    }
-  }
-  return cursor;
-}
+    return cursor;
+  },
+);
 
 const roomSlice = createSlice({
   name: 'room',
@@ -409,6 +425,7 @@ const roomSlice = createSlice({
       state.slug = action.payload.slug;
       state.ops = [];
       state.presence = {};
+      state.names = {};
       state.roles = {};
       state.games = {};
       state.lastPlayed = {};
@@ -420,6 +437,7 @@ const roomSlice = createSlice({
       state.slug = null;
       state.ops = [];
       state.presence = {};
+      state.names = {};
       state.roles = {};
       state.games = {};
       state.lastPlayed = {};
@@ -506,6 +524,7 @@ const roomSlice = createSlice({
     },
     joinMember(state, action: PayloadAction<PresenceMember>) {
       state.presence[action.payload.id] = action.payload;
+      state.names[action.payload.id] = action.payload.name;
     },
     leaveMember(state, action: PayloadAction<{ id: string }>) {
       delete state.presence[action.payload.id];

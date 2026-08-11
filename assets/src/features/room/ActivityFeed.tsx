@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { useRef } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { panel, panelHeader } from '@/components/ui';
 import type { Op, PresenceMember } from '@/protocol/ops';
@@ -43,22 +43,21 @@ function opIcon(op: Op): string {
 export default function ActivityFeed({
   ops,
   presence,
+  names,
 }: {
   ops: Op[];
   presence: Record<string, PresenceMember>;
+  names: Record<string, string>;
 }) {
   const { t } = useTranslation();
 
   /**
-   * Ops replayed on join are not "arrivals" — only ops seen for the first
-   * time after mount get the arrive flash. The set is marked at render time,
-   * so the class survives re-renders until the animation completes.
+   * Ops replayed on join are not "arrivals" — only ops with a seq beyond
+   * the join replay get the arrive flash. The baseline is captured once, on
+   * mount, via a lazy initializer: pure render, so it behaves under
+   * StrictMode (no ref mutation during render).
    */
-  const seenRef = useRef<Set<number> | null>(null);
-  if (seenRef.current === null) {
-    seenRef.current = new Set(ops.map((op) => op.seq));
-  }
-  const seen = seenRef.current;
+  const [joinedAtSeq] = useState(() => ops.reduce((max, op) => Math.max(max, op.seq), 0));
 
   return (
     <section
@@ -78,10 +77,7 @@ export default function ActivityFeed({
         >
           <ul className="m-0 flex flex-col gap-0.5 p-2">
             {[...ops].reverse().map((op) => {
-              const arrived = !seen.has(op.seq);
-              if (arrived) {
-                seen.add(op.seq);
-              }
+              const arrived = op.seq > joinedAtSeq;
               return (
                 <li
                   key={op.seq}
@@ -92,7 +88,7 @@ export default function ActivityFeed({
                   <span aria-hidden="true">{opIcon(op)}</span>
                   <span className="min-w-0 flex-1 text-muted">{opLabel(t, op)}</span>
                   <span className="shrink-0 text-info">
-                    {presence[op.author]?.name ?? op.author}
+                    {presence[op.author]?.name ?? names[op.author] ?? op.author}
                   </span>
                 </li>
               );

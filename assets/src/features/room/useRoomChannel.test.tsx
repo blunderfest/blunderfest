@@ -337,6 +337,7 @@ describe('useRoomChannel', () => {
       slug: null,
       ops: [],
       presence: {},
+      names: {},
       roles: {},
       games: {},
       lastPlayed: {},

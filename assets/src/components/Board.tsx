@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { tv } from 'tailwind-variants';
 import {
   arrowShape,
@@ -126,8 +126,24 @@ export default function Board({
     startY: number;
     timer: number;
   } | null>(null);
+  // The active draw's window listeners, so they can be removed on unmount.
+  const drawCleanupRef = useRef<(() => void) | null>(null);
 
   const drawable = onDrawArrow !== undefined || onToggleHighlight !== undefined;
+
+  // Release gesture listeners and the long-press timer on unmount (e.g.
+  // switching games mid-drag): nothing may fire into the old view.
+  useEffect(() => {
+    const longPress = longPressRef;
+    const drawCleanup = drawCleanupRef;
+    return () => {
+      if (longPress.current !== null) {
+        window.clearTimeout(longPress.current.timer);
+        longPress.current = null;
+      }
+      drawCleanup.current?.();
+    };
+  }, []);
 
   function boardRect() {
     return containerRef.current?.getBoundingClientRect() ?? null;
@@ -292,9 +308,8 @@ export default function Board({
     containerRef.current?.setPointerCapture?.(pointerId);
 
     const finish = (to: string | null) => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onEnd);
-      window.removeEventListener('pointercancel', onCancel);
+      drawCleanupRef.current?.();
+      drawCleanupRef.current = null;
       const draw = drawRef.current;
       drawRef.current = null;
       setDrawPreview(null);
@@ -347,6 +362,11 @@ export default function Board({
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onEnd);
     window.addEventListener('pointercancel', onCancel);
+    drawCleanupRef.current = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onCancel);
+    };
   }
 
   function cancelLongPress() {
