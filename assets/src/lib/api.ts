@@ -107,6 +107,47 @@ export type LegalMove = {
   status: string;
 };
 
+/** A saved game in the per-profile library (ADR-0020). */
+export type LibraryEntry = {
+  id: string;
+  title: string;
+  saved_at: string;
+  tree: GameTree;
+};
+
+function authHeaders(device: Device): Record<string, string> {
+  return { Authorization: `Bearer ${device.secret}` };
+}
+
+export async function fetchLibrary(device: Device): Promise<LibraryEntry[]> {
+  const body = await request<{ entries: LibraryEntry[] }>(`/api/profiles/${device.id}/library`, {
+    headers: authHeaders(device),
+  });
+  return body.entries;
+}
+
+export async function saveToLibrary(
+  device: Device,
+  tree: GameTree,
+): Promise<{ id: string; title: string; saved_at: string }> {
+  const body = await request<{ entry: { id: string; title: string; saved_at: string } }>(
+    `/api/profiles/${device.id}/library`,
+    {
+      method: 'POST',
+      headers: { ...authHeaders(device), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tree }),
+    },
+  );
+  return body.entry;
+}
+
+export async function deleteFromLibrary(device: Device, entryId: string): Promise<void> {
+  await request(`/api/profiles/${device.id}/library/${entryId}`, {
+    method: 'DELETE',
+    headers: authHeaders(device),
+  });
+}
+
 /**
  * A blank game at the starting position, used for "New game" in rooms.
  */

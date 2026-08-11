@@ -1,5 +1,5 @@
 import type { Channel } from 'phoenix';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, chip, panel, statusDot } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
@@ -37,12 +37,16 @@ export default function RoomView({
   selfId = null,
   selfName = null,
   channelFactory,
+  pendingGame = null,
+  onConsumePendingGame,
 }: {
   slug: string;
   onLeave: () => void;
   selfId?: string | null;
   selfName?: string | null;
   channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
+  pendingGame?: GameTree | null;
+  onConsumePendingGame?: () => void;
 }) {
   const { t } = useTranslation();
   const { joined, joinError, sendOp, sendRole } = useRoomChannel(
@@ -150,13 +154,25 @@ export default function RoomView({
     [sendOp, effectiveGameId],
   );
 
-  function handleImported(tree: GameTree) {
-    setFollowOverride(false);
-    const gameId = crypto.randomUUID();
-    sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
-    setActiveGameId(gameId);
-    setShowImport(false);
-  }
+  const handleImported = useCallback(
+    (tree: GameTree) => {
+      setFollowOverride(false);
+      const gameId = crypto.randomUUID();
+      sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
+      setActiveGameId(gameId);
+      setShowImport(false);
+    },
+    [sendOp],
+  );
+
+  // A game opened from the library (ADR-0020): seed it into the fresh room
+  // once the channel is joined.
+  useEffect(() => {
+    if (joined && pendingGame) {
+      handleImported(pendingGame);
+      onConsumePendingGame?.();
+    }
+  }, [joined, pendingGame, handleImported, onConsumePendingGame]);
 
   function handleNewGame() {
     setFollowOverride(false);

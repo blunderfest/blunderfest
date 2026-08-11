@@ -9,6 +9,8 @@ defmodule Blunderfest.Application do
   def start(_type, _args) do
     children = [
       Blunderfest.Profiles,
+      # Per-profile game library (ADR-0020): saved game trees, session-scoped.
+      Blunderfest.Library,
       # Fixed-window rate limiter for anonymous room creation.
       Blunderfest.RateLimit,
       # One process per room (ADR-0012), distributed across the cluster

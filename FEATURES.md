@@ -59,7 +59,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Lichess URL import
 - ✅ New blank game for free play/analysis
 - ✅ PGN export (annotated: variations, comments, NAGs; setup analysis exports as extra games with SetUp/FEN headers)
-- 🚧 Room/game claiming and a per-profile game library (the reason to have an account at all)
+- ✅ Per-profile game library (ADR-0020): save a room game, reopen it in a fresh room — session-scoped until the storage decision
+- 💡 Sign-in (magic links) + durable accounts — the claiming half of the library; gated on the ADR-0001 storage decision
 - 💡 Chess.com game URL import
 - 💡 Bulk PGN import (multi-game files)
 - 💡 FEN share links / position-only URLs

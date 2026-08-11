@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Logo from '@/components/Logo';
 import Home from '@/features/home/Home';
 import RoomHeader from '@/features/room/RoomHeader';
 import RoomView from '@/features/room/RoomView';
+import type { GameTree } from '@/lib/api';
 import { useProfile } from '@/lib/useProfile';
 
 export type BackendStatus = 'checking' | 'ok' | 'down';
@@ -82,6 +83,18 @@ export default function App() {
   const selfId = profile.status === 'ready' ? profile.profile.id : null;
   const selfName = profile.status === 'ready' ? profile.profile.name : null;
 
+  /**
+   * A library game waiting to seed the freshly created room (ADR-0020):
+   * Home creates the room, navigates, and RoomView pushes the tree as a
+   * set_game op once joined.
+   */
+  const [pendingGame, setPendingGame] = useState<GameTree | null>(null);
+  const openGame = useCallback((tree: GameTree, slug: string) => {
+    setPendingGame(tree);
+    navigateToRoom(slug);
+  }, []);
+  const consumePendingGame = useCallback(() => setPendingGame(null), []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <button
@@ -113,6 +126,7 @@ export default function App() {
             region={region}
             userName={profile.status === 'ready' ? name : null}
             onJoin={navigateToRoom}
+            onOpenGame={openGame}
           />
         ) : profile.status === 'loading' ? (
           // Wait for the identity before joining the room channel: joining
@@ -131,6 +145,8 @@ export default function App() {
             onLeave={navigateHome}
             selfId={selfId}
             selfName={selfName}
+            pendingGame={pendingGame}
+            onConsumePendingGame={consumePendingGame}
           />
         )}
       </main>

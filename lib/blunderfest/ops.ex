@@ -54,12 +54,8 @@ defmodule Blunderfest.Ops do
     # id/ply and a children list, and the tree's size and depth are capped —
     # a 256 KB op can otherwise nest deep enough to overflow a client's call
     # stack on replay.
-    with %{"tree" => tree} when is_map(tree) <- payload,
-         :ok <- check_tree_fields(tree),
-         {:ok, root} when is_map(root) <- Map.fetch(tree, "root"),
-         {:ok, _node_count} <- walk_tree(root, 1, 0) do
-      :ok
-    else
+    case payload do
+      %{"tree" => tree} -> if valid_game_tree?(tree), do: :ok, else: {:error, :invalid_op}
       _ -> {:error, :invalid_op}
     end
   end
@@ -111,6 +107,19 @@ defmodule Blunderfest.Ops do
   end
 
   defp check_type(_type, _payload), do: {:error, :invalid_op}
+
+  @doc "Whether `tree` (JSON-shaped) is a structurally valid, safely bounded game tree."
+  def valid_game_tree?(tree) when is_map(tree) do
+    with :ok <- check_tree_fields(tree),
+         {:ok, root} when is_map(root) <- Map.fetch(tree, "root"),
+         {:ok, _node_count} <- walk_tree(root, 1, 0) do
+      true
+    else
+      _ -> false
+    end
+  end
+
+  def valid_game_tree?(_), do: false
 
   @doc "Whether an op payload counts as a room edit (moves, comments, etc.)."
   def edit_op?(%{"type" => type}) when type in @edit_op_types, do: true

@@ -107,6 +107,93 @@ describe('Home', () => {
     expect(screen.getByText(/Enter a room code/)).toBeInTheDocument();
     expect(onJoin).not.toHaveBeenCalled();
   });
+
+  describe('library', () => {
+    const libraryEntry = {
+      id: 'entry-1',
+      title: 'Anna – Boris',
+      saved_at: '2026-08-11T00:00:00Z',
+      tree: {
+        headers: { White: 'Anna', Black: 'Boris' },
+        result: '1-0',
+        setup: null,
+        mainline_ply_count: 4,
+        node_count: 5,
+        root: {
+          id: 0,
+          ply: 0,
+          san: null,
+          from: null,
+          to: null,
+          promotion: null,
+          comment: null,
+          nags: [],
+          status: 'active',
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          children: [],
+        },
+      },
+    };
+
+    function stubLibrary(entries = [libraryEntry]) {
+      localStorage.setItem(
+        'blunderfest.device',
+        JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+      );
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+        const url = String(input);
+        if (url === '/api/profiles/profile-1/library') {
+          return Promise.resolve(
+            new Response(JSON.stringify({ entries }), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }),
+          );
+        }
+        if (url.startsWith('/api/profiles/profile-1/library/')) {
+          return Promise.resolve(new Response('{}', { status: 200 }));
+        }
+        if (url === '/api/rooms') {
+          return Promise.resolve(
+            new Response(JSON.stringify({ code: 'abcde' }), {
+              status: 201,
+              headers: { 'Content-Type': 'application/json' },
+            }),
+          );
+        }
+        throw new Error(`unmocked fetch: ${url}`);
+      });
+      return fetchMock;
+    }
+
+    it('lists saved games and opens one in a fresh room', async () => {
+      stubLibrary();
+      const onOpenGame = vi.fn();
+      render(
+        <Home backend="ok" userName="Brave Otter 42" onJoin={vi.fn()} onOpenGame={onOpenGame} />,
+      );
+
+      const openButton = await screen.findByRole('button', { name: /Anna – Boris/ });
+      fireEvent.click(openButton);
+
+      await waitFor(() => expect(onOpenGame).toHaveBeenCalledTimes(1));
+      expect(onOpenGame.mock.calls[0][0]).toEqual(libraryEntry.tree);
+      expect(onOpenGame.mock.calls[0][1]).toMatch(/^[a-z0-9]{5}$/);
+    });
+
+    it('removes a game from the library', async () => {
+      const fetchMock = stubLibrary();
+      render(<Home backend="ok" userName="Brave Otter 42" onJoin={vi.fn()} onOpenGame={vi.fn()} />);
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Remove from library' }));
+
+      expect(screen.queryByRole('button', { name: /Anna – Boris/ })).not.toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/profiles/profile-1/library/entry-1',
+        expect.objectContaining({ method: 'DELETE' }),
+      );
+    });
+  });
 });
 
 it('joins the demo room from the demo link', () => {

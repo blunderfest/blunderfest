@@ -14,6 +14,10 @@ defmodule BlunderfestWeb.Router do
     post "/rooms", RoomController, :create
     post "/import/pgn", ImportController, :pgn
     post "/import/lichess", ImportController, :lichess
+
+    get "/profiles/:id/library", LibraryController, :index
+    post "/profiles/:id/library", LibraryController, :create
+    delete "/profiles/:id/library/:entry_id", LibraryController, :delete
   end
 
   # The single-page application shell. Everything that is not a JSON API

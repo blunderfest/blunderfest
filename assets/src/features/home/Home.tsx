@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackendStatus } from '@/app/App';
 import Logo from '@/components/Logo';
-import { button, input, panel, statusDot } from '@/components/ui';
-import { ApiError, createRoom } from '@/lib/api';
+import { button, input, listRow, panel, panelHeader, statusDot } from '@/components/ui';
+import {
+  ApiError,
+  createRoom,
+  deleteFromLibrary,
+  fetchLibrary,
+  type GameTree,
+  type LibraryEntry,
+} from '@/lib/api';
+import { loadDevice } from '@/lib/device';
 import { formatRegion } from '@/lib/region';
 import {
   generateRoomCode,
@@ -28,17 +36,40 @@ export default function Home({
   region = null,
   userName,
   onJoin,
+  onOpenGame,
 }: {
   backend: BackendStatus;
   region?: string | null;
   userName: string | null;
   onJoin: (slug: string) => void;
+  onOpenGame?: (tree: GameTree, slug: string) => void;
 }) {
   const { t } = useTranslation();
   const [code, setCode] = useState('');
   const [error, setError] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<'generic' | 'rate_limited' | null>(null);
+  const [library, setLibrary] = useState<LibraryEntry[]>([]);
+
+  useEffect(() => {
+    const device = loadDevice();
+    if (userName === null || device === null) {
+      return;
+    }
+    let cancelled = false;
+    fetchLibrary(device)
+      .then((entries) => {
+        if (!cancelled) {
+          setLibrary(entries);
+        }
+      })
+      .catch(() => {
+        // A missing/expired library is indistinguishable from an empty one.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userName]);
 
   async function handleCreate() {
     if (creating) {
@@ -66,6 +97,37 @@ export default function Home({
     }
     setError(false);
     onJoin(slug);
+  }
+
+  async function handleOpenGame(entry: LibraryEntry) {
+    if (creating) {
+      return;
+    }
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const slug = generateRoomCode();
+      await createRoom(slug);
+      onOpenGame?.(entry.tree, slug);
+    } catch (error) {
+      setCreateError(
+        error instanceof ApiError && error.code === 'rate_limited' ? 'rate_limited' : 'generic',
+      );
+      setCreating(false);
+    }
+  }
+
+  async function handleRemoveGame(entry: LibraryEntry) {
+    const device = loadDevice();
+    if (device === null) {
+      return;
+    }
+    setLibrary((entries) => entries.filter((item) => item.id !== entry.id));
+    try {
+      await deleteFromLibrary(device, entry.id);
+    } catch {
+      // The list already dropped it; a refetch on the next visit reconciles.
+    }
   }
 
   const normalized = normalizeRoomCode(code);
@@ -144,6 +206,40 @@ export default function Home({
           )}
         </section>
       </div>
+
+      {library.length > 0 && (
+        <section className={`${panel({ layout: 'none', pad: 'none' })} w-full max-w-3xl`}>
+          <div className={panelHeader()}>
+            <h2 className="m-0">{t('home.libraryTitle')}</h2>
+            <span className="text-faint tabular-nums">{library.length}</span>
+          </div>
+          <ul className="m-0 flex max-h-64 flex-col gap-0.5 overflow-y-auto p-2">
+            {library.map((entry) => (
+              <li key={entry.id} className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className={`${listRow()} rounded-control`}
+                  onClick={() => void handleOpenGame(entry)}
+                >
+                  <span className="min-w-0 flex-1 truncate">{entry.title}</span>
+                  <span className="shrink-0 text-note text-faint tabular-nums">
+                    {t('home.libraryPlies', { count: entry.tree.mainline_ply_count })}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={t('home.removeGame')}
+                  title={t('home.removeGame')}
+                  className={button({ intent: 'ghost', size: 'xs' })}
+                  onClick={() => void handleRemoveGame(entry)}
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <p className="m-0 flex items-center gap-2 text-ui text-faint">
         {userName !== null && (

@@ -1,10 +1,28 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, panel, panelHeader } from '@/components/ui';
 import { downloadPgn } from '@/features/analysis/pgnExport';
-import type { GameTree } from '@/lib/api';
+import { type GameTree, saveToLibrary } from '@/lib/api';
+import { loadDevice } from '@/lib/device';
 
 export default function GameInfo({ tree }: { tree: GameTree }) {
   const { t } = useTranslation();
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  async function handleSave() {
+    const device = loadDevice();
+    if (device === null || saveState !== 'idle') {
+      return;
+    }
+    setSaveState('saving');
+    try {
+      await saveToLibrary(device, tree);
+      setSaveState('saved');
+    } catch {
+      setSaveState('error');
+    }
+    window.setTimeout(() => setSaveState('idle'), 2000);
+  }
 
   return (
     <section className={panel({ layout: 'none', pad: 'none' })}>
@@ -32,7 +50,7 @@ export default function GameInfo({ tree }: { tree: GameTree }) {
         <dt className="m-0 text-faint">{t('import.variations')}</dt>
         <dd className="m-0 text-ink tabular-nums">{tree.node_count}</dd>
       </dl>
-      <div className="border-t border-line p-2">
+      <div className="flex gap-2 border-t border-line p-2">
         <button
           type="button"
           id="export-pgn-button"
@@ -40,6 +58,19 @@ export default function GameInfo({ tree }: { tree: GameTree }) {
           onClick={() => downloadPgn(tree)}
         >
           {t('room.exportPgn')}
+        </button>
+        <button
+          type="button"
+          id="save-to-library-button"
+          className={button({ intent: 'quiet', size: 'sm', block: true })}
+          onClick={() => void handleSave()}
+          disabled={saveState === 'saving'}
+        >
+          {saveState === 'saved'
+            ? t('room.savedToLibrary')
+            : saveState === 'error'
+              ? t('room.saveLibraryError')
+              : t('room.saveToLibrary')}
         </button>
       </div>
     </section>

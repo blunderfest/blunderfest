@@ -92,9 +92,10 @@ ADR-0016/0017).
    from the engine scope: blunder flags while dragging.
 5. **Rooms** — DONE. Channel per slug, op-log sync (ADR-0005), presence, roles,
    cursors, multiple games. Remaining: profile game library.
-6. **Save/export** — STARTED. Annotated PGN export done (client-side
-   serializer, setup analysis as extra games). Remaining: room/game
-   claiming.
+6. **Save/export** — DONE. Annotated PGN export (client-side serializer,
+   setup analysis as extra games) and the per-profile game library
+   (session-scoped, ADR-0020). The durable, account-bound half of claiming
+   waits on the storage decision.
 7. **Server engine pool** — UCI workers, whole-game reports, eval charts (ADR-0009).
 8. **Search** — position extraction job, weighted similarity metric + decomposition,
    golden-fixture tests, bulk corpus import, configurable search UI (ADR-0010).
