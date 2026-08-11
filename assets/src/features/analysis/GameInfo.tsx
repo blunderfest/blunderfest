@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { panel, panelHeader } from '@/components/ui';
+import { button, panel, panelHeader } from '@/components/ui';
+import { downloadPgn } from '@/features/analysis/pgnExport';
 import type { GameTree } from '@/lib/api';
 
 export default function GameInfo({ tree }: { tree: GameTree }) {
@@ -31,6 +32,16 @@ export default function GameInfo({ tree }: { tree: GameTree }) {
         <dt className="m-0 text-faint">{t('import.variations')}</dt>
         <dd className="m-0 text-ink tabular-nums">{tree.node_count}</dd>
       </dl>
+      <div className="border-t border-line p-2">
+        <button
+          type="button"
+          id="export-pgn-button"
+          className={button({ intent: 'quiet', size: 'sm', block: true })}
+          onClick={() => downloadPgn(tree)}
+        >
+          {t('room.exportPgn')}
+        </button>
+      </div>
     </section>
   );
 }

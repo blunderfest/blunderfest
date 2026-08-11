@@ -210,6 +210,7 @@
     "demoBadge": "Demo",
     "demoHint": "Read-only demo — create a room to analyse your own games",
     "gameInfo": "Game info",
+    "exportPgn": "Export PGN",
     "notFoundTitle": "Room not found",
     "notFound": "No room answers to this code. Codes are 5 characters and never contain i, l, o, 0 or 1 — it may have been mistyped, or the room expired.",
     "backHome": "Back to home"

@@ -58,7 +58,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ PGN paste import → variation tree
 - ✅ Lichess URL import
 - ✅ New blank game for free play/analysis
-- 🚧 PGN export (annotated: variations, comments, NAGs)
+- ✅ PGN export (annotated: variations, comments, NAGs; setup analysis exports as extra games with SetUp/FEN headers)
 - 🚧 Room/game claiming and a per-profile game library (the reason to have an account at all)
 - 💡 Chess.com game URL import
 - 💡 Bulk PGN import (multi-game files)
