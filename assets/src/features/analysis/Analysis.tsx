@@ -1,19 +1,8 @@
-import { Chess } from 'chess.js';
 import type { TFunction } from 'i18next';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Board from '@/components/Board';
-import {
-  DRAW_COLORS,
-  kingInCheckSquare,
-  type Piece,
-  type Position,
-  parseFen,
-  pieceGlyph,
-  positionToFen,
-  squareFromPoint,
-  squareIndex,
-} from '@/components/board';
+import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceGlyph } from '@/components/board';
 import { button, statusDot } from '@/components/ui';
 import BoardControls from '@/features/analysis/BoardControls';
 import CommentPopup from '@/features/analysis/CommentPopup';
@@ -29,7 +18,10 @@ import SettingsTab from '@/features/analysis/SettingsTab';
 import ShortcutsDialog from '@/features/analysis/ShortcutsDialog';
 import SidebarTabs from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
+import { useBoardKeyboard } from '@/features/analysis/useBoardKeyboard';
+import { useCursor } from '@/features/analysis/useCursor';
 import { useEngine } from '@/features/analysis/useEngine';
+import { usePositionEditor } from '@/features/analysis/usePositionEditor';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
 import type { CommentAtPlyOp, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
 import { type BoardAnnotations, setupPlyFromFen } from '@/store/room';
@@ -61,9 +53,12 @@ export default function Analysis({
   lastPlayedId?: number | null;
   onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
-  onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => void;
+  onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>, onError?: () => void) => void;
   onComment?: (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => void;
-  onSetPosition?: (payload: Omit<SetPositionOp['payload'], 'game_id'>) => void;
+  onSetPosition?: (
+    payload: Omit<SetPositionOp['payload'], 'game_id'>,
+    onError?: () => void,
+  ) => void;
   /** Board drawings for the active game, keyed by node id. */
   annotations?: Record<number, BoardAnnotations>;
   onAnnotations?: (set: BoardAnnotations, nodeId: number) => void;
@@ -102,90 +97,25 @@ export default function Analysis({
 
   const byId = useMemo(() => buildNodeMap(tree), [tree]);
 
-  const [currentId, setCurrentId] = useState<number | null>(null);
-
-  /**
-   * Start at the move last played (the newest move/setup node, wherever it
-   * lives — variations included) once a tree arrives: a refresh restores the
-   * game as it was. Untouched imports fall back to the mainline tip. A
-   * one-time write during render (converges immediately) — subsequent cursor
-   * changes come only from navigation, playing moves, or the presenter cursor.
-   */
-  if (currentId === null && tree !== null) {
-    if (lastPlayedId !== null && byId.has(lastPlayedId)) {
-      setCurrentId(lastPlayedId);
-    } else {
-      let tip = tree.root;
-      while (tip.children[0] !== undefined) {
-        tip = tip.children[0];
-      }
-      setCurrentId(tip.id);
-    }
-  }
-
-  /**
-   * Follow the tail: when a move/setup lands from someone else, advance only
-   * if my cursor sits on the position it was played from — the game
-   * continues under your eyes, but browsing mid-history is never yanked
-   * forward. Playing my own move is a no-op here (my cursor is already the
-   * new node, not its parent).
-   *
-   * The follow only triggers when the newest op CHANGES (a move actually
-   * arrived) — never because the cursor moved. Otherwise navigating back to
-   * the parent of the last move would bounce you forward again.
-   */
-  const lastPlayedParentId =
-    lastPlayedId !== null ? (byId.get(lastPlayedId)?.parent?.id ?? null) : null;
-  const prevLastPlayedRef = useRef<number | null>(null);
-  useEffect(() => {
-    const previous = prevLastPlayedRef.current;
-    prevLastPlayedRef.current = lastPlayedId;
-    if (lastPlayedId === null || lastPlayedId === previous) {
-      return;
-    }
-    if (currentId !== null && lastPlayedParentId === currentId) {
-      setCurrentId(lastPlayedId);
-    }
-  }, [lastPlayedId, lastPlayedParentId, currentId]);
-
-  /**
-   * Nodes the editor played that have been broadcast but not yet applied
-   * back through the echo. Rendered like regular nodes so the board can show
-   * the move immediately; the replayed tree takes precedence once it arrives.
-   */
-  const [pending, setPending] = useState<Map<number, GameNode>>(new Map());
-
-  /**
-   * While following, the presenter's cursor wins; otherwise the viewer's own
-   * cursor. Falls back to the root when the cursor no longer exists (tree
-   * replaced wholesale), and to the pending node while an echo is in flight.
-   */
-  const current: GameNode | null = useMemo(() => {
-    const id =
-      following && presenterCursorId !== null && byId.has(presenterCursorId)
-        ? presenterCursorId
-        : currentId;
-    if (id !== null) {
-      const entry = byId.get(id);
-      if (entry !== undefined) {
-        return entry.node;
-      }
-      const pendingNode = pending.get(id);
-      if (pendingNode !== undefined) {
-        return pendingNode;
-      }
-    }
-    if (tree === null) {
-      return null;
-    }
-    return byId.get(tree.root.id)?.node ?? null;
-  }, [following, presenterCursorId, currentId, byId, pending, tree]);
+  const { current, navigate, maxNodeId, addPending, rollbackPending } = useCursor({
+    tree,
+    byId,
+    following,
+    presenterCursorId,
+    lastPlayedId,
+    amPresenter,
+    onCursorChange,
+    onFollowChange,
+  });
 
   const canPlay = canEdit && current !== null && current.status === 'active';
 
+  const editor = usePositionEditor({ flipped });
+
   const engineState = useEngine(current?.fen ?? null, {
     engine,
-    enabled: engineOn && current !== null,
+    // The engine pauses while the position editor owns the board.
+    enabled: engineOn && current !== null && !editor.editing,
     positionStatus: current?.status ?? 'active',
   });
 
@@ -212,17 +142,6 @@ export default function Analysis({
     setSelected(null);
   }
 
-  /**
-   * Local navigation: breaks away from the presenter and moves the cursor.
-   */
-  const navigate = useCallback(
-    (id: number) => {
-      onFollowChange?.(false);
-      setCurrentId(id);
-    },
-    [onFollowChange],
-  );
-
   const selectedMoves = useMemo(
     () => (selected === null ? [] : (legalMoves ?? []).filter((move) => move.from === selected)),
     [selected, legalMoves],
@@ -230,35 +149,20 @@ export default function Analysis({
 
   const legalTargets = selectedMoves.map((move) => move.to);
 
-  const maxNodeId = useMemo(() => {
-    let max = -1;
-    for (const { node } of byId.values()) {
-      if (node.id > max) {
-        max = node.id;
-      }
-    }
-    for (const id of pending.keys()) {
-      if (id > max) {
-        max = id;
-      }
-    }
-    return max;
-  }, [byId, pending]);
-
   /**
    * Plays a legal move: the editor broadcasts the op with all node data and
    * moves to the node every client will derive (max id + 1). The node is
-   * kept in `pending` until the echo applies it to the tree. Playing a move
-   * is a local navigation, so it also breaks away from the presenter.
+   * kept in `pending` until the echo applies it to the tree; a rejection
+   * rolls it back. Playing a move is a local navigation, so it also breaks
+   * away from the presenter.
    */
-  const playMove = useCallback(
-    (move: LegalMove) => {
-      if (current === null || onPlayMove === undefined) {
-        return;
-      }
-      onFollowChange?.(false);
-      const nodeId = maxNodeId + 1;
-      onPlayMove({
+  function playMove(move: LegalMove) {
+    if (current === null || onPlayMove === undefined) {
+      return;
+    }
+    const nodeId = maxNodeId + 1;
+    onPlayMove(
+      {
         ply: current.ply + 1,
         san: move.san,
         from: move.from,
@@ -267,163 +171,51 @@ export default function Analysis({
         fen: move.fen,
         status: move.status,
         parent_id: current.id,
-      });
-      setPending((previous) => {
-        const next = new Map(previous);
-        next.set(nodeId, {
-          id: nodeId,
-          ply: current.ply + 1,
-          san: move.san,
-          from: move.from,
-          to: move.to,
-          promotion: move.promotion,
-          comment: null,
-          nags: [],
-          status: move.status,
-          fen: move.fen,
-          children: [],
-        });
-        return next;
-      });
-      setSelected(null);
-      setCurrentId(nodeId);
-    },
-    [current, onPlayMove, onFollowChange, maxNodeId],
-  );
-
-  /**
-   * Free-form position editing (ADR-0011). In edit mode the board accepts
-   * arbitrary piece placement: click a piece to pick it up and drop it
-   * anywhere, or pick a piece from the palette (then every click places it).
-   * The eraser removes pieces. "Done" validates with chess.js and broadcasts
-   * a `set_position` op; the echo lands the setup node under the current one.
-   */
-  const [editing, setEditing] = useState(false);
-  const [editPos, setEditPos] = useState<Position>([]);
-  const [editTurn, setEditTurn] = useState<'w' | 'b'>('w');
-  const [editSelected, setEditSelected] = useState<string | null>(null);
-  const [editBrush, setEditBrush] = useState<Piece | 'erase' | null>(null);
-  const [editError, setEditError] = useState(false);
-
-  function enterEditMode() {
-    setEditPos(parseFen(current?.fen ?? ''));
-    setEditTurn(current?.fen?.split(' ')[1] === 'b' ? 'b' : 'w');
-    setEditSelected(null);
-    setEditBrush(null);
-    setEditError(false);
-    setEditing(true);
-  }
-
-  function exitEditMode() {
-    setEditing(false);
-    setEditSelected(null);
-    setEditBrush(null);
-    setEditError(false);
-  }
-
-  const handleEditSquareClick = useCallback(
-    (square: string) => {
-      const index = squareIndex(square);
-      if (editBrush === 'erase') {
-        if (editPos[index] != null) {
-          const next = [...editPos];
-          next[index] = null;
-          setEditPos(next);
-        }
-        return;
-      }
-      if (editBrush !== null) {
-        const next = [...editPos];
-        next[index] = editBrush;
-        setEditPos(next);
-        return;
-      }
-      if (editSelected === null) {
-        if (editPos[index] != null) {
-          setEditSelected(square);
-        }
-        return;
-      }
-      if (square === editSelected) {
-        setEditSelected(null);
-        return;
-      }
-      const from = squareIndex(editSelected);
-      const next = [...editPos];
-      next[index] = next[from] ?? null;
-      next[from] = null;
-      setEditPos(next);
-      setEditSelected(null);
-    },
-    [editPos, editSelected, editBrush],
-  );
-
-  /**
-   * Dragging a piece out of the palette: the brush is set on pointerdown,
-   * and releasing over a board square places the piece there. A plain click
-   * still toggles the brush (the release lands on the palette, not the
-   * board, so nothing is placed).
-   */
-  function handlePalettePointerDown(piece: Piece, event: React.PointerEvent) {
-    if (event.button !== 0) {
-      return;
-    }
-    setEditBrush(piece);
-    const onUp = (up: PointerEvent) => {
-      window.removeEventListener('pointerup', onUp);
-      const board = document.querySelector('[data-board-grid]');
-      if (board === null) {
-        return;
-      }
-      const target = squareFromPoint(
-        board.getBoundingClientRect(),
-        up.clientX,
-        up.clientY,
-        flipped,
-      );
-      if (target !== null) {
-        const next = [...editPos];
-        next[squareIndex(target)] = piece;
-        setEditPos(next);
-      }
-    };
-    window.addEventListener('pointerup', onUp);
+      },
+      () => rollbackPending(nodeId, current.id),
+    );
+    addPending({
+      id: nodeId,
+      ply: current.ply + 1,
+      san: move.san,
+      from: move.from,
+      to: move.to,
+      promotion: move.promotion,
+      comment: null,
+      nags: [],
+      status: move.status,
+      fen: move.fen,
+      children: [],
+    });
+    setSelected(null);
+    navigate(nodeId);
   }
 
   function handleSetPosition() {
     if (current === null || onSetPosition === undefined) {
       return;
     }
-    const fullmove = Number.parseInt(current.fen?.split(' ')[5] ?? '1', 10) || 1;
-    const fen = positionToFen(editPos, editTurn, fullmove);
-    try {
-      new Chess(fen);
-    } catch {
-      setEditError(true);
+    const fen = editor.buildFen(current.fen ?? null);
+    if (fen === null) {
       return;
     }
-    onFollowChange?.(false);
     const nodeId = maxNodeId + 1;
-    onSetPosition({ parent_id: current.id, fen });
-    setPending((previous) => {
-      const next = new Map(previous);
-      next.set(nodeId, {
-        id: nodeId,
-        ply: setupPlyFromFen(fen) ?? current.ply + 1,
-        san: null,
-        from: null,
-        to: null,
-        promotion: null,
-        comment: null,
-        nags: [],
-        status: 'active',
-        fen,
-        children: [],
-      });
-      return next;
+    onSetPosition({ parent_id: current.id, fen }, () => rollbackPending(nodeId, current.id));
+    addPending({
+      id: nodeId,
+      ply: setupPlyFromFen(fen) ?? current.ply + 1,
+      san: null,
+      from: null,
+      to: null,
+      promotion: null,
+      comment: null,
+      nags: [],
+      status: 'active',
+      fen,
+      children: [],
     });
-    setCurrentId(nodeId);
-    exitEditMode();
+    navigate(nodeId);
+    editor.exitEditMode();
   }
 
   /**
@@ -431,131 +223,56 @@ export default function Analysis({
    * anywhere else falls back to selecting the piece. Edit mode: free-form
    * placement, and dropping off the board deletes the piece.
    */
-  const handleDragMove = useCallback(
-    (from: string, to: string | null) => {
-      if (editing) {
-        const fromIndex = squareIndex(from);
-        const piece = editPos[fromIndex] ?? null;
-        if (piece === null) {
-          return;
-        }
-        const next = [...editPos];
-        next[fromIndex] = null;
-        if (to !== null) {
-          next[squareIndex(to)] = piece;
-        }
-        setEditPos(next);
-        return;
-      }
-      if (!canPlay || to === null) {
-        return;
-      }
-      const move = (legalMoves ?? []).find((m) => m.from === from && m.to === to);
-      if (move !== undefined) {
-        playMove(move);
-        return;
-      }
-      if ((legalMoves ?? []).some((m) => m.from === from)) {
-        setSelected(from);
-      }
-    },
-    [editing, editPos, canPlay, legalMoves, playMove],
-  );
-
-  const handleSquareClick = useCallback(
-    (square: string) => {
-      if (!canPlay) {
-        return;
-      }
-      const target = selectedMoves.find((move) => move.to === square);
-      if (target !== undefined) {
-        playMove(target);
-        return;
-      }
-      if ((legalMoves ?? []).some((move) => move.from === square)) {
-        setSelected(square);
-      } else {
-        setSelected(null);
-      }
-    },
-    [canPlay, selectedMoves, legalMoves, playMove],
-  );
-
-  /**
-   * Broadcast our own cursor when presenting.
-   */
-  useEffect(() => {
-    if (amPresenter && currentId !== null && onCursorChange) {
-      onCursorChange(currentId);
+  function handleDragMove(from: string, to: string | null) {
+    if (editor.editing) {
+      editor.handleEditDrag(from, to);
+      return;
     }
-  }, [amPresenter, currentId, onCursorChange]);
+    if (!canPlay || to === null) {
+      return;
+    }
+    const move = (legalMoves ?? []).find((m) => m.from === from && m.to === to);
+    if (move !== undefined) {
+      playMove(move);
+      return;
+    }
+    if ((legalMoves ?? []).some((m) => m.from === from)) {
+      setSelected(from);
+    }
+  }
+
+  function handleSquareClick(square: string) {
+    if (!canPlay) {
+      return;
+    }
+    const target = selectedMoves.find((move) => move.to === square);
+    if (target !== undefined) {
+      playMove(target);
+      return;
+    }
+    if ((legalMoves ?? []).some((move) => move.from === square)) {
+      setSelected(square);
+    } else {
+      setSelected(null);
+    }
+  }
 
   const rows = useMemo(() => buildRows(tree), [tree]);
 
-  const lastChild = useCallback(
-    (node: GameNode): GameNode => (node.children[0] ? lastChild(node.children[0]) : node),
-    [],
-  );
+  const handleFlip = useCallback(() => setFlipped((value) => !value), []);
+  const openComment = useCallback(() => setCommentOpen(true), []);
 
-  useEffect(() => {
-    if (!tree || !current) {
-      return;
-    }
-    const parent = byId.get(current.id)?.parent ?? null;
-    const onKey = (event: KeyboardEvent) => {
-      const target = event.target;
-      // The board's arrow keys work from anywhere on the page — except while
-      // typing, while a modifier changes the meaning (browser shortcuts), or
-      // while a board square has keyboard focus (the board moves the focused
-      // square instead of the position, and stops propagation itself).
-      if (!(target instanceof Element)) {
-        return;
-      }
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        return;
-      }
-      if (event.ctrlKey || event.metaKey || event.altKey) {
-        return;
-      }
-      let handled = false;
-      if (event.key === 'ArrowRight' && current.children[0]) {
-        navigate(current.children[0].id);
-        handled = true;
-      }
-      if (event.key === 'ArrowLeft' && parent) {
-        navigate(parent.id);
-        handled = true;
-      }
-      if (event.key === 'Home') {
-        navigate(tree.root.id);
-        handled = true;
-      }
-      if (event.key === 'End') {
-        navigate(lastChild(current).id);
-        handled = true;
-      }
-      if (event.key === 'f' || event.key === 'F') {
-        setFlipped((value) => !value);
-        handled = true;
-      }
-      if ((event.key === 'c' || event.key === 'C') && canEdit) {
-        setCommentOpen(true);
-        handled = true;
-      }
-      if (event.key === 'Escape' && canEdit) {
-        const drawn = annotations[current.id];
-        if (drawn !== undefined && (drawn.arrows.length > 0 || drawn.highlights.length > 0)) {
-          onAnnotations?.({ arrows: [], highlights: [] }, current.id);
-          handled = true;
-        }
-      }
-      if (handled) {
-        event.preventDefault();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [tree, byId, current, navigate, lastChild, canEdit, annotations, onAnnotations]);
+  useBoardKeyboard({
+    tree,
+    byId,
+    current,
+    navigate,
+    canEdit,
+    annotations,
+    onAnnotations,
+    onFlip: handleFlip,
+    onOpenComment: openComment,
+  });
 
   const nodeAnnotations = (current !== null ? annotations[current.id] : undefined) ?? {
     arrows: [],
@@ -642,7 +359,7 @@ export default function Analysis({
               className="flex w-8 shrink-0 flex-col justify-center self-stretch"
               data-testid="board-left-slot"
             >
-              {editing ? (
+              {editor.editing ? (
                 <fieldset
                   className="m-0 flex min-w-0 flex-col justify-center gap-1 rounded-control border border-line bg-panel px-1.5 py-2"
                   data-testid="edit-palette"
@@ -653,10 +370,10 @@ export default function Analysis({
                     <div key={color} className="flex flex-col gap-1">
                       {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
                         const active =
-                          editBrush !== null &&
-                          editBrush !== 'erase' &&
-                          editBrush.color === color &&
-                          editBrush.kind === kind;
+                          editor.editBrush !== null &&
+                          editor.editBrush !== 'erase' &&
+                          editor.editBrush.color === color &&
+                          editor.editBrush.kind === kind;
                         return (
                           <button
                             key={kind}
@@ -679,9 +396,9 @@ export default function Analysis({
                                   : '0 0 2px rgba(10,10,12,0.8)',
                             }}
                             onPointerDown={(event) =>
-                              handlePalettePointerDown({ color, kind }, event)
+                              editor.handlePalettePointerDown({ color, kind }, event)
                             }
-                            onClick={() => setEditBrush(active ? null : { color, kind })}
+                            onClick={() => editor.toggleBrush({ color, kind })}
                           >
                             {pieceGlyph(color, kind)}
                           </button>
@@ -691,12 +408,14 @@ export default function Analysis({
                   ))}
                   <button
                     type="button"
-                    aria-pressed={editBrush === 'erase'}
+                    aria-pressed={editor.editBrush === 'erase'}
                     aria-label={t('analysis.eraser')}
                     className={`mt-1 grid h-8 w-8 place-items-center rounded-control border-t border-line pt-1 text-base text-muted transition-colors ${
-                      editBrush === 'erase' ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
+                      editor.editBrush === 'erase'
+                        ? 'bg-gold/20 ring-1 ring-gold/50'
+                        : 'hover:bg-raised'
                     }`}
-                    onClick={() => setEditBrush(editBrush === 'erase' ? null : 'erase')}
+                    onClick={() => editor.toggleBrush('erase')}
                   >
                     ⌫
                   </button>
@@ -711,27 +430,31 @@ export default function Analysis({
               ) : null}
             </div>
             <Board
-              position={editing ? editPos : parseFen(current.fen ?? '')}
+              position={editor.editing ? editor.editPos : parseFen(current.fen ?? '')}
               lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
               flipped={flipped}
               label={boardLabel}
-              interactive={editing || canPlay || canEdit}
-              selected={editing ? editSelected : selected}
-              legalTargets={editing ? [] : legalTargets}
-              arrows={editing ? [] : boardArrows}
-              highlights={editing ? [] : nodeAnnotations.highlights}
-              checkSquare={editing ? null : checkSquare}
+              interactive={editor.editing || canPlay || canEdit}
+              selected={editor.editing ? editor.editSelected : selected}
+              legalTargets={editor.editing ? [] : legalTargets}
+              arrows={editor.editing ? [] : boardArrows}
+              highlights={editor.editing ? [] : nodeAnnotations.highlights}
+              checkSquare={editor.editing ? null : checkSquare}
               onSquareClick={
-                editing ? handleEditSquareClick : canPlay ? handleSquareClick : undefined
+                editor.editing
+                  ? editor.handleEditSquareClick
+                  : canPlay
+                    ? handleSquareClick
+                    : undefined
               }
-              onDragMove={editing || canPlay ? handleDragMove : undefined}
-              onDrawArrow={canEdit && !editing ? handleDrawArrow : undefined}
-              onToggleHighlight={canEdit && !editing ? handleToggleHighlight : undefined}
+              onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
+              onDrawArrow={canEdit && !editor.editing ? handleDrawArrow : undefined}
+              onToggleHighlight={canEdit && !editor.editing ? handleToggleHighlight : undefined}
               drawColor={drawColor}
-              onDrawColorChange={canEdit && !editing ? setDrawColor : undefined}
+              onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
             />
           </div>
-          {editing && (
+          {editor.editing && (
             <div
               className="flex w-[min(90vw,34rem)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
               data-testid="edit-toolbar"
@@ -741,15 +464,15 @@ export default function Analysis({
                 <button
                   type="button"
                   className={button({ intent: 'quiet', size: 'sm' })}
-                  onClick={() => setEditTurn((turn) => (turn === 'w' ? 'b' : 'w'))}
+                  onClick={editor.toggleTurn}
                   data-testid="edit-turn-toggle"
                 >
-                  {editTurn === 'w' ? t('analysis.whiteToMove') : t('analysis.blackToMove')}
+                  {editor.editTurn === 'w' ? t('analysis.whiteToMove') : t('analysis.blackToMove')}
                 </button>
                 <button
                   type="button"
                   className={button({ intent: 'quiet', size: 'sm' })}
-                  onClick={() => setEditPos(new Array(64).fill(null))}
+                  onClick={editor.clearBoard}
                   data-testid="edit-clear-button"
                 >
                   {t('analysis.clearBoard')}
@@ -757,7 +480,7 @@ export default function Analysis({
                 <button
                   type="button"
                   className={button({ intent: 'quiet', size: 'sm' })}
-                  onClick={() => setEditPos(parseFen(current.fen ?? ''))}
+                  onClick={() => editor.resetPosition(current.fen ?? null)}
                   data-testid="edit-reset-button"
                 >
                   {t('analysis.resetPosition')}
@@ -773,19 +496,19 @@ export default function Analysis({
                 <button
                   type="button"
                   className={button({ intent: 'ghost', size: 'sm' })}
-                  onClick={exitEditMode}
+                  onClick={editor.exitEditMode}
                 >
                   {t('analysis.cancelEdit')}
                 </button>
               </div>
-              {editError && (
+              {editor.editError && (
                 <p className="m-0 text-ui text-bad-hi" role="alert">
                   ⚠ {t('analysis.invalidSetup')}
                 </p>
               )}
             </div>
           )}
-          {editing && engineOn ? (
+          {editor.editing && engineOn ? (
             <div
               className="flex h-9 w-[min(90vw,34rem)] items-center gap-2 rounded-control border border-gold/30 bg-gold/10 px-3"
               data-testid="engine-paused"
@@ -793,7 +516,7 @@ export default function Analysis({
               <span className={statusDot({ tone: 'warn', pulse: true })} />
               <span className="text-ui text-gold-hi">{t('analysis.enginePaused')}</span>
             </div>
-          ) : editing ? null : engineOn ? (
+          ) : editor.editing ? null : engineOn ? (
             <div className="w-[min(90vw,34rem)]">
               <EngineReadout fen={current.fen ?? ''} state={engineState} />
             </div>
@@ -814,15 +537,18 @@ export default function Analysis({
             presenterActive={presenterActive}
             amPresenter={amPresenter}
             following={following}
-            onFlip={() => setFlipped((f) => !f)}
+            onFlip={handleFlip}
             onFollowChange={onFollowChange ?? (() => {})}
-            onOpenComment={canEdit ? () => setCommentOpen(true) : undefined}
+            onOpenComment={canEdit ? openComment : undefined}
             onToggleEdit={
               canEdit && onSetPosition !== undefined
-                ? () => (editing ? exitEditMode() : enterEditMode())
+                ? () =>
+                    editor.editing
+                      ? editor.exitEditMode()
+                      : editor.enterEditMode(current?.fen ?? null)
                 : undefined
             }
-            editing={editing}
+            editing={editor.editing}
             drawColorPicker={canEdit ? { current: drawColor, onChange: setDrawColor } : undefined}
             clearDrawings={
               canEdit
@@ -879,7 +605,7 @@ export default function Analysis({
                         first: tree.root.id,
                         prev: parent?.id ?? null,
                         next: next?.id ?? null,
-                        last: current.children.length === 0 ? null : lastChild(current).id,
+                        last: current.children.length === 0 ? null : lastChildOf(current).id,
                       }}
                       currentPly={current.ply}
                       totalPly={tree.mainline_ply_count}
@@ -921,6 +647,11 @@ export default function Analysis({
       )}
     </div>
   );
+}
+
+/** The last node of the mainline (deepest first-child chain). */
+function lastChildOf(node: GameNode): GameNode {
+  return node.children[0] ? lastChildOf(node.children[0]) : node;
 }
 
 /** The eval bar's aria-label, in words, from white's perspective. */

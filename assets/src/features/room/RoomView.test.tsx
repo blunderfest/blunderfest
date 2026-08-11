@@ -633,6 +633,24 @@ describe('RoomView', () => {
     });
   });
 
+  it('rolls back a pending move when the server rejects the op', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
+    // Every op push fails — the move's echo never arrives.
+    channel.pushError = { reason: 'op_limit' };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'First' }));
+    await act(async () => {});
+    fireEvent.click(await screen.findByTestId('square-e2'));
+    await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('square-e4'));
+
+    // The rejected move never becomes a phantom: the board snaps back to
+    // the position it was played from.
+    expect(await screen.findByLabelText('Chess board after start position')).toBeInTheDocument();
+    expect(screen.getByTestId('square-e4')).toHaveTextContent('');
+  });
+
   it('saves a comment on the current position as a comment_at_ply op', async () => {
     channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');

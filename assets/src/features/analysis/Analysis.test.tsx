@@ -342,16 +342,19 @@ describe('Analysis', () => {
     fireEvent.click(screen.getByTestId('square-e4'));
 
     await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(1));
-    expect(onPlayMove).toHaveBeenCalledWith({
-      ply: 1,
-      san: 'e4',
-      from: 'e2',
-      to: 'e4',
-      promotion: null,
-      fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
-      status: 'active',
-      parent_id: tree.root.id,
-    });
+    expect(onPlayMove).toHaveBeenCalledWith(
+      {
+        ply: 1,
+        san: 'e4',
+        from: 'e2',
+        to: 'e4',
+        promotion: null,
+        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+        status: 'active',
+        parent_id: tree.root.id,
+      },
+      expect.any(Function),
+    );
   });
 
   it('does not let viewers play moves', () => {

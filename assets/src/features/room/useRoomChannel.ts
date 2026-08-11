@@ -159,8 +159,11 @@ export function useRoomChannel(
     };
   }, [dispatch, slug, selfId, selfName, rejoinNonce]);
 
-  const sendOp = useCallback((op: Omit<Op, 'seq' | 'author' | 'ts'>) => {
-    channelRef.current?.push('op', op);
+  const sendOp = useCallback((op: Omit<Op, 'seq' | 'author' | 'ts'>, onError?: () => void) => {
+    const push = channelRef.current?.push('op', op);
+    // Server rejections (op limit, lost edit rights) let the caller roll
+    // back any optimistic state — a dropped echo must not leave a phantom.
+    push?.receive('error', () => onError?.());
   }, []);
 
   const sendRole = useCallback((memberId: string, role: MemberRole) => {

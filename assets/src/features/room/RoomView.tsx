@@ -104,9 +104,9 @@ export default function RoomView({
   );
 
   const handlePlayMove = useCallback(
-    (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>) => {
+    (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>, onError?: () => void) => {
       if (effectiveGameId !== null) {
-        sendOp({ type: 'move_at_ply', payload: { game_id: effectiveGameId, ...payload } });
+        sendOp({ type: 'move_at_ply', payload: { game_id: effectiveGameId, ...payload } }, onError);
       }
     },
     [sendOp, effectiveGameId],
@@ -122,9 +122,12 @@ export default function RoomView({
   );
 
   const handleSetPosition = useCallback(
-    (payload: Omit<SetPositionOp['payload'], 'game_id'>) => {
+    (payload: Omit<SetPositionOp['payload'], 'game_id'>, onError?: () => void) => {
       if (effectiveGameId !== null) {
-        sendOp({ type: 'set_position', payload: { game_id: effectiveGameId, ...payload } });
+        sendOp(
+          { type: 'set_position', payload: { game_id: effectiveGameId, ...payload } },
+          onError,
+        );
       }
     },
     [sendOp, effectiveGameId],

@@ -1,0 +1,171 @@
+import { Chess } from 'chess.js';
+import { useState } from 'react';
+import {
+  type Piece,
+  type Position,
+  parseFen,
+  positionToFen,
+  squareFromPoint,
+  squareIndex,
+} from '@/components/board';
+
+/**
+ * Free-form position editing (ADR-0011). In edit mode the board accepts
+ * arbitrary piece placement: click a piece to pick it up and drop it
+ * anywhere, or pick a piece from the palette (then every click places it).
+ * The eraser removes pieces. `buildFen` validates with chess.js and yields
+ * the FEN for a `set_position` op (or null, after flagging the error).
+ *
+ * The hook owns only the editing state and interactions; committing the op
+ * (and its pending echo) stays with the caller.
+ */
+export function usePositionEditor({ flipped }: { flipped: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const [editPos, setEditPos] = useState<Position>([]);
+  const [editTurn, setEditTurn] = useState<'w' | 'b'>('w');
+  const [editSelected, setEditSelected] = useState<string | null>(null);
+  const [editBrush, setEditBrush] = useState<Piece | 'erase' | null>(null);
+  const [editError, setEditError] = useState(false);
+
+  function enterEditMode(fen: string | null) {
+    setEditPos(parseFen(fen ?? ''));
+    setEditTurn(fen?.split(' ')[1] === 'b' ? 'b' : 'w');
+    setEditSelected(null);
+    setEditBrush(null);
+    setEditError(false);
+    setEditing(true);
+  }
+
+  function exitEditMode() {
+    setEditing(false);
+    setEditSelected(null);
+    setEditBrush(null);
+    setEditError(false);
+  }
+
+  function handleEditSquareClick(square: string) {
+    const index = squareIndex(square);
+    if (editBrush === 'erase') {
+      if (editPos[index] != null) {
+        const next = [...editPos];
+        next[index] = null;
+        setEditPos(next);
+      }
+      return;
+    }
+    if (editBrush !== null) {
+      const next = [...editPos];
+      next[index] = editBrush;
+      setEditPos(next);
+      return;
+    }
+    if (editSelected === null) {
+      if (editPos[index] != null) {
+        setEditSelected(square);
+      }
+      return;
+    }
+    if (square === editSelected) {
+      setEditSelected(null);
+      return;
+    }
+    const from = squareIndex(editSelected);
+    const next = [...editPos];
+    next[index] = next[from] ?? null;
+    next[from] = null;
+    setEditPos(next);
+    setEditSelected(null);
+  }
+
+  /** In edit mode a drag is free-form placement; off-board drops delete. */
+  function handleEditDrag(from: string, to: string | null) {
+    const fromIndex = squareIndex(from);
+    const piece = editPos[fromIndex] ?? null;
+    if (piece === null) {
+      return;
+    }
+    const next = [...editPos];
+    next[fromIndex] = null;
+    if (to !== null) {
+      next[squareIndex(to)] = piece;
+    }
+    setEditPos(next);
+  }
+
+  /**
+   * Dragging a piece out of the palette: the brush is set on pointerdown,
+   * and releasing over a board square places the piece there. A plain click
+   * still toggles the brush (the release lands on the palette, not the
+   * board, so nothing is placed).
+   */
+  function handlePalettePointerDown(piece: Piece, event: React.PointerEvent) {
+    if (event.button !== 0) {
+      return;
+    }
+    setEditBrush(piece);
+    const onUp = (up: PointerEvent) => {
+      window.removeEventListener('pointerup', onUp);
+      const board = document.querySelector('[data-board-grid]');
+      if (board === null) {
+        return;
+      }
+      const target = squareFromPoint(
+        board.getBoundingClientRect(),
+        up.clientX,
+        up.clientY,
+        flipped,
+      );
+      if (target !== null) {
+        const next = [...editPos];
+        next[squareIndex(target)] = piece;
+        setEditPos(next);
+      }
+    };
+    window.addEventListener('pointerup', onUp);
+  }
+
+  /** The FEN for the edited position, or null (and the error shown) when illegal. */
+  function buildFen(currentFen: string | null): string | null {
+    const fullmove = Number.parseInt(currentFen?.split(' ')[5] ?? '1', 10) || 1;
+    const fen = positionToFen(editPos, editTurn, fullmove);
+    try {
+      new Chess(fen);
+      return fen;
+    } catch {
+      setEditError(true);
+      return null;
+    }
+  }
+
+  function toggleBrush(piece: Piece | 'erase') {
+    setEditBrush((brush) => {
+      const active =
+        piece === 'erase'
+          ? brush === 'erase'
+          : brush !== null &&
+            brush !== 'erase' &&
+            brush.color === piece.color &&
+            brush.kind === piece.kind;
+      return active ? null : piece;
+    });
+  }
+
+  return {
+    editing,
+    editPos,
+    editTurn,
+    editSelected,
+    editBrush,
+    editError,
+    enterEditMode,
+    exitEditMode,
+    handleEditSquareClick,
+    handleEditDrag,
+    handlePalettePointerDown,
+    buildFen,
+    toggleBrush,
+    toggleTurn: () => setEditTurn((turn) => (turn === 'w' ? 'b' : 'w')),
+    clearBoard: () => setEditPos(new Array(64).fill(null)),
+    resetPosition: (fen: string | null) => setEditPos(parseFen(fen ?? '')),
+  };
+}

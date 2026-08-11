@@ -78,8 +78,22 @@ export class FakeChannel implements Channel {
     return { receive: vi.fn() } as never;
   }
 
+  /** When set, pushes answer their error callback with this reply. */
+  pushError: { reason?: string } | null = null;
+
   push(event: string, payload: unknown) {
     this.pushes.push({ event, payload });
-    return { receive: vi.fn() } as never;
+    const error = this.pushError;
+    const push = {
+      receive: (status: string, handler: Handler) => {
+        if (status === 'error' && error !== null) {
+          // Asynchronous, like a real server reply — callers' local state
+          // updates (e.g. pending echoes) have already run by then.
+          queueMicrotask(() => handler(error));
+        }
+        return push;
+      },
+    };
+    return push as never;
   }
 }
