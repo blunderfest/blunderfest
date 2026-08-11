@@ -3,6 +3,8 @@ This is a web application written using the Phoenix web framework.
 ## Project guidelines
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
+- **There is no CI** — GitHub Actions was removed (it hit limits); nothing runs on push. All checks run locally: `mix precommit` for the backend, and `pnpm lint && pnpm typecheck && pnpm exec vitest run --pool=forks` in `assets/` for the frontend (see `docs/operations.md`)
+- Deploys are done locally with the installed Fly CLI: commit → `git push origin main` → `flyctl deploy` (see `docs/operations.md`)
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 - Start new sessions by reading `PROJECT.md` and `docs/README.md`; keep `docs/architecture.md` current as the system changes
 - Record significant decisions as ADRs in `docs/decisions/` at decision time (see `docs/decisions/README.md` for the template and rules); update or supersede ADRs instead of letting them go stale
