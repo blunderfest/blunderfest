@@ -64,4 +64,95 @@ defmodule Blunderfest.OpsTest do
                }
              })
   end
+
+  test "edit_op? classifies room edit ops" do
+    assert Ops.edit_op?(%{"type" => "move_at_ply"})
+    assert Ops.edit_op?(%{"type" => "set_game"})
+    assert Ops.edit_op?(%{"type" => "comment_at_ply"})
+    assert Ops.edit_op?(%{"type" => "set_annotations"})
+    assert Ops.edit_op?(%{"type" => "replace_line"})
+    refute Ops.edit_op?(%{"type" => "set_cursor"})
+    refute Ops.edit_op?(%{"type" => "select_game"})
+    refute Ops.edit_op?(%{"type" => "unknown"})
+    refute Ops.edit_op?(%{})
+    refute Ops.edit_op?(nil)
+  end
+
+  describe "set_game tree validation" do
+    defp tree_node(overrides \\ %{}) do
+      Map.merge(
+        %{
+          "id" => 0,
+          "ply" => 0,
+          "san" => nil,
+          "from" => nil,
+          "to" => nil,
+          "promotion" => nil,
+          "comment" => nil,
+          "nags" => [],
+          "status" => "active",
+          "fen" => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "children" => []
+        },
+        overrides
+      )
+    end
+
+    defp set_game_op(root) do
+      %{
+        "type" => "set_game",
+        "payload" => %{
+          "game_id" => "game-1",
+          "tree" => %{
+            "headers" => %{"White" => "Alice"},
+            "result" => "*",
+            "setup" => nil,
+            "root" => root,
+            "mainline_ply_count" => 0,
+            "node_count" => 1
+          }
+        }
+      }
+    end
+
+    test "accepts a well-formed tree, variations included" do
+      child = tree_node(%{"id" => 1, "ply" => 1, "san" => "e4"})
+      variation = tree_node(%{"id" => 2, "ply" => 1, "san" => "d4"})
+      root = tree_node(%{"children" => [child, variation]})
+
+      assert :ok = Ops.validate(set_game_op(root))
+    end
+
+    test "rejects a root without a children list" do
+      assert {:error, :invalid_op} = Ops.validate(set_game_op(%{"id" => 0, "ply" => 0}))
+    end
+
+    test "rejects nodes with the wrong field types" do
+      assert {:error, :invalid_op} = Ops.validate(set_game_op(tree_node(%{"id" => "root"})))
+      assert {:error, :invalid_op} = Ops.validate(set_game_op(tree_node(%{"san" => 42})))
+
+      assert {:error, :invalid_op} =
+               Ops.validate(set_game_op(tree_node(%{"children" => "not-a-list"})))
+    end
+
+    test "rejects absurdly deep trees that would overflow a client's stack" do
+      # Slim nodes, so the depth cap trips before the 256 KB size cap does.
+      deep =
+        Enum.reduce(1..1_600, %{"id" => 0, "ply" => 0, "children" => []}, fn i, acc ->
+          %{"id" => i, "ply" => i, "children" => [acc]}
+        end)
+
+      assert {:error, :invalid_op} = Ops.validate(set_game_op(deep))
+    end
+
+    test "rejects trees with too many nodes" do
+      wide = %{
+        "id" => 0,
+        "ply" => 0,
+        "children" => for(i <- 1..2_001, do: %{"id" => i, "ply" => 1, "children" => []})
+      }
+
+      assert {:error, :invalid_op} = Ops.validate(set_game_op(wide))
+    end
+  end
 end

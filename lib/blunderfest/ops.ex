@@ -10,6 +10,10 @@ defmodule Blunderfest.Ops do
   @max_san_bytes 16
   @max_comment_bytes 2_000
   @max_annotations 64
+  @max_tree_nodes 2_000
+  @max_tree_depth 1_500
+
+  @edit_op_types ~w(set_game move_at_ply replace_line comment_at_ply set_annotations set_position)
 
   @square ~r/^[a-h][1-8]$/
   @color ~r/^#[0-9a-f]{6}$/
@@ -45,8 +49,17 @@ defmodule Blunderfest.Ops do
   end
 
   defp check_type("set_game", payload) do
-    case payload do
-      %{"tree" => %{"root" => _}} -> :ok
+    # The tree is a recursive structure that clients replay with recursive
+    # walkers, so it gets a real shape check: every node needs an integer
+    # id/ply and a children list, and the tree's size and depth are capped —
+    # a 256 KB op can otherwise nest deep enough to overflow a client's call
+    # stack on replay.
+    with %{"tree" => tree} when is_map(tree) <- payload,
+         :ok <- check_tree_fields(tree),
+         {:ok, root} when is_map(root) <- Map.fetch(tree, "root"),
+         {:ok, _node_count} <- walk_tree(root, 1, 0) do
+      :ok
+    else
       _ -> {:error, :invalid_op}
     end
   end
@@ -98,6 +111,72 @@ defmodule Blunderfest.Ops do
   end
 
   defp check_type(_type, _payload), do: {:error, :invalid_op}
+
+  @doc "Whether an op payload counts as a room edit (moves, comments, etc.)."
+  def edit_op?(%{"type" => type}) when type in @edit_op_types, do: true
+  def edit_op?(%{"type" => type}) when is_binary(type), do: false
+  def edit_op?(op) when is_map(op), do: op["type"] in @edit_op_types
+  def edit_op?(_op), do: false
+
+  defp check_tree_fields(tree) do
+    with :ok <- optional_map(tree, "headers"),
+         :ok <- optional_map(tree, "setup"),
+         :ok <- optional_string(tree, "result", 16),
+         :ok <- optional_int(tree, "mainline_ply_count") do
+      optional_int(tree, "node_count")
+    end
+  end
+
+  # Returns {:ok, node_count} or :error (bad shape, too many nodes, too deep).
+  defp walk_tree(node, depth, count)
+       when is_map(node) and depth <= @max_tree_depth and count < @max_tree_nodes do
+    with %{"id" => id, "ply" => ply, "children" => children}
+         when is_integer(id) and is_integer(ply) and is_list(children) <- node,
+         :ok <-
+           nullable_strings(node, ["san", "from", "to", "promotion", "comment", "status", "fen"]),
+         :ok <- optional_list(node, "nags") do
+      Enum.reduce_while(children, {:ok, count + 1}, fn child, {:ok, acc} ->
+        case walk_tree(child, depth + 1, acc) do
+          {:ok, acc} -> {:cont, {:ok, acc}}
+          :error -> {:halt, :error}
+        end
+      end)
+    else
+      _ -> :error
+    end
+  end
+
+  defp walk_tree(_node, _depth, _count), do: :error
+
+  defp nullable_strings(map, keys) do
+    if Enum.all?(keys, fn key ->
+         case Map.get(map, key) do
+           nil -> true
+           value when is_binary(value) -> true
+           _ -> false
+         end
+       end) do
+      :ok
+    else
+      :error
+    end
+  end
+
+  defp optional_map(map, key) do
+    case Map.get(map, key) do
+      nil -> :ok
+      value when is_map(value) -> :ok
+      _ -> :error
+    end
+  end
+
+  defp optional_list(map, key) do
+    case Map.get(map, key) do
+      nil -> :ok
+      value when is_list(value) -> :ok
+      _ -> :error
+    end
+  end
 
   defp string_field(payload, key, max_bytes \\ 256) do
     case Map.get(payload, key) do

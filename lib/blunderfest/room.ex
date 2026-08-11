@@ -16,6 +16,8 @@ defmodule Blunderfest.Room do
 
   use GenServer, restart: :temporary
 
+  alias Blunderfest.Ops
+
   # Growth cap (REVIEW.md #3): a busy or hostile room can't grow without
   # limit; appends beyond the cap are rejected with `{:error, :op_limit}`.
   @max_ops_per_room 5_000
@@ -47,14 +49,38 @@ defmodule Blunderfest.Room do
     {:reply, :ok, register_member(room, profile_id)}
   end
 
-  def handle_call({:append, op}, _from, room) do
-    if room.op_count >= @max_ops_per_room do
-      {:reply, {:error, :op_limit}, room}
-    else
-      op = Map.merge(op, %{"seq" => room.seq + 1, "ts" => DateTime.utc_now()})
+  def handle_call({:join, profile_id}, _from, room) do
+    room = register_member(room, profile_id)
 
-      room = %{room | seq: room.seq + 1, op_count: room.op_count + 1, ops: [op | room.ops]}
-      {:reply, {:ok, op}, room}
+    reply = %{
+      ops: Enum.reverse(room.ops),
+      roles: room.roles,
+      read_only: room.read_only
+    }
+
+    {:reply, reply, room}
+  end
+
+  def handle_call({:append, op}, _from, room) do
+    case append_op(room, op) do
+      {:ok, op, room} -> {:reply, {:ok, op}, room}
+      {:error, reason} -> {:reply, {:error, reason}, room}
+    end
+  end
+
+  def handle_call({:submit_op, profile_id, op}, _from, room) do
+    cond do
+      room.read_only ->
+        {:reply, {:error, :read_only}, room}
+
+      Ops.edit_op?(op) and not can_edit?(room, profile_id) ->
+        {:reply, {:error, :forbidden}, room}
+
+      true ->
+        case append_op(room, op) do
+          {:ok, op, room} -> {:reply, {:ok, op}, room}
+          {:error, reason} -> {:reply, {:error, reason}, room}
+        end
     end
   end
 
@@ -75,7 +101,7 @@ defmodule Blunderfest.Room do
   end
 
   def handle_call({:can_edit?, profile_id}, _from, room) do
-    {:reply, Map.get(room.roles, profile_id, :viewer) in [:owner, :collaborator], room}
+    {:reply, can_edit?(room, profile_id), room}
   end
 
   def handle_call({:set_role, actor_id, member_id, role}, _from, room) do
@@ -105,6 +131,20 @@ defmodule Blunderfest.Room do
 
       true ->
         %{room | roles: Map.put(room.roles, profile_id, :viewer)}
+    end
+  end
+
+  defp can_edit?(room, profile_id) do
+    Map.get(room.roles, profile_id, :viewer) in [:owner, :collaborator]
+  end
+
+  defp append_op(room, op) do
+    if room.op_count >= @max_ops_per_room do
+      {:error, :op_limit}
+    else
+      op = Map.merge(op, %{"seq" => room.seq + 1, "ts" => DateTime.utc_now()})
+      room = %{room | seq: room.seq + 1, op_count: room.op_count + 1, ops: [op | room.ops]}
+      {:ok, op, room}
     end
   end
 end

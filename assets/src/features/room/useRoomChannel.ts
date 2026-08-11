@@ -34,6 +34,11 @@ function membersFrom(state: PresenceState): PresenceMember[] {
  * Outbound: `sendOp` pushes an op to the server — it is applied on the
  * client only via the server echo, so there is exactly one application path.
  *
+ * An echo arriving with a `seq` gap means an op was lost or reordered in
+ * transit (Phoenix PubSub only orders per publisher process). The client
+ * resyncs by rejoining — replay is the one application path (ADR-0005), so
+ * a fresh join replays the authoritative log.
+ *
  * Event handlers ignore events from a channel that has been superseded by a
  * rejoin, so late arrivals from a previous connection cannot mutate the new
  * room's state.
@@ -53,7 +58,10 @@ export function useRoomChannel(
   channelFactoryRef.current = channelFactory;
   const [joined, setJoined] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  // Bump to force the effect below to leave and rejoin (the gap resync).
+  const [rejoinNonce, setRejoinNonce] = useState(0);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: rejoinNonce re-runs the effect (leave + rejoin) without being referenced inside
   useEffect(() => {
     const params: Record<string, string> = {};
     if (selfId !== null) {
@@ -67,9 +75,20 @@ export function useRoomChannel(
 
     dispatch(enterRoom({ slug }));
 
+    // The highest seq known to be in the store (the join replay below sets
+    // the baseline). Echoes must succeed it exactly; anything higher is a
+    // gap, anything at or below is a stale duplicate.
+    let lastSeq = 0;
+
     channel.on('new_op', (op: Op) => {
-      if (channelRef.current === channel) {
+      if (channelRef.current !== channel) {
+        return;
+      }
+      if (op.seq === lastSeq + 1) {
+        lastSeq = op.seq;
         dispatch(applyOp(op));
+      } else if (op.seq > lastSeq + 1) {
+        setRejoinNonce((n) => n + 1);
       }
     });
     channel.on('role_update', (update: { member_id: string; role: MemberRole }) => {
@@ -111,6 +130,7 @@ export function useRoomChannel(
             dispatch(setRoles(payload.roles ?? {}));
             dispatch(setRegion(payload.region ?? null));
             dispatch(setReadOnly(payload.read_only ?? false));
+            lastSeq = payload.ops.reduce((max, op) => Math.max(max, op.seq), 0);
             setJoined(true);
           }
         },
@@ -137,7 +157,7 @@ export function useRoomChannel(
       setJoined(false);
       setJoinError(null);
     };
-  }, [dispatch, slug, selfId, selfName]);
+  }, [dispatch, slug, selfId, selfName, rejoinNonce]);
 
   const sendOp = useCallback((op: Omit<Op, 'seq' | 'author' | 'ts'>) => {
     channelRef.current?.push('op', op);

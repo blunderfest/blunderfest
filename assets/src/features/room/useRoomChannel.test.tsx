@@ -138,6 +138,62 @@ describe('useRoomChannel', () => {
     await waitFor(() => expect(store.getState().room.ops).toEqual([op]));
   });
 
+  function cursorOp(seq: number): Op {
+    return {
+      seq,
+      author: 'profile-1',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'set_cursor',
+      payload: { node_id: seq },
+    };
+  }
+
+  it('ignores stale or duplicate echoes', async () => {
+    channel.joinReturn = { ops: [cursorOp(1)] };
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() => expect(store.getState().room.ops).toHaveLength(1));
+
+    act(() => channel.emit('new_op', cursorOp(2)));
+    act(() => channel.emit('new_op', cursorOp(2)));
+    act(() => channel.emit('new_op', cursorOp(1)));
+
+    expect(store.getState().room.ops.map((op) => op.seq)).toEqual([1, 2]);
+  });
+
+  it('resyncs by rejoining when an echo arrives with a seq gap', async () => {
+    // A fresh channel per (re)join, so the rejoin is observable.
+    const channels: FakeChannel[] = [];
+    const freshFactory = () => {
+      const next = new FakeChannel();
+      next.joinReturn = { ops: [cursorOp(1), cursorOp(2)] };
+      channels.push(next);
+      return next;
+    };
+
+    renderHook(() => useRoomChannel('room-a', null, null, freshFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() => expect(store.getState().room.ops).toHaveLength(2));
+
+    // In-order echoes apply normally.
+    act(() => channels[0].emit('new_op', cursorOp(3)));
+    expect(store.getState().room.ops.map((op) => op.seq)).toEqual([1, 2, 3]);
+
+    // A gap (seq 5 while seq 4 is missing) drops the echo and resyncs:
+    // the old channel is left, a fresh one joins, and the replayed log
+    // replaces the store wholesale.
+    act(() => channels[0].emit('new_op', cursorOp(5)));
+
+    await waitFor(() => expect(channels).toHaveLength(2));
+    expect(channels[0].joined).toBe(false);
+    expect(channels[1].joined).toBe(true);
+    expect(store.getState().room.ops.map((op) => op.seq)).toEqual([1, 2]);
+  });
+
   it('sendOp pushes to the channel without applying locally', async () => {
     const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),

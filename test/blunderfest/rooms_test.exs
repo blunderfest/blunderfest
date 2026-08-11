@@ -193,17 +193,62 @@ defmodule Blunderfest.RoomsTest do
     refute Rooms.read_only?("unknown", store)
   end
 
-  test "edit_op? classifies room edit ops", %{store: _store} do
-    assert Rooms.edit_op?(%{"type" => "move_at_ply"})
-    assert Rooms.edit_op?(%{"type" => "set_game"})
-    assert Rooms.edit_op?(%{"type" => "comment_at_ply"})
-    assert Rooms.edit_op?(%{"type" => "set_annotations"})
-    assert Rooms.edit_op?(%{"type" => "replace_line"})
-    refute Rooms.edit_op?(%{"type" => "set_cursor"})
-    refute Rooms.edit_op?(%{"type" => "select_game"})
-    refute Rooms.edit_op?(%{"type" => "unknown"})
-    refute Rooms.edit_op?(%{})
-    refute Rooms.edit_op?(nil)
+  test "submit_op appends owner ops and rejects viewer edits atomically", %{store: store} do
+    Rooms.create("room-a", "profile-1", store)
+    Rooms.claim("room-a", "profile-2", store)
+
+    assert {:ok, op} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-1",
+               %{"type" => "move_at_ply", "payload" => %{"ply" => 1, "san" => "e4"}},
+               store
+             )
+
+    assert op["seq"] == 1
+
+    assert {:error, :forbidden} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-2",
+               %{"type" => "move_at_ply", "payload" => %{"ply" => 1, "san" => "e5"}},
+               store
+             )
+
+    # Non-edit ops (cursor noise) are still allowed for viewers.
+    assert {:ok, _} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-2",
+               %{"type" => "set_cursor", "payload" => %{"node_id" => 3}},
+               store
+             )
+
+    assert Enum.map(Rooms.ops("room-a", store), & &1["seq"]) == [1, 2]
+  end
+
+  test "submit_op rejects everything for read-only rooms", %{store: store} do
+    Rooms.create("room-a", "anonymous", store, read_only: true)
+
+    assert {:error, :read_only} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-1",
+               %{"type" => "set_cursor", "payload" => %{"node_id" => 3}},
+               store
+             )
+  end
+
+  test "join_snapshot claims membership and returns the room state in one call", %{store: store} do
+    Rooms.create("room-a", "anonymous", store)
+    Rooms.append("room-a", %{"type" => "set_cursor", "payload" => %{"node_id" => 1}}, store)
+
+    snapshot = Rooms.join_snapshot("room-a", "profile-1", store)
+
+    assert [%{"seq" => 1}] = snapshot.ops
+    assert snapshot.roles == %{"profile-1" => :owner}
+    assert snapshot.read_only == false
+    assert Rooms.owner("room-a", store) == "profile-1"
   end
 
   test "roles returns the full role map", %{store: store} do

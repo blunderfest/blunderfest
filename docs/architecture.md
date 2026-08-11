@@ -22,9 +22,11 @@ release and served by a catch-all (`SpaController`).
     one `Room` GenServer per room (ADR-0012), registered by slug in a Horde
     Registry and started on demand under a Horde DynamicSupervisor —
     cluster-wide, so rooms are reachable from every Fly region (ADR-0013).
-    `create/2`, `claim/2`, `append/2`, `ops/1`, `roles/1`, `valid_code?/1`,
-    `room_exists?/1`, `read_only?/1`, `approval_status/3`. The op log is the
-    room's authoritative state (ADR-0005); joins never create rooms (ADR-0006).
+    `create/2`, `claim/2`, `append/2`, `submit_op/3` (permission check +
+    append, atomically), `join_snapshot/3` (claim + ops/roles/read_only in
+    one call), `ops/1`, `roles/1`, `valid_code?/1`, `room_exists?/1`,
+    `read_only?/1`, `approval_status/3`. The op log is the room's
+    authoritative state (ADR-0005); joins never create rooms (ADR-0006).
     Ops are stored prepended with a counter (O(1) append). Rooms created
     `read_only: true` record no members and allow no edits.
   - `DemoRoom` — the read-only demo room at the reserved code `chess`
@@ -60,14 +62,20 @@ to its reserved code re-seeds it (ADR-0014).
 ### Channel protocol
 
 Topic `room:<slug>`. Join reply: `{ops: Op[], roles: {member_id => role},
-region, read_only}`. Events: `op` (push) → `new_op` (broadcast echo);
-`set_role` → `role_update`. Presence events `presence_state` /
-`presence_diff` carry member names. Ops are type-tagged payloads
-(`move_at_ply`, `comment_at_ply`, `set_game`, `select_game`, `set_cursor`,
-`set_role`, ...) with `seq`, `author`, `ts` — the shared vocabulary is
-mirrored in `assets/src/protocol/ops.ts`. Read-only rooms (the demo) are the
-exception: no presence is tracked and every `op` push is rejected with
-`:read_only`, so clients send nothing and hide the member list.
+region, read_only}` (one atomic room call). Events: `op` (push) → validated
+shape-first by `Blunderfest.Ops` (including a recursive shape/depth/node
+cap for `set_game` trees), then permission-checked and appended atomically
+by the room process → `new_op` (broadcast echo); `set_role` →
+`role_update`. Clients apply echoes strictly in `seq` order; a `seq` gap
+means an echo was lost or reordered, so the client resyncs by rejoining
+(replay is the one application path, ADR-0005). Presence events
+`presence_state` / `presence_diff` carry member names. Ops are type-tagged
+payloads (`move_at_ply`, `comment_at_ply`, `set_game`, `select_game`,
+`set_cursor`, `set_role`, ...) with `seq`, `author`, `ts` — the shared
+vocabulary is mirrored in `assets/src/protocol/ops.ts`. Read-only rooms
+(the demo) are the exception: no presence is tracked and every `op` push is
+rejected with `:read_only`, so clients send nothing and hide the member
+list.
 
 ## Frontend (React 19 + Vite + TypeScript)
 

@@ -37,8 +37,6 @@ defmodule Blunderfest.Rooms do
   # hostile instance can't grow memory without limit.
   @max_rooms 1_000
 
-  @edit_op_types ~w(set_game move_at_ply replace_line comment_at_ply set_annotations set_position)
-
   # Room codes are 5 characters drawn from an unambiguous alphabet
   # (no i/l/o/0/1 to avoid reading errors when codes are exchanged).
   @code_regex ~r/^[abcdefghjkmnpqrstuvwxyz23456789]{5}$/
@@ -111,9 +109,33 @@ defmodule Blunderfest.Rooms do
   `{:ok, stamped_op}` or `{:error, :op_limit}` when the room is full.
   Materializes the room if needed (channel joins gate on `room_exists?/2`,
   so this only matters for internal callers and tests).
+
+  No permission check — that's `submit_op/4`'s job; this is the trusted
+  internal path (demo seeder, tests).
   """
   def append(slug, op, scope \\ default_scope()) do
     ensure_and_call(slug, scope, {:append, op})
+  end
+
+  @doc """
+  Registers `profile_id` and returns everything a joining client needs —
+  `%{ops, roles, read_only}` — in one atomic room call: one cross-node
+  round trip instead of four (ADR-0013).
+  """
+  def join_snapshot(slug, profile_id, scope \\ default_scope()) do
+    ensure_and_call(slug, scope, {:join, profile_id})
+  end
+
+  @doc """
+  Checks and appends a client op as one atomic room call: read-only rooms
+  reject everything with `:read_only`, edit ops from members without edit
+  rights with `:forbidden`, appends beyond the cap with `:op_limit`. Doing
+  it in the room process closes the check-then-append race (a demote can no
+  longer slip between the permission check and the append) and costs one
+  cross-node round trip instead of three (ADR-0013).
+  """
+  def submit_op(slug, profile_id, op, scope \\ default_scope()) do
+    ensure_and_call(slug, scope, {:submit_op, profile_id, op})
   end
 
   @doc "Stops all room processes in the scope (test seam)."
@@ -175,12 +197,6 @@ defmodule Blunderfest.Rooms do
   def can_edit?(slug, profile_id, scope \\ default_scope()) do
     with_pid(slug, scope, false, fn pid -> GenServer.call(pid, {:can_edit?, profile_id}) end)
   end
-
-  @doc "Whether an op payload counts as a room edit (moves, comments, etc.)."
-  def edit_op?(%{"type" => type}) when type in @edit_op_types, do: true
-  def edit_op?(%{"type" => type}) when is_binary(type), do: false
-  def edit_op?(op) when is_map(op), do: op["type"] in @edit_op_types
-  def edit_op?(_op), do: false
 
   defp call_register(slug, scope, pid, profile_id) do
     GenServer.call(pid, {:register, profile_id})

@@ -6,10 +6,12 @@ defmodule BlunderfestWeb.RoomChannel do
     (`%{roles: %{"profile-1" => "owner", ...}}`); clients replay ops.
   - **Presence** tracks who's in the room (by optional profile id, else
     `"anonymous"`); diffs are broadcast automatically.
-  - **`op` pushes** are stamped with `seq`/`ts`/`author` by `Blunderfest.Rooms`
-    and broadcast back to *everyone*, including the sender — the echoed op is
-    the single application path on clients, so no local double-apply. Edit ops
-    (moves, comments, arrows, game imports) are rejected for viewers.
+  - **`op` pushes** are validated (`Blunderfest.Ops`), then permission-checked
+    and appended atomically by the room process (`Rooms.submit_op/3`), stamped
+    with `seq`/`ts`/`author`, and broadcast back to *everyone*, including the
+    sender — the echoed op is the single application path on clients, so no
+    local double-apply. Edit ops (moves, comments, arrows, game imports) are
+    rejected for viewers.
   - **`set_role` pushes** let the room owner promote/demote other members;
     the new role is broadcast to everyone as `role_update`.
 
@@ -50,29 +52,31 @@ defmodule BlunderfestWeb.RoomChannel do
     # explicit approval push. The seam is the call, not a dead branch.
     :approved = Rooms.approval_status(slug, profile_id)
 
-    Rooms.claim(slug, profile_id)
+    # One atomic room call: claims membership and returns the replay state.
+    snapshot = Rooms.join_snapshot(slug, profile_id)
 
     socket =
       socket
       |> assign(:slug, slug)
       |> assign(:profile_id, profile_id)
       |> assign(:profile_name, profile_name_for(profile_id, params["name"]))
+      |> assign(:read_only, snapshot.read_only)
 
     send(self(), :after_join)
 
     {:ok,
      %{
-       ops: Rooms.ops(slug),
-       roles: stringify_roles(Rooms.roles(slug)),
+       ops: snapshot.ops,
+       roles: stringify_roles(snapshot.roles),
        region: Blunderfest.NodeInfo.region(),
-       read_only: Rooms.read_only?(slug)
+       read_only: snapshot.read_only
      }, socket}
   end
 
   @impl true
   def handle_info(:after_join, socket) do
     # Read-only rooms track no presence: demo visitors don't see each other.
-    unless Rooms.read_only?(socket.assigns.slug) do
+    unless socket.assigns.read_only do
       BlunderfestWeb.Presence.track(self(), socket.topic, socket.assigns.profile_id, %{
         name: socket.assigns.profile_name
       })
@@ -87,10 +91,8 @@ defmodule BlunderfestWeb.RoomChannel do
 
   @impl true
   def handle_in("op", op, socket) do
-    with :ok <- check_writable(socket),
-         :ok <- Ops.validate(op),
-         :ok <- check_edit_permission(op, socket),
-         {:ok, op} <- append_op(op, socket) do
+    with :ok <- Ops.validate(op),
+         {:ok, op} <- submit_op(op, socket) do
       broadcast!(socket, "new_op", op)
       {:reply, :ok, socket}
     else
@@ -115,27 +117,12 @@ defmodule BlunderfestWeb.RoomChannel do
     end
   end
 
-  defp append_op(op, socket) do
+  # The room process permission-checks and appends atomically: a demote can
+  # no longer slip between check and append, and an op costs one cross-node
+  # round trip instead of three (ADR-0013).
+  defp submit_op(op, socket) do
     op = Map.merge(op, %{"author" => socket.assigns.profile_id})
-    Rooms.append(socket.assigns.slug, op)
-  end
-
-  # Read-only rooms (the demo) accept no client ops at all — not even cursor
-  # noise — so the shared log stays exactly the seed.
-  defp check_writable(socket) do
-    if Rooms.read_only?(socket.assigns.slug) do
-      {:error, :read_only}
-    else
-      :ok
-    end
-  end
-
-  defp check_edit_permission(op, socket) do
-    if Rooms.edit_op?(op) and not Rooms.can_edit?(socket.assigns.slug, socket.assigns.profile_id) do
-      {:error, :forbidden}
-    else
-      :ok
-    end
+    Rooms.submit_op(socket.assigns.slug, socket.assigns.profile_id, op)
   end
 
   defp string_to_role("collaborator"), do: :collaborator
