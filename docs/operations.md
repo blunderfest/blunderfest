@@ -6,7 +6,6 @@
   default branch. Pushes to `main` are not auto-deployed — deploys are manual
   (see below).
 - `main_backup` — archive of the old history; never developed.
-- `architecture` — local scratch branch.
 
 ## Local development
 

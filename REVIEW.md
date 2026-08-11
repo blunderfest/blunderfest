@@ -4,6 +4,9 @@ Full review of the codebase (backend domain modules, channel, controllers,
 config, frontend store/features, tests, infra), done after the solo-board
 milestone. Ordered by severity; follow-up discussion pending.
 
+> **2026-08-11:** a second review lives in [REVIEW-2026-08-11.md](REVIEW-2026-08-11.md).
+> The open items below are annotated with how they stand against it.
+
 ## Overall impression
 
 The bones are genuinely good. The two big architectural bets — **op-log as
@@ -37,6 +40,11 @@ Hard caps landed: `@max_rooms 1_000` (create returns 429 `room_limit`) and
 counter, so appends are O(1) (done with ADR-0012). Still open: rooms are
 never evicted, and `POST /api/rooms` has no rate limit beyond the global cap.
 
+**Still open (2026-08-11)** — and now blocking two more conversations:
+per-visitor demo rooms were rejected until eviction exists (ADR-0014), and
+the demo link is a one-click path to exhausting the room cap. Eviction is
+the highest-value open infrastructure item.
+
 ### 4. CI is disabled — 🚫 WON'T FIX (2026-08-10)
 
 Deliberate product decision: GitHub Actions' limits bit us before, so checks
@@ -55,6 +63,11 @@ SAN). This is the highest *correctness* risk in the system — chess edge cases
 by real tests, but golden fixtures specifically for SAN disambiguation and
 castling would be worthwhile, and Echecs' maturity should be watched
 (vendor/replace if it stalls).
+
+**Update (2026-08-11):** the SAN/castling fixture gap is addressed —
+`test/blunderfest/game/moves_test.exs` covers file/rank disambiguation and
+castling (including castling out of check). What remains is the library
+watch itself and the precompile hack.
 
 ### 6. ~~Legal moves are a server round-trip per position~~ ✅ DONE (2026-08-10)
 
@@ -80,15 +93,19 @@ are discarded on heal.
 - `Analysis.tsx` is becoming a god-component again (~440 lines: cursor,
   pending-echo, engine, keyboard, comments). Works and tested, but the
   cursor/engine logic would extract cleanly into hooks before milestone 6
-  adds more.
+  adds more. **Worse (2026-08-11): 949 lines** — see REVIEW-2026-08-11.md
+  finding 4 for the extraction targets.
 - The `pending` local-echo mechanism is a pragmatic second application path
   that slightly breaks the "single application path" purity. Well-contained;
-  preferable would be an echo fast enough to not need it.
-- The stockfish.js package's browser loading is janky (hit twice: hashed
-  assets, then the same-stem fix). An alternative would be lichess's
-  `stockfish-web` build. Working now in both browsers, with fake-engine tests.
-- Housekeeping: `erl_crash.dump` (5 MB, gitignored) in the repo root; the
-  `architecture` and dependabot branches lingering.
+  preferable would be an echo fast enough to not need it. **Update
+  (2026-08-11):** also never shrinks, and a rejected op leaves a phantom
+  node — REVIEW-2026-08-11.md finding 5.
+- ~~The stockfish.js package's browser loading is janky~~ ✅ RESOLVED
+  (2026-08-11): the worker/wasm are served verbatim from `/engine/` under
+  stable names, no more double hit; fake-engine tests remain.
+- ~~Housekeeping: `erl_crash.dump` (5 MB, gitignored) in the repo root; the
+  `architecture` and dependabot branches lingering.~~ ✅ DONE (2026-08-11):
+  dump deleted, branches pruned.
 
 ## What should not change
 
@@ -102,6 +119,8 @@ factories). Good design.
 1. ~~`fly secrets set SECRET_KEY_BASE` + rotate + remove from `fly.toml`.~~ ✅
 2. ~~Server-side op payload validation + size caps.~~ ✅
 3. ~~Re-enable CI.~~ 🚫 won't fix — checks/deploys stay local by decision.
-4. Room eviction (caps and O(1) storage landed; eviction remains).
+4. Room eviction (caps and O(1) storage landed; eviction remains) — **still
+   the top open item (2026-08-11)**; see REVIEW-2026-08-11.md, which also
+   adds: set_game tree validation, op-call consolidation, op-gap resync.
 5. ~~chess.js locally for solo play.~~ ✅
 6. ~~One process per room under a DynamicSupervisor (finding 7).~~ ✅ (and clustered via Horde)
