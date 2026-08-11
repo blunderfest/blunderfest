@@ -33,7 +33,7 @@ defmodule Blunderfest.Rooms do
   @typedoc "A `{registry, supervisor}` pair isolating a set of rooms."
   @type scope :: {atom(), atom()}
 
-  # Growth cap (REVIEW.md #3): the number of rooms is bounded so a busy or
+  # Growth cap: the number of rooms is bounded so a busy or
   # hostile instance can't grow memory without limit.
   @max_rooms 1_000
 

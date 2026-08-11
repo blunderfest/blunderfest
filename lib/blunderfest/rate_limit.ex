@@ -1,7 +1,7 @@
 defmodule Blunderfest.RateLimit do
   @moduledoc """
   Fixed-window rate limiter for the expensive anonymous endpoints — today
-  that's just room creation (REVIEW.md #3).
+  that's just room creation.
 
   Per-client-IP, per-node: on the two-node cluster each node allows its own
   share of the traffic, which is all abuse mitigation needs. State is

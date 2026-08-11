@@ -8,7 +8,7 @@ defmodule BlunderfestWeb.RoomController do
   the room's owner; anonymous creators are not recorded. Rooms are never
   created implicitly by joining. The demo code is reserved: the demo room
   is seeded by the server (read-only), never through this endpoint. Creation
-  is rate-limited per client IP (REVIEW.md #3).
+  is rate-limited per client IP.
   """
   def create(conn, %{"code" => code}) do
     cond do

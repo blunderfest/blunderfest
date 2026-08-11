@@ -4,11 +4,11 @@ Status: Accepted (2026-08-11)
 
 ## Context
 
-While assessing the echecs dependency (REVIEW.md #5) we floated moving PGN
+While assessing the echecs dependency (ADR-0019) we floated moving PGN
 parsing to the client (chess.js is already shipped for interactivity) and
 dropping server-side chess entirely. Today the server stores room ops
-opaquely — it validates their *shape* (REVIEW-2026-08-11 finding 1) but not
-their chess content, and move legality is enforced client-side.
+opaquely — it validates their *shape* but not their chess content, and move
+legality is enforced client-side.
 
 That direction was rejected: it would make the server a relay that shuttles
 messages it doesn't understand, just as the roadmap needs the opposite —
@@ -27,8 +27,8 @@ The server keeps — and grows — first-class chess understanding:
   FEN) with that in mind.
 - chess.js in the browser remains the *interactivity* layer (drag
   legality, instant hints), never the system of record for game meaning.
-- Consequently the echecs dependency (or a vendored successor, REVIEW.md
-  #5) is intentional infrastructure, not a stopgap.
+- Consequently the echecs dependency (or a vendored successor, ADR-0019)
+  is intentional infrastructure, not a stopgap.
 
 ## Consequences
 

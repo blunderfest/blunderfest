@@ -4,7 +4,7 @@ Status: Accepted (2026-08-11)
 
 ## Context
 
-REVIEW.md #3 bounded room growth (1,000 rooms, 5,000 ops per room) but rooms
+The growth caps (1,000 rooms, 5,000 ops per room) bounded memory but rooms
 were never evicted: every created room lived until the next restart, so the
 cap could be exhausted by abandoned rooms — and the cap exists precisely
 because everything is in memory. The same hole blocked two product
@@ -40,4 +40,4 @@ says a room "may have expired".
   entries fail safe (they *prevent* eviction).
 - A per-visitor sandbox demo (ADR-0014's rejected alternative) is now
   unblocked should we want it.
-- Still open from REVIEW.md #3: `POST /api/rooms` has no rate limit.
+- Follow-up: a creation rate limit on `POST /api/rooms` (ADR-0017).

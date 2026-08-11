@@ -60,3 +60,4 @@ here, or point to the ADR that superseded this one.
 | [0016](adr-0016-idle-rooms-expire.md) | Rooms expire after 1h idle *and* empty (sweeper reads Presence); links then report the room expired | Accepted (2026-08-11) |
 | [0017](adr-0017-room-creation-rate-limit.md) | Room creation is rate-limited per client IP (fixed window, per node) | Accepted (2026-08-11) |
 | [0018](adr-0018-server-understands-chess.md) | The server keeps first-class chess understanding (parsing, later materialization/search); the client is the interactivity layer, not the game authority | Accepted (2026-08-11) |
+| [0019](adr-0019-echecs-dependency-posture.md) | Keep echecs (contained risk, server-side import parsing only); fork/vendor if it stalls | Accepted (2026-08-11) |

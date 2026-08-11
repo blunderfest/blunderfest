@@ -1,7 +1,7 @@
 defmodule BlunderfestWeb.RoomSweeper do
   @moduledoc """
   Evicts rooms that have been idle and empty for a while, so the room cap
-  (REVIEW.md #3) can't be exhausted by abandoned rooms.
+  can't be exhausted by abandoned rooms.
 
   A room is evicted when both hold: nobody is present in its channel topic
   (no open tabs), and it has seen no activity (no joins, ops, or role

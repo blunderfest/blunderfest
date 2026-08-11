@@ -4,10 +4,10 @@ Status: Accepted (2026-08-11)
 
 ## Context
 
-The last open item from both reviews: `POST /api/rooms` is anonymous and had
-no throttle, so a script could create rooms until the 1,000-room cap
-(REVIEW.md #3) rejected everyone. Eviction (ADR-0016) shrinks the exposure
-window but doesn't prevent the burst.
+The last open item from the 2026 reviews: `POST /api/rooms` is anonymous and
+had no throttle, so a script could create rooms until the 1,000-room cap
+rejected everyone. Eviction (ADR-0016) shrinks the exposure window but
+doesn't prevent the burst.
 
 ## Decision
 
@@ -35,5 +35,5 @@ that. Choices worth recording:
 - If per-visitor demo rooms ever ship (ADR-0014's alternative), the demo
   flow creates a room per click and this limit applies to it — 10/min is
   generous for humans but the number may want revisiting then.
-- Both reviews are now fully closed; the only standing watch item is the
-  `echecs` 0.1 dependency (REVIEW.md #5).
+- Both 2026 reviews are fully closed with this; the `echecs` dependency
+  posture is recorded in ADR-0019.

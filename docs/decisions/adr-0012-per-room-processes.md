@@ -6,10 +6,10 @@ Status: Accepted (2026-08-10)
 
 All room state — every op log and role map — lived in a single global
 `Blunderfest.Rooms` GenServer. Every op append, join replay, and role check
-across every room serialized through that one process (REVIEW.md finding 7).
-Fine at current scale, but the known ceiling: one busy room would stall all
-others, and the append path was O(n) per op (`ops ++ [op]`), degrading
-quadratically inside a busy room (REVIEW.md finding 3).
+across every room serialized through that one process. Fine at current
+scale, but the known ceiling: one busy room would stall all others, and the
+append path was O(n) per op (`ops ++ [op]`), degrading quadratically inside
+a busy room.
 
 ## Decision
 

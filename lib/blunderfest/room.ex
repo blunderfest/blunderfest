@@ -18,7 +18,7 @@ defmodule Blunderfest.Room do
 
   alias Blunderfest.Ops
 
-  # Growth cap (REVIEW.md #3): a busy or hostile room can't grow without
+  # Growth cap: a busy or hostile room can't grow without
   # limit; appends beyond the cap are rejected with `{:error, :op_limit}`.
   @max_ops_per_room 5_000
 

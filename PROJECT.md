@@ -71,8 +71,7 @@ Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 Milestones 1–5 done. Recently landed: one process per room (ADR-0012),
 Horde clustering across `ams`/`ord` (ADR-0013), the read-only demo room at
 `#/r/chess` (seeded on demand, ADR-0014), idle-room eviction (ADR-0016),
-and the second code review's findings — all fixed
-([REVIEW-2026-08-11.md](REVIEW-2026-08-11.md); the Analysis split into
+and the second code review's findings — all fixed (the Analysis split into
 cursor/editor/keyboard hooks among them). Earlier: the design-system port
 (`design/DESIGN-SYSTEM.md` is the UI spec), the in-browser engine,
 free-form position setup (ADR-0011), comment popup (`c` key), secrets in

@@ -14,10 +14,10 @@ until a reboot.
 
 The alternative considered was a fresh throwaway room per visitor (a full
 sandbox the visitor owns, shareable to try live collaboration). Rejected for
-now: rooms are never evicted (REVIEW.md #3), so every "peek" would
-permanently consume one of the 1,000 room slots and the demo link would
-become a one-click way to exhaust the room cap. It becomes attractive once
-room eviction exists.
+now: rooms were never evicted at the time, so every "peek" would permanently
+consume one of the 1,000 room slots and the demo link would become a
+one-click way to exhaust the room cap. (Eviction later landed in ADR-0016,
+which unblocks this alternative should we want it.)
 
 ## Decision
 

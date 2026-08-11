@@ -9,7 +9,7 @@ defmodule Blunderfest.Application do
   def start(_type, _args) do
     children = [
       Blunderfest.Profiles,
-      # Fixed-window rate limiter for anonymous room creation (REVIEW.md #3).
+      # Fixed-window rate limiter for anonymous room creation.
       Blunderfest.RateLimit,
       # One process per room (ADR-0012), distributed across the cluster
       # (ADR-0013): rooms register by slug in the Horde Registry and are
@@ -22,7 +22,7 @@ defmodule Blunderfest.Application do
       {Phoenix.PubSub, name: Blunderfest.PubSub},
       BlunderfestWeb.Presence,
       # Evicts idle, empty rooms so the room cap can't be exhausted by
-      # abandoned ones (REVIEW.md #3). After Presence: it reads it.
+      # abandoned ones. After Presence: it reads it.
       BlunderfestWeb.RoomSweeper,
       BlunderfestWeb.Endpoint
     ]
