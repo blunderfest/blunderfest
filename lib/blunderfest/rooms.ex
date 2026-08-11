@@ -21,6 +21,9 @@ defmodule Blunderfest.Rooms do
   promote or demote other members to/from collaborator; everyone else is a viewer
   by default. Edit ops (`move_at_ply`, `set_game`, comments, arrows, ...) are
   reserved for owners and collaborators.
+
+  Rooms created with `read_only: true` (the demo room, ADR-0014) record no
+  members at all: nobody owns them and `can_edit?/3` is false for everyone.
   """
 
   alias Blunderfest.Room
@@ -69,6 +72,11 @@ defmodule Blunderfest.Rooms do
     lookup(slug, scope) != nil
   end
 
+  @doc "Whether the room is read-only (the demo room): false for unknown rooms."
+  def read_only?(slug, scope \\ default_scope()) do
+    with_pid(slug, scope, false, fn pid -> GenServer.call(pid, :read_only?) end)
+  end
+
   @doc "The room's op log in append order (empty for unknown rooms)."
   def ops(slug, scope \\ default_scope()) do
     with_pid(slug, scope, [], fn pid -> GenServer.call(pid, :ops) end)
@@ -79,14 +87,15 @@ defmodule Blunderfest.Rooms do
   created here (or a room the server has lost) is rejected at join time.
   Idempotent — re-creating an existing slug keeps its state. The first
   profiled creator becomes the owner; anonymous creators are not recorded.
+  `opts` is forwarded to the room process (`read_only: true` for the demo).
   """
-  def create(slug, profile_id, scope \\ default_scope()) do
+  def create(slug, profile_id, scope \\ default_scope(), opts \\ []) do
     {registry, supervisor} = scope
 
     case lookup(slug, scope) do
       nil ->
         if Horde.Registry.count(registry) < @max_rooms do
-          {:ok, pid} = do_start(slug, registry, supervisor)
+          {:ok, pid} = do_start(slug, registry, supervisor, opts)
           GenServer.call(pid, {:register, profile_id})
         else
           {:error, :room_limit}
@@ -230,13 +239,13 @@ defmodule Blunderfest.Rooms do
 
   defp ensure_room(slug, {registry, supervisor} = scope) do
     case lookup(slug, scope) do
-      nil -> do_start(slug, registry, supervisor)
+      nil -> do_start(slug, registry, supervisor, [])
       pid -> {:ok, pid}
     end
   end
 
-  defp do_start(slug, registry, supervisor) do
-    case Horde.DynamicSupervisor.start_child(supervisor, {Room, {registry, slug}}) do
+  defp do_start(slug, registry, supervisor, opts) do
+    case Horde.DynamicSupervisor.start_child(supervisor, {Room, {registry, slug, opts}}) do
       {:ok, pid} -> {:ok, pid}
       {:error, {:already_started, pid}} -> {:ok, pid}
     end

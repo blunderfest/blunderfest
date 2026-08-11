@@ -12,14 +12,22 @@ defmodule BlunderfestWeb.RoomChannel do
     (moves, comments, arrows, game imports) are rejected for viewers.
   - **`set_role` pushes** let the room owner promote/demote other members;
     the new role is broadcast to everyone as `role_update`.
+
+  The demo room (ADR-0014) is re-seeded on demand at join, so it survives
+  room-process and node loss; it is read-only: no presence is tracked and
+  every op push is rejected with `:read_only`.
   """
 
   use BlunderfestWeb, :channel
 
-  alias Blunderfest.{Ops, Profiles, Rooms}
+  alias Blunderfest.{DemoRoom, Ops, Profiles, Rooms}
 
   @impl true
   def join("room:" <> slug, params, socket) do
+    # Seed the demo room on demand (ADR-0014): a boot-time-only seed would
+    # 404 as soon as the room process or its node is lost. Idempotent.
+    if DemoRoom.reserved?(slug), do: DemoRoom.seed()
+
     cond do
       not Rooms.valid_code?(slug) ->
         {:error, %{reason: :invalid_code}}
@@ -56,26 +64,31 @@ defmodule BlunderfestWeb.RoomChannel do
      %{
        ops: Rooms.ops(slug),
        roles: stringify_roles(Rooms.roles(slug)),
-       region: Blunderfest.NodeInfo.region()
+       region: Blunderfest.NodeInfo.region(),
+       read_only: Rooms.read_only?(slug)
      }, socket}
   end
 
   @impl true
   def handle_info(:after_join, socket) do
-    BlunderfestWeb.Presence.track(self(), socket.topic, socket.assigns.profile_id, %{
-      name: socket.assigns.profile_name
-    })
+    # Read-only rooms track no presence: demo visitors don't see each other.
+    unless Rooms.read_only?(socket.assigns.slug) do
+      BlunderfestWeb.Presence.track(self(), socket.topic, socket.assigns.profile_id, %{
+        name: socket.assigns.profile_name
+      })
 
-    # Phoenix does not send the current presence state to a joining client
-    # automatically; the joining client must push it itself after tracking.
-    push(socket, "presence_state", BlunderfestWeb.Presence.list(socket.topic))
+      # Phoenix does not send the current presence state to a joining client
+      # automatically; the joining client must push it itself after tracking.
+      push(socket, "presence_state", BlunderfestWeb.Presence.list(socket.topic))
+    end
 
     {:noreply, socket}
   end
 
   @impl true
   def handle_in("op", op, socket) do
-    with :ok <- Ops.validate(op),
+    with :ok <- check_writable(socket),
+         :ok <- Ops.validate(op),
          :ok <- check_edit_permission(op, socket),
          {:ok, op} <- append_op(op, socket) do
       broadcast!(socket, "new_op", op)
@@ -105,6 +118,16 @@ defmodule BlunderfestWeb.RoomChannel do
   defp append_op(op, socket) do
     op = Map.merge(op, %{"author" => socket.assigns.profile_id})
     Rooms.append(socket.assigns.slug, op)
+  end
+
+  # Read-only rooms (the demo) accept no client ops at all — not even cursor
+  # noise — so the shared log stays exactly the seed.
+  defp check_writable(socket) do
+    if Rooms.read_only?(socket.assigns.slug) do
+      {:error, :read_only}
+    else
+      :ok
+    end
   end
 
   defp check_edit_permission(op, socket) do

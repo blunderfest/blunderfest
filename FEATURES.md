@@ -33,7 +33,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Multiple games per room: import, new blank game, switch
 - ✅ Activity feed (who did what, minus cursor noise)
 - ✅ Room code in the app header (copy to share; joiners land as viewers)
-- ✅ Demo room seeded on boot at `#/r/chess` (annotated Opera Game) — linked from the home page
+- ✅ Read-only demo room at `#/r/chess` (annotated Opera Game), seeded on demand — linked from the home page (ADR-0014)
 - ✅ Sidebar tab shell (Analysis now; Explorer + Search get a home when they land)
 - 💡 Private rooms with owner-approved joins (the `:pending` approval seam already exists — ADR-0006)
 - 💡 Text chat

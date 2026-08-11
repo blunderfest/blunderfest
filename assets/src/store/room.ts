@@ -35,6 +35,11 @@ export type RoomState = {
   lastPlayed: Record<string, number>;
   /** The Fly region of the machine this client is connected to (join reply). */
   region: string | null;
+  /**
+   * Read-only rooms (the demo, ADR-0014): no presence, no roles, and the
+   * server rejects every op — clients don't even send cursor updates.
+   */
+  readOnly: boolean;
 };
 
 const initialState: RoomState = {
@@ -46,6 +51,7 @@ const initialState: RoomState = {
   lastPlayed: {},
   annotations: {},
   region: null,
+  readOnly: false,
 };
 
 /**
@@ -408,6 +414,7 @@ const roomSlice = createSlice({
       state.lastPlayed = {};
       state.annotations = {};
       state.region = null;
+      state.readOnly = false;
     },
     leaveRoom(state) {
       state.slug = null;
@@ -418,9 +425,13 @@ const roomSlice = createSlice({
       state.lastPlayed = {};
       state.annotations = {};
       state.region = null;
+      state.readOnly = false;
     },
     setRoles(state, action: PayloadAction<Record<string, MemberRole>>) {
       state.roles = action.payload;
+    },
+    setReadOnly(state, action: PayloadAction<boolean>) {
+      state.readOnly = action.payload;
     },
     setRegion(state, action: PayloadAction<string | null>) {
       state.region = action.payload;
@@ -506,6 +517,7 @@ export const {
   enterRoom,
   leaveRoom,
   setRoles,
+  setReadOnly,
   setRegion,
   setMemberRole,
   applyOp,

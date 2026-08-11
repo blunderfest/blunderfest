@@ -1,32 +1,40 @@
 defmodule BlunderfestWeb.RoomController do
   use BlunderfestWeb, :controller
 
-  alias Blunderfest.{Profiles, Rooms}
+  alias Blunderfest.{DemoRoom, Profiles, Rooms}
 
   @doc """
   Explicitly creates a room for `code`. The first profiled creator becomes
   the room's owner; anonymous creators are not recorded. Rooms are never
-  created implicitly by joining.
+  created implicitly by joining. The demo code is reserved: the demo room
+  is seeded by the server (read-only), never through this endpoint.
   """
   def create(conn, %{"code" => code}) do
-    if Rooms.valid_code?(code) do
-      profile_id = creator_profile_id(conn, conn.body_params["profile_id"])
+    cond do
+      not Rooms.valid_code?(code) ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: %{code: "invalid_code"}})
 
-      case Rooms.create(code, profile_id) do
-        :ok ->
-          conn
-          |> put_status(:created)
-          |> json(%{code: code})
+      DemoRoom.reserved?(code) ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: %{code: "code_reserved"}})
 
-        {:error, :room_limit} ->
-          conn
-          |> put_status(:too_many_requests)
-          |> json(%{errors: %{code: "room_limit"}})
-      end
-    else
-      conn
-      |> put_status(:unprocessable_entity)
-      |> json(%{errors: %{code: "invalid_code"}})
+      true ->
+        profile_id = creator_profile_id(conn, conn.body_params["profile_id"])
+
+        case Rooms.create(code, profile_id) do
+          :ok ->
+            conn
+            |> put_status(:created)
+            |> json(%{code: code})
+
+          {:error, :room_limit} ->
+            conn
+            |> put_status(:too_many_requests)
+            |> json(%{errors: %{code: "room_limit"}})
+        end
     end
   end
 

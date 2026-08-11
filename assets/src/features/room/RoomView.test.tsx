@@ -269,6 +269,52 @@ describe('RoomView', () => {
     expect(screen.queryByRole('button', { name: 'Fresh board' })).not.toBeInTheDocument();
   });
 
+  it('shows a connecting state until the join completes, never the viewer empty state', async () => {
+    channel.joinPending = true;
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    // While the join is in flight the owner must not see the viewer's
+    // "Nothing to analyse yet" empty state.
+    expect(screen.getByText('Connecting...')).toBeInTheDocument();
+    expect(screen.queryByText('Nothing to analyse yet')).not.toBeInTheDocument();
+    expect(screen.queryByText('Empty room')).not.toBeInTheDocument();
+
+    act(() => channel.resolveJoin());
+
+    expect(await screen.findByText('Empty room')).toBeInTheDocument();
+    expect(screen.queryByText('Nothing to analyse yet')).not.toBeInTheDocument();
+  });
+
+  it('read-only rooms show the board but no member list or edit actions', async () => {
+    // The demo room: a seeded game, no roles, read-only (ADR-0014).
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], read_only: true };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    expect(await screen.findByTestId('square-e4')).toBeInTheDocument();
+    expect(screen.queryByTestId('member-list')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Import PGN' })).not.toBeInTheDocument();
+
+    // Navigation is local; nothing is sent to a read-only room.
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    expect(channel.pushes).toEqual([]);
+  });
+
+  it('read-only rooms send no cursor ops even for a presenter', async () => {
+    // The server never produces this state (read-only rooms record no
+    // roles); it pins RoomView's contract of sending nothing when readOnly.
+    channel.joinReturn = {
+      ops: [setGameOp(1, gameTree)],
+      roles: { 'profile-1': 'owner' },
+      read_only: true,
+    };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Previous' }));
+
+    expect(channel.pushes).toEqual([]);
+  });
+
   it('imports a game by pushing a set_game op', async () => {
     vi.stubGlobal(
       'fetch',

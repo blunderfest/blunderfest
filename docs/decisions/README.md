@@ -53,3 +53,7 @@ here, or point to the ADR that superseded this one.
 | [0009](adr-0009-engine-strategy.md) | Engine strategy: Stockfish WASM in the browser, server-side UCI worker pool for batch analysis | Accepted (2026-08-04); interactive layer implemented (2026-08-06), batch pool pending |
 | [0010](adr-0010-weight-agnostic-search-index.md) | Search indexes weight-agnostic piece maps so user-configurable weights never require reindexing | Accepted — implementation pending |
 | [0011](adr-0011-free-form-position-setup.md) | Free-form position editing via a `set_position` op replayed as a tree setup node | Accepted (2026-08-07) |
+| [0012](adr-0012-per-room-processes.md) | One process per room, registered by slug and started on demand | Accepted (2026-08-10); registry/supervisor half superseded by ADR-0013 |
+| [0013](adr-0013-clustered-rooms-via-horde.md) | Cluster the Fly machines; rooms reachable from every region via Horde | Accepted (2026-08-10) |
+| [0014](adr-0014-read-only-demo-room.md) | The demo room is read-only (no owner, roles, or presence), at a reserved code, seeded on demand at join | Accepted (2026-08-11) |
+| [0015](adr-0015-no-ownership-handoff.md) | No ownership handoff when the owner leaves; the room keeps working | Accepted (2026-08-11) |

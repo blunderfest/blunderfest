@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { button } from '@/components/ui';
+import { button, chip } from '@/components/ui';
 import { formatRegion, regionFlag } from '@/lib/region';
 import { useAppSelector } from '@/store';
 
@@ -8,12 +8,14 @@ import { useAppSelector } from '@/store';
  * The compact room chip rendered in the app header for everyone in the room:
  * the code to copy and share (joiners land as viewers anyway) plus leave.
  * Also shows the region of the machine you're connected to (ADR-0013) — the
- * flag on small screens, flag + name from sm up.
+ * flag on small screens, flag + name from sm up. Read-only rooms (the demo,
+ * ADR-0014) get a badge explaining why nothing can be edited.
  */
 export default function RoomHeader({ slug, onLeave }: { slug: string; onLeave: () => void }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const region = useAppSelector((state) => state.room.region);
+  const readOnly = useAppSelector((state) => state.room.readOnly);
 
   async function handleCopy() {
     if (!navigator.clipboard) {
@@ -50,6 +52,11 @@ export default function RoomHeader({ slug, onLeave }: { slug: string; onLeave: (
       >
         {t('room.leave')}
       </button>
+      {readOnly && (
+        <span className={chip({ tone: 'gold' })} title={t('room.demoHint')}>
+          {t('room.demoBadge')}
+        </span>
+      )}
       <RegionChip region={region} />
     </div>
   );

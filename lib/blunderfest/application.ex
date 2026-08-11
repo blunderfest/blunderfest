@@ -16,12 +16,6 @@ defmodule Blunderfest.Application do
       {Horde.Registry, keys: :unique, name: Blunderfest.RoomRegistry, members: :auto},
       {Horde.DynamicSupervisor,
        name: Blunderfest.RoomSupervisor, strategy: :one_for_one, members: :auto},
-      # One-shot demo-room seeder; runs once at boot, never restarted.
-      %{
-        id: Blunderfest.DemoRoom,
-        start: {Task, :start_link, [fn -> Blunderfest.DemoRoom.seed() end]},
-        restart: :temporary
-      },
       {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
       BlunderfestWeb.Presence,

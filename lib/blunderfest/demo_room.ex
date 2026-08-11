@@ -1,11 +1,16 @@
 defmodule Blunderfest.DemoRoom do
   @moduledoc """
-  Seeds a public demo room at a well-known code on boot: a short annotated
-  game with a variation, so first-time visitors (and our own testing) always
+  Seeds the public demo room at a well-known code: a short annotated game
+  with a variation, so first-time visitors (and our own testing) always
   have a live room to look at.
 
-  The room is ownerless — the first profiled joiner becomes its owner, like
-  any room. State is in-memory, so every boot re-seeds it fresh.
+  The demo room is **read-only** (ADR-0014): it records no owner or roles,
+  tracks no presence, and the channel rejects all client ops, so visitors
+  can look, navigate, and run the engine, but never change or claim it.
+
+  Seeding happens on demand — the channel seeds before any join to the demo
+  code — so the room returns on the next visit after its process (or node)
+  is lost. State is in-memory, so every boot re-seeds it fresh anyway.
   """
 
   alias Blunderfest.Game.Tree
@@ -26,13 +31,19 @@ defmodule Blunderfest.DemoRoom do
   @doc "The demo room's code."
   def code, do: @code
 
-  @doc "Creates and populates the demo room unless it already exists. Never fails boot."
+  @doc "Whether `slug` is the reserved demo code."
+  def reserved?(slug), do: slug == @code
+
+  @doc "Creates and populates the read-only demo room unless it already exists."
   def seed do
     if not Rooms.room_exists?(@code) do
-      Rooms.create(@code, "anonymous")
+      Rooms.create(@code, "anonymous", Rooms.default_scope(), read_only: true)
 
       case PGN.parse(@pgn) do
         {:ok, tree} ->
+          # Two concurrent seeds can both get here; the duplicate set_game
+          # carries the same game_id and tree, so clients replay it
+          # idempotently and nobody can tell.
           Rooms.append(@code, %{
             "type" => "set_game",
             "author" => "Blunderfest",

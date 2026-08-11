@@ -54,6 +54,7 @@ export default function RoomView({
   const activityOps = useAppSelector((state) => selectActivityOps(state.room));
   const myRole: MemberRole = useAppSelector((state) => selectRoleOf(state.room, selfId));
   const canEdit = useAppSelector((state) => selectCanEdit(state.room, selfId));
+  const readOnly = useAppSelector((state) => state.room.readOnly);
   const firstGameId = useAppSelector((state) => selectFirstGameId(state.room));
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [followOverride, setFollowOverride] = useState<boolean | null>(null);
@@ -82,8 +83,14 @@ export default function RoomView({
   );
 
   const handleCursorChange = useCallback(
-    (nodeId: number) => sendOp({ type: 'set_cursor', payload: { node_id: nodeId } }),
-    [sendOp],
+    (nodeId: number) => {
+      // Read-only rooms (the demo) reject every op — don't even send cursor
+      // updates; navigation is purely local there.
+      if (!readOnly) {
+        sendOp({ type: 'set_cursor', payload: { node_id: nodeId } });
+      }
+    },
+    [sendOp, readOnly],
   );
 
   const handlePlayMove = useCallback(
@@ -182,6 +189,21 @@ export default function RoomView({
     );
   }
 
+  // Until the join reply arrives there is nothing to show yet — no roles,
+  // no ops. Rendering the room now would flash the viewer's "Nothing to
+  // analyse yet" empty state at the room's owner (and at joiners of rooms
+  // that have games), so show a connecting state instead.
+  if (!joined) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8">
+        <p className="m-0 flex items-center gap-2 text-body text-muted" role="status">
+          <span className={statusDot({ tone: 'warn', pulse: true })} />
+          {t('room.connecting')}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col items-stretch gap-3 p-3">
       <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-[236px_1fr]">
@@ -201,7 +223,7 @@ export default function RoomView({
             onAddGame={() => setShowImport(true)}
             onNewGame={handleNewGame}
           />
-          {joined && (
+          {!readOnly && (
             <MemberList
               members={members}
               roles={roles}

@@ -275,4 +275,46 @@ defmodule BlunderfestWeb.RoomChannelTest do
     ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "admin"})
     assert_reply ref, :error, %{reason: :invalid_role}
   end
+
+  describe "the read-only demo room" do
+    test "joining seeds it on demand and replies read-only", %{} do
+      refute Rooms.room_exists?("chess")
+
+      {:ok, reply, _socket} = join_room("room:chess", %{"profile_id" => "profile-1"})
+
+      assert reply.read_only == true
+      assert [%{"type" => "set_game"}] = reply.ops
+      assert reply.roles == %{}
+      assert Rooms.owner("chess") == nil
+    end
+
+    test "re-seeds after the room process is lost", %{} do
+      {:ok, _reply, _socket} = join_room("room:chess")
+      Rooms.reset()
+      refute Rooms.room_exists?("chess")
+
+      {:ok, reply, _socket} = join_room("room:chess")
+      assert [%{"type" => "set_game"}] = reply.ops
+    end
+
+    test "rejects every op, including cursor noise", %{} do
+      {:ok, _reply, socket} = join_room("room:chess", %{"profile_id" => "profile-1"})
+
+      ref = push(socket, "op", %{"type" => "set_cursor", "payload" => %{"node_id" => 3}})
+      assert_reply ref, :error, %{reason: :read_only}
+
+      ref =
+        push(socket, "op", %{"type" => "move_at_ply", "payload" => %{"ply" => 1, "san" => "e4"}})
+
+      assert_reply ref, :error, %{reason: :read_only}
+
+      assert [%{"type" => "set_game"}] = Rooms.ops("chess")
+    end
+
+    test "tracks no presence", %{} do
+      join_room("room:chess", %{"profile_id" => "profile-1", "name" => "Brave Otter 42"})
+
+      assert BlunderfestWeb.Presence.list("room:chess") == %{}
+    end
+  end
 end

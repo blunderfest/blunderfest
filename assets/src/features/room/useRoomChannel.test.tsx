@@ -286,6 +286,7 @@ describe('useRoomChannel', () => {
       lastPlayed: {},
       annotations: {},
       region: null,
+      readOnly: false,
     });
   });
 
@@ -302,6 +303,16 @@ describe('useRoomChannel', () => {
         'profile-2': 'collaborator',
       }),
     );
+  });
+
+  it('stores the read_only flag from the join reply (false when absent)', async () => {
+    channel.joinReturn = { ops: [], read_only: true };
+
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() => expect(store.getState().room.readOnly).toBe(true));
   });
 
   it('updates roles on role_update events', async () => {

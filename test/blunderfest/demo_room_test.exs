@@ -34,4 +34,20 @@ defmodule Blunderfest.DemoRoomTest do
     assert json =~ "doesn't hold up"
     assert json =~ "wins the queen back"
   end
+
+  test "the demo room is read-only: joiners gain no owner, roles, or edit rights" do
+    DemoRoom.seed()
+
+    assert Rooms.read_only?(DemoRoom.code())
+
+    Rooms.claim(DemoRoom.code(), "profile-1")
+    assert Rooms.owner(DemoRoom.code()) == nil
+    assert Rooms.roles(DemoRoom.code()) == %{}
+    refute Rooms.can_edit?(DemoRoom.code(), "profile-1")
+  end
+
+  test "the demo code is reserved" do
+    assert DemoRoom.reserved?("chess")
+    refute DemoRoom.reserved?("abcde")
+  end
 end

@@ -11,6 +11,7 @@ import {
   leaveRoom,
   replayOps,
   setMemberRole,
+  setReadOnly,
   setRegion,
   setRoles,
 } from '@/store/room';
@@ -98,12 +99,18 @@ export function useRoomChannel(
       .join()
       .receive(
         'ok',
-        (payload: { ops: Op[]; roles?: Record<string, MemberRole>; region?: string }) => {
+        (payload: {
+          ops: Op[];
+          roles?: Record<string, MemberRole>;
+          region?: string;
+          read_only?: boolean;
+        }) => {
           if (channelRef.current === channel) {
             setJoinError(null);
             dispatch(replayOps(payload.ops));
             dispatch(setRoles(payload.roles ?? {}));
             dispatch(setRegion(payload.region ?? null));
+            dispatch(setReadOnly(payload.read_only ?? false));
             setJoined(true);
           }
         },

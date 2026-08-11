@@ -36,9 +36,10 @@
   rebuilt on boot, so sleeping costs nothing and loses nothing (ADR-0001).
   `SECRET_KEY_BASE` and `RELEASE_COOKIE` live in **`fly secrets`** (rotated
   2026-08-07; never commit them to `fly.toml` or the repo).
-- A demo room is seeded on every boot at `#/r/chess` (see
-  `Blunderfest.DemoRoom`) — an annotated game visitors can open straight from
-  the home page.
+- A read-only demo room lives at `#/r/chess` (see `Blunderfest.DemoRoom`,
+  ADR-0014) — an annotated game visitors can open straight from the home
+  page. It is seeded on demand at join, not at boot, so it survives
+  room-process and machine loss.
 
 ## CI
 

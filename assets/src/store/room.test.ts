@@ -207,6 +207,7 @@ describe('room slice', () => {
       lastPlayed: {},
       annotations: {},
       region: null,
+      readOnly: false,
     });
   });
 
@@ -221,6 +222,7 @@ describe('room slice', () => {
         lastPlayed: { 'game-1': 1 },
         annotations: {},
         region: 'ord',
+        readOnly: true,
       },
       enterRoom({ slug: 'room-123' }),
     );
@@ -233,6 +235,7 @@ describe('room slice', () => {
       lastPlayed: {},
       annotations: {},
       region: null,
+      readOnly: false,
     });
   });
 
@@ -247,6 +250,7 @@ describe('room slice', () => {
         lastPlayed: { 'game-1': 1 },
         annotations: {},
         region: 'ord',
+        readOnly: true,
       },
       leaveRoom(),
     );
@@ -259,6 +263,7 @@ describe('room slice', () => {
       lastPlayed: {},
       annotations: {},
       region: null,
+      readOnly: false,
     });
   });
 

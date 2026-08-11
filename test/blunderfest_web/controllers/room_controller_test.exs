@@ -53,5 +53,12 @@ defmodule BlunderfestWeb.RoomControllerTest do
 
       assert %{"errors" => %{"code" => "invalid_code"}} = json_response(conn, 422)
     end
+
+    test "the demo code is reserved", %{conn: conn} do
+      conn = post(conn, "/api/rooms", %{"code" => "chess"})
+
+      assert %{"errors" => %{"code" => "code_reserved"}} = json_response(conn, 422)
+      refute Rooms.room_exists?("chess")
+    end
   end
 end

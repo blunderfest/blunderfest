@@ -14,8 +14,11 @@ export class FakeChannel implements Channel {
     roles?: Record<string, MemberRole>;
     region?: string;
     room_region?: string;
+    read_only?: boolean;
   } = { ops: [] };
   joinError: { reason?: string } | null = null;
+  /** When true, join() does not answer until resolveJoin()/rejectJoin() is called. */
+  joinPending = false;
   joinReceives = new Map<string, Handler>();
   state = 'joined' as ChannelState;
   topic = 'room:test';
@@ -52,15 +55,22 @@ export class FakeChannel implements Channel {
     const push = {
       receive: (event: string, handler: Handler) => {
         this.joinReceives.set(event, handler);
-        if (event === 'ok' && this.joinError === null) {
-          handler(this.joinReturn);
-        } else if (event === 'error' && this.joinError !== null) {
-          handler(this.joinError);
+        if (!this.joinPending) {
+          if (event === 'ok' && this.joinError === null) {
+            handler(this.joinReturn);
+          } else if (event === 'error' && this.joinError !== null) {
+            handler(this.joinError);
+          }
         }
         return push;
       },
     };
     return push as never;
+  }
+
+  /** Answers a pending join with the ok payload (see `joinPending`). */
+  resolveJoin() {
+    this.joinReceives.get('ok')?.(this.joinReturn);
   }
 
   leave() {

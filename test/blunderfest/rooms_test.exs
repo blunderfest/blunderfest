@@ -171,6 +171,28 @@ defmodule Blunderfest.RoomsTest do
     refute Rooms.can_edit?("room-a", "unknown", store)
   end
 
+  test "read-only rooms record no members and allow no edits", %{store: store} do
+    Rooms.create("abcde", "profile-1", store, read_only: true)
+
+    assert Rooms.read_only?("abcde", store)
+    assert Rooms.owner("abcde", store) == nil
+
+    Rooms.claim("abcde", "profile-2", store)
+    assert Rooms.owner("abcde", store) == nil
+    assert Rooms.roles("abcde", store) == %{}
+    refute Rooms.can_edit?("abcde", "profile-1", store)
+    refute Rooms.can_edit?("abcde", "profile-2", store)
+
+    assert {:error, :forbidden} =
+             Rooms.set_role("abcde", "profile-1", "profile-2", :collaborator, store)
+  end
+
+  test "rooms are writable by default", %{store: store} do
+    Rooms.create("abcde", "anonymous", store)
+    refute Rooms.read_only?("abcde", store)
+    refute Rooms.read_only?("unknown", store)
+  end
+
   test "edit_op? classifies room edit ops", %{store: _store} do
     assert Rooms.edit_op?(%{"type" => "move_at_ply"})
     assert Rooms.edit_op?(%{"type" => "set_game"})
