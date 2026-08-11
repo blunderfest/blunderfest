@@ -37,5 +37,9 @@ The server keeps — and grows — first-class chess understanding:
 - Client-side validation is a UX convenience; server-side understanding is
   the authority when they disagree (e.g. a crafted client op is inert — it
   is stored, not believed).
+- Note for milestone 7: the day the server materializes trees from op logs
+  it starts *believing* op content (reports, indexes) rather than merely
+  storing it — op validation must then tighten from shape-only toward
+  chess semantics.
 - Dropping echecs is off the table unless a successor provides the same
   server-side competence.
