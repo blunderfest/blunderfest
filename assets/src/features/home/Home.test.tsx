@@ -54,6 +54,18 @@ describe('Home', () => {
     expect(onJoin).not.toHaveBeenCalled();
   });
 
+  it('says so when the server rate-limits room creation', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: async () => ({ errors: { code: 'rate_limited' } }),
+    } as Response);
+    const { onJoin } = renderHome();
+    fireEvent.click(screen.getByRole('button', { name: 'Create a room' }));
+    expect(await screen.findByText(/Too many rooms created/)).toBeInTheDocument();
+    expect(onJoin).not.toHaveBeenCalled();
+  });
+
   it('joins a room with a normalized code', () => {
     const { onJoin } = renderHome();
     fireEvent.change(screen.getByPlaceholderText('Room code'), { target: { value: ' AbC_3-9 ' } });

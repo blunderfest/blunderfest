@@ -1,13 +1,14 @@
 defmodule BlunderfestWeb.RoomController do
   use BlunderfestWeb, :controller
 
-  alias Blunderfest.{DemoRoom, Profiles, Rooms}
+  alias Blunderfest.{DemoRoom, Profiles, RateLimit, Rooms}
 
   @doc """
   Explicitly creates a room for `code`. The first profiled creator becomes
   the room's owner; anonymous creators are not recorded. Rooms are never
   created implicitly by joining. The demo code is reserved: the demo room
-  is seeded by the server (read-only), never through this endpoint.
+  is seeded by the server (read-only), never through this endpoint. Creation
+  is rate-limited per client IP (REVIEW.md #3).
   """
   def create(conn, %{"code" => code}) do
     cond do
@@ -20,6 +21,11 @@ defmodule BlunderfestWeb.RoomController do
         conn
         |> put_status(:unprocessable_entity)
         |> json(%{errors: %{code: "code_reserved"}})
+
+      RateLimit.hit(client_ip(conn)) == :deny ->
+        conn
+        |> put_status(:too_many_requests)
+        |> json(%{errors: %{code: "rate_limited"}})
 
       true ->
         profile_id = creator_profile_id(conn, conn.body_params["profile_id"])
@@ -56,4 +62,12 @@ defmodule BlunderfestWeb.RoomController do
   end
 
   defp creator_profile_id(_conn, _profile_id), do: "anonymous"
+
+  # Fly's proxy sets Fly-Client-IP; locally we see the peer directly.
+  defp client_ip(conn) do
+    case get_req_header(conn, "fly-client-ip") do
+      [ip | _] -> ip
+      [] -> conn.remote_ip |> :inet.ntoa() |> to_string()
+    end
+  end
 end

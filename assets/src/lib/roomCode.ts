@@ -5,11 +5,21 @@ const ALPHABET = ROOM_ALPHABET;
 const CODE_LENGTH = ROOM_CODE_LENGTH;
 
 export function generateRoomCode(): string {
-  // Codes are capability links, so they're drawn from a CSPRNG. 2^32 is an
-  // exact multiple of the alphabet length, so there's no modulo bias.
-  const values = new Uint32Array(CODE_LENGTH);
-  crypto.getRandomValues(values);
-  return Array.from(values, (value) => ALPHABET[value % ALPHABET.length]).join('');
+  // Codes are capability links, so they're drawn from a CSPRNG, rejecting
+  // values ≥ 248 (8 × 31) so every letter is equally likely — a plain
+  // `value % 31` would slightly favour the first few letters.
+  const limit = 256 - (256 % ALPHABET.length);
+  let code = '';
+  while (code.length < CODE_LENGTH) {
+    const values = new Uint8Array(CODE_LENGTH - code.length);
+    crypto.getRandomValues(values);
+    for (const value of values) {
+      if (value < limit) {
+        code += ALPHABET[value % ALPHABET.length];
+      }
+    }
+  }
+  return code;
 }
 
 export function normalizeRoomCode(input: string): string {

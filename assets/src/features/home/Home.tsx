@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { BackendStatus } from '@/app/App';
 import Logo from '@/components/Logo';
 import { button, input, panel, statusDot } from '@/components/ui';
-import { createRoom } from '@/lib/api';
+import { ApiError, createRoom } from '@/lib/api';
 import { formatRegion } from '@/lib/region';
 import {
   generateRoomCode,
@@ -38,20 +38,22 @@ export default function Home({
   const [code, setCode] = useState('');
   const [error, setError] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState(false);
+  const [createError, setCreateError] = useState<'generic' | 'rate_limited' | null>(null);
 
   async function handleCreate() {
     if (creating) {
       return;
     }
     setCreating(true);
-    setCreateError(false);
+    setCreateError(null);
     try {
       const slug = generateRoomCode();
       await createRoom(slug);
       onJoin(slug);
-    } catch {
-      setCreateError(true);
+    } catch (error) {
+      setCreateError(
+        error instanceof ApiError && error.code === 'rate_limited' ? 'rate_limited' : 'generic',
+      );
       setCreating(false);
     }
   }
@@ -94,9 +96,9 @@ export default function Home({
             {creating ? t('home.creating') : t('home.create')}
           </button>
           <p className="m-0 text-center text-note text-faint">{t('home.noAccount')}</p>
-          {createError && (
+          {createError !== null && (
             <p className="m-0 text-ui text-bad-hi" role="alert">
-              ⚠ {t('home.createError')}
+              ⚠ {createError === 'rate_limited' ? t('home.rateLimited') : t('home.createError')}
             </p>
           )}
         </section>

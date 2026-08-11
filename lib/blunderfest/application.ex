@@ -9,6 +9,8 @@ defmodule Blunderfest.Application do
   def start(_type, _args) do
     children = [
       Blunderfest.Profiles,
+      # Fixed-window rate limiter for anonymous room creation (REVIEW.md #3).
+      Blunderfest.RateLimit,
       # One process per room (ADR-0012), distributed across the cluster
       # (ADR-0013): rooms register by slug in the Horde Registry and are
       # started on demand under the Horde DynamicSupervisor on some node;

@@ -77,9 +77,9 @@ cursor/editor/keyboard hooks among them). Earlier: the design-system port
 (`design/DESIGN-SYSTEM.md` is the UI spec), the in-browser engine,
 free-form position setup (ADR-0011), comment popup (`c` key), secrets in
 `fly secrets`, and a Playwright MCP for browser checks (`setup-mcp.sh`).
-Next candidates: milestone 6 (PGN export, room/game claiming), a rate limit
-on `POST /api/rooms` (the last open review item), or 💡 ideas in
-FEATURES.md.
+Next candidates: milestone 6 (PGN export, room/game claiming), or 💡 ideas
+in FEATURES.md. Both reviews are fully closed (eviction + rate limit,
+ADR-0016/0017).
 
 1. **Boot** — DONE. Phoenix 1.8 / React 19 + Vite + TypeScript building into
    `priv/static`, `/api/healthz`, channel socket, i18n scaffold, Dockerized

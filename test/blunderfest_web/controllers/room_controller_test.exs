@@ -1,10 +1,11 @@
 defmodule BlunderfestWeb.RoomControllerTest do
   use BlunderfestWeb.ConnCase, async: false
 
-  alias Blunderfest.{Profiles, Rooms}
+  alias Blunderfest.{Profiles, RateLimit, Rooms}
 
   setup do
     Rooms.reset()
+    RateLimit.reset()
     :ok
   end
 
@@ -59,6 +60,28 @@ defmodule BlunderfestWeb.RoomControllerTest do
 
       assert %{"errors" => %{"code" => "code_reserved"}} = json_response(conn, 422)
       refute Rooms.room_exists?("chess")
+    end
+
+    test "creation is rate limited per client", %{conn: conn} do
+      # The default limit is 10/min per IP; all test conns share 127.0.0.1.
+      for code <- valid_codes(10) do
+        assert %{status: 201} = post(conn, "/api/rooms", %{"code" => code})
+      end
+
+      conn = post(conn, "/api/rooms", %{"code" => "ttttt"})
+
+      assert %{"errors" => %{"code" => "rate_limited"}} = json_response(conn, 429)
+      refute Rooms.room_exists?("ttttt")
+    end
+  end
+
+  # `count` distinct codes from the room alphabet (i/l/o/0/1 are excluded).
+  defp valid_codes(count) do
+    alphabet = String.graphemes("abcdefghjkmnpqrstuvwxyz23456789")
+    size = length(alphabet)
+
+    for i <- 0..(count - 1) do
+      Enum.map_join(0..4, fn j -> Enum.at(alphabet, rem(i * 5 + j, size)) end)
     end
   end
 end

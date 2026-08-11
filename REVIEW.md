@@ -33,7 +33,7 @@ runs validate → permission → append. Note: *move-legality* is enforced
 client-side via chess.js (see #6), not re-checked server-side — a malicious
 client can still push illegal moves, just well-formed ones.
 
-### 3. Unbounded in-memory growth — ⚠️ PARTIAL (2026-08-10)
+### 3. Unbounded in-memory growth — ✅ DONE (2026-08-11)
 
 Hard caps landed: `@max_rooms 1_000` (create returns 429 `room_limit`) and
 `@max_ops_per_room 5_000` (`op_limit`). Ops are now stored prepended with a
@@ -41,8 +41,9 @@ counter, so appends are O(1) (done with ADR-0012). Still open: rooms are
 never evicted, and `POST /api/rooms` has no rate limit beyond the global cap.
 
 **Eviction landed (2026-08-11, ADR-0016):** rooms idle for an hour with
-nobody present are swept, so the cap refills itself. Still open: a rate
-limit on `POST /api/rooms` beyond the global cap.
+nobody present are swept, so the cap refills itself. **Rate limiting landed
+(2026-08-11, ADR-0017):** 10 creations/min per client IP, per node. This
+finding is fully closed.
 
 ### 4. CI is disabled — 🚫 WON'T FIX (2026-08-10)
 
@@ -118,7 +119,8 @@ factories). Good design.
 1. ~~`fly secrets set SECRET_KEY_BASE` + rotate + remove from `fly.toml`.~~ ✅
 2. ~~Server-side op payload validation + size caps.~~ ✅
 3. ~~Re-enable CI.~~ 🚫 won't fix — checks/deploys stay local by decision.
-4. ~~Room eviction~~ ✅ (2026-08-11, ADR-0016). The only open item from
-   either review: a rate limit on `POST /api/rooms`.
+4. ~~Room eviction~~ ✅ (2026-08-11, ADR-0016) and ~~a rate limit on
+   `POST /api/rooms`~~ ✅ (2026-08-11, ADR-0017). **Every finding from both
+   reviews is closed;** the standing watch item is `echecs` (#5).
 5. ~~chess.js locally for solo play.~~ ✅
 6. ~~One process per room under a DynamicSupervisor (finding 7).~~ ✅ (and clustered via Horde)
