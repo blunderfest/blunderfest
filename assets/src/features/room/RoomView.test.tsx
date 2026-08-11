@@ -201,42 +201,6 @@ describe('RoomView', () => {
     return { store, onLeave, view };
   }
 
-  it('seeds a pending library game into the room once joined', async () => {
-    const onConsume = vi.fn();
-    render(
-      <Provider store={makeStore()}>
-        <RoomView
-          slug="abc12"
-          onLeave={vi.fn()}
-          selfId="profile-1"
-          channelFactory={channelFactory}
-          pendingGame={gameTree}
-          onConsumePendingGame={onConsume}
-        />
-      </Provider>,
-    );
-
-    await waitFor(() =>
-      expect(
-        channel.pushes.some(
-          (push) =>
-            (push.payload as { type?: string }).type === 'set_game' &&
-            (push.payload as { payload?: { tree?: unknown } }).payload?.tree === gameTree,
-        ),
-      ).toBe(true),
-    );
-    expect(onConsume).toHaveBeenCalledTimes(1);
-
-    // When the echo lands, the seeded game renders.
-    const push = channel.pushes.find((p) => (p.payload as { type?: string }).type === 'set_game');
-    if (!push) {
-      throw new Error('expected a set_game push');
-    }
-    const gameId = (push.payload as { payload: { game_id: string } }).payload.game_id;
-    act(() => channel.emit('new_op', setGameOp(1, gameTree, gameId)));
-    expect((await screen.findAllByText('Alice – Bob')).length).toBeGreaterThan(0);
-  });
-
   it('joins the channel and shows the member list once joined', async () => {
     renderRoom();
     expect(channel.joined).toBe(true);

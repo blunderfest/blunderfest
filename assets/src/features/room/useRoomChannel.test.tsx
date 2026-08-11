@@ -35,13 +35,48 @@ describe('useRoomChannel', () => {
   });
 
   it('exposes the reason when the join is rejected', async () => {
+    channel.joinError = { reason: 'invalid_code' };
+
+    const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() => expect(result.current.joinError).toBe('invalid_code'));
+    expect(result.current.joined).toBe(false);
+  });
+
+  it('retries room_not_found once before showing the error', async () => {
+    // A freshly created room can lag behind the join across the cluster;
+    // the first attempt fails, the retry succeeds.
+    const channels: FakeChannel[] = [];
+    const freshFactory = () => {
+      const next = new FakeChannel();
+      if (channels.length === 0) {
+        next.joinError = { reason: 'room_not_found' };
+      }
+      channels.push(next);
+      return next;
+    };
+
+    const { result } = renderHook(() => useRoomChannel('room-a', null, null, freshFactory), {
+      wrapper: wrapper(store),
+    });
+
+    await waitFor(() => expect(result.current.joined).toBe(true), { timeout: 2000 });
+    expect(channels).toHaveLength(2);
+    expect(result.current.joinError).toBeNull();
+  });
+
+  it('shows the not-found error when the retry also fails', async () => {
     channel.joinError = { reason: 'room_not_found' };
 
     const { result } = renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
     });
 
-    await waitFor(() => expect(result.current.joinError).toBe('room_not_found'));
+    await waitFor(() => expect(result.current.joinError).toBe('room_not_found'), {
+      timeout: 2000,
+    });
     expect(result.current.joined).toBe(false);
   });
 

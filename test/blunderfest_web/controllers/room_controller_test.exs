@@ -62,6 +62,57 @@ defmodule BlunderfestWeb.RoomControllerTest do
       refute Rooms.room_exists?("chess")
     end
 
+    test "a tree seeds the room with the game on creation", %{conn: conn} do
+      tree = %{
+        "headers" => %{"White" => "Anna", "Black" => "Boris"},
+        "result" => "1-0",
+        "root" => %{
+          "id" => 0,
+          "ply" => 0,
+          "san" => nil,
+          "from" => nil,
+          "to" => nil,
+          "promotion" => nil,
+          "comment" => nil,
+          "nags" => [],
+          "status" => "active",
+          "fen" => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "children" => []
+        },
+        "mainline_ply_count" => 0,
+        "node_count" => 1
+      }
+
+      conn = post(conn, "/api/rooms", %{"code" => "abcde", "tree" => tree})
+
+      assert json_response(conn, 201)
+      assert [%{"type" => "set_game", "payload" => %{"tree" => ^tree}}] = Rooms.ops("abcde")
+    end
+
+    test "an invalid tree is rejected without creating the room", %{conn: conn} do
+      conn = post(conn, "/api/rooms", %{"code" => "abcde", "tree" => %{"no" => "root"}})
+
+      assert %{"errors" => %{"code" => "invalid_tree"}} = json_response(conn, 422)
+      refute Rooms.room_exists?("abcde")
+    end
+
+    test "re-seeding an existing room keeps its state", %{conn: conn} do
+      post(conn, "/api/rooms", %{"code" => "abcde"})
+      Rooms.append("abcde", %{"type" => "set_cursor", "payload" => %{"node_id" => 1}})
+
+      conn =
+        build_conn()
+        |> post("/api/rooms", %{
+          "code" => "abcde",
+          "tree" => %{
+            "root" => %{"id" => 0, "ply" => 0, "children" => []}
+          }
+        })
+
+      assert json_response(conn, 201)
+      assert [%{"type" => "set_cursor"}] = Rooms.ops("abcde")
+    end
+
     test "creation is rate limited per client", %{conn: conn} do
       # The default limit is 10/min per IP; all test conns share 127.0.0.1.
       for code <- valid_codes(10) do

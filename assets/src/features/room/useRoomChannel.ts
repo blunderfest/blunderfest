@@ -60,6 +60,10 @@ export function useRoomChannel(
   const [joinError, setJoinError] = useState<string | null>(null);
   // Bump to force the effect below to leave and rejoin (the gap resync).
   const [rejoinNonce, setRejoinNonce] = useState(0);
+  // A just-created room can take a moment to become visible cluster-wide
+  // (the registry is eventually consistent across nodes), so a
+  // room_not_found gets one retry before we believe it — tracked per slug.
+  const notFoundRetriedFor = useRef<string | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: rejoinNonce re-runs the effect (leave + rejoin) without being referenced inside
   useEffect(() => {
@@ -72,6 +76,7 @@ export function useRoomChannel(
     }
     const channel = channelFactoryRef.current(`room:${slug}`, params);
     channelRef.current = channel;
+    let retryTimer: number | null = null;
 
     dispatch(enterRoom({ slug }));
 
@@ -136,11 +141,17 @@ export function useRoomChannel(
         },
       )
       .receive('error', (payload: { reason?: string }) => {
-        if (channelRef.current === channel) {
-          setJoined(false);
-          setJoinError(payload?.reason ?? 'unknown');
-          dispatch(leaveRoom());
+        if (channelRef.current !== channel) {
+          return;
         }
+        if (payload?.reason === 'room_not_found' && notFoundRetriedFor.current !== slug) {
+          notFoundRetriedFor.current = slug;
+          retryTimer = window.setTimeout(() => setRejoinNonce((n) => n + 1), 400);
+          return;
+        }
+        setJoined(false);
+        setJoinError(payload?.reason ?? 'unknown');
+        dispatch(leaveRoom());
       })
       .receive('timeout', () => {
         if (channelRef.current === channel) {
@@ -151,6 +162,9 @@ export function useRoomChannel(
       });
 
     return () => {
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer);
+      }
       channel.leave();
       channelRef.current = null;
       dispatch(leaveRoom());

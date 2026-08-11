@@ -42,12 +42,16 @@ export async function createProfile(
   return request('/api/profiles', { method: 'POST', signal });
 }
 
-/** Explicitly creates a room on the server; rooms never exist until this returns. */
-export async function createRoom(code: string): Promise<{ code: string }> {
+/**
+ * Explicitly creates a room on the server; rooms never exist until this
+ * returns. With `tree`, the room is seeded with that game on creation
+ * (the library "open in a new room" flow, ADR-0020).
+ */
+export async function createRoom(code: string, tree?: GameTree): Promise<{ code: string }> {
   return request('/api/rooms', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code }),
+    body: JSON.stringify(tree === undefined ? { code } : { code, tree }),
   });
 }
 

@@ -28,8 +28,10 @@ Ship the library on anonymous profiles, explicitly session-scoped:
   their profile's library — a copy, independent of the room's lifecycle
   (rooms expire, ADR-0016).
 - The home screen lists **Your games**; opening one creates a fresh room
-  and seeds the tree via the normal `set_game` op path — no new server
-  surface for reopening.
+  with the tree seeded at creation time (`POST /api/rooms` accepts an
+  optional `tree`, validated like any `set_game`). Seeding at creation —
+  rather than a post-join op — means no empty-room flash, and a one-time
+  join retry absorbs cross-node registry lag for freshly created rooms.
 - Storage is in-memory like everything else: **a saved game vanishes on
   restart/deploy**. Accepted for v1 — the demo track has no users to
   disappoint.

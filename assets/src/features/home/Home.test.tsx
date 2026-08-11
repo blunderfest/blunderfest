@@ -167,23 +167,27 @@ describe('Home', () => {
     }
 
     it('lists saved games and opens one in a fresh room', async () => {
-      stubLibrary();
-      const onOpenGame = vi.fn();
-      render(
-        <Home backend="ok" userName="Brave Otter 42" onJoin={vi.fn()} onOpenGame={onOpenGame} />,
-      );
+      const fetchMock = stubLibrary();
+      const onJoin = vi.fn();
+      render(<Home backend="ok" userName="Brave Otter 42" onJoin={onJoin} />);
 
       const openButton = await screen.findByRole('button', { name: /Anna – Boris/ });
       fireEvent.click(openButton);
 
-      await waitFor(() => expect(onOpenGame).toHaveBeenCalledTimes(1));
-      expect(onOpenGame.mock.calls[0][0]).toEqual(libraryEntry.tree);
-      expect(onOpenGame.mock.calls[0][1]).toMatch(/^[a-z0-9]{5}$/);
+      // The room is created with the game seeded, then joined.
+      await waitFor(() => expect(onJoin).toHaveBeenCalledTimes(1));
+      const createCall = fetchMock.mock.calls.find(([url]) => url === '/api/rooms');
+      if (!createCall) {
+        throw new Error('expected a POST to /api/rooms');
+      }
+      const body = JSON.parse((createCall[1] as RequestInit).body as string);
+      expect(body.tree).toEqual(libraryEntry.tree);
+      expect(onJoin.mock.calls[0][0]).toMatch(/^[a-z0-9]{5}$/);
     });
 
     it('removes a game from the library', async () => {
       const fetchMock = stubLibrary();
-      render(<Home backend="ok" userName="Brave Otter 42" onJoin={vi.fn()} onOpenGame={vi.fn()} />);
+      render(<Home backend="ok" userName="Brave Otter 42" onJoin={vi.fn()} />);
 
       fireEvent.click(await screen.findByRole('button', { name: 'Remove from library' }));
 

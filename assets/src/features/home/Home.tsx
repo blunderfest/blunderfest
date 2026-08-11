@@ -8,7 +8,6 @@ import {
   createRoom,
   deleteFromLibrary,
   fetchLibrary,
-  type GameTree,
   type LibraryEntry,
 } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
@@ -36,13 +35,11 @@ export default function Home({
   region = null,
   userName,
   onJoin,
-  onOpenGame,
 }: {
   backend: BackendStatus;
   region?: string | null;
   userName: string | null;
   onJoin: (slug: string) => void;
-  onOpenGame?: (tree: GameTree, slug: string) => void;
 }) {
   const { t } = useTranslation();
   const [code, setCode] = useState('');
@@ -107,8 +104,10 @@ export default function Home({
     setCreateError(null);
     try {
       const slug = generateRoomCode();
-      await createRoom(slug);
-      onOpenGame?.(entry.tree, slug);
+      // The room is created with the game already seeded — joining replays
+      // it, no empty-room window.
+      await createRoom(slug, entry.tree);
+      onJoin(slug);
     } catch (error) {
       setCreateError(
         error instanceof ApiError && error.code === 'rate_limited' ? 'rate_limited' : 'generic',
