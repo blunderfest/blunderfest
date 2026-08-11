@@ -57,3 +57,4 @@ here, or point to the ADR that superseded this one.
 | [0013](adr-0013-clustered-rooms-via-horde.md) | Cluster the Fly machines; rooms reachable from every region via Horde | Accepted (2026-08-10) |
 | [0014](adr-0014-read-only-demo-room.md) | The demo room is read-only (no owner, roles, or presence), at a reserved code, seeded on demand at join | Accepted (2026-08-11) |
 | [0015](adr-0015-no-ownership-handoff.md) | No ownership handoff when the owner leaves; the room keeps working | Accepted (2026-08-11) |
+| [0016](adr-0016-idle-rooms-expire.md) | Rooms expire after 1h idle *and* empty (sweeper reads Presence); links then report the room expired | Accepted (2026-08-11) |

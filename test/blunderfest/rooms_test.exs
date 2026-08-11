@@ -281,6 +281,36 @@ defmodule Blunderfest.RoomsTest do
              )
   end
 
+  test "evict_idle stops rooms idle past the ttl when nobody is present", %{
+    store: {registry, _sup} = store
+  } do
+    Rooms.create("aaaaa", "anonymous", store)
+    [{pid, _}] = Horde.Registry.lookup(registry, "aaaaa")
+    ref = Process.monitor(pid)
+
+    Rooms.evict_idle(store, 0, fn _slug -> false end)
+
+    assert_receive {:DOWN, ^ref, :process, ^pid, _reason}
+    assert_unregistered(registry, "aaaaa")
+  end
+
+  test "evict_idle keeps rooms within the ttl and rooms with members", %{
+    store: {registry, _sup} = store
+  } do
+    Rooms.create("aaaaa", "anonymous", store)
+    Rooms.create("bbbbb", "anonymous", store)
+
+    # Nothing is idle past an hour.
+    Rooms.evict_idle(store, :timer.hours(1), fn _slug -> false end)
+    assert Rooms.room_exists?("aaaaa", store)
+    assert Rooms.room_exists?("bbbbb", store)
+
+    # With a zero ttl, only the room with members survives.
+    Rooms.evict_idle(store, 0, fn slug -> slug == "bbbbb" end)
+    assert_unregistered(registry, "aaaaa")
+    assert Rooms.room_exists?("bbbbb", store)
+  end
+
   test "each room runs as its own registered process", %{store: {registry, _sup} = store} do
     Rooms.create("aaaaa", "anonymous", store)
     Rooms.create("bbbbb", "anonymous", store)

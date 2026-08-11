@@ -138,6 +138,32 @@ defmodule Blunderfest.Rooms do
     ensure_and_call(slug, scope, {:submit_op, profile_id, op})
   end
 
+  @doc """
+  Stops every room in the scope that has been idle (no joins, ops, or role
+  changes) for at least `idle_ttl_ms` and for which `has_members?.(slug)` is
+  false. Only rooms on the local node are considered — each cluster node
+  sweeps its own (ADR-0013). Used by `BlunderfestWeb.RoomSweeper`.
+  """
+  def evict_idle(scope, idle_ttl_ms, has_members?) do
+    {_registry, supervisor} = scope
+    now = DateTime.utc_now()
+
+    supervisor
+    |> Horde.DynamicSupervisor.which_children()
+    |> Enum.each(fn {_, pid, _, _} ->
+      with true <- node(pid) == node(),
+           {:ok, activity} <- room_activity(pid),
+           true <- DateTime.diff(now, activity.last_active_at, :millisecond) >= idle_ttl_ms,
+           false <- has_members?.(activity.slug) do
+        Horde.DynamicSupervisor.terminate_child(supervisor, pid)
+      else
+        _ -> :ok
+      end
+    end)
+
+    :ok
+  end
+
   @doc "Stops all room processes in the scope (test seam)."
   def reset(scope \\ default_scope()) do
     {registry, supervisor} = scope
@@ -196,6 +222,13 @@ defmodule Blunderfest.Rooms do
   @doc "Whether `profile_id` may push edit ops in this room (owner or collaborator)."
   def can_edit?(slug, profile_id, scope \\ default_scope()) do
     with_pid(slug, scope, false, fn pid -> GenServer.call(pid, {:can_edit?, profile_id}) end)
+  end
+
+  defp room_activity(pid) do
+    {:ok, GenServer.call(pid, :activity)}
+  catch
+    # The room died between listing and the call.
+    :exit, _ -> :error
   end
 
   defp call_register(slug, scope, pid, profile_id) do

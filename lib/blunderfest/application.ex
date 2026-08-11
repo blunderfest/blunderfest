@@ -19,6 +19,9 @@ defmodule Blunderfest.Application do
       {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
       BlunderfestWeb.Presence,
+      # Evicts idle, empty rooms so the room cap can't be exhausted by
+      # abandoned ones (REVIEW.md #3). After Presence: it reads it.
+      BlunderfestWeb.RoomSweeper,
       BlunderfestWeb.Endpoint
     ]
 

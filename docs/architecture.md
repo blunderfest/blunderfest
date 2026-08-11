@@ -50,6 +50,8 @@ release and served by a catch-all (`SpaController`).
     append; `set_role` events enforce permissions; replies and broadcasts
     (`new_op`, `role_update`) are the client's single application path.
   - `user_socket.ex` + `presence.ex` — Phoenix Presence for member lists.
+  - `room_sweeper.ex` — evicts idle, unwatched rooms (ADR-0016); lives in
+    the web layer because membership is read from Presence.
 
 ### State lifecycle
 
@@ -58,7 +60,9 @@ rebuilt by use; a scale-to-zero instance loses nothing critical. The Fly
 machines form one Erlang cluster (DNSCluster + `DNS_CLUSTER_QUERY`), so a
 room process running in `ams` is reachable from `ord` and vice versa. The
 demo room follows the same rule: nothing seeds it at boot — the first join
-to its reserved code re-seeds it (ADR-0014).
+to its reserved code re-seeds it (ADR-0014). Rooms also expire: the
+`RoomSweeper` stops rooms that have been idle **and** unwatched for an
+hour (ADR-0016), so the room cap refills itself.
 
 ### Channel protocol
 

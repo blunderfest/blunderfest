@@ -24,7 +24,9 @@ describe('ActivityFeed', () => {
     expect(items[0].className).not.toContain('animate-arrive');
     expect(items[1].className).not.toContain('animate-arrive');
 
-    rerender(<ActivityFeed ops={[cursorOp(1), cursorOp(2), cursorOp(3)]} presence={{}} names={{}} />);
+    rerender(
+      <ActivityFeed ops={[cursorOp(1), cursorOp(2), cursorOp(3)]} presence={{}} names={{}} />,
+    );
 
     items = screen.getAllByRole('listitem');
     expect(items).toHaveLength(3);
@@ -46,11 +48,7 @@ describe('ActivityFeed', () => {
     expect(screen.getByText('Brave Otter 42')).toBeInTheDocument();
 
     rerender(
-      <ActivityFeed
-        ops={[cursorOp(1)]}
-        presence={{}}
-        names={{ 'profile-1': 'Brave Otter 42' }}
-      />,
+      <ActivityFeed ops={[cursorOp(1)]} presence={{}} names={{ 'profile-1': 'Brave Otter 42' }} />,
     );
 
     expect(screen.getByText('Brave Otter 42')).toBeInTheDocument();

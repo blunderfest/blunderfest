@@ -40,10 +40,9 @@ Hard caps landed: `@max_rooms 1_000` (create returns 429 `room_limit`) and
 counter, so appends are O(1) (done with ADR-0012). Still open: rooms are
 never evicted, and `POST /api/rooms` has no rate limit beyond the global cap.
 
-**Still open (2026-08-11)** — and now blocking two more conversations:
-per-visitor demo rooms were rejected until eviction exists (ADR-0014), and
-the demo link is a one-click path to exhausting the room cap. Eviction is
-the highest-value open infrastructure item.
+**Eviction landed (2026-08-11, ADR-0016):** rooms idle for an hour with
+nobody present are swept, so the cap refills itself. Still open: a rate
+limit on `POST /api/rooms` beyond the global cap.
 
 ### 4. CI is disabled — 🚫 WON'T FIX (2026-08-10)
 
@@ -119,8 +118,7 @@ factories). Good design.
 1. ~~`fly secrets set SECRET_KEY_BASE` + rotate + remove from `fly.toml`.~~ ✅
 2. ~~Server-side op payload validation + size caps.~~ ✅
 3. ~~Re-enable CI.~~ 🚫 won't fix — checks/deploys stay local by decision.
-4. Room eviction (caps and O(1) storage landed; eviction remains) — **still
-   the top open item (2026-08-11)**; see REVIEW-2026-08-11.md, which also
-   adds: set_game tree validation, op-call consolidation, op-gap resync.
+4. ~~Room eviction~~ ✅ (2026-08-11, ADR-0016). The only open item from
+   either review: a rate limit on `POST /api/rooms`.
 5. ~~chess.js locally for solo play.~~ ✅
 6. ~~One process per room under a DynamicSupervisor (finding 7).~~ ✅ (and clustered via Horde)

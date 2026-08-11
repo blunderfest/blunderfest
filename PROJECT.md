@@ -69,17 +69,17 @@ Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 ### Where we are (2026-08-11)
 
 Milestones 1–5 done. Recently landed: one process per room (ADR-0012),
-Horde clustering across `ams`/`ord` (ADR-0013), server-side op validation,
-touch drawing, the mobile room layout, server-region display, and the
-read-only demo room at `#/r/chess` (seeded on demand, ADR-0014). Earlier:
-the design-system port (`design/DESIGN-SYSTEM.md` is the UI spec), the
-in-browser engine (eval bar + hint, result display on terminal positions),
+Horde clustering across `ams`/`ord` (ADR-0013), the read-only demo room at
+`#/r/chess` (seeded on demand, ADR-0014), idle-room eviction (ADR-0016),
+and the second code review's findings — all fixed
+([REVIEW-2026-08-11.md](REVIEW-2026-08-11.md); the Analysis split into
+cursor/editor/keyboard hooks among them). Earlier: the design-system port
+(`design/DESIGN-SYSTEM.md` is the UI spec), the in-browser engine,
 free-form position setup (ADR-0011), comment popup (`c` key), secrets in
 `fly secrets`, and a Playwright MCP for browser checks (`setup-mcp.sh`).
-Next candidates: milestone 6 (PGN export, room/game claiming), the remaining
-REVIEW.md item (room eviction), the [second review](REVIEW-2026-08-11.md)'s
-findings (set_game tree validation, op-call consolidation, op-gap resync), or
-💡 ideas in FEATURES.md.
+Next candidates: milestone 6 (PGN export, room/game claiming), a rate limit
+on `POST /api/rooms` (the last open review item), or 💡 ideas in
+FEATURES.md.
 
 1. **Boot** — DONE. Phoenix 1.8 / React 19 + Vite + TypeScript building into
    `priv/static`, `/api/healthz`, channel socket, i18n scaffold, Dockerized

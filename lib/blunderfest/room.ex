@@ -36,7 +36,8 @@ defmodule Blunderfest.Room do
        ops: [],
        owner: nil,
        roles: %{},
-       read_only: Keyword.get(opts, :read_only, false)
+       read_only: Keyword.get(opts, :read_only, false),
+       last_active_at: DateTime.utc_now()
      }}
   end
 
@@ -45,12 +46,16 @@ defmodule Blunderfest.Room do
     {:reply, Enum.reverse(room.ops), room}
   end
 
+  def handle_call(:activity, _from, room) do
+    {:reply, %{slug: room.slug, last_active_at: room.last_active_at}, room}
+  end
+
   def handle_call({:register, profile_id}, _from, room) do
-    {:reply, :ok, register_member(room, profile_id)}
+    {:reply, :ok, room |> register_member(profile_id) |> touch()}
   end
 
   def handle_call({:join, profile_id}, _from, room) do
-    room = register_member(room, profile_id)
+    room = room |> register_member(profile_id) |> touch()
 
     reply = %{
       ops: Enum.reverse(room.ops),
@@ -113,7 +118,7 @@ defmodule Blunderfest.Room do
         {:reply, {:error, :invalid_member}, room}
 
       true ->
-        {:reply, {:ok, role}, %{room | roles: Map.put(room.roles, member_id, role)}}
+        {:reply, {:ok, role}, touch(%{room | roles: Map.put(room.roles, member_id, role)})}
     end
   end
 
@@ -142,9 +147,20 @@ defmodule Blunderfest.Room do
     if room.op_count >= @max_ops_per_room do
       {:error, :op_limit}
     else
-      op = Map.merge(op, %{"seq" => room.seq + 1, "ts" => DateTime.utc_now()})
-      room = %{room | seq: room.seq + 1, op_count: room.op_count + 1, ops: [op | room.ops]}
+      now = DateTime.utc_now()
+      op = Map.merge(op, %{"seq" => room.seq + 1, "ts" => now})
+
+      room = %{
+        room
+        | seq: room.seq + 1,
+          op_count: room.op_count + 1,
+          ops: [op | room.ops],
+          last_active_at: now
+      }
+
       {:ok, op, room}
     end
   end
+
+  defp touch(room), do: %{room | last_active_at: DateTime.utc_now()}
 end
