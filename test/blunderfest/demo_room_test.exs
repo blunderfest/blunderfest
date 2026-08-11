@@ -26,6 +26,18 @@ defmodule Blunderfest.DemoRoomTest do
     assert length(Rooms.ops(DemoRoom.code())) == 1
   end
 
+  test "an existing but empty demo room gets its game back" do
+    # A zombie registration or a raced eviction can leave the room alive
+    # with no ops; the seed must repopulate it, not just check existence.
+    Rooms.create(DemoRoom.code(), "anonymous", Rooms.default_scope(), read_only: true)
+    assert Rooms.ops(DemoRoom.code()) == []
+
+    DemoRoom.seed()
+
+    assert [%{"type" => "set_game"}] = Rooms.ops(DemoRoom.code())
+    assert Rooms.read_only?(DemoRoom.code())
+  end
+
   test "the demo game keeps its comments and variation", %{} do
     DemoRoom.seed()
 

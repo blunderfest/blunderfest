@@ -38,7 +38,12 @@ defmodule Blunderfest.DemoRoom do
   def seed do
     if not Rooms.room_exists?(@code) do
       Rooms.create(@code, "anonymous", Rooms.default_scope(), read_only: true)
+    end
 
+    # Existing-but-empty gets its game back: a dead registration can race
+    # the existence check (deploy churn, an eviction mid-join) and leave the
+    # room alive with no ops — existence alone must not satisfy the seed.
+    if Rooms.ops(@code) == [] do
       case PGN.parse(@pgn) do
         {:ok, tree} ->
           # Two concurrent seeds can both get here; the duplicate set_game
