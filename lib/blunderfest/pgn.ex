@@ -497,9 +497,23 @@ defmodule Blunderfest.PGN do
     file_ok and rank_ok and piece_ok
   end
 
+  # A static mapping (not dynamic dispatch): the piece letters are
+  # regex-constrained to NBRQK, with "P" as the pawn default.
   defp piece_bitboard(game, letter) do
-    prefix = if game.turn == :white, do: "w", else: "b"
-    apply(Echecs.Board, String.to_atom(prefix <> String.downcase(letter)), [game.board])
+    case {game.turn, letter} do
+      {:white, "P"} -> Echecs.Board.wp(game.board)
+      {:white, "N"} -> Echecs.Board.wn(game.board)
+      {:white, "B"} -> Echecs.Board.wb(game.board)
+      {:white, "R"} -> Echecs.Board.wr(game.board)
+      {:white, "Q"} -> Echecs.Board.wq(game.board)
+      {:white, "K"} -> Echecs.Board.wk(game.board)
+      {:black, "P"} -> Echecs.Board.bp(game.board)
+      {:black, "N"} -> Echecs.Board.bn(game.board)
+      {:black, "B"} -> Echecs.Board.bb(game.board)
+      {:black, "R"} -> Echecs.Board.br(game.board)
+      {:black, "Q"} -> Echecs.Board.bq(game.board)
+      {:black, "K"} -> Echecs.Board.bk(game.board)
+    end
   end
 
   defp square_index(<<file, rank>>) do

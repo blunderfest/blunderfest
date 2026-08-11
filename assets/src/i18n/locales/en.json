@@ -59,6 +59,7 @@
       "unknown": "Import failed. Try again.",
       "invalid_pgn": "This PGN could not be parsed.",
       "pgn_too_large": "This PGN is too large.",
+      "request_too_large": "That request is too large.",
       "invalid_request": "Provide a PGN or a Lichess URL.",
       "invalid_lichess_url": "That does not look like a Lichess game URL.",
       "lichess_game_not_found": "That Lichess game does not exist.",

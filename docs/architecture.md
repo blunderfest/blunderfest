@@ -35,13 +35,14 @@ release and served by a catch-all (`SpaController`).
     endpoint rejects the reserved code with `code_reserved`.
   - `Profiles` (GenServer): anonymous profiles with salted device-secret
     hashes (ADR-0004), `authenticate/2`, fun-name generation.
-  - `pgn.ex`, `game/tree.ex`, `game/moves.ex` — PGN parsing to a variation
-    tree, and legal-move validation (used to validate `move_at_ply` ops).
+  - `pgn.ex`, `game/tree.ex` — PGN parsing to a variation tree. Move
+    legality and SAN are computed client-side (chess.js); the server checks
+    op shape, not chess rules.
   - `lichess.ex` — fetches PGNs from Lichess for URL imports.
   - `secrets.ex` — hashing helpers.
 - `lib/blunderfest_web/` — HTTP and channel surface:
   - `router.ex` — `/api` scope: `healthz`, `profiles`, `rooms`, `import/pgn`,
-    `import/lichess`, `games/moves`; catch-all for the SPA.
+    `import/lichess`; catch-all for the SPA.
   - `controllers/` — thin: validate params, call domain, return structured
     JSON. Errors use `error_json.ex` with machine-readable codes (ADR-0003).
   - `channels/room_channel.ex` — `join` gates by validity → existence →

@@ -2,9 +2,9 @@ defmodule BlunderfestWeb.UserSocket do
   @moduledoc """
   The channel socket for real-time collaboration.
 
-  Authentication is anonymous by design: clients may present an optional
-  device token (a Phoenix.Token-signed value) to claim a stable identity, but
-  joining never requires one.
+  Anonymous by design: the socket itself carries no identity. Rooms learn
+  who's there from the channel-join params (`profile_id`, `name`), matched
+  against the profile the client already holds.
   """
   use Phoenix.Socket
 

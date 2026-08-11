@@ -24,10 +24,13 @@ defmodule BlunderfestWeb.Endpoint do
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 
+  # Bodies are capped well above the largest legitimate one (a 256 KB PGN
+  # inside JSON); anything bigger 413s before a controller ever runs.
   plug Plug.Parsers,
     parsers: [:urlencoded, :multipart, :json],
     pass: ["*/*"],
-    json_decoder: Phoenix.json_library()
+    json_decoder: Phoenix.json_library(),
+    length: 512_000
 
   plug Plug.MethodOverride
   plug Plug.Head

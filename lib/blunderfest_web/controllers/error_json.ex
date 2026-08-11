@@ -12,6 +12,12 @@ defmodule BlunderfestWeb.ErrorJSON do
   #   %{errors: %{detail: "Internal Server Error"}}
   # end
 
+  # Body over the Plug.Parsers cap — structured like controller errors
+  # (ADR-0003), so the client can map it to copy.
+  def render("413.json", _assigns) do
+    %{errors: %{code: "request_too_large"}}
+  end
+
   # By default, Phoenix returns the status message from
   # the template name. For example, "404.json" becomes
   # "Not Found".

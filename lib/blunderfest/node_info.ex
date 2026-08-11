@@ -1,8 +1,8 @@
 defmodule Blunderfest.NodeInfo do
   @moduledoc """
   This node's Fly region (`FLY_REGION`), or `"local"` outside Fly (dev,
-  tests). Room processes carry it as their registry value, so any node can
-  answer "which region hosts this room?" with a local registry read.
+  tests). Sent to clients in the health check and the room-join reply, so
+  the UI can show which region you're talking to.
   """
 
   @doc "This node's region."
