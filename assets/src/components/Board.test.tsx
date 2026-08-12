@@ -406,6 +406,22 @@ describe('Board pointer interactions', () => {
     expect(screen.queryByTestId('drag-ghost')).not.toBeInTheDocument();
   });
 
+  it('hides the piece on its source square while dragging', () => {
+    const onDragMove = vi.fn();
+    const { grid } = renderInteractive({ onDragMove });
+
+    expect(screen.getByTestId('square-e2').querySelector('[data-piece]')).not.toBeNull();
+
+    pointer(grid, 'pointerdown', { button: 0, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointermove', { clientX: 455, clientY: 560 });
+    // The piece is being carried: its square shows nothing mid-drag.
+    expect(screen.getByTestId('square-e2').querySelector('[data-piece]')).toBeNull();
+
+    pointer(grid, 'pointerup', { button: 0, clientX: 450, clientY: 450 });
+    // The position prop didn't change (no echo here), so it returns.
+    expect(screen.getByTestId('square-e2').querySelector('[data-piece]')).not.toBeNull();
+  });
+
   it('reports null when a piece is dropped off the board', () => {
     const onDragMove = vi.fn();
     const { grid } = renderInteractive({ onDragMove });

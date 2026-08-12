@@ -102,55 +102,63 @@ export default function App() {
       >
         {t('app.skipToContent')}
       </button>
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line bg-surface px-4 py-2">
+      <header className="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line bg-surface px-4 py-2">
         <a href="#/" aria-label={t('app.name')} className="text-ink no-underline">
           <Logo size="sm" />
         </a>
-        {route.screen === 'room' && <RoomHeader slug={route.slug} onLeave={navigateHome} />}
-        <button
-          type="button"
-          id="theme-toggle"
-          aria-label={dark ? t('app.toLightMode') : t('app.toDarkMode')}
-          title={dark ? t('app.toLightMode') : t('app.toDarkMode')}
-          className="grid h-7 w-7 place-items-center rounded-lg border border-line text-muted transition-colors hover:border-line-strong hover:text-ink"
-          onClick={toggleTheme}
-        >
-          {dark ? (
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="h-4 w-4"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-            </svg>
-          ) : (
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="h-4 w-4"
-            >
-              <path d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
-            </svg>
-          )}
-        </button>
-        <p
-          className="m-0 hidden text-ui text-muted md:block"
-          role="status"
-          data-status={profile.status}
-        >
-          {name}
-        </p>
+        {route.screen === 'room' && (
+          // The room chip is centered on the header (in-flow on phones,
+          // where the header wraps).
+          <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2">
+            <RoomHeader slug={route.slug} onLeave={navigateHome} />
+          </div>
+        )}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            id="theme-toggle"
+            aria-label={dark ? t('app.toLightMode') : t('app.toDarkMode')}
+            title={dark ? t('app.toLightMode') : t('app.toDarkMode')}
+            className="grid h-7 w-7 place-items-center rounded-lg border border-line text-muted transition-colors hover:border-line-strong hover:text-ink"
+            onClick={toggleTheme}
+          >
+            {dark ? (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+              </svg>
+            ) : (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4"
+              >
+                <path d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+              </svg>
+            )}
+          </button>
+          <p
+            className="m-0 hidden text-ui text-muted md:block"
+            role="status"
+            data-status={profile.status}
+          >
+            {name}
+          </p>
+        </div>
       </header>
 
       <main id="main" ref={mainRef} tabIndex={-1} className="flex flex-1 flex-col">

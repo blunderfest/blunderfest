@@ -113,6 +113,9 @@ export default function Board({
     dragging: boolean;
   } | null>(null);
   const [ghost, setGhost] = useState<{ piece: Piece; left: number; top: number } | null>(null);
+  // The square a live drag started from: its piece hides until the drop so
+  // it feels carried, not copied.
+  const [dragSource, setDragSource] = useState<string | null>(null);
 
   // Right-button drawing is tracked with window-level listeners while active:
   // some browsers (Vivaldi's mouse gestures, Firefox's menu) interfere with
@@ -432,6 +435,7 @@ export default function Board({
         drag.dragging = true;
         const piece = position[squareIndex(drag.from)];
         if (piece !== null && piece !== undefined) {
+          setDragSource(drag.from);
           containerRef.current?.setPointerCapture?.(event.pointerId);
         }
       }
@@ -456,6 +460,7 @@ export default function Board({
     const drag = dragRef.current;
     if (drag !== null) {
       dragRef.current = null;
+      setDragSource(null);
       if (drag.dragging) {
         setGhost(null);
         const to = pointToSquare(event);
@@ -469,6 +474,7 @@ export default function Board({
     paintingRef.current = false;
     lastPaintedRef.current = null;
     dragRef.current = null;
+    setDragSource(null);
     setGhost(null);
   }
 
@@ -555,7 +561,7 @@ export default function Board({
                 }}
               />
             )}
-            {piece && <PieceGlyph piece={piece} />}
+            {piece && dragSource !== name && <PieceGlyph piece={piece} />}
             {checkSquare === name && (
               <div
                 data-testid={`check-${name}`}
