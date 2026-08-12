@@ -227,8 +227,8 @@ describe('room slice', () => {
         annotations: {},
         region: 'ord',
         readOnly: true,
-      analysis: {},
-      analysisProgress: null,
+        analysis: {},
+        analysisProgress: null,
       },
       enterRoom({ slug: 'room-123' }),
     );
@@ -261,8 +261,8 @@ describe('room slice', () => {
         annotations: {},
         region: 'ord',
         readOnly: true,
-      analysis: {},
-      analysisProgress: null,
+        analysis: {},
+        analysisProgress: null,
       },
       leaveRoom(),
     );

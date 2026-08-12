@@ -402,8 +402,8 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();
   });
 
-  it('toggles between light and dark theme from the header', async () => {
-    document.documentElement.dataset.theme = 'dark';
+  it('cycles the theme through dark, system and light from the header', async () => {
+    localStorage.setItem('blunderfest.theme', 'dark');
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles': () => jsonResponse(profileBody, 201),
@@ -414,11 +414,15 @@ describe('App', () => {
       </Provider>,
     );
 
-    const toggle = await screen.findByRole('button', { name: 'Switch to light mode' });
-    fireEvent.click(toggle);
+    fireEvent.click(await screen.findByRole('button', { name: 'Theme: dark' }));
+    // System follows the OS (light in tests, per the matchMedia stub).
+    expect(await screen.findByRole('button', { name: /Theme: system/ })).toBeInTheDocument();
     expect(document.documentElement.dataset.theme).toBe('light');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to dark mode' }));
+    fireEvent.click(screen.getByRole('button', { name: /Theme: system/ }));
+    expect(document.documentElement.dataset.theme).toBe('light');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Theme: light' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
   });
 

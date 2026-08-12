@@ -4,7 +4,7 @@ import Logo from '@/components/Logo';
 import Home from '@/features/home/Home';
 import RoomHeader from '@/features/room/RoomHeader';
 import RoomView from '@/features/room/RoomView';
-import { setTheme } from '@/lib/theme';
+import { getTheme, setTheme, type Theme } from '@/lib/theme';
 import { useProfile } from '@/lib/useProfile';
 
 export type BackendStatus = 'checking' | 'ok' | 'down';
@@ -84,13 +84,21 @@ export default function App() {
   const selfName = profile.status === 'ready' ? profile.profile.name : null;
 
   // The inline script in index.html sets data-theme before first paint.
-  const [dark, setDark] = useState(() => document.documentElement.dataset.theme !== 'light');
+  const [theme, setThemeState] = useState<Theme>(getTheme);
 
+  // Cycles system → light → dark → system.
   function toggleTheme() {
-    const next = dark ? 'light' : 'dark';
+    const next: Theme = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system';
     setTheme(next);
-    setDark(next === 'dark');
+    setThemeState(next);
   }
+
+  const themeLabel =
+    theme === 'system'
+      ? t('app.themeSystem')
+      : theme === 'light'
+        ? t('app.themeLight')
+        : t('app.themeDark');
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -117,12 +125,12 @@ export default function App() {
           <button
             type="button"
             id="theme-toggle"
-            aria-label={dark ? t('app.toLightMode') : t('app.toDarkMode')}
-            title={dark ? t('app.toLightMode') : t('app.toDarkMode')}
+            aria-label={themeLabel}
+            title={themeLabel}
             className="grid h-7 w-7 place-items-center rounded-lg border border-line text-muted transition-colors hover:border-line-strong hover:text-ink"
             onClick={toggleTheme}
           >
-            {dark ? (
+            {theme === 'light' && (
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -136,7 +144,8 @@ export default function App() {
                 <circle cx="12" cy="12" r="4" />
                 <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
               </svg>
-            ) : (
+            )}
+            {theme === 'dark' && (
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -148,6 +157,21 @@ export default function App() {
                 className="h-4 w-4"
               >
                 <path d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+              </svg>
+            )}
+            {theme === 'system' && (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4"
+              >
+                <rect x="3" y="4" width="18" height="12" rx="2" />
+                <path d="M9 20h6M12 16v4" />
               </svg>
             )}
           </button>
