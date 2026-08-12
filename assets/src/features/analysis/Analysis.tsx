@@ -409,7 +409,7 @@ export default function Analysis({
               The strips live in the board's own column, so the trays align
               exactly with the board's edges on both axes.
             */}
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-stretch gap-2">
               {editor.editing && (
                 <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} side="top" />
               )}
@@ -438,7 +438,7 @@ export default function Analysis({
                 onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
               />
               {editor.editing && (
-                <div className="relative flex w-full justify-center">
+                <div className="flex w-full items-center justify-between">
                   <PaletteStrip editor={editor} color={flipped ? 'b' : 'w'} side="bottom" />
                   {/* The eraser stands apart, flush with the board's right edge. */}
                   <button
@@ -446,7 +446,7 @@ export default function Analysis({
                     aria-pressed={editor.editBrush === 'erase'}
                     aria-label={t('analysis.eraser')}
                     data-testid="eraser-button"
-                    className={`absolute right-0 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-control border text-base transition-colors ${
+                    className={`grid h-9 w-9 place-items-center rounded-control border text-base transition-colors ${
                       editor.editBrush === 'erase'
                         ? 'border-gold/60 bg-gold/20 text-gold-hi'
                         : 'border-line bg-panel text-muted hover:bg-raised'
@@ -685,11 +685,12 @@ function PaletteStrip({
   side: 'top' | 'bottom';
 }) {
   const { t } = useTranslation();
-  // The tray uses the light-square tone: black pieces stay readable on the
-  // dark page, white pieces keep their black outlines — like a light square.
+  // The tray is a step lighter than the page surface: quiet, but the black
+  // pieces still read. Left-aligned (the eraser floats right of the bottom
+  // strip, so centering would overlap it).
   return (
     <div
-      className="flex items-center justify-center gap-1 rounded-control border border-board-edge bg-board-light px-2 py-1 shadow-[0_8px_20px_-12px_rgba(0,0,0,0.8)]"
+      className="flex items-center justify-start gap-1 self-start rounded-control border border-line bg-overlay px-2 py-1"
       data-testid={side === 'top' ? 'edit-palette' : undefined}
     >
       {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
@@ -708,7 +709,7 @@ function PaletteStrip({
               piece: t(`analysis.pieces.${kind}`),
             })}
             className={`grid h-9 w-9 place-items-center rounded-control leading-none transition-colors ${
-              active ? 'bg-gold/40 ring-1 ring-gold' : 'hover:bg-board-dark/25'
+              active ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
             }`}
             onPointerDown={(event) => editor.handlePalettePointerDown({ color, kind }, event)}
             onClick={() => editor.toggleBrush({ color, kind })}
