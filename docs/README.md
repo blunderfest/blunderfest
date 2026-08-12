@@ -11,6 +11,7 @@ directory holds the durable record of how and why the system is built.
 | `architecture.md` | How the system is put together: components, data flow, real-time model, frontend structure. Read this before reading code. |
 | `operations.md` | Branches, deploy, local dev, verification commands. |
 | `decisions/` | Architecture Decision Records (ADRs) — one file per decision, most recent first. |
+| `storage-options.md` | Decision support for the future durable store (corpus, index, accounts): workload, options, deciding questions. Not a decision. |
 
 ## How to use the ADRs
 
