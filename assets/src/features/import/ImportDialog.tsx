@@ -159,7 +159,7 @@ export default function ImportDialog({
         role="dialog"
         aria-modal="true"
         aria-label={t('import.title')}
-        className="mt-16 w-full max-w-[640px] animate-pop rounded-dialog border border-line-strong bg-overlay shadow-[0_40px_80px_-24px_rgba(0,0,0,0.9)]"
+        className="mt-4 max-h-[calc(100vh-2rem)] w-full max-w-[640px] animate-pop overflow-y-auto rounded-dialog border border-line-strong bg-overlay shadow-[0_40px_80px_-24px_rgba(0,0,0,0.9)] sm:mt-16"
       >
         <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
           <h2 className="m-0 flex items-center gap-2 text-lead font-semibold">
@@ -297,7 +297,7 @@ export default function ImportDialog({
                       <legend className="mb-1.5 text-micro font-semibold uppercase tracking-[0.08em] text-faint">
                         {t('import.keepLabel')}
                       </legend>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {(
                           [
                             [
