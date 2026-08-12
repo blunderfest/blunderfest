@@ -101,6 +101,8 @@ RUN chown nobody /app
 
 # set runner ENV
 ENV MIX_ENV="prod"
+# Debian puts games outside PATH; the engine pool reads STOCKFISH_PATH.
+ENV STOCKFISH_PATH="/usr/games/stockfish"
 
 # Only copy the final release from the build stage
 COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/blunderfest ./
