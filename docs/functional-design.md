@@ -1,596 +1,787 @@
-# Chess Position Search
+# Functional Specification — Chess Analysis & Search
 
-## Functional Design
+**Version:** 0.2
+**Status:** Working document
+**Purpose:** Shared functional model, product direction, and decision framework
 
-**Status:** Draft
-**Scope:** Position and game search
-**Audience:** Product and domain design, future developers and contributors
+> **Important:** This document deliberately distinguishes between established decisions, working hypotheses, and open questions. Working hypotheses are **not implementation requirements**. They are assumptions that should be tested through experiments and user feedback.
+
+---# Functional Specification — Chess Analysis & Search
+
+**Version:** 0.2
+**Status:** Working document
+**Purpose:** Shared functional model, product direction, and decision framework
+
+
+
+# 1. Product Vision
+
+The application helps chess players understand positions by using the history of chess as evidence.
+
+The primary goal is not simply to answer:
+
+> **"What is the best move?"**
+
+Instead, the system should help answer questions such as:
+
+> "What do strong players do in positions like this?"
+
+> "What kind of plans occur in this type of position?"
+
+> "Is this position actually similar to the positions I think it resembles?"
+
+> "What happened in historical games when players chose a different approach?"
+
+The system should help the user **investigate a position**, rather than merely return a single answer.
+
+The primary user-facing interaction is therefore **Analyze**, rather than Search.
 
 ---
 
-## 1. Purpose
+# 2. Problem Statement
 
-The chess analysis application allows users to search a large collection of chess games for positions that may be useful for analysing a reference position.
+A chess player often reaches a position where the opening knowledge ends and they are unsure how to proceed.
 
-The primary goal is **not to find mathematically similar positions**.
+A traditional opening database can tell them:
 
-The goal is to help answer the practical chess question:
+> "These are the most common moves."
 
-> **"I don't know what to do here. What do strong players do in positions sufficiently like this one?"**
+A chess engine can tell them:
 
-Search therefore aims to retrieve **useful analogies**, rather than merely positions with a high numerical similarity.
+> "This move is objectively strongest."
+
+Neither necessarily answers:
+
+> **"What is going on here?"**
+
+The goal of Analyze is to provide historical and structural context that helps the player develop their own understanding.
+
+The system should therefore treat historical games not merely as a database of moves, but as a source of **evidence about how chess players have handled comparable situations**.
 
 ---
 
-## 2. Core Principle
+# 3. Core Principles
 
-### Similarity is a means, not the goal
+## 3.1 Analyze, not Search
 
-A position can be similar to another position in several different ways:
+The user should not be required to formulate a precise search query.
 
-* exact board configuration;
+The user starts from a chess position and asks the system to **Analyze** it.
+
+Search/retrieval is an underlying technical capability.
+
+Other features, including Opening Explorer, may use the same underlying capabilities for different purposes.
+
+---
+
+## 3.2 The user does not necessarily want a move
+
+A user may want:
+
+* a move;
+* a plan;
+* examples;
+* patterns;
+* comparisons;
+* historical context;
+* confirmation or contradiction of an idea.
+
+The system should therefore not assume that every analysis request is a request for the best move.
+
+---
+
+## 3.3 Historical players are evidence, not personalities
+
+The system should not attempt to model a player's personality in order to predict what they would play.
+
+For example, the system should not assume:
+
+> "Morphy likes sacrifices."
+
+or:
+
+> "Nakamura is positional."
+
+Instead, it should ask:
+
+> **"What did strong players actually do in comparable situations?"**
+
+The retrieval system should therefore aim to behave more like a **strong chess spectator** than a personality model of an individual player.
+
+---
+
+## 3.4 Relevance is more important than raw similarity
+
+A position that is mathematically or structurally similar is not necessarily useful to a human player.
+
+The system should ultimately attempt to find **relevant analogies**, not merely positions with the smallest numerical distance from the reference position.
+
+This is an established product principle.
+
+The exact definition and implementation of relevance remain open.
+
+---
+
+## 3.5 Do not assume that a position can be understood in isolation
+
+A single position contains important information:
+
+* material;
 * pawn structure;
-* material composition;
 * piece placement;
-* piece relationships;
 * king safety;
-* strategic concepts;
-* position sequence.
-
-None of these dimensions is sufficient by itself to define whether two positions are useful analogies.
-
-The search system should therefore treat these dimensions as **evidence of relevance**, rather than automatically reducing them to a single universal similarity score.
-
----
-
-## 3. Position and Game State
-
-The system distinguishes between the complete state of a game and the aspects of that state that are relevant to a particular search.
-
-A game state may contain:
-
-* board configuration;
-* side to move;
-* castling rights;
-* en-passant state;
-* move counters;
-* game and move metadata.
-
-These attributes do not necessarily all form part of the user's definition of "the same position".
-
-For example, the following positions have identical board configurations:
-
-```text
-(1) rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2
-
-(2) rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 2
-```
-
-They can arise through different move sequences:
-
-```text
-1. d4 d5
-```
-
-and
-
-```text
-1. d3 d5 2. d4
-```
-
-For search purposes, these may be considered the **same board position**, while still representing different game states because the side to move differs.
-
-Therefore:
-
-> **Position identity and game-state identity are separate concepts.**
-
-Search must be able to selectively include or ignore relevant state dimensions.
-
----
-
-## 4. Position Occurrences
-
-Search results refer to **occurrences of positions**, not merely abstract positions.
-
-A position may occur:
-
-* in multiple games;
-* multiple times in the same game;
-* through different move orders;
-* in different variations of a game.
-
-A search result should therefore be traceable to the relevant game and location within that game.
-
-Conceptually:
-
-```text
-Search
-  ↓
-Matching Position
-  ↓
-Position Occurrences
-  ↓
-Games / Variations / Move Sequences
-```
-
----
-
-# 5. Search Dimensions
-
-The search system should support multiple dimensions of comparison.
-
-These dimensions should remain conceptually independent. A search may use one or several of them.
-
-## 5.1 Exact Board Position
-
-The system must be able to find occurrences where the board configuration is identical.
-
-This compares the actual placement of pieces and pawns on the board.
-
-Side to move does not have to be part of this comparison.
-
----
-
-## 5.2 Side to Move
-
-Side to move is an independently searchable property.
-
-The user may:
-
-* require the same side to move;
-* allow either side to move;
-* potentially use the difference as ranking information.
-
-A different side to move does not automatically make a position irrelevant.
-
----
-
-## 5.3 Color Reversal
-
-The system should support searching for a position after a complete color reversal.
-
-Color reversal is a **transformation**, rather than a separate form of similarity.
-
-Conceptually:
-
-```text
-Reference Position
-        ↓
-Color Reversal
-        ↓
-Transformed Position
-        ↓
-Normal Position Matching
-```
-
-The transformation includes the appropriate reversal of:
-
-* piece colors;
-* board orientation;
-* side to move;
-* castling rights;
-* en-passant state.
-
----
-
-# 6. Pawn Search
-
-Pawn-related search must distinguish between several fundamentally different concepts.
-
-## 6.1 Exact Pawn Placement
-
-The same pawns occur on the same squares.
-
-This is a geometric comparison.
-
-## 6.2 Geometric Pawn Tolerance
-
-The user may allow pawns to be displaced by a specified amount.
-
-For example:
-
-> "Match the same pawn placements while allowing a pawn to be one rank away."
-
-This is a valid search operation, but it should **not** be described as structural similarity.
-
-## 6.3 Pawn Structure Similarity
-
-Structural similarity concerns relationships and characteristics rather than merely square coordinates.
-
-Relevant characteristics may include:
-
-* pawn chains;
-* isolated pawns;
-* doubled pawns;
-* passed pawns;
-* backward pawns;
-* connected pawns;
-* pawn islands;
-* majorities;
-* open and semi-open files;
-* relationships between opposing pawn formations.
-
-Important principle:
-
-> **Geometric proximity does not imply structural similarity.**
-
-For example, moving one pawn by one square can sometimes change its structural relationships significantly.
-
----
-
-# 7. Material Search
-
-Material search must distinguish between **material composition** and **material value**.
-
-## 7.1 Material Composition
-
-The system may search for positions containing similar types and numbers of pieces and pawns.
-
-A difference of one pawn may still result in a highly useful analogue.
-
-For example:
-
-```text
-Reference: Queen + Rook + Bishop + Knight + 5 pawns
-Candidate: Queen + Rook + Bishop + Knight + 4 pawns
-```
-
-This may be considered a useful match.
-
-## 7.2 Material Value
-
-A search based purely on nominal material value is a different type of query.
-
-For example:
-
-```text
-Queen + Rook + Bishop + Knight
-```
-
-and
-
-```text
-Queen + two Rooks
-```
-
-may have similar nominal material value while representing fundamentally different chess situations.
-
-Therefore:
-
-> **Material value should not be treated as a general proxy for positional similarity.**
-
-Material composition is generally more relevant to analogical search.
-
----
-
-# 8. Piece Search
-
-## 8.1 Exact Piece Identity
-
-The system can require the same piece type on the same square.
-
-For example:
-
-```text
-Knight f3 → Knight f3
-```
-
-## 8.2 Piece Substitution
-
-The system may support controlled relaxation of piece identity.
-
-For example:
-
-```text
-Knight f3 ↔ Bishop f3
-```
-
-This is a **piece-identity relaxation**, not a claim that a knight and bishop perform the same function.
-
-Substitution may be constrained by:
-
-* color;
-* piece class;
-* number of substitutions;
-* specific squares or pieces.
-
-## 8.3 Piece Role
-
-Functional similarity between pieces is a separate and higher-level concept.
-
-For example:
-
-> "Find positions where the piece on f3 performs a similar role."
-
-This is not equivalent to:
-
-> "Allow a bishop instead of a knight on f3."
-
-Piece-role similarity belongs to a higher conceptual layer.
-
----
-
-# 9. Structural Similarity
-
-Structural similarity describes similarity in the organization of a position rather than merely similarity of individual pieces or squares.
-
-It may include:
-
-* pawn structure;
-* open and semi-open files;
-* king placement;
-* piece relationships;
-* weak squares;
-* piece activity;
 * space;
-* material composition;
-* important positional dependencies.
+* possible moves.
 
-Structural similarity does **not** imply strategic equivalence.
+However, strategic meaning may emerge more clearly from a **sequence of positions**.
 
-Two positions can share the same structural characteristics while presenting different practical plans.
+For example, a series of positions may reveal:
 
-Therefore:
-
-> **Structural similarity is evidence of relevance, not proof of strategic similarity.**
-
----
-
-# 10. Conceptual Similarity
-
-Conceptual similarity concerns meaningful chess ideas that a strong, style-independent observer could reasonably identify in two positions or position sequences.
-
-Examples may include:
-
-* attacking a weakness;
-* preparing a pawn break;
-* exchanging a defender;
-* improving a poorly placed piece;
-* creating or advancing a passed pawn;
-* restricting an opposing piece;
-* attacking the king.
-
-The system must not assume that a position has one objectively correct strategic interpretation.
-
-A position may support multiple plausible concepts.
-
-Conceptual similarity therefore represents **overlap between possible interpretations**, not a definitive statement about the correct plan.
-
----
-
-## 10.1 Strong Observer Principle
-
-The system should model the perspective of a hypothetical **strong, style-independent observer**.
-
-The observer should not rely on:
-
-* the personality of the original player;
-* known playing style;
-* reputation;
-* assumed intentions;
-* hindsight based on later moves.
-
-The observer asks:
-
-> **"What meaningful chess ideas can reasonably be identified from this position?"**
-
-This intentionally separates:
-
-```text
-What the position may suggest
-```
-
-from:
-
-```text
-What the player actually intended
-```
-
-and:
-
-```text
-What the player actually played
-```
-
----
-
-# 11. Position vs. Sequence
-
-Some information cannot reliably be inferred from a single position.
-
-A sequence of positions may reveal:
-
-* the development of a plan;
-* a strategic transformation;
+* a strategic plan;
 * a pawn break;
-* a change in piece roles;
-* an attack being built;
-* a transition into a particular type of endgame.
+* a manoeuvring idea;
+* a transformation;
+* a change in king safety;
+* a particular response to an opponent's plan.
 
-Therefore conceptual search may operate on:
+### Current status
 
-### Position-level concepts
+**Working hypothesis:** strategic interpretation will often benefit from sequences of positions or game context rather than isolated positions.
 
-Ideas identifiable from one position.
-
-### Sequence-level concepts
-
-Ideas identifiable from the evolution of several positions.
-
-This distinction should be preserved in the domain model.
+This must be tested.
 
 ---
 
-# 12. Hard Constraints and Relevance Evidence
+# 4. Analyze
 
-The search system should distinguish between **constraints** and **evidence**.
-
-## Hard constraint
-
-A condition that a result must satisfy.
-
-Example:
-
-> Pawn structure must match exactly.
-
-A position that fails the constraint is excluded.
-
-## Relevance evidence
-
-A characteristic that makes a result more or less useful, but does not necessarily exclude it.
-
-Example:
-
-> Similar piece placement.
-
-A candidate with different piece placement may still be highly relevant.
+Analyze starts from a chess position.
 
 Conceptually:
 
 ```text
-Reference Position
-       │
-       ├── Hard Constraints
-       │       ↓
-       │   Candidate Set
-       │
-       └── Relevance Evidence
-               ↓
-            Ranking
+Position
+   ↓
+Analyze
+   ↓
+Relevant historical material
+   ↓
+Patterns / comparisons / games
+   ↓
+Further exploration
 ```
+
+The user may not know what they are looking for when they start.
+
+The system should therefore be able to provide useful starting points rather than requiring a precise query.
+
+Analyze is an **exploration process**, not necessarily a single query with a single answer.
 
 ---
 
-# 13. Combined Search
+# 5. Position and Game Context
 
-The search system must support combining multiple comparison dimensions.
+The system should be able to reason about both:
+
+### Position-level information
+
+Examples:
+
+* piece placement;
+* material;
+* pawn structure;
+* side to move;
+* castling rights;
+* king safety;
+* space.
+
+### Sequence-level information
+
+Examples:
+
+* previous moves;
+* subsequent moves;
+* pawn breaks;
+* manoeuvres;
+* transformations;
+* recurring plans.
+
+The relative importance of these dimensions is not yet established.
+
+---
+
+# 6. Relevance and Similarity
+
+We do not currently assume that there is one universal "similarity score".
+
+A position can be relevant in different ways.
+
+Potential dimensions include:
+
+* exact position;
+* material;
+* pawn structure;
+* piece placement;
+* king safety;
+* space;
+* pawn breaks;
+* previous moves;
+* following moves;
+* structural transformations;
+* game context.
 
 For example:
 
-> Find positions with:
->
-> * the same pawn structure;
-> * at most one additional or missing pawn;
-> * similar king positions;
-> * similar piece placement;
-> * color reversal allowed.
-
-The system should not require every comparison dimension to be treated as a hard constraint.
-
-A query may therefore conceptually consist of:
-
 ```text
-Constraints
-+
-Preferences / Relevance Evidence
-+
-Ranking
+Position A
+    │
+    ├── exact match
+    ├── same pawn structure
+    ├── similar material
+    ├── similar piece configuration
+    └── similar strategic sequence
 ```
 
-This is preferable to reducing every query to one universal similarity score.
+These should be treated as potentially different forms of relevance.
+
+### Important
+
+We should not assume that combining all dimensions into one score is necessarily the correct solution.
+
+A result may be useful because of **one particularly meaningful similarity**, even if it is not globally similar.
 
 ---
 
-# 14. Result Explanation
+# 7. Historical Games as Evidence
 
-Search results should provide an understandable explanation of **why a position was considered relevant**.
+The system will retrieve historical games and positions.
+
+A retrieved item is initially simply a **search result**.
+
+It becomes useful evidence when the user considers it relevant to the analysis.
+
+This distinction is important:
+
+```text
+Search result
+     ↓
+Relevant result
+     ↓
+Evidence
+```
+
+We do not necessarily need a formal `Evidence` domain object in the first version.
+
+The concept is primarily useful for understanding the intended user experience.
+
+---
+
+# 8. User Scenarios
+
+## 8.1 Scenario A — Opening ends
+
+The player knows the opening and reaches a position outside their preparation.
+
+They ask:
+
+> "What do strong players usually do here?"
+
+The system should provide relevant historical examples and patterns.
+
+---
+
+## 8.2 Scenario B — No obvious plan
+
+The player does not know what to do.
+
+They ask:
+
+> "What do players do in positions like this?"
+
+The system should find useful analogies rather than simply ranking moves by engine evaluation.
+
+---
+
+## 8.3 Scenario C — User has a hypothesis
+
+The player already has an idea:
+
+> "I think Black usually plays ...c5 here to challenge the d4-pawn."
+
+They want to investigate whether historical games support or contradict this idea.
+
+Potential future functionality could allow:
+
+* supporting evidence;
+* counterexamples;
+* alternative explanations;
+* further searches.
+
+This is an important possible direction, but it is **not required for the first implementation**.
+
+---
+
+# 9. Opening Explorer
+
+Opening Explorer is a separate feature from Analyze.
+
+It may use the same underlying search/retrieval infrastructure, but its purpose is different.
+
+### Opening Explorer
+
+Primarily asks:
+
+> **"What moves have players played from here?"**
+
+### Analyze
+
+Primarily asks:
+
+> **"What is interesting or useful to understand about this position and comparable positions?"**
+
+Opening Explorer should therefore not simply be treated as another Analyze result view.
+
+---
+
+# 10. Collaboration
+
+The application is intended to support collaborative chess analysis.
+
+In the future, multiple users may contribute to the same analysis.
+
+Possible concepts include:
+
+* comments;
+* variations;
+* observations;
+* evidence;
+* hypotheses;
+* counterexamples;
+* shared searches;
+* discussion.
+
+However, these concepts should not automatically become formal domain entities.
+
+We should only introduce explicit domain models when their behaviour and lifecycle are sufficiently understood.
+
+---
+
+# 11. Analysis as a Future Core Concept
+
+An `Analysis` can eventually represent the context in which one or more users investigate a position.
+
+Conceptually:
+
+```text
+Analysis
+ ├── Positions
+ ├── Searches
+ ├── Results
+ ├── Variations
+ ├── Evidence
+ └── Collaboration
+```
+
+This is a **functional model**, not a definitive database schema.
+
+We should avoid prematurely translating every concept into a persistent entity.
+
+---
+
+# 12. Technical Constraints and Existing Decisions
+
+The existing application already has the following technical choices.
+
+### Backend
+
+* Elixir
+* Phoenix
+* Phoenix API controllers
+* Phoenix Channels where realtime functionality is required
+
+### Frontend
+
+* React 19
+* Redux
+
+### Deployment
+
+* Fly.io
+
+### Existing UI
+
+The application already contains substantial UI functionality.
+
+The Analyze/Search functionality was deliberately left out while the product concepts were being explored.
+
+The existing UI should therefore be treated as the starting point for future Analyze integration.
+
+---
+
+# 13. Database and Storage
+
+No database technology has been selected yet for the chess corpus/search workload.
+
+This is deliberate.
+
+The future workload may involve:
+
+* millions of games;
+* potentially hundreds of millions of positions;
+* frequent retrieval;
+* increasingly flexible matching criteria.
+
+The storage system therefore needs to be evaluated experimentally.
+
+We should distinguish between:
+
+```text
+Game corpus
+     ↓
+Position representation
+     ↓
+Position index
+     ↓
+Retrieval engine
+     ↓
+Analyze API
+```
+
+These components do not necessarily have to use the same technology.
+
+---
+
+# 14. Technical Spike 01 — Position Retrieval
+
+## Goal
+
+Determine whether we can efficiently store and retrieve chess positions from a large game corpus.
+
+The first problem is deliberately simple:
+
+> **Given a chess position, find all occurrences of that exact position in the corpus.**
+
+This spike is intended to investigate the technical foundation, not to implement the complete Analyze engine.
+
+---
+
+## 14.1 Initial input
+
+A FEN representing a chess position.
+
+Example:
+
+```text
+rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2
+```
+
+The move counters in the FEN are not part of the identity of the chess position.
+
+The exact definition of `PositionKey` should be investigated and documented.
+
+Potential components:
+
+* piece placement;
+* side to move;
+* castling rights;
+* en passant state.
+
+---
+
+## 14.2 Initial output
 
 For example:
 
 ```text
-Pawn structure       Exact
-Material composition  Very similar
-King placement        Similar
-Piece placement       Moderate
-Conceptual overlap    High
+Game
+Ply
+Position
 ```
 
-The system should ultimately be able to explain a result in chess terms, such as:
+A query should allow us to answer:
 
-> Same isolated-pawn structure, similar king safety, and similar pressure against the open file.
-
-The purpose is not merely to produce a ranking, but to allow the user to judge whether the analogy is useful.
+> "Which games reached this exact position, and at what point in the game?"
 
 ---
 
-# 15. Primary User Goal
+## 14.3 Initial data representation
 
-All search functionality should ultimately serve the following user question:
+A minimal occurrence could conceptually contain:
 
-> **"I don't know what to do here. What do strong players do in positions sufficiently like this one?"**
+```text
+PositionKey
+GameId
+Ply
+```
 
-This has several consequences.
-
-The system should not optimize exclusively for:
-
-* visual similarity;
-* material similarity;
-* geometric similarity;
-* engine evaluation;
-* a single numerical similarity score.
-
-Instead, it should optimize for:
-
-> **Useful analogies for understanding and analysing the reference position.**
+The exact implementation is intentionally left open.
 
 ---
 
-# 16. Design Principles Established So Far
+## 14.4 Benchmark scale
 
-The following principles have emerged from the initial search-model investigation.
+The investigation should use progressively larger datasets.
 
-1. **Position identity is not necessarily FEN equality.**
-2. **Game-state identity and search-position identity are separate concepts.**
-3. **Side to move is an independently searchable dimension.**
-4. **Color reversal is a transformation.**
-5. **Geometric similarity is not structural similarity.**
-6. **Piece substitution is a controlled relaxation of piece identity.**
-7. **Material composition is generally more useful for analogy search than nominal material value.**
-8. **Similarity dimensions are evidence of relevance, not necessarily the final answer.**
-9. **Structural similarity does not imply strategic equivalence.**
-10. **Conceptual similarity may require a sequence of positions.**
-11. **A position may support multiple plausible interpretations.**
-12. **The system should model a strong, style-independent observer rather than player intent.**
-13. **Hard constraints and relevance evidence must be distinguishable.**
-14. **Search results should explain why they are considered relevant.**
-15. **The ultimate goal is useful analogy, not mathematical similarity.**
+Suggested starting points:
+
+```text
+100,000 games
+1,000,000 games
+10,000,000 games
+```
+
+The largest dataset is optional.
+
+If an approach does not scale to a particular size, that is itself a useful result.
 
 ---
 
-# 17. Open Questions
+## 14.5 Metrics
 
-The following questions are intentionally left unresolved at this stage:
+Measure at least:
 
-* How should structural similarity be calculated?
-* How should conceptual similarity be identified?
-* Which concepts should be represented explicitly?
-* When does a sequence provide more useful information than a single position?
-* How should different relevance dimensions be ranked?
-* Should users be able to configure ranking weights?
-* How should search results be grouped to avoid overwhelming the user?
-* How should duplicate or transposed occurrences be presented?
-* How should the system evaluate whether a retrieved game is actually useful to the user?
+* import throughput;
+* number of games;
+* number of positions;
+* storage size;
+* index size;
+* lookup latency;
+* p50 lookup latency;
+* p95 lookup latency;
+* p99 lookup latency;
+* memory usage;
+* CPU usage where relevant.
 
-These are **open design questions**, not implementation requirements.
-
-They should be addressed only when sufficient evidence or concrete use cases justify doing so.
+The benchmark environment should be documented so results are reproducible.
 
 ---
 
-# 18. Scope Boundary
+# 15. Initial Retrieval Layers
 
-This document deliberately does not define:
+Development should proceed incrementally.
 
-* database technology;
-* indexing strategy;
-* storage model;
-* search engine technology;
-* machine-learning architecture;
-* chess-engine integration;
-* performance implementation;
-* distributed processing;
-* caching.
+### Layer 1 — Exact position
 
-Those decisions belong to a later technical design phase.
+Find exactly the same position.
 
-The purpose of this document is to establish **what the search system means and what it should be capable of doing**, independently of how it is implemented.
+### Layer 2 — Transformations
+
+For example:
+
+> Same position with White and Black exchanged.
+
+### Layer 3 — Structural similarity
+
+For example:
+
+> Similar pawn structure.
+
+### Layer 4 — Relaxed similarity
+
+Allow limited differences in pieces, pawns, or other properties.
+
+### Layer 5 — Context
+
+Compare preceding and following positions/moves.
+
+### Layer 6 — Behaviour and patterns
+
+Investigate what players actually did after reaching comparable positions.
+
+Only Layer 1 is currently an implementation target.
+
+Layers 2–6 are future research directions.
+
+---
+
+# 16. Established Decisions
+
+The following are currently considered established:
+
+* The primary user interaction is **Analyze**, not Search.
+* Analyze starts from a chess position.
+* The user does not necessarily need to formulate a search query.
+* Historical games are an important source of information.
+* Relevance is more important than raw positional similarity.
+* The system should not model individual player personalities as its primary retrieval mechanism.
+* Exact position retrieval is the first technical problem to solve.
+* Opening Explorer and Analyze are different features.
+* The existing UI is the starting point for future integration.
+* Elixir/Phoenix is the backend stack.
+* React 19/Redux is the frontend stack.
+* Fly.io is the deployment platform.
+* The database/search technology has not yet been decided.
+* Technical assumptions should be tested experimentally.
+
+---
+
+# 17. Working Hypotheses
+
+These are ideas we currently consider plausible but have **not yet established**:
+
+### H1 — Strategic meaning requires context
+
+A sequence of positions may provide significantly more useful strategic information than a single isolated position.
+
+### H2 — Structural similarity is useful
+
+Pawn structure and related structural properties may be more useful for human-oriented retrieval than simple piece/material similarity.
+
+### H3 — Context improves relevance
+
+Previous and subsequent moves may significantly improve the usefulness of retrieved examples.
+
+### H4 — Users often do not know what to search for
+
+A position can be the starting point of an investigation without the user knowing the question beforehand.
+
+### H5 — Historical examples can reveal useful plans
+
+The actions of strong players in comparable positions can provide useful information even when there is no single obvious "best move".
+
+### H6 — A strong-spectator model is useful
+
+Treating the retrieval system as a strong chess spectator may produce more useful results than trying to model individual player personalities.
+
+These hypotheses should be tested rather than assumed to be true.
+
+---
+
+# 18. Open Questions
+
+The following questions remain deliberately unresolved:
+
+### Retrieval
+
+* How should a chess position be represented?
+* Which properties should be indexed?
+* How should en passant be represented?
+* How should transformed positions be handled?
+* How should structural similarity be defined?
+
+### Ranking
+
+* What makes a historical example useful?
+* How should multiple similarity dimensions be combined?
+* Should there even be one global relevance score?
+* How should representative games be selected?
+
+### Context
+
+* How many previous moves are useful?
+* How many subsequent moves are useful?
+* Is a short sequence sufficient?
+* Does the entire game matter?
+
+### Player strength
+
+* How should "strong player" be defined?
+* Should player strength influence ranking?
+* Should tournament level, rating, date, or other factors matter?
+
+### Strategy
+
+* Can strategic concepts be inferred from positions?
+* Can they be inferred reliably from sequences?
+* Which concepts can actually be detected algorithmically?
+
+### Infrastructure
+
+* Which database/storage technology is appropriate?
+* Should corpus storage and search indexing be separate?
+* Can PostgreSQL handle the expected workload?
+* When would a specialized index become justified?
+
+### UX
+
+* How much information should Analyze initially show?
+* How do we avoid overwhelming users?
+* How do we expose uncertainty?
+* How do we let users investigate an interesting result without requiring them to understand the underlying search system?
+
+---
+
+# 19. Explicitly Out of Scope for the First Technical Spike
+
+The first technical spike should **not** attempt to implement:
+
+* the complete Analyze engine;
+* strategic interpretation;
+* similarity ranking;
+* AI-generated explanations;
+* hypotheses;
+* collaborative research workflows;
+* full realtime collaboration;
+* a new Analyze UI;
+* a final database architecture;
+* a universal similarity score.
+
+The existing UI should not be substantially redesigned as part of this spike.
+
+The purpose of the spike is to **learn**, not to prematurely finalize the architecture.
+
+---
+
+# 20. Development Philosophy
+
+The project should be developed experimentally.
+
+The intended process is:
+
+```text
+Idea
+  ↓
+Working hypothesis
+  ↓
+Experiment
+  ↓
+Observation
+  ↓
+Decision
+  ↓
+Implementation
+  ↓
+Re-evaluation
+```
+
+We should actively look for evidence that disproves our assumptions.
+
+A failed hypothesis is a successful outcome if it prevents us from building the wrong thing.
+
+We should prefer:
+
+> **"We tested this and it doesn't work."**
+
+over:
+
+> **"This sounds like it should work."**
+
+---
+
+# 21. Immediate Next Step
+
+The immediate technical task is:
+
+> **Technical Spike 01 — Position Retrieval**
+
+The goal is to determine whether a practical, scalable foundation exists for retrieving exact chess positions from a large corpus.
+
+The outcome should inform the first architectural decision regarding:
+
+* position representation;
+* indexing;
+* storage;
+* retrieval technology.
+
+Only after this experiment should we begin implementing the Analyze retrieval layer.
+
+---
+
+## Document status
+
+This document is intentionally **not a final specification**.
+
+It is a shared model of what we currently believe.
+
+As experiments produce new information, sections should be updated rather than allowing outdated assumptions to silently become implementation requirements.
+
+**The document should evolve with the evidence.**
