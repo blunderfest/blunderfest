@@ -381,6 +381,12 @@ export default function Analysis({
             {opening === null ? '' : `${opening.eco} · ${opening.name}`}
           </p>
 
+          {/*
+            The edit palette sits on each side's home edge (black pieces on
+            black's side, white on white's — swapped when flipped), like
+            lichess's editor. No scroll strip.
+          */}
+          {editor.editing && <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} />}
           <div className="flex items-stretch gap-3">
             {/*
               Fixed-width slot for the eval bar / edit palette: it keeps its
@@ -391,65 +397,7 @@ export default function Analysis({
               className="flex w-10 shrink-0 flex-col justify-center self-stretch"
               data-testid="board-left-slot"
             >
-              {editor.editing ? (
-                <fieldset
-                  className="m-0 flex min-h-0 min-w-0 flex-col justify-center gap-1 overflow-y-auto rounded-control border border-line bg-panel px-1 py-2"
-                  style={{ maxHeight: 'min(calc(100vw - 4.75rem), 34rem)' }}
-                  data-testid="edit-palette"
-                >
-                  {' '}
-                  <legend className="sr-only">{t('analysis.palette')}</legend>
-                  {(['w', 'b'] as const).map((color) => (
-                    <div key={color} className="flex flex-col gap-1">
-                      {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
-                        const active =
-                          editor.editBrush !== null &&
-                          editor.editBrush !== 'erase' &&
-                          editor.editBrush.color === color &&
-                          editor.editBrush.kind === kind;
-                        return (
-                          <button
-                            key={kind}
-                            type="button"
-                            aria-pressed={active}
-                            aria-label={t('analysis.pieceLabel', {
-                              color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
-                              piece: t(`analysis.pieces.${kind}`),
-                            })}
-                            className={`grid h-9 w-9 place-items-center rounded-control leading-none transition-colors ${
-                              active ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
-                            }`}
-                            onPointerDown={(event) =>
-                              editor.handlePalettePointerDown({ color, kind }, event)
-                            }
-                            onClick={() => editor.toggleBrush({ color, kind })}
-                          >
-                            <img
-                              src={pieceSrc({ color, kind })}
-                              alt=""
-                              draggable={false}
-                              className="h-7 w-7 select-none"
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    aria-pressed={editor.editBrush === 'erase'}
-                    aria-label={t('analysis.eraser')}
-                    className={`mt-1 grid h-8 w-8 place-items-center rounded-control border-t border-line pt-1 text-base text-muted transition-colors ${
-                      editor.editBrush === 'erase'
-                        ? 'bg-gold/20 ring-1 ring-gold/50'
-                        : 'hover:bg-raised'
-                    }`}
-                    onClick={() => editor.toggleBrush('erase')}
-                  >
-                    ⌫
-                  </button>
-                </fieldset>
-              ) : engineOn ? (
+              {editor.editing ? null : engineOn ? (
                 <EvalBar
                   eval={engineState.eval}
                   thinking={engineState.status === 'thinking'}
@@ -483,6 +431,7 @@ export default function Analysis({
               onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
             />
           </div>
+          {editor.editing && <PaletteStrip editor={editor} color={flipped ? 'b' : 'w'} eraser />}
           {editor.editing && (
             <div
               className="flex w-[min(90vw,34rem)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
@@ -692,6 +641,75 @@ export default function Analysis({
 /** The last node of the mainline (deepest first-child chain). */
 function lastChildOf(node: GameNode): GameNode {
   return node.children[0] ? lastChildOf(node.children[0]) : node;
+}
+
+/**
+ * One edge of the edit palette: a color's six pieces in a horizontal strip.
+ * The parent places it on that side's home edge (top for black, bottom for
+ * white, swapped when flipped); the eraser rides the bottom strip.
+ */
+function PaletteStrip({
+  editor,
+  color,
+  eraser = false,
+}: {
+  editor: ReturnType<typeof usePositionEditor>;
+  color: 'w' | 'b';
+  eraser?: boolean;
+}) {
+  const { t } = useTranslation();
+  // The tray uses the light-square tone: black pieces stay readable on the
+  // dark page, white pieces keep their black outlines — like a light square.
+  return (
+    <div
+      className="flex items-center justify-center gap-1 rounded-control border border-board-edge bg-board-light px-2 py-1 shadow-[0_8px_20px_-12px_rgba(0,0,0,0.8)]"
+      data-testid={eraser ? 'edit-palette' : undefined}
+    >
+      {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
+        const active =
+          editor.editBrush !== null &&
+          editor.editBrush !== 'erase' &&
+          editor.editBrush.color === color &&
+          editor.editBrush.kind === kind;
+        return (
+          <button
+            key={kind}
+            type="button"
+            aria-pressed={active}
+            aria-label={t('analysis.pieceLabel', {
+              color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
+              piece: t(`analysis.pieces.${kind}`),
+            })}
+            className={`grid h-9 w-9 place-items-center rounded-control leading-none transition-colors ${
+              active ? 'bg-gold/40 ring-1 ring-gold' : 'hover:bg-board-dark/25'
+            }`}
+            onPointerDown={(event) => editor.handlePalettePointerDown({ color, kind }, event)}
+            onClick={() => editor.toggleBrush({ color, kind })}
+          >
+            <img
+              src={pieceSrc({ color, kind })}
+              alt=""
+              draggable={false}
+              className="h-7 w-7 select-none"
+            />
+          </button>
+        );
+      })}
+      {eraser && (
+        <button
+          type="button"
+          aria-pressed={editor.editBrush === 'erase'}
+          aria-label={t('analysis.eraser')}
+          className={`grid h-9 w-9 place-items-center rounded-control text-base text-[#4a3a20] transition-colors ${
+            editor.editBrush === 'erase' ? 'bg-gold/40 ring-1 ring-gold' : 'hover:bg-board-dark/25'
+          }`}
+          onClick={() => editor.toggleBrush('erase')}
+        >
+          ⌫
+        </button>
+      )}
+    </div>
+  );
 }
 
 /** The eval bar's aria-label, in words, from white's perspective. */
