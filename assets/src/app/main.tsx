@@ -7,7 +7,10 @@ import '@fontsource/open-sans/700.css';
 import '@/app/app.css';
 import '@/i18n';
 import App from '@/app/App';
+import { watchSystemTheme } from '@/lib/theme';
 import { store } from '@/store';
+
+watchSystemTheme();
 
 const rootEl = document.getElementById('root');
 

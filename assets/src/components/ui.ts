@@ -29,7 +29,7 @@ export const tv = createTV({
 });
 
 export const panel = tv({
-  base: 'rounded-panel border border-line bg-panel shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_8px_24px_-16px_rgba(0,0,0,0.9)]',
+  base: 'rounded-panel border border-line bg-panel shadow-panel',
   variants: {
     pad: { none: '', sm: 'p-2', md: 'p-3', lg: 'p-4' },
     layout: {
@@ -52,7 +52,7 @@ export const button = tv({
       primary:
         'bg-gold text-[#20180a] border-gold/70 hover:bg-gold-hi hover:border-gold-hi active:translate-y-px',
       secondary:
-        'bg-raised text-ink border-line-strong hover:bg-overlay hover:border-[#454c5b] active:translate-y-px',
+        'bg-raised text-ink border-line-strong hover:bg-overlay hover:border-line-strong active:translate-y-px',
       ghost:
         'bg-transparent text-muted border-transparent hover:bg-raised hover:text-ink active:translate-y-px',
       danger: 'bg-bad/12 text-bad-hi border-bad/50 hover:bg-bad/22 hover:border-bad/70',
@@ -67,7 +67,7 @@ export const button = tv({
       iconLg: 'h-10 w-10 text-lead',
     },
     active: {
-      true: 'border-gold/60 bg-gold/25 text-[#ffe9a8] hover:bg-gold/30',
+      true: 'border-gold/60 bg-gold/25 text-gold-text hover:bg-gold/30',
     },
     block: { true: 'w-full' },
   },

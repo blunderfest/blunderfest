@@ -2,7 +2,9 @@
   "app": {
     "name": "Blunderfest",
     "tagline": "Collaborative chess analysis.",
-    "skipToContent": "Skip to main content"
+    "skipToContent": "Skip to main content",
+    "toLightMode": "Switch to light mode",
+    "toDarkMode": "Switch to dark mode"
   },
   "status": {
     "checking": "Connecting to analysis service...",

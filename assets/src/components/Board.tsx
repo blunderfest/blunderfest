@@ -14,7 +14,7 @@ import {
 import type { DrawnHighlight } from '@/protocol/ops';
 
 const square = tv({
-  base: 'relative flex items-center justify-center aspect-square select-none focus-visible:z-20 focus-visible:shadow-[inset_0_0_0_2px_#14161b,inset_0_0_0_4px_#e8c14f]',
+  base: 'relative flex items-center justify-center aspect-square select-none focus-visible:z-20 focus-visible:shadow-[inset_0_0_0_2px_var(--color-surface),inset_0_0_0_4px_var(--color-gold-hi)]',
   variants: {
     shade: { light: 'bg-board-light', dark: 'bg-board-dark' },
     highlight: { none: '', lastMove: '', selected: '' },
@@ -463,7 +463,7 @@ export default function Board({
     <div
       ref={containerRef}
       data-board-grid
-      className={`relative grid aspect-square w-[min(calc(100vw-4.75rem),34rem)] self-start grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [-webkit-touch-callout:none] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
+      className={`relative grid aspect-square w-[min(calc(100vw-4.75rem),34rem)] self-start grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-board [-webkit-touch-callout:none] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
       role={interactive ? 'group' : 'img'}
       aria-label={label}
       onKeyDown={handleKeyDown}

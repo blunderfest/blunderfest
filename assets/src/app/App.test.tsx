@@ -402,6 +402,26 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();
   });
 
+  it('toggles between light and dark theme from the header', async () => {
+    document.documentElement.dataset.theme = 'dark';
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
+    });
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    const toggle = await screen.findByRole('button', { name: 'Switch to light mode' });
+    fireEvent.click(toggle);
+    expect(document.documentElement.dataset.theme).toBe('light');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to dark mode' }));
+    expect(document.documentElement.dataset.theme).toBe('dark');
+  });
+
   it('has no axe violations on the home screen', async () => {
     stubFetch({
       '/api/healthz': () => Promise.resolve(new Response(null, { status: 200 })),

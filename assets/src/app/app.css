@@ -39,6 +39,13 @@
   --color-select: #6ea8fe;
   --color-check: #e05a4e;
 
+  /* Gold text on dark surfaces (light theme darkens it) */
+  --color-gold-text: #ffe9a8;
+
+  /* Shadows tuned per theme */
+  --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px -16px rgb(0 0 0 / 0.9);
+  --shadow-board: 0 18px 40px -24px rgb(0 0 0 / 0.95);
+
   /* Typography scale */
   --text-micro: 0.6875rem;
   --text-micro--line-height: 1rem;
@@ -107,6 +114,44 @@
 
 :root {
   color-scheme: dark;
+}
+
+/* Light theme: same tokens, daylight values. The board and piece colors are
+   theme-independent and deliberately not overridden. */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces (elevation steps, light → darker) */
+  --color-void: #e8eaf0;
+  --color-surface: #f4f6fb;
+  --color-panel: #ffffff;
+  --color-raised: #eceff5;
+  --color-overlay: #e2e6ee;
+
+  /* Hairlines */
+  --color-line: #d9dee7;
+  --color-line-strong: #b6bdcc;
+
+  /* Ink (text) */
+  --color-ink: #1a1d24;
+  --color-muted: #5a6472;
+  --color-faint: #8a93a3;
+
+  /* Brand + semantics (deepened for contrast on white) */
+  --color-gold: #c9a227;
+  --color-gold-hi: #8a6d1a;
+  --color-gold-dim: #7a641a;
+  --color-ok: #2f9e4f;
+  --color-ok-hi: #1e7d34;
+  --color-bad: #d63f31;
+  --color-bad-hi: #c22f22;
+  --color-info: #2f6fd8;
+  --color-silver: #6b7688;
+
+  --color-gold-text: #7a641a;
+
+  --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.7) inset, 0 8px 24px -16px rgb(15 23 42 / 0.25);
+  --shadow-board: 0 18px 40px -24px rgb(15 23 42 / 0.35);
 }
 
 @layer base {

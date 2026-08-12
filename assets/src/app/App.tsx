@@ -4,6 +4,7 @@ import Logo from '@/components/Logo';
 import Home from '@/features/home/Home';
 import RoomHeader from '@/features/room/RoomHeader';
 import RoomView from '@/features/room/RoomView';
+import { setTheme } from '@/lib/theme';
 import { useProfile } from '@/lib/useProfile';
 
 export type BackendStatus = 'checking' | 'ok' | 'down';
@@ -82,6 +83,15 @@ export default function App() {
   const selfId = profile.status === 'ready' ? profile.profile.id : null;
   const selfName = profile.status === 'ready' ? profile.profile.name : null;
 
+  // The inline script in index.html sets data-theme before first paint.
+  const [dark, setDark] = useState(() => document.documentElement.dataset.theme !== 'light');
+
+  function toggleTheme() {
+    const next = dark ? 'light' : 'dark';
+    setTheme(next);
+    setDark(next === 'dark');
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <button
@@ -97,6 +107,43 @@ export default function App() {
           <Logo size="sm" />
         </a>
         {route.screen === 'room' && <RoomHeader slug={route.slug} onLeave={navigateHome} />}
+        <button
+          type="button"
+          id="theme-toggle"
+          aria-label={dark ? t('app.toLightMode') : t('app.toDarkMode')}
+          title={dark ? t('app.toLightMode') : t('app.toDarkMode')}
+          className="grid h-7 w-7 place-items-center rounded-lg border border-line text-muted transition-colors hover:border-line-strong hover:text-ink"
+          onClick={toggleTheme}
+        >
+          {dark ? (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-4 w-4"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+            </svg>
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-4 w-4"
+            >
+              <path d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+            </svg>
+          )}
+        </button>
         <p
           className="m-0 hidden text-ui text-muted md:block"
           role="status"
