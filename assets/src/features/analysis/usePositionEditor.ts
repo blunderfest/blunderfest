@@ -32,6 +32,8 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
     x: number;
     y: number;
   } | null>(null);
+  /** The last square a palette drag painted (sweeps don't repeat it). */
+  const lastPlacedRef = useRef<string | null>(null);
   const paletteListeners = useRef<{
     move: (e: PointerEvent) => void;
     up: (e: PointerEvent) => void;
@@ -66,20 +68,36 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
     setEditError(false);
   }
 
-  function handleEditSquareClick(square: string) {
+  /**
+   * The brush landing on a square: place the piece / erase. Functional
+   * updates so a held-pointer sweep can paint several squares in a row.
+   */
+  function paintSquare(square: string) {
     const index = squareIndex(square);
     if (editBrush === 'erase') {
-      if (editPos[index] != null) {
-        const next = [...editPos];
+      setEditPos((previous) => {
+        if (previous[index] == null) {
+          return previous;
+        }
+        const next = [...previous];
         next[index] = null;
-        setEditPos(next);
-      }
+        return next;
+      });
       return;
     }
     if (editBrush !== null) {
-      const next = [...editPos];
-      next[index] = editBrush;
-      setEditPos(next);
+      setEditPos((previous) => {
+        const next = [...previous];
+        next[index] = editBrush;
+        return next;
+      });
+    }
+  }
+
+  function handleEditSquareClick(square: string) {
+    const index = squareIndex(square);
+    if (editBrush !== null) {
+      paintSquare(square);
       return;
     }
     if (editSelected === null) {
@@ -121,15 +139,29 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
    * still toggles the brush (the release lands on the palette, not the
    * board, so nothing is placed).
    */
+  /** Set when a palette press already handled selection (the click must not re-toggle). */
+  const palettePressedRef = useRef(false);
+
+  /** Keyboard path for palette pieces — pointer users toggle on press. */
+  function handlePaletteClick(piece: Piece | 'erase') {
+    if (palettePressedRef.current) {
+      palettePressedRef.current = false;
+      return;
+    }
+    toggleBrush(piece);
+  }
+
   /**
-   * Palette drags: a drag starts only once the pointer moves a few pixels,
-   * so a plain tap is a clean select/deselect (the button's onClick) with
-   * no ghost flash — and a selected piece places on every square tap.
+   * Palette presses select/deselect immediately (chess-UI feel). A drag
+   * starts only once the pointer moves a few pixels — a tap never flashes
+   * a ghost — and dragging onto the board paints on every entered square.
    */
   function handlePalettePointerDown(piece: Piece, event: React.PointerEvent) {
     if (event.button !== 0) {
       return;
     }
+    palettePressedRef.current = true;
+    toggleBrush(piece);
     const startX = event.clientX;
     const startY = event.clientY;
     let dragging = false;
@@ -143,33 +175,37 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
     };
     const onMove = (move: PointerEvent) => {
       if (!dragging && Math.hypot(move.clientX - startX, move.clientY - startY) > 6) {
+        // A real drag: no click follows it, so re-arm the selection flag
+        // for the next press and make the brush current.
+        palettePressedRef.current = false;
         dragging = true;
         setEditBrush(piece);
       }
       if (dragging) {
         setPaletteGhost({ piece, x: move.clientX, y: move.clientY });
+        // Sweep-paint: dragging over the board paints every entered square.
+        const board = document.querySelector('[data-board-grid]');
+        if (board !== null) {
+          const target = squareFromPoint(
+            board.getBoundingClientRect(),
+            move.clientX,
+            move.clientY,
+            flipped,
+          );
+          if (target !== null && target !== lastPlacedRef.current) {
+            lastPlacedRef.current = target;
+            setEditPos((previous) => {
+              const next = [...previous];
+              next[squareIndex(target)] = piece;
+              return next;
+            });
+          }
+        }
       }
     };
-    const onUp = (up: PointerEvent) => {
+    const onUp = () => {
       cleanup();
-      if (!dragging) {
-        return;
-      }
-      const board = document.querySelector('[data-board-grid]');
-      if (board === null) {
-        return;
-      }
-      const target = squareFromPoint(
-        board.getBoundingClientRect(),
-        up.clientX,
-        up.clientY,
-        flipped,
-      );
-      if (target !== null) {
-        const next = [...editPos];
-        next[squareIndex(target)] = piece;
-        setEditPos(next);
-      }
+      lastPlacedRef.current = null;
     };
     // A canceled pointer (the browser took the gesture to scroll the page)
     // must drop the ghost and listeners, never place the piece.
@@ -220,6 +256,8 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
     handleEditSquareClick,
     handleEditDrag,
     handlePalettePointerDown,
+    handlePaletteClick,
+    paintSquare,
     buildFen,
     toggleBrush,
     toggleTurn: () => setEditTurn((turn) => (turn === 'w' ? 'b' : 'w')),

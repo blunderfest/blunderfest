@@ -855,10 +855,76 @@ describe('position setup (what-if editing)', () => {
       screen.getByRole('button', { name: 'White king' }),
       new MouseEvent('pointerdown', { button: 0, bubbles: true }),
     );
-    fireEvent(window, new MouseEvent('pointermove', { clientX: 30, clientY: 100 }));
+    // The drag paints the square as it is entered; release only ends it.
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 50, clientY: 450 }));
     fireEvent(window, new MouseEvent('pointerup', { clientX: 50, clientY: 450 }));
 
     expect(pieceAt('square-a4')).toBe('wk');
+  });
+
+  it('sweep-paints several squares in one drag from the palette', () => {
+    render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    const grid = document.querySelector('[data-board-grid]') as HTMLElement;
+    grid.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 800,
+        height: 800,
+        right: 800,
+        bottom: 800,
+        x: 0,
+        y: 0,
+      }) as DOMRect;
+
+    fireEvent(
+      screen.getByRole('button', { name: 'Black rook' }),
+      new MouseEvent('pointerdown', { button: 0, bubbles: true }),
+    );
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 50, clientY: 450 }));
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 150, clientY: 450 }));
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 250, clientY: 450 }));
+    fireEvent(window, new MouseEvent('pointerup', { clientX: 250, clientY: 450 }));
+
+    expect(pieceAt('square-a4')).toBe('br');
+    expect(pieceAt('square-b4')).toBe('br');
+    expect(pieceAt('square-c4')).toBe('br');
+  });
+
+  it('paints on the board on press and paints more while sweeping', () => {
+    render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    const grid = document.querySelector('[data-board-grid]') as HTMLElement;
+    grid.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        width: 800,
+        height: 800,
+        right: 800,
+        bottom: 800,
+        x: 0,
+        y: 0,
+      }) as DOMRect;
+
+    // Select the white queen with a palette press, then press-sweep a4→c4.
+    fireEvent(
+      screen.getByRole('button', { name: 'White queen' }),
+      new MouseEvent('pointerdown', { button: 0, bubbles: true }),
+    );
+    fireEvent(window, new MouseEvent('pointerup', {}));
+
+    fireEvent(grid, new MouseEvent('pointerdown', { clientX: 50, clientY: 450, bubbles: true }));
+    fireEvent(grid, new MouseEvent('pointermove', { clientX: 150, clientY: 450, bubbles: true }));
+    fireEvent(grid, new MouseEvent('pointermove', { clientX: 250, clientY: 450, bubbles: true }));
+    fireEvent(window, new MouseEvent('pointerup', {}));
+
+    expect(pieceAt('square-a4')).toBe('wq');
+    expect(pieceAt('square-b4')).toBe('wq');
+    expect(pieceAt('square-c4')).toBe('wq');
   });
 
   it('selects a piece on tap and places it on multiple squares', () => {

@@ -42,6 +42,10 @@
   /* Gold text on dark surfaces (light theme darkens it) */
   --color-gold-text: #ffe9a8;
 
+  /* The edit-palette tray: a muted slate on dark, a soft gray on light —
+     quiet, but the solid-black pawn still reads on both. */
+  --color-tray: #475069;
+
   /* Shadows tuned per theme */
   --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.03) inset, 0 8px 24px -16px rgb(0 0 0 / 0.9);
   --shadow-board: 0 18px 40px -24px rgb(0 0 0 / 0.95);
@@ -149,6 +153,7 @@
   --color-silver: #6b7688;
 
   --color-gold-text: #7a641a;
+  --color-tray: #dde3ec;
 
   --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.7) inset, 0 8px 24px -16px rgb(15 23 42 / 0.25);
   --shadow-board: 0 18px 40px -24px rgb(15 23 42 / 0.35);

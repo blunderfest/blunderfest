@@ -436,6 +436,10 @@ export default function Analysis({
                 onToggleHighlight={canEdit && !editor.editing ? handleToggleHighlight : undefined}
                 drawColor={drawColor}
                 onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
+                paintBrush={editor.editing ? editor.editBrush : null}
+                onPaintSquare={
+                  editor.editing && editor.editBrush !== null ? editor.paintSquare : undefined
+                }
               />
               {editor.editing && (
                 <div className="flex w-full items-center justify-between">
@@ -685,13 +689,13 @@ function PaletteStrip({
   side: 'top' | 'bottom';
 }) {
   const { t } = useTranslation();
-  // The tray is a muted slate: quiet against the page, but light enough
-  // that even the solid-black pawn reads. Pieces sit on tiles the size of a
-  // board square. Left-aligned (the eraser floats right of the bottom
-  // strip, so centering would overlap it).
+  // The tray color is theme-aware: a muted slate on dark, a soft gray on
+  // light — quiet, but the solid-black pawn still reads on both. Pieces sit
+  // on tiles the size of a board square. Left-aligned (the eraser floats
+  // right of the bottom strip, so centering would overlap it).
   return (
     <div
-      className="flex items-center justify-start gap-1 self-start rounded-control border border-line bg-[#475069] px-2 py-1"
+      className="flex items-center justify-start gap-1 self-start rounded-control border border-line bg-tray px-2 py-1"
       data-testid={side === 'top' ? 'edit-palette' : undefined}
     >
       {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
@@ -710,10 +714,10 @@ function PaletteStrip({
               piece: t(`analysis.pieces.${kind}`),
             })}
             className={`grid h-[min(calc((100vw-4.75rem)/8),4.25rem)] w-[min(calc((100vw-4.75rem)/8),4.25rem)] place-items-center rounded-control leading-none transition-colors ${
-              active ? 'bg-gold/25 ring-1 ring-gold/60' : 'hover:bg-white/10'
+              active ? 'bg-gold/25 ring-1 ring-gold/60' : 'hover:bg-black/10'
             }`}
             onPointerDown={(event) => editor.handlePalettePointerDown({ color, kind }, event)}
-            onClick={() => editor.toggleBrush({ color, kind })}
+            onClick={() => editor.handlePaletteClick({ color, kind })}
           >
             <img
               src={pieceSrc({ color, kind })}

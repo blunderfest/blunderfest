@@ -72,6 +72,8 @@ export default function Board({
   onDrawArrow,
   onToggleHighlight,
   onDrawColorChange,
+  paintBrush,
+  onPaintSquare,
 }: {
   position: Position;
   lastMove?: { from: string; to: string } | null;
@@ -90,6 +92,14 @@ export default function Board({
   onToggleHighlight?: (square: string, color: string) => void;
   drawColor?: string;
   onDrawColorChange?: (color: string) => void;
+  /**
+   * Edit-mode brush (a palette piece or the eraser): pressing a square
+   * paints it there, and holding the button sweeps across squares —
+   * lichess-style. When set, board pieces can't be dragged (the brush owns
+   * the press).
+   */
+  paintBrush?: Piece | 'erase' | null;
+  onPaintSquare?: (square: string) => void;
 }) {
   const [focusIndex, setFocusIndex] = useState<number>(() =>
     lastMove?.to ? squareIndex(lastMove.to) : squareIndex('e4'),
@@ -122,6 +132,10 @@ export default function Board({
   // A finished long-press draw suppresses the synthetic click that the
   // release still produces, so lifting the finger doesn't also select/move.
   const suppressClickRef = useRef(false);
+  // Brush painting (edit mode): active while the button is held after a
+  // paint-press, with the last painted square so sweeps don't repeat.
+  const paintingRef = useRef(false);
+  const lastPaintedRef = useRef<string | null>(null);
   const longPressRef = useRef<{
     pointerId: number;
     from: string;
@@ -261,6 +275,14 @@ export default function Board({
     // A new press means any pending click suppression has served its purpose
     // (the suppressed click always fires right after the draw's release).
     suppressClickRef.current = false;
+    // A brush paints on press, not release — and owns the gesture (no drag).
+    if (event.button === 0 && paintBrush != null && onPaintSquare !== undefined) {
+      event.preventDefault();
+      paintingRef.current = true;
+      lastPaintedRef.current = from;
+      onPaintSquare(from);
+      return;
+    }
     // Mouse/pointer interaction never takes keyboard focus: a focused square
     // always means keyboard intent, which keeps square navigation working in
     // Firefox (its :focus-visible heuristics drop programmatic focus).
@@ -384,6 +406,15 @@ export default function Board({
   }
 
   function handlePointerMove(event: React.PointerEvent) {
+    // A held brush paints every square it sweeps over.
+    if (paintingRef.current) {
+      const square = pointToSquare(event);
+      if (square !== null && square !== lastPaintedRef.current) {
+        lastPaintedRef.current = square;
+        onPaintSquare?.(square);
+      }
+      return;
+    }
     const lp = longPressRef.current;
     if (
       lp !== null &&
@@ -420,6 +451,8 @@ export default function Board({
 
   function handlePointerUp(event: React.PointerEvent) {
     cancelLongPress();
+    paintingRef.current = false;
+    lastPaintedRef.current = null;
     const drag = dragRef.current;
     if (drag !== null) {
       dragRef.current = null;
@@ -433,6 +466,8 @@ export default function Board({
 
   function handlePointerCancel() {
     cancelLongPress();
+    paintingRef.current = false;
+    lastPaintedRef.current = null;
     dragRef.current = null;
     setGhost(null);
   }
