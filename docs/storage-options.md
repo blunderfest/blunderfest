@@ -63,17 +63,36 @@ embeddings. Cons: a second thing to run (volumes, snapshots, failover are
 Best when: we already know the corpus is Lichess-scale, or we want the
 standard Ecto ecosystem.
 
-### 3. Stay in-memory + disk snapshots
+### 3. Durable corpus + derived in-memory index (the "rooms trick")
+
+The index is *computed from* the corpus — so only the corpus needs to be
+durable; the index can stay in memory and rebuild on boot, exactly like
+rooms do today (ADR-0001). The durable corpus can be dead simple: PGN
+files on a Fly volume, or object storage. This family was easy to miss in
+a "which database?" framing — it is arguably the closest fit to the
+current architecture. Cost: boot-time index rebuild (bounds corpus size by
+rebuild time), and index queries live outside any DB tooling.
+
+Best when: the corpus is modest (rebuild stays fast) and we want zero new
+infra.
+
+### 4. Stay in-memory + disk snapshots
 
 Nothing new to run; search over in-memory structures is as fast as it gets.
 But memory caps the corpus (big indexes = big machines = real money),
 snapshots are hand-rolled durability, and scale-to-zero gets awkward. Fine
 for a demo corpus, wrong for the glossary's vision.
 
-### 4. Typesense/Meilisearch/Elasticsearch
+### 5. Typesense/Meilisearch/Elasticsearch
 
 Wrong grain: they rank documents; the glossary's model is weighted feature
 decomposition. We would fight the tool from day one.
+
+### Not yet evaluated
+
+DuckDB (columnar scans suit similarity arithmetic), a custom binary index
+format, splitting corpus store and index store differently than option 3.
+The spike should probe these rather than treat the shortlist as closed.
 
 ## The questions that actually decide it
 
@@ -86,13 +105,21 @@ decomposition. We would fight the tool from day one.
 5. **Search latency target** — interactive ~100 ms shapes the index design
    either way.
 
-## Lean (input, not conclusion)
+## Lean (a hypothesis to test, not a conclusion)
 
-- **SQLite + LiteFS** if the corpus is "curated, thousands-to-low-millions
-  of positions" and zero-ops matters.
+Treat these as the spike's *hypotheses*, not its framing:
+
+- **SQLite + LiteFS** looks strong if the corpus is "curated,
+  thousands-to-low-millions of positions" and zero-ops matters.
 - **Postgres** if we know we're bulk-importing Lichess DB, or we want the
   Ecto path with headroom.
+- **Durable corpus + derived in-memory index** if the corpus is modest and
+  "no new infra" outweighs boot-time rebuild.
 - In-memory + snapshots only makes sense as a demo corpus.
+
+Things that would change the lean: a corpus target above ~1M games; a
+scoring model that stops fitting SQL arithmetic; a measured index-rebuild
+time that rules out option 3.
 
 Either way, rooms/presence/rate-limits stay in-memory — this decision only
 covers the durable side (accounts, library, corpus, index).
