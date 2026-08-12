@@ -276,6 +276,57 @@ defmodule BlunderfestWeb.RoomChannelTest do
     assert_reply ref, :error, %{reason: :invalid_role}
   end
 
+  describe "game analysis" do
+    test "an editor's analyze_game runs the job and broadcasts the result op", %{} do
+      {:ok, _reply, socket} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+
+      ref =
+        push(socket, "analyze_game", %{
+          "game_id" => "game-1",
+          "positions" => [
+            %{"ply" => 0, "fen" => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"},
+            %{"ply" => 1, "fen" => "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"}
+          ]
+        })
+
+      assert_reply ref, :ok
+
+      assert_broadcast "new_op", %{
+        "type" => "set_analysis",
+        "payload" => %{"game_id" => "game-1", "depth" => 12, "evals" => evals}
+      }
+
+      assert [
+               %{"ply" => 0, "score" => %{"cp" => 42}, "best_move" => "e2e4"},
+               %{"ply" => 1, "score" => %{"cp" => -42}, "best_move" => "e2e4"}
+             ] = evals
+    end
+
+    test "viewers cannot start analysis", %{} do
+      join_room("room:abcde", %{"profile_id" => "profile-1"})
+      {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})
+
+      ref =
+        push(viewer, "analyze_game", %{
+          "game_id" => "game-1",
+          "positions" => [
+            %{"ply" => 0, "fen" => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"}
+          ]
+        })
+
+      assert_reply ref, :error, %{reason: :forbidden}
+    end
+
+    test "rejects malformed positions", %{} do
+      {:ok, _reply, socket} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+
+      ref =
+        push(socket, "analyze_game", %{"game_id" => "game-1", "positions" => [%{"ply" => -1}]})
+
+      assert_reply ref, :error, %{reason: :invalid_request}
+    end
+  end
+
   describe "the read-only demo room" do
     test "joining seeds it on demand and replies read-only", %{} do
       refute Rooms.room_exists?("chess")

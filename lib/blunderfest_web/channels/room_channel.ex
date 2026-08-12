@@ -22,7 +22,7 @@ defmodule BlunderfestWeb.RoomChannel do
 
   use BlunderfestWeb, :channel
 
-  alias Blunderfest.{DemoRoom, Ops, Profiles, Rooms}
+  alias Blunderfest.{DemoRoom, GameAnalysis, Ops, Profiles, Rooms}
 
   @impl true
   def join("room:" <> slug, params, socket) do
@@ -100,6 +100,19 @@ defmodule BlunderfestWeb.RoomChannel do
     end
   end
 
+  # A whole-game analysis request: editors only. The job evals each mainline
+  # position on the engine pool and appends a `set_analysis` op when done.
+  @impl true
+  def handle_in("analyze_game", %{"game_id" => game_id, "positions" => positions}, socket) do
+    with :ok <- check_can_edit(socket),
+         {:ok, positions} <- validate_positions(positions),
+         :ok <- GameAnalysis.start(socket.assigns.slug, game_id, positions) do
+      {:reply, :ok, socket}
+    else
+      {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
+    end
+  end
+
   @impl true
   def handle_in("set_role", %{"member_id" => member_id, "role" => role}, socket) do
     case Rooms.set_role(
@@ -124,6 +137,31 @@ defmodule BlunderfestWeb.RoomChannel do
     op = Map.merge(op, %{"author" => socket.assigns.profile_id})
     Rooms.submit_op(socket.assigns.slug, socket.assigns.profile_id, op)
   end
+
+  defp check_can_edit(socket) do
+    if Rooms.can_edit?(socket.assigns.slug, socket.assigns.profile_id) do
+      :ok
+    else
+      {:error, :forbidden}
+    end
+  end
+
+  # [{ply, fen}] for the analysis job: bounded, shaped.
+  defp validate_positions(positions) when is_list(positions) and length(positions) <= 200 do
+    if Enum.all?(positions, &valid_position?/1) do
+      {:ok, Enum.map(positions, fn %{"ply" => ply, "fen" => fen} -> {ply, fen} end)}
+    else
+      {:error, :invalid_request}
+    end
+  end
+
+  defp validate_positions(_), do: {:error, :invalid_request}
+
+  defp valid_position?(%{"ply" => ply, "fen" => fen}) do
+    is_integer(ply) and ply >= 0 and is_binary(fen) and byte_size(fen) <= 128
+  end
+
+  defp valid_position?(_), do: false
 
   defp string_to_role("collaborator"), do: :collaborator
   defp string_to_role("viewer"), do: :viewer

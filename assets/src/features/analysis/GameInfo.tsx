@@ -5,7 +5,15 @@ import { downloadPgn } from '@/features/analysis/pgnExport';
 import { type GameTree, saveToLibrary } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
 
-export default function GameInfo({ tree }: { tree: GameTree }) {
+export default function GameInfo({
+  tree,
+  onAnalyze,
+  analyzing = null,
+}: {
+  tree: GameTree;
+  onAnalyze?: () => void;
+  analyzing?: { done: number; total: number } | null;
+}) {
   const { t } = useTranslation();
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
@@ -50,11 +58,11 @@ export default function GameInfo({ tree }: { tree: GameTree }) {
         <dt className="m-0 text-faint">{t('import.variations')}</dt>
         <dd className="m-0 text-ink tabular-nums">{tree.node_count}</dd>
       </dl>
-      <div className="flex gap-2 border-t border-line p-2">
+      <div className="flex flex-wrap gap-2 border-t border-line p-2">
         <button
           type="button"
           id="export-pgn-button"
-          className={button({ intent: 'quiet', size: 'sm', block: true })}
+          className={button({ intent: 'quiet', size: 'sm' })}
           onClick={() => downloadPgn(tree)}
         >
           {t('room.exportPgn')}
@@ -62,7 +70,7 @@ export default function GameInfo({ tree }: { tree: GameTree }) {
         <button
           type="button"
           id="save-to-library-button"
-          className={button({ intent: 'quiet', size: 'sm', block: true })}
+          className={button({ intent: 'quiet', size: 'sm' })}
           onClick={() => void handleSave()}
           disabled={saveState === 'saving'}
         >
@@ -72,6 +80,19 @@ export default function GameInfo({ tree }: { tree: GameTree }) {
               ? t('room.saveLibraryError')
               : t('room.saveToLibrary')}
         </button>
+        {onAnalyze !== undefined && (
+          <button
+            type="button"
+            id="analyze-game-button"
+            className={button({ intent: 'quiet', size: 'sm' })}
+            onClick={onAnalyze}
+            disabled={analyzing !== null}
+          >
+            {analyzing !== null
+              ? t('room.analyzing', { done: analyzing.done, total: analyzing.total })
+              : t('room.analyzeGame')}
+          </button>
+        )}
       </div>
     </section>
   );

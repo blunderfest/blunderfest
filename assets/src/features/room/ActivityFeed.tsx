@@ -18,6 +18,8 @@ function opLabel(t: TFunction, op: Op): string {
       return t('room.annotate');
     case 'set_position':
       return t('room.setup');
+    case 'set_analysis':
+      return t('room.analysis');
     default:
       return '';
   }
@@ -35,6 +37,8 @@ function opIcon(op: Op): string {
       return '⚙';
     case 'set_annotations':
       return '✏️';
+    case 'set_analysis':
+      return '📈';
     default:
       return '•';
   }

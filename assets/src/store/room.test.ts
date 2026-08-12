@@ -209,6 +209,8 @@ describe('room slice', () => {
       annotations: {},
       region: null,
       readOnly: false,
+      analysis: {},
+      analysisProgress: null,
     });
   });
 
@@ -225,6 +227,8 @@ describe('room slice', () => {
         annotations: {},
         region: 'ord',
         readOnly: true,
+      analysis: {},
+      analysisProgress: null,
       },
       enterRoom({ slug: 'room-123' }),
     );
@@ -239,6 +243,8 @@ describe('room slice', () => {
       annotations: {},
       region: null,
       readOnly: false,
+      analysis: {},
+      analysisProgress: null,
     });
   });
 
@@ -255,6 +261,8 @@ describe('room slice', () => {
         annotations: {},
         region: 'ord',
         readOnly: true,
+      analysis: {},
+      analysisProgress: null,
       },
       leaveRoom(),
     );
@@ -269,6 +277,8 @@ describe('room slice', () => {
       annotations: {},
       region: null,
       readOnly: false,
+      analysis: {},
+      analysisProgress: null,
     });
   });
 

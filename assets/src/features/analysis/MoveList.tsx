@@ -2,8 +2,10 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
 import { button, panel } from '@/components/ui';
+import { evalText, moveMark } from '@/features/analysis/evalMarks';
 import type { Row } from '@/features/analysis/moveList';
 import type { GameNode } from '@/lib/api';
+import type { AnalysisEval } from '@/protocol/ops';
 
 const moveButton = tv({
   base: 'rounded-control px-1.5 py-0.5 font-mono transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-gold-hi',
@@ -41,6 +43,8 @@ function MoveButton({
   tabIndex,
   onSelect,
   onFocusMove,
+  evaluation,
+  before,
 }: {
   node: GameNode;
   selected: boolean;
@@ -49,9 +53,18 @@ function MoveButton({
   tabIndex: 0 | -1;
   onSelect: (id: number) => void;
   onFocusMove: (id: number) => void;
+  /** The eval after this move, when an analysis exists. */
+  evaluation?: AnalysisEval;
+  /** The eval before this move (for the quality mark). */
+  before?: AnalysisEval;
 }) {
   const { t } = useTranslation();
   const isSetup = node.san === null;
+  const mark =
+    evaluation !== undefined && before !== undefined
+      ? moveMark(before.score, evaluation.score, node.ply % 2 === 1)
+      : null;
+  const markClass = mark === '??' ? 'text-bad-hi' : mark === '?' ? 'text-gold-hi' : 'text-muted';
   return (
     <button
       type="button"
@@ -70,6 +83,12 @@ function MoveButton({
       ) : (
         <>
           {showNumber && <span className="text-faint">{moveNumber(node)}</span>} {node.san}
+          {mark !== null && <span className={`font-bold ${markClass}`}>{mark}</span>}
+          {evaluation !== undefined && (
+            <span className="ml-0.5 text-micro text-faint tabular-nums">
+              {evalText(evaluation.score)}
+            </span>
+          )}
           {node.comment !== null && <CommentDot />}
         </>
       )}
@@ -185,6 +204,7 @@ export default function MoveList({
   navTargets,
   currentPly,
   totalPly,
+  evalsByPly,
 }: {
   rows: Row[];
   currentId: number | null;
@@ -192,6 +212,8 @@ export default function MoveList({
   navTargets: { first: number; prev: number | null; next: number | null; last: number | null };
   currentPly: number;
   totalPly: number;
+  /** Mainline evals by ply, when a whole-game analysis exists (ADR-0009). */
+  evalsByPly?: Record<number, AnalysisEval>;
 }) {
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -281,6 +303,8 @@ export default function MoveList({
                 tabIndex={row.white.id === activeOptionId ? 0 : -1}
                 onSelect={onSelect}
                 onFocusMove={setListFocusId}
+                evaluation={evalsByPly?.[row.white.ply]}
+                before={evalsByPly?.[row.white.ply - 1]}
               />
               {row.white.comment && (
                 <div className="basis-full border-l-2 border-line-strong pl-2 text-note italic text-muted">
@@ -296,6 +320,8 @@ export default function MoveList({
                   tabIndex={row.black.id === activeOptionId ? 0 : -1}
                   onSelect={onSelect}
                   onFocusMove={setListFocusId}
+                  evaluation={evalsByPly?.[row.black.ply]}
+                  before={evalsByPly?.[row.black.ply - 1]}
                 />
               )}
               {row.black?.comment && (

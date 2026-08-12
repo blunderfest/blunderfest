@@ -1,6 +1,7 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { GameNode, GameTree } from '@/lib/api';
 import type {
+  AnalysisEval,
   CommentAtPlyOp,
   DrawnArrow,
   DrawnHighlight,
@@ -46,6 +47,10 @@ export type RoomState = {
    * server rejects every op — clients don't even send cursor updates.
    */
   readOnly: boolean;
+  /** Whole-game engine analysis per game (ADR-0009), from `set_analysis` ops. */
+  analysis: Record<string, { depth: number; evals: AnalysisEval[] }>;
+  /** Live progress of a running analysis job (transient broadcast). */
+  analysisProgress: { gameId: string; done: number; total: number } | null;
 };
 
 const initialState: RoomState = {
@@ -59,6 +64,8 @@ const initialState: RoomState = {
   annotations: {},
   region: null,
   readOnly: false,
+  analysis: {},
+  analysisProgress: null,
 };
 
 /**
@@ -432,6 +439,8 @@ const roomSlice = createSlice({
       state.annotations = {};
       state.region = null;
       state.readOnly = false;
+      state.analysis = {};
+      state.analysisProgress = null;
     },
     leaveRoom(state) {
       state.slug = null;
@@ -444,12 +453,20 @@ const roomSlice = createSlice({
       state.annotations = {};
       state.region = null;
       state.readOnly = false;
+      state.analysis = {};
+      state.analysisProgress = null;
     },
     setRoles(state, action: PayloadAction<Record<string, MemberRole>>) {
       state.roles = action.payload;
     },
     setReadOnly(state, action: PayloadAction<boolean>) {
       state.readOnly = action.payload;
+    },
+    setAnalysisProgress(
+      state,
+      action: PayloadAction<{ gameId: string; done: number; total: number } | null>,
+    ) {
+      state.analysisProgress = action.payload;
     },
     setRegion(state, action: PayloadAction<string | null>) {
       state.region = action.payload;
@@ -462,6 +479,15 @@ const roomSlice = createSlice({
       const lastSeq = state.ops.length > 0 ? state.ops[state.ops.length - 1].seq : -1;
       if (op.seq > lastSeq) {
         state.ops.push(op);
+        if (op.type === 'set_analysis') {
+          state.analysis[op.payload.game_id] = {
+            depth: op.payload.depth,
+            evals: op.payload.evals,
+          };
+          if (state.analysisProgress?.gameId === op.payload.game_id) {
+            state.analysisProgress = null;
+          }
+        }
         if (op.type === 'set_game') {
           state.games[gameIdOf(op)] = op.payload.tree;
         }
@@ -493,7 +519,15 @@ const roomSlice = createSlice({
       state.games = {};
       state.lastPlayed = {};
       state.annotations = {};
+      state.analysis = {};
+      state.analysisProgress = null;
       for (const op of state.ops) {
+        if (op.type === 'set_analysis') {
+          state.analysis[op.payload.game_id] = {
+            depth: op.payload.depth,
+            evals: op.payload.evals,
+          };
+        }
         if (op.type === 'set_game') {
           state.games[gameIdOf(op)] = op.payload.tree;
         }
@@ -539,6 +573,7 @@ export const {
   setReadOnly,
   setRegion,
   setMemberRole,
+  setAnalysisProgress,
   applyOp,
   replayOps,
   joinMember,

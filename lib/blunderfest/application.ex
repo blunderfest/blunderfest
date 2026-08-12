@@ -23,6 +23,10 @@ defmodule Blunderfest.Application do
       {DNSCluster, query: Application.get_env(:blunderfest, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Blunderfest.PubSub},
       BlunderfestWeb.Presence,
+      # The engine pool (Stockfish binaries over UCI ports) and the per-room
+      # analysis-job registry (ADR-0009).
+      {Registry, keys: :unique, name: Blunderfest.AnalysisJobs},
+      Blunderfest.Engine.Pool,
       # Evicts idle, empty rooms so the room cap can't be exhausted by
       # abandoned ones. After Presence: it reads it.
       BlunderfestWeb.RoomSweeper,

@@ -24,7 +24,7 @@ import { useCursor } from '@/features/analysis/useCursor';
 import { useEngine } from '@/features/analysis/useEngine';
 import { usePositionEditor } from '@/features/analysis/usePositionEditor';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
-import type { CommentAtPlyOp, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
+import type { AnalysisEval, CommentAtPlyOp, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
 import { type BoardAnnotations, setupPlyFromFen } from '@/store/room';
 
 export default function Analysis({
@@ -43,6 +43,9 @@ export default function Analysis({
   onSetPosition,
   annotations = {},
   onAnnotations,
+  onAnalyze,
+  analyzing = null,
+  analysis = null,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -63,6 +66,12 @@ export default function Analysis({
   /** Board drawings for the active game, keyed by node id. */
   annotations?: Record<number, BoardAnnotations>;
   onAnnotations?: (set: BoardAnnotations, nodeId: number) => void;
+  /** Request a whole-game engine analysis (editors; omitted otherwise). */
+  onAnalyze?: () => void;
+  /** Live progress of a running job, when this game is being analyzed. */
+  analyzing?: { done: number; total: number } | null;
+  /** Mainline evals from the latest completed analysis (ADR-0009). */
+  analysis?: AnalysisEval[] | null;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
@@ -279,6 +288,12 @@ export default function Analysis({
   }
 
   const rows = useMemo(() => buildRows(tree), [tree]);
+
+  /** Mainline evals by ply, for the move list. */
+  const evalsByPly = useMemo(
+    () => Object.fromEntries((analysis ?? []).map((evaluation) => [evaluation.ply, evaluation])),
+    [analysis],
+  );
 
   const handleFlip = useCallback(() => setFlipped((value) => !value), []);
   const openComment = useCallback(() => setCommentOpen(true), []);
@@ -618,8 +633,9 @@ export default function Analysis({
                       }}
                       currentPly={current.ply}
                       totalPly={tree.mainline_ply_count}
+                      evalsByPly={evalsByPly}
                     />
-                    <GameInfo tree={tree} />
+                    <GameInfo tree={tree} onAnalyze={onAnalyze} analyzing={analyzing} />
                   </>
                 ),
               },

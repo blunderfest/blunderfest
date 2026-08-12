@@ -229,6 +229,9 @@
     "saveToLibrary": "Save to library",
     "savedToLibrary": "Saved ✓",
     "saveLibraryError": "Couldn't save",
+    "analyzeGame": "Analyze game",
+    "analyzing": "Analyzing {{done}}/{{total}}…",
+    "analysis": "Engine analysis complete",
     "notFoundTitle": "Room not found",
     "notFound": "No room answers to this code. Codes are 5 characters and never contain i, l, o, 0 or 1 — it may have been mistyped, or the room expired.",
     "backHome": "Back to home"

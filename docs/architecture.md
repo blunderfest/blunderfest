@@ -39,6 +39,12 @@ release and served by a catch-all (`SpaController`).
     legality and SAN are computed client-side (chess.js); the server checks
     op shape, not chess rules.
   - `lichess.ex` — fetches PGNs from Lichess for URL imports.
+  - `engine/pool.ex` + `engine/worker.ex` — the batch engine layer
+    (ADR-0009): a pool of Stockfish binaries speaking UCI over Ports,
+    queued with backpressure and crash replacement.
+  - `game_analysis.ex` — whole-game analysis jobs (one per room, registered
+    in `AnalysisJobs`): progress broadcasts, then the evals land as a
+    `set_analysis` op in the room's log.
   - `secrets.ex` — hashing helpers.
 - `lib/blunderfest_web/` — HTTP and channel surface:
   - `router.ex` — `/api` scope: `healthz`, `profiles`, `rooms`, `import/pgn`,
@@ -77,10 +83,12 @@ means an echo was lost or reordered, so the client resyncs by rejoining
 `presence_state` / `presence_diff` carry member names. Ops are type-tagged
 payloads (`move_at_ply`, `comment_at_ply`, `set_game`, `select_game`,
 `set_cursor`, `set_role`, ...) with `seq`, `author`, `ts` — the shared
-vocabulary is mirrored in `assets/src/protocol/ops.ts`. Read-only rooms
-(the demo) are the exception: no presence is tracked and every `op` push is
-rejected with `:read_only`, so clients send nothing and hide the member
-list.
+vocabulary is mirrored in `assets/src/protocol/ops.ts`. `analyze_game` (push, editors
+only) starts a whole-game engine job; progress arrives as transient
+`analysis_progress` events and the result as a `set_analysis` op replayed
+on join like everything else. Read-only rooms (the demo) are the exception:
+no presence is tracked and every `op` push is rejected with `:read_only`,
+so clients send nothing and hide the member list.
 
 ## Frontend (React 19 + Vite + TypeScript)
 

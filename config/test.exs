@@ -19,3 +19,7 @@ config :phoenix,
 
 # Run Lichess requests through Req.Test stubs instead of the network
 config :blunderfest, lichess_req_options: [plug: {Req.Test, Blunderfest.Lichess}]
+
+# The engine pool runs the canned UCI fixture, not a real Stockfish
+config :blunderfest, Blunderfest.Engine.Pool,
+  binary: Path.expand("../test/support/fake_uci_engine.sh", __DIR__)

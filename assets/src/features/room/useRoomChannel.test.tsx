@@ -379,6 +379,8 @@ describe('useRoomChannel', () => {
       annotations: {},
       region: null,
       readOnly: false,
+      analysis: {},
+      analysisProgress: null,
     });
   });
 

@@ -49,7 +49,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Browser Stockfish (lite single-threaded WASM) — instant eval + hint, zero server cost
 - ✅ Floating eval badge at the bar's split point; result display on terminal positions
 - ✅ Opening classification (ECO + name under the players, follows the viewed line incl. variations; lichess book, position-keyed)
-- 🚧 Server-side UCI worker pool: whole-game analysis jobs, per-ply evals, eval-curve chart (ADR-0009; consistent truth for all room members)
+- ✅ Server-side UCI worker pool (ADR-0009): whole-game analysis on demand, per-move evals + quality marks in the move list, results synced to all members as a `set_analysis` op
+- 🚧 Eval-curve chart with blunder/brilliant markers (the "Game Flow" panel from the design explorations)
   - Visual targets from the design explorations (`design/analysis1.html`): "Game Flow" eval curve with blunder/brilliant markers, per-move eval column in the move list, `!!`/`??` row treatments, inline "Engine Top Line" box
 - 💡 Cloud eval cache (share computed evals across users/rooms)
 - 💡 "Learn from this game" report: mistakes, turning points, best-move diffs

@@ -1,6 +1,6 @@
 # ADR-0009: Engine strategy — Stockfish WASM in the browser, server UCI pool for batch
 
-Status: Accepted (2026-08-04) — interactive layer implemented (2026-08-06), batch pool pending
+Status: Accepted (2026-08-04) — interactive layer implemented (2026-08-06), batch pool implemented (2026-08-12)
 
 ## Context
 
@@ -75,3 +75,22 @@ The interactive layer is implemented in the frontend:
 - Verified working in Chromium and Firefox. (An earlier Firefox failure turned
   out to be the content-hashed wasm URL 404ing — the same-stem layout fixed
   all browsers at once.)
+
+### Batch pool (2026-08-12)
+
+- `Blunderfest.Engine.Worker` wraps one Stockfish binary per process (UCI
+  over a Port, `:stream + {:line, 4096}`); `Blunderfest.Engine.Pool` keeps N
+  workers with a FIFO queue and replaces crashed workers. A missing binary
+  degrades to `:engine_unavailable`, never a crash. The binary is found via
+  `STOCKFISH_PATH` or PATH (`stockfish` is installed in the release image).
+- `Blunderfest.GameAnalysis` runs a whole-game job per room (one at a time;
+  registered in the `AnalysisJobs` registry): mainline positions from the
+  requesting client, evaluated at depth 12, progress broadcast transiently
+  (`analysis_progress`), and the result appended as a `set_analysis` op —
+  the op log keeps one truth, so joins replay it like anything else. Scores
+  are stored in white's perspective.
+- Client: editors get an "Analyze game" button in Game Info; the move list
+  shows per-move evals and quality marks (`??`/`?`/`?!` at 300/150/75 cp
+  swings). The activity feed notes completion.
+- Tests use `test/support/fake_uci_engine.sh` (a canned UCI script) for the
+  worker/pool, and the full channel→job→op cycle is covered in channel tests.

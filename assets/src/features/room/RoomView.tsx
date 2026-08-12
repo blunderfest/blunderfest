@@ -45,7 +45,7 @@ export default function RoomView({
   channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
 }) {
   const { t } = useTranslation();
-  const { joined, joinError, sendOp, sendRole } = useRoomChannel(
+  const { joined, joinError, sendOp, sendRole, sendAnalyze } = useRoomChannel(
     slug,
     selfId,
     selfName,
@@ -63,6 +63,7 @@ export default function RoomView({
   const myRole: MemberRole = useAppSelector((state) => selectRoleOf(state.room, selfId));
   const canEdit = useAppSelector((state) => selectCanEdit(state.room, selfId));
   const readOnly = useAppSelector((state) => state.room.readOnly);
+  const analysisProgress = useAppSelector((state) => state.room.analysisProgress);
   const firstGameId = useAppSelector((state) => selectFirstGameId(state.room));
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [followOverride, setFollowOverride] = useState<boolean | null>(null);
@@ -85,6 +86,9 @@ export default function RoomView({
     ? (presenterGameId ?? firstGameId)
     : (activeGameId ?? firstGameId);
   const game = effectiveGameId === null ? null : (games[effectiveGameId] ?? null);
+  const analysis = useAppSelector((state) =>
+    effectiveGameId === null ? undefined : state.room.analysis[effectiveGameId],
+  );
   const lastPlayedId = useAppSelector((state) => selectLastPlayed(state.room, effectiveGameId));
   const gameAnnotations = useAppSelector((state) =>
     effectiveGameId !== null
@@ -180,6 +184,35 @@ export default function RoomView({
   function handleSetRole(memberId: string, role: MemberRole) {
     sendRole(memberId, role);
   }
+
+  /** Whole-game analysis (ADR-0009): the mainline positions go to the engine pool. */
+  function handleAnalyze() {
+    if (effectiveGameId === null) {
+      return;
+    }
+    const currentTree = games[effectiveGameId];
+    if (currentTree === undefined) {
+      return;
+    }
+    const positions: { ply: number; fen: string }[] = [];
+    let node = currentTree.root;
+    while (true) {
+      if (node.fen !== null) {
+        positions.push({ ply: node.ply, fen: node.fen });
+      }
+      const next = node.children[0];
+      if (next === undefined) {
+        break;
+      }
+      node = next;
+    }
+    sendAnalyze(effectiveGameId, positions);
+  }
+
+  const analyzing =
+    analysisProgress !== null && analysisProgress.gameId === effectiveGameId
+      ? analysisProgress
+      : null;
 
   const noGames = Object.keys(games).length === 0;
 
@@ -320,6 +353,9 @@ export default function RoomView({
               onSetPosition={handleSetPosition}
               annotations={gameAnnotations}
               onAnnotations={handleAnnotations}
+              onAnalyze={canEdit ? handleAnalyze : undefined}
+              analyzing={analyzing}
+              analysis={analysis?.evals ?? null}
             />
           )}
         </section>

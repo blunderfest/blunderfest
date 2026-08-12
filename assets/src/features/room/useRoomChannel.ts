@@ -10,6 +10,7 @@ import {
   leaveMember,
   leaveRoom,
   replayOps,
+  setAnalysisProgress,
   setMemberRole,
   setReadOnly,
   setRegion,
@@ -118,6 +119,20 @@ export function useRoomChannel(
         });
       }
     });
+    channel.on(
+      'analysis_progress',
+      (progress: { game_id: string; done: number; total: number }) => {
+        if (channelRef.current === channel) {
+          dispatch(
+            setAnalysisProgress({
+              gameId: progress.game_id,
+              done: progress.done,
+              total: progress.total,
+            }),
+          );
+        }
+      },
+    );
 
     channel
       .join()
@@ -184,5 +199,10 @@ export function useRoomChannel(
     channelRef.current?.push('set_role', { member_id: memberId, role });
   }, []);
 
-  return { joined, joinError, sendOp, sendRole };
+  /** Requests a whole-game engine analysis (ADR-0009); the result arrives as a set_analysis op. */
+  const sendAnalyze = useCallback((gameId: string, positions: { ply: number; fen: string }[]) => {
+    channelRef.current?.push('analyze_game', { game_id: gameId, positions });
+  }, []);
+
+  return { joined, joinError, sendOp, sendRole, sendAnalyze };
 }

@@ -99,6 +99,22 @@ export type SetPositionOp = OpBase & {
   payload: { game_id: string; parent_id: number; fen: string };
 };
 
+/**
+ * A whole-game engine analysis (ADR-0009): appended by the server when a
+ * job completes — one op carries every mainline eval. `score` is from
+ * white's perspective; null when the engine couldn't evaluate that ply.
+ */
+export type AnalysisEval = {
+  ply: number;
+  score: { cp?: number; mate?: number } | null;
+  best_move: string | null;
+};
+
+export type SetAnalysisOp = OpBase & {
+  type: 'set_analysis';
+  payload: { game_id: string; depth: number; evals: AnalysisEval[] };
+};
+
 export type Op =
   | SetGameOp
   | SelectGameOp
@@ -107,7 +123,8 @@ export type Op =
   | CommentAtPlyOp
   | SetAnnotationsOp
   | SetCursorOp
-  | SetPositionOp;
+  | SetPositionOp
+  | SetAnalysisOp;
 
 export type PresenceMember = {
   id: string;
