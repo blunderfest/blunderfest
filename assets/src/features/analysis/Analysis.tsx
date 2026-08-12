@@ -386,7 +386,6 @@ export default function Analysis({
             black's side, white on white's — swapped when flipped), like
             lichess's editor. No scroll strip.
           */}
-          {editor.editing && <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} />}
           <div className="flex items-stretch gap-3">
             {/*
               Fixed-width slot for the eval bar / edit palette: it keeps its
@@ -406,32 +405,60 @@ export default function Analysis({
                 />
               ) : null}
             </div>
-            <Board
-              position={editor.editing ? editor.editPos : parseFen(current.fen ?? '')}
-              lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
-              flipped={flipped}
-              label={boardLabel}
-              interactive={editor.editing || canPlay || canEdit}
-              selected={editor.editing ? editor.editSelected : selected}
-              legalTargets={editor.editing ? [] : legalTargets}
-              arrows={editor.editing ? [] : boardArrows}
-              highlights={editor.editing ? [] : nodeAnnotations.highlights}
-              checkSquare={editor.editing ? null : checkSquare}
-              onSquareClick={
-                editor.editing
-                  ? editor.handleEditSquareClick
-                  : canPlay
-                    ? handleSquareClick
-                    : undefined
-              }
-              onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
-              onDrawArrow={canEdit && !editor.editing ? handleDrawArrow : undefined}
-              onToggleHighlight={canEdit && !editor.editing ? handleToggleHighlight : undefined}
-              drawColor={drawColor}
-              onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
-            />
+            {/*
+              The strips live in the board's own column, so the trays align
+              exactly with the board's edges on both axes.
+            */}
+            <div className="flex flex-col items-center gap-2">
+              {editor.editing && (
+                <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} side="top" />
+              )}
+              <Board
+                position={editor.editing ? editor.editPos : parseFen(current.fen ?? '')}
+                lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
+                flipped={flipped}
+                label={boardLabel}
+                interactive={editor.editing || canPlay || canEdit}
+                selected={editor.editing ? editor.editSelected : selected}
+                legalTargets={editor.editing ? [] : legalTargets}
+                arrows={editor.editing ? [] : boardArrows}
+                highlights={editor.editing ? [] : nodeAnnotations.highlights}
+                checkSquare={editor.editing ? null : checkSquare}
+                onSquareClick={
+                  editor.editing
+                    ? editor.handleEditSquareClick
+                    : canPlay
+                      ? handleSquareClick
+                      : undefined
+                }
+                onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
+                onDrawArrow={canEdit && !editor.editing ? handleDrawArrow : undefined}
+                onToggleHighlight={canEdit && !editor.editing ? handleToggleHighlight : undefined}
+                drawColor={drawColor}
+                onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
+              />
+              {editor.editing && (
+                <div className="relative flex w-full justify-center">
+                  <PaletteStrip editor={editor} color={flipped ? 'b' : 'w'} side="bottom" />
+                  {/* The eraser stands apart, flush with the board's right edge. */}
+                  <button
+                    type="button"
+                    aria-pressed={editor.editBrush === 'erase'}
+                    aria-label={t('analysis.eraser')}
+                    data-testid="eraser-button"
+                    className={`absolute right-0 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-control border text-base transition-colors ${
+                      editor.editBrush === 'erase'
+                        ? 'border-gold/60 bg-gold/20 text-gold-hi'
+                        : 'border-line bg-panel text-muted hover:bg-raised'
+                    }`}
+                    onClick={() => editor.toggleBrush('erase')}
+                  >
+                    ⌫
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          {editor.editing && <PaletteStrip editor={editor} color={flipped ? 'b' : 'w'} eraser />}
           {editor.editing && (
             <div
               className="flex w-[min(90vw,34rem)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
@@ -651,11 +678,11 @@ function lastChildOf(node: GameNode): GameNode {
 function PaletteStrip({
   editor,
   color,
-  eraser = false,
+  side,
 }: {
   editor: ReturnType<typeof usePositionEditor>;
   color: 'w' | 'b';
-  eraser?: boolean;
+  side: 'top' | 'bottom';
 }) {
   const { t } = useTranslation();
   // The tray uses the light-square tone: black pieces stay readable on the
@@ -663,7 +690,7 @@ function PaletteStrip({
   return (
     <div
       className="flex items-center justify-center gap-1 rounded-control border border-board-edge bg-board-light px-2 py-1 shadow-[0_8px_20px_-12px_rgba(0,0,0,0.8)]"
-      data-testid={eraser ? 'edit-palette' : undefined}
+      data-testid={side === 'top' ? 'edit-palette' : undefined}
     >
       {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
         const active =
@@ -695,19 +722,6 @@ function PaletteStrip({
           </button>
         );
       })}
-      {eraser && (
-        <button
-          type="button"
-          aria-pressed={editor.editBrush === 'erase'}
-          aria-label={t('analysis.eraser')}
-          className={`grid h-9 w-9 place-items-center rounded-control text-base text-[#4a3a20] transition-colors ${
-            editor.editBrush === 'erase' ? 'bg-gold/40 ring-1 ring-gold' : 'hover:bg-board-dark/25'
-          }`}
-          onClick={() => editor.toggleBrush('erase')}
-        >
-          ⌫
-        </button>
-      )}
     </div>
   );
 }
