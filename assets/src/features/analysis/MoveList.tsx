@@ -348,6 +348,7 @@ export default function MoveList({
           type="button"
           id="analysis-first-button"
           className={button({ intent: 'secondary', size: 'icon' })}
+          disabled={currentId === navTargets.first}
           aria-label={t('analysis.first')}
           aria-keyshortcuts="Home"
           onClick={() => onSelect(navTargets.first)}

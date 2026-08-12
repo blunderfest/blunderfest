@@ -135,6 +135,18 @@ describe('MoveList keyboard navigation (listbox pattern)', () => {
   });
 });
 
+describe('MoveList nav buttons', () => {
+  it('disables First while already at the first position', () => {
+    renderList(makeTree(false), 0);
+    expect(screen.getByRole('button', { name: 'First' })).toBeDisabled();
+  });
+
+  it('enables First away from the first position', () => {
+    renderList(makeTree(false), 1);
+    expect(screen.getByRole('button', { name: 'First' })).toBeEnabled();
+  });
+});
+
 describe('MoveList scrolling', () => {
   it('scrolls the current move into view', () => {
     const scrollSpy = vi.fn();

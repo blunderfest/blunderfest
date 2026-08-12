@@ -241,10 +241,6 @@ describe('Analysis', () => {
     render(<Analysis tree={tree} presenterId="p1" selfId="me" presenterCursorId={2} following />);
 
     expect(pieceAt('square-e5')).toBe('bp');
-    expect(screen.getByRole('button', { name: 'Following presenter' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
   });
 
   it('breaks away from the presenter on local navigation', () => {
@@ -278,10 +274,6 @@ describe('Analysis', () => {
       />,
     );
     expect(pieceAt('square-e4')).toBe('wp');
-    expect(screen.getByRole('button', { name: 'Follow presenter' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
   });
 
   it('re-follows the presenter after breaking away', () => {
@@ -297,9 +289,8 @@ describe('Analysis', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Follow presenter' }));
-
-    expect(onFollowChange).toHaveBeenCalledWith(true);
+    // Re-following is driven by the parent (the follow toggle lives in the
+    // member list); once `following` flips back, the presenter cursor wins.
     rerender(
       <Analysis
         tree={tree}
@@ -311,10 +302,6 @@ describe('Analysis', () => {
       />,
     );
     expect(pieceAt('square-f3')).toBe('wn');
-    expect(screen.getByRole('button', { name: 'Following presenter' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
   });
 
   it('broadcasts navigation while presenting', () => {
@@ -324,14 +311,6 @@ describe('Analysis', () => {
     expect(onCursorChange).toHaveBeenCalledWith(4);
     fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
     expect(onCursorChange).toHaveBeenCalledWith(2);
-    expect(screen.getByText(/You are presenting/)).toBeInTheDocument();
-  });
-
-  it('shows no follow button without a presenter', () => {
-    renderAnalysis();
-
-    expect(screen.queryByRole('button', { name: 'Follow presenter' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Following presenter' })).not.toBeInTheDocument();
   });
 
   it('lets an editor play a move from the board', async () => {
@@ -394,8 +373,6 @@ describe('Analysis', () => {
 
     await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(1));
     expect(onCursorChange).not.toHaveBeenCalled();
-    expect(screen.queryByText('You are presenting')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Follow presenter' })).toBeInTheDocument();
   });
 
   it('stays on a played move before and after the echo applies it', async () => {

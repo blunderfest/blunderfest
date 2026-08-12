@@ -102,7 +102,6 @@ export default function Analysis({
     });
   }
 
-  const presenterActive = presenterId !== null;
   const amPresenter = selfId !== null && selfId === presenterId;
 
   const byId = useMemo(() => buildNodeMap(tree), [tree]);
@@ -416,6 +415,7 @@ export default function Analysis({
                   eval={engineState.eval}
                   thinking={engineState.status === 'thinking'}
                   unavailable={engineState.status === 'error'}
+                  flipped={flipped}
                   label={evalBarLabel}
                 />
               ) : null}
@@ -558,11 +558,7 @@ export default function Analysis({
           </p>
           <BoardControls
             flipped={flipped}
-            presenterActive={presenterActive}
-            amPresenter={amPresenter}
-            following={following}
             onFlip={handleFlip}
-            onFollowChange={onFollowChange ?? (() => {})}
             onOpenComment={canEdit ? openComment : undefined}
             onToggleEdit={
               canEdit && onSetPosition !== undefined

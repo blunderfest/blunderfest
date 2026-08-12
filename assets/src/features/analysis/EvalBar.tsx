@@ -1,21 +1,25 @@
 import { evalLabel, type WhiteEval, whiteShare } from '@/features/analysis/uci';
 
 /**
- * Vertical eval bar per the design spec: white's share (gradient) from the
- * top, a tick at 50%, a gold sweep while the engine thinks, and a dimmed "?"
- * when the engine is unavailable. The value badge floats inside the bar at
- * the white/black split point. Height is inherited from the flex row that
- * wraps it beside the board.
+ * Vertical eval bar per the design spec: white's share (gradient) grows from
+ * white's side of the board — from the bottom normally, from the top when
+ * the board is flipped, like lichess. A tick at 50%, a gold sweep while the
+ * engine thinks, and a dimmed "?" when the engine is unavailable. The value
+ * badge floats inside the bar at the white/black split point. Height is
+ * inherited from the flex row that wraps it beside the board.
  */
 export default function EvalBar({
   eval: white,
   thinking = false,
   unavailable = false,
+  flipped = false,
   label,
 }: {
   eval: WhiteEval | null;
   thinking?: boolean;
   unavailable?: boolean;
+  /** Board orientation: white's share anchors to white's side of the board. */
+  flipped?: boolean;
   label: string;
 }) {
   const share = whiteShare(white);
@@ -29,9 +33,17 @@ export default function EvalBar({
           unavailable ? 'opacity-20' : ''
         }`}
       >
-        <div className="absolute inset-0 flex flex-col overflow-hidden rounded-[5px]">
+        <div
+          className={`absolute inset-0 flex overflow-hidden rounded-[5px] ${
+            flipped ? 'flex-col' : 'flex-col-reverse'
+          }`}
+        >
           <div
-            className="w-full bg-gradient-to-b from-[#f4f6fb] to-[#c9cedb] transition-[height] duration-[420ms] ease-calm"
+            className={`w-full transition-[height] duration-[420ms] ease-calm ${
+              flipped
+                ? 'bg-gradient-to-b from-[#f4f6fb] to-[#c9cedb]'
+                : 'bg-gradient-to-t from-[#f4f6fb] to-[#c9cedb]'
+            }`}
             style={{ height: `${share}%` }}
             data-testid="eval-white"
           />
@@ -46,7 +58,7 @@ export default function EvalBar({
             className={`absolute left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-chip border border-white/20 bg-background/90 px-1 py-0.5 text-[10px] font-semibold tabular-nums backdrop-blur-sm ${
               thinking ? 'text-faint' : 'text-ink'
             }`}
-            style={{ top: `${share}%` }}
+            style={{ top: `${flipped ? share : 100 - share}%` }}
             data-testid="eval-label"
           >
             {evalLabel(white)}

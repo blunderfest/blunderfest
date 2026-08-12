@@ -3,17 +3,13 @@ import { DRAW_COLORS } from '@/components/board';
 import { button } from '@/components/ui';
 
 /**
- * Board-level actions shown under the board: flip, follow/present state,
- * comment, position editing, engine toggle. Move navigation lives in the
- * move list footer.
+ * Board-level actions shown under the board: flip, comment, position
+ * editing, drawing tools. Move navigation lives in the move list footer;
+ * the follow/present state lives in the member list.
  */
 export default function BoardControls({
   flipped,
-  presenterActive,
-  amPresenter,
-  following,
   onFlip,
-  onFollowChange,
   onOpenComment,
   onToggleEdit,
   editing = false,
@@ -22,11 +18,7 @@ export default function BoardControls({
   onShowShortcuts,
 }: {
   flipped: boolean;
-  presenterActive: boolean;
-  amPresenter: boolean;
-  following: boolean;
   onFlip: () => void;
-  onFollowChange: (following: boolean) => void;
   onOpenComment?: () => void;
   onToggleEdit?: () => void;
   editing?: boolean;
@@ -53,18 +45,6 @@ export default function BoardControls({
       >
         ⇅ {t('analysis.flip')}
       </button>
-      {presenterActive && !amPresenter && (
-        <button
-          type="button"
-          id="analysis-follow-button"
-          className={`${button({ intent: 'ghost', size: 'sm', active: following })} min-w-[10rem]`}
-          aria-label={following ? t('analysis.following') : t('analysis.follow')}
-          aria-pressed={following}
-          onClick={() => onFollowChange(!following)}
-        >
-          {following ? `⇢ ${t('analysis.following')}` : t('analysis.follow')}
-        </button>
-      )}
       {onOpenComment !== undefined && (
         <button
           type="button"
@@ -116,12 +96,13 @@ export default function BoardControls({
         <button
           type="button"
           data-testid="clear-drawings-button"
-          className={button({ intent: 'ghost', size: 'sm' })}
+          className={button({ intent: 'ghost', size: 'icon' })}
           aria-label={t('analysis.clearDrawings')}
+          title={t('analysis.clearDrawings')}
           disabled={clearDrawings.disabled}
           onClick={clearDrawings.onClear}
         >
-          ⌫ {t('analysis.clearDrawings')}
+          ⌫
         </button>
       )}
       {onShowShortcuts !== undefined && (
@@ -134,11 +115,6 @@ export default function BoardControls({
         >
           ?
         </button>
-      )}
-      {amPresenter && (
-        <p className="m-0 text-note text-muted" role="status">
-          ◉ {t('analysis.presenting')}
-        </p>
       )}
     </div>
   );

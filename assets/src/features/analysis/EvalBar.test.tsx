@@ -25,4 +25,13 @@ describe('EvalBar', () => {
     const white = screen.getByTestId('eval-white');
     expect(white.style.height).toBe('62%');
   });
+
+  it('anchors white to the bottom by default and to the top when flipped', () => {
+    const { rerender } = render(<EvalBar eval={{ type: 'cp', cp: 200 }} label="" />);
+    // White's share is 62%: the split sits 38% from the top by default…
+    expect(screen.getByTestId('eval-label').style.top).toBe('38%');
+    // …and 62% from the top with a flipped board (black at the bottom).
+    rerender(<EvalBar eval={{ type: 'cp', cp: 200 }} label="" flipped />);
+    expect(screen.getByTestId('eval-label').style.top).toBe('62%');
+  });
 });

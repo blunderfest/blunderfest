@@ -279,6 +279,8 @@ export default function RoomView({
               presenterId={presenter?.id ?? null}
               myRole={myRole}
               selfId={selfId}
+              following={following}
+              onFollowChange={setFollowOverride}
               onSetRole={handleSetRole}
             />
           )}

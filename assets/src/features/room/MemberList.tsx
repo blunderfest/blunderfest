@@ -48,6 +48,8 @@ export default function MemberList({
   presenterId,
   myRole,
   selfId,
+  following,
+  onFollowChange,
   onSetRole,
 }: {
   members: PresenceMember[];
@@ -55,6 +57,9 @@ export default function MemberList({
   presenterId: string | null;
   myRole: MemberRole;
   selfId: string | null;
+  /** Whether we are mirroring the presenter's board right now. */
+  following: boolean;
+  onFollowChange: (following: boolean) => void;
   onSetRole: (memberId: string, role: MemberRole) => void;
 }) {
   const { t } = useTranslation();
@@ -98,6 +103,18 @@ export default function MemberList({
               </span>
               {member.id === presenterId && (
                 <span className={chip({ tone: 'gold' })}>{t('room.presenting')}</span>
+              )}
+              {member.id === presenterId && member.id !== selfId && (
+                <button
+                  type="button"
+                  data-testid="follow-presenter-button"
+                  className={button({ intent: 'quiet', size: 'xs', active: following })}
+                  aria-label={following ? t('room.following') : t('room.follow')}
+                  aria-pressed={following}
+                  onClick={() => onFollowChange(!following)}
+                >
+                  {following ? `⇢ ${t('room.followingShort')}` : t('room.followShort')}
+                </button>
               )}
               {myRole === 'owner' && member.id !== selfId && role !== 'owner' && (
                 <button
