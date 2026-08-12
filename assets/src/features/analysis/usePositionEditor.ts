@@ -35,6 +35,7 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
   const paletteListeners = useRef<{
     move: (e: PointerEvent) => void;
     up: (e: PointerEvent) => void;
+    cancel: (e: PointerEvent) => void;
   } | null>(null);
 
   // Palette drags attach window listeners; release them on unmount.
@@ -44,6 +45,7 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
       if (listeners !== null) {
         window.removeEventListener('pointermove', listeners.move);
         window.removeEventListener('pointerup', listeners.up);
+        window.removeEventListener('pointercancel', listeners.cancel);
       }
     };
   }, []);
@@ -119,21 +121,40 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
    * still toggles the brush (the release lands on the palette, not the
    * board, so nothing is placed).
    */
+  /**
+   * Palette drags: a drag starts only once the pointer moves a few pixels,
+   * so a plain tap is a clean select/deselect (the button's onClick) with
+   * no ghost flash — and a selected piece places on every square tap.
+   */
   function handlePalettePointerDown(piece: Piece, event: React.PointerEvent) {
     if (event.button !== 0) {
       return;
     }
-    setEditBrush(piece);
-    setPaletteGhost({ piece, x: event.clientX, y: event.clientY });
+    const startX = event.clientX;
+    const startY = event.clientY;
+    let dragging = false;
 
-    const onMove = (move: PointerEvent) => {
-      setPaletteGhost({ piece, x: move.clientX, y: move.clientY });
-    };
-    const onUp = (up: PointerEvent) => {
+    const cleanup = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
       paletteListeners.current = null;
       setPaletteGhost(null);
+    };
+    const onMove = (move: PointerEvent) => {
+      if (!dragging && Math.hypot(move.clientX - startX, move.clientY - startY) > 6) {
+        dragging = true;
+        setEditBrush(piece);
+      }
+      if (dragging) {
+        setPaletteGhost({ piece, x: move.clientX, y: move.clientY });
+      }
+    };
+    const onUp = (up: PointerEvent) => {
+      cleanup();
+      if (!dragging) {
+        return;
+      }
       const board = document.querySelector('[data-board-grid]');
       if (board === null) {
         return;
@@ -150,9 +171,14 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
         setEditPos(next);
       }
     };
-    paletteListeners.current = { move: onMove, up: onUp };
+    // A canceled pointer (the browser took the gesture to scroll the page)
+    // must drop the ghost and listeners, never place the piece.
+    const onCancel = () => cleanup();
+
+    paletteListeners.current = { move: onMove, up: onUp, cancel: onCancel };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
   }
 
   /** The FEN for the edited position, or null (and the error shown) when illegal. */

@@ -685,12 +685,13 @@ function PaletteStrip({
   side: 'top' | 'bottom';
 }) {
   const { t } = useTranslation();
-  // The tray is a step lighter than the page surface: quiet, but the black
-  // pieces still read. Left-aligned (the eraser floats right of the bottom
+  // The tray is a muted slate: quiet against the page, but light enough
+  // that even the solid-black pawn reads. Pieces sit on tiles the size of a
+  // board square. Left-aligned (the eraser floats right of the bottom
   // strip, so centering would overlap it).
   return (
     <div
-      className="flex items-center justify-start gap-1 self-start rounded-control border border-line bg-overlay px-2 py-1"
+      className="flex items-center justify-start gap-1 self-start rounded-control border border-line bg-[#475069] px-2 py-1"
       data-testid={side === 'top' ? 'edit-palette' : undefined}
     >
       {(['k', 'q', 'r', 'b', 'n', 'p'] as const).map((kind) => {
@@ -708,8 +709,8 @@ function PaletteStrip({
               color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
               piece: t(`analysis.pieces.${kind}`),
             })}
-            className={`grid h-9 w-9 place-items-center rounded-control leading-none transition-colors ${
-              active ? 'bg-gold/20 ring-1 ring-gold/50' : 'hover:bg-raised'
+            className={`grid h-[min(calc((100vw-4.75rem)/8),4.25rem)] w-[min(calc((100vw-4.75rem)/8),4.25rem)] place-items-center rounded-control leading-none transition-colors ${
+              active ? 'bg-gold/25 ring-1 ring-gold/60' : 'hover:bg-white/10'
             }`}
             onPointerDown={(event) => editor.handlePalettePointerDown({ color, kind }, event)}
             onClick={() => editor.toggleBrush({ color, kind })}
@@ -718,7 +719,7 @@ function PaletteStrip({
               src={pieceSrc({ color, kind })}
               alt=""
               draggable={false}
-              className="h-7 w-7 select-none"
+              className="h-[85%] w-[85%] select-none"
             />
           </button>
         );

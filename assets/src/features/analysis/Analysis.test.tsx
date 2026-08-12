@@ -855,9 +855,53 @@ describe('position setup (what-if editing)', () => {
       screen.getByRole('button', { name: 'White king' }),
       new MouseEvent('pointerdown', { button: 0, bubbles: true }),
     );
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 30, clientY: 100 }));
     fireEvent(window, new MouseEvent('pointerup', { clientX: 50, clientY: 450 }));
 
     expect(pieceAt('square-a4')).toBe('wk');
+  });
+
+  it('selects a piece on tap and places it on multiple squares', () => {
+    render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    const kingButton = screen.getByRole('button', { name: 'White king' });
+
+    // A tap (pointerdown + up with no movement, then the synthesized
+    // click) selects the piece...
+    fireEvent(kingButton, new MouseEvent('pointerdown', { button: 0, bubbles: true }));
+    fireEvent(window, new MouseEvent('pointerup', {}));
+    fireEvent.click(kingButton);
+    expect(screen.queryByTestId('palette-ghost')).not.toBeInTheDocument();
+    expect(kingButton).toHaveAttribute('aria-pressed', 'true');
+
+    // ...and places a copy on every square tapped.
+    fireEvent.click(screen.getByTestId('square-a4'));
+    fireEvent.click(screen.getByTestId('square-b5'));
+    expect(pieceAt('square-a4')).toBe('wk');
+    expect(pieceAt('square-b5')).toBe('wk');
+
+    // Tapping the palette piece again deselects it.
+    fireEvent.click(kingButton);
+    expect(kingButton).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('drops the drag ghost without placing when the pointer is canceled (page scrolls)', () => {
+    render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    fireEvent(
+      screen.getByRole('button', { name: 'White king' }),
+      new MouseEvent('pointerdown', { button: 0, bubbles: true }),
+    );
+    fireEvent(window, new MouseEvent('pointermove', { clientX: 30, clientY: 100 }));
+    expect(screen.getByTestId('palette-ghost')).toBeInTheDocument();
+
+    // The browser hijacks the gesture to scroll: pointercancel, no pointerup.
+    fireEvent(window, new MouseEvent('pointercancel', {}));
+
+    expect(screen.queryByTestId('palette-ghost')).not.toBeInTheDocument();
+    expect(pieceAt('square-a4')).toBeNull();
   });
 
   it('does not offer edit mode without edit rights', () => {
