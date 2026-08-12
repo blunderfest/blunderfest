@@ -115,6 +115,9 @@ export default function Board({
     fromRightButton: boolean;
   } | null>(null);
   const [drawPreview, setDrawPreview] = useState<{ from: string; to: string } | null>(null);
+  // A same-square draw is a highlight toggle: show it as soon as the
+  // gesture starts (the long-press fires), not only on release.
+  const [highlightPreview, setHighlightPreview] = useState<string | null>(null);
   const [arrowDraft, setArrowDraft] = useState<string | null>(null);
   // A finished long-press draw suppresses the synthetic click that the
   // release still produces, so lifting the finger doesn't also select/move.
@@ -305,6 +308,7 @@ export default function Board({
    */
   function startDraw(from: string, pointerId: number, fromRightButton: boolean) {
     drawRef.current = { from, hover: from, pointerId, fromRightButton };
+    setHighlightPreview(from);
     containerRef.current?.setPointerCapture?.(pointerId);
 
     const finish = (to: string | null) => {
@@ -313,6 +317,7 @@ export default function Board({
       const draw = drawRef.current;
       drawRef.current = null;
       setDrawPreview(null);
+      setHighlightPreview(null);
       if (draw === null || to === null) {
         return;
       }
@@ -341,6 +346,7 @@ export default function Board({
         return;
       }
       draw.hover = pointToSquare(event);
+      setHighlightPreview(draw.hover === draw.from ? draw.from : null);
       setDrawPreview(
         draw.hover !== null && draw.hover !== draw.from
           ? { from: draw.from, to: draw.hover }
@@ -457,7 +463,7 @@ export default function Board({
     <div
       ref={containerRef}
       data-board-grid
-      className={`relative grid aspect-square w-[min(calc(100vw-4.75rem),34rem)] grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [-webkit-touch-callout:none] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
+      className={`relative grid aspect-square w-[min(calc(100vw-4.75rem),34rem)] self-start grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-[0_18px_40px_-24px_rgba(0,0,0,0.95)] [-webkit-touch-callout:none] [container-type:inline-size] ${interactive ? 'touch-none' : ''}`}
       role={interactive ? 'group' : 'img'}
       aria-label={label}
       onKeyDown={handleKeyDown}
@@ -501,6 +507,16 @@ export default function Board({
                 style={{
                   backgroundColor: `${drawnHighlight.color}59`,
                   boxShadow: `inset 0 0 0 2px ${drawnHighlight.color}`,
+                }}
+              />
+            )}
+            {highlightPreview === name && (
+              <div
+                data-testid={`highlight-preview-${name}`}
+                className="pointer-events-none absolute inset-0.5 animate-pulse-soft rounded-sm"
+                style={{
+                  backgroundColor: `${drawColor}59`,
+                  boxShadow: `inset 0 0 0 2px ${drawColor}`,
                 }}
               />
             )}

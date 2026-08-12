@@ -393,7 +393,8 @@ export default function Analysis({
             >
               {editor.editing ? (
                 <fieldset
-                  className="m-0 flex min-w-0 flex-col justify-center gap-1 rounded-control border border-line bg-panel px-1 py-2"
+                  className="m-0 flex min-h-0 min-w-0 flex-col justify-center gap-1 overflow-y-auto rounded-control border border-line bg-panel px-1 py-2"
+                  style={{ maxHeight: 'min(calc(100vw - 4.75rem), 34rem)' }}
                   data-testid="edit-palette"
                 >
                   {' '}

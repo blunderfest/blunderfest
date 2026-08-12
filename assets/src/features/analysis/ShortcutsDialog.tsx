@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 function KeyRow({ keys, action }: { keys: string[]; action: string }) {
   return (
@@ -17,6 +18,7 @@ function KeyRow({ keys, action }: { keys: string[]; action: string }) {
 /** Every keyboard shortcut, in a small modal opened from the ? button. */
 export default function ShortcutsDialog({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
+  useScrollLock();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

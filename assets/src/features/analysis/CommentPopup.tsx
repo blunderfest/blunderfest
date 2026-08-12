@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, textarea } from '@/components/ui';
+import { useScrollLock } from '@/lib/useScrollLock';
 
 /**
  * The per-move note editor, as a small modal. Opened from the board controls
@@ -18,6 +19,7 @@ export default function CommentPopup({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  useScrollLock();
   const [draft, setDraft] = useState(comment ?? '');
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
