@@ -172,7 +172,7 @@ export default function GameFlow({
 
   return (
     <div
-      className="relative cursor-crosshair touch-none select-none"
+      className="cursor-crosshair touch-none select-none"
       role="img"
       aria-label={t('analysis.gameFlow')}
       data-testid="game-flow"
@@ -202,90 +202,125 @@ export default function GameFlow({
         }
       }}
     >
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        preserveAspectRatio="none"
-        aria-hidden="true"
-        className="block h-16 w-full rounded-control border border-line bg-[#1a1d24]"
-      >
-        {segments.map((segment) =>
-          segment.length > 1 ? (
-            <path
-              key={segment[0].x}
-              d={areaPath(segment, flipped)}
-              className="fill-[#f4f6fb]"
-              data-testid="game-flow-area"
-            />
-          ) : null,
-        )}
-        <line
-          x1={0}
-          x2={WIDTH}
-          y1={HEIGHT / 2}
-          y2={HEIGHT / 2}
-          className="stroke-line-strong opacity-60"
-          vectorEffect="non-scaling-stroke"
-          strokeWidth={1}
-        />
-        {hoverX !== null && (
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          className="block h-16 w-full rounded-control border border-line bg-[#1a1d24]"
+        >
+          {segments.map((segment) =>
+            segment.length > 1 ? (
+              <path
+                key={segment[0].x}
+                d={areaPath(segment, flipped)}
+                className="fill-[#f4f6fb]"
+                data-testid="game-flow-area"
+              />
+            ) : null,
+          )}
           <line
-            x1={hoverX}
-            x2={hoverX}
-            y1={0}
-            y2={HEIGHT}
-            className="stroke-white/40"
+            x1={0}
+            x2={WIDTH}
+            y1={HEIGHT / 2}
+            y2={HEIGHT / 2}
+            className="stroke-line-strong opacity-60"
             vectorEffect="non-scaling-stroke"
             strokeWidth={1}
-            data-testid="game-flow-hover"
           />
+          {hoverX !== null && (
+            <line
+              x1={hoverX}
+              x2={hoverX}
+              y1={0}
+              y2={HEIGHT}
+              className="stroke-white/40"
+              vectorEffect="non-scaling-stroke"
+              strokeWidth={1}
+              data-testid="game-flow-hover"
+            />
+          )}
+          <line
+            x1={markerX}
+            x2={markerX}
+            y1={0}
+            y2={HEIGHT}
+            className="stroke-gold"
+            vectorEffect="non-scaling-stroke"
+            strokeWidth={2}
+            data-testid="game-flow-marker"
+          />
+        </svg>
+        {openingExitPly !== null && openingExitPly <= maxPly && (
+          <div
+            className="pointer-events-none absolute top-0 bottom-0 w-px border-l border-dashed border-info"
+            style={{ left: `${(openingExitPly / maxPly) * 100}%` }}
+            data-testid="game-flow-book-exit"
+          >
+            <BookExitIcon className="absolute -top-0.5 -left-[5px] h-2.5 w-2.5 text-info" />
+          </div>
         )}
-        <line
-          x1={markerX}
-          x2={markerX}
-          y1={0}
-          y2={HEIGHT}
-          className="stroke-gold"
-          vectorEffect="non-scaling-stroke"
-          strokeWidth={2}
-          data-testid="game-flow-marker"
-        />
-      </svg>
-      {openingExitPly !== null && openingExitPly <= maxPly && (
-        <div
-          className="pointer-events-none absolute top-0 bottom-0 w-px border-l border-dashed border-info"
-          style={{ left: `${(openingExitPly / maxPly) * 100}%` }}
-          data-testid="game-flow-book-exit"
-        >
-          <BookExitIcon className="absolute -top-0.5 -left-[5px] h-2.5 w-2.5 text-info" />
-        </div>
-      )}
-      {marks.map(({ ply, mark, xPct, yPct }) => (
-        <div
-          key={ply}
-          className={`pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ${
-            mark === '??' ? 'bg-bad-hi' : mark === '?' ? 'bg-gold-hi' : 'bg-muted'
-          }`}
-          style={{ left: `${xPct}%`, top: `${yPct}%` }}
-          data-testid="game-flow-mark"
-          data-mark={mark}
-        />
-      ))}
-      {hoverPly !== null && (
-        <div
-          className={`pointer-events-none absolute z-10 rounded-chip border border-line-strong bg-panel/95 px-1.5 py-0.5 font-semibold text-[10px] whitespace-nowrap tabular-nums text-ink backdrop-blur-sm ${tooltipShift} ${tooltipVertical}`}
-          style={{ left: `${hoverFraction * 100}%` }}
-          data-testid="game-flow-tooltip"
-        >
-          {[
-            plyLabel(hoverPly, t('analysis.startPosition')),
-            marks.find((m) => m.ply === hoverPly)?.mark ?? null,
-            evalText(evalByPly.get(hoverPly) ?? null),
-            hoverPly === openingExitPly ? t('analysis.bookExit') : null,
-          ]
-            .filter(Boolean)
-            .join(' ')}
-        </div>
-      )}
+        {marks.map(({ ply, mark, xPct, yPct }) => (
+          <div
+            key={ply}
+            className={`pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ${
+              mark === '??' ? 'bg-bad-hi' : mark === '?' ? 'bg-gold-hi' : 'bg-muted'
+            }`}
+            style={{ left: `${xPct}%`, top: `${yPct}%` }}
+            data-testid="game-flow-mark"
+            data-mark={mark}
+          />
+        ))}
+        {hoverPly !== null && (
+          <div
+            className={`pointer-events-none absolute z-10 rounded-chip border border-line-strong bg-panel/95 px-1.5 py-0.5 font-semibold text-[10px] whitespace-nowrap tabular-nums text-ink backdrop-blur-sm ${tooltipShift} ${tooltipVertical}`}
+            style={{ left: `${hoverFraction * 100}%` }}
+            data-testid="game-flow-tooltip"
+          >
+            {[
+              plyLabel(hoverPly, t('analysis.startPosition')),
+              marks.find((m) => m.ply === hoverPly)?.mark ?? null,
+              evalText(evalByPly.get(hoverPly) ?? null),
+              hoverPly === openingExitPly ? t('analysis.bookExit') : null,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          </div>
+        )}
+      </div>
+      {/*
+        The quality strip: one cell per move, colored by severity, aligned
+        with the curve's x-axis. Not interactive itself — the wrapper's
+        pointer handlers cover it, so hovering/scrubbing the strip drives
+        the same readout and navigation as the chart.
+      */}
+      <div className="mt-1 flex h-3 gap-px" data-testid="game-flow-quality">
+        {evals
+          .filter((evaluation) => evaluation.ply > 0)
+          .map((evaluation) => {
+            const mark = moveMark(
+              evalByPly.get(evaluation.ply - 1) ?? null,
+              evaluation.score,
+              evaluation.ply % 2 === 1,
+            );
+            return (
+              <div
+                key={evaluation.ply}
+                className={`h-full flex-1 rounded-[2px] ${
+                  mark === '??'
+                    ? 'bg-bad-hi'
+                    : mark === '?'
+                      ? 'bg-gold-hi'
+                      : mark === '?!'
+                        ? 'bg-muted'
+                        : 'bg-raised'
+                } ${evaluation.ply === currentPly ? 'ring-1 ring-gold' : ''}`}
+                data-testid="game-flow-quality-cell"
+                data-mark={mark ?? ''}
+              />
+            );
+          })}
+      </div>
     </div>
   );
 }

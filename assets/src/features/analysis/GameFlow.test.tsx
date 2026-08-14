@@ -132,6 +132,36 @@ describe('GameFlow', () => {
     expect(marks.map((m) => m.getAttribute('data-mark'))).toEqual(['?!', '?', '??']);
   });
 
+  it('shows a quality cell per move, colored by severity', () => {
+    // ?! at ply 1 (white loses 80), ? at ply 2 (black loses 240), ?? at ply 3 (white loses 310).
+    const swingy: AnalysisEval[] = [
+      { ply: 0, score: { cp: 0 }, best_move: null },
+      { ply: 1, score: { cp: -80 }, best_move: null },
+      { ply: 2, score: { cp: 160 }, best_move: null },
+      { ply: 3, score: { cp: -150 }, best_move: null },
+    ];
+    render(<GameFlow evals={swingy} currentPly={2} onSelectPly={vi.fn()} />);
+
+    const cells = screen.getAllByTestId('game-flow-quality-cell');
+    expect(cells.map((c) => c.getAttribute('data-mark'))).toEqual(['?!', '?', '??']);
+    // The current ply's cell wears the gold ring.
+    expect(cells[1].className).toContain('ring-gold');
+    expect(cells[0].className).not.toContain('ring-gold');
+  });
+
+  it('leaves neutral cells subtle when nothing went wrong', () => {
+    const flat: AnalysisEval[] = [
+      { ply: 0, score: { cp: 20 }, best_move: null },
+      { ply: 1, score: { cp: 25 }, best_move: null },
+      { ply: 2, score: { cp: 20 }, best_move: null },
+    ];
+    render(<GameFlow evals={flat} currentPly={0} onSelectPly={vi.fn()} />);
+
+    const cells = screen.getAllByTestId('game-flow-quality-cell');
+    expect(cells).toHaveLength(2);
+    expect(cells.map((c) => c.getAttribute('data-mark'))).toEqual(['', '']);
+  });
+
   it('marks the opening-book exit and mentions it in the hover readout', () => {
     render(<GameFlow evals={evals} currentPly={0} openingExitPly={2} onSelectPly={vi.fn()} />);
     const chart = screen.getByTestId('game-flow');

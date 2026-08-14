@@ -699,10 +699,10 @@ export default function Analysis({
           />
           {/*
             Visualizations live in their own tabbed box below the sidebar
-            tabs — today the eval chart (or the Analyze button holding its
-            place), later e.g. move times. Always visible, no matter which
-            sidebar tab is active, and a constant height (the chart's
-            h-16), so the move list never resizes.
+            tabs — today the eval chart with its quality strip (or the
+            Analyze button holding its place), later e.g. move times.
+            Always visible, no matter which sidebar tab is active, and a
+            constant height (h-20), so the move list never resizes.
           */}
           {((analysis !== null && analysis.length > 1) || onAnalyze !== undefined) && (
             <div className="shrink-0">
@@ -721,7 +721,7 @@ export default function Analysis({
                           onSelectPly={handleFlowSelect}
                         />
                       ) : (
-                        <div className="grid h-16 place-items-center rounded-control border border-line border-dashed">
+                        <div className="grid h-20 place-items-center rounded-control border border-line border-dashed">
                           <button
                             type="button"
                             id="analyze-game-button"
