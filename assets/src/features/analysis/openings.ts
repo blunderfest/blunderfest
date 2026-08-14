@@ -68,3 +68,28 @@ export function classifyOpening(
   }
   return null;
 }
+
+/** Whether this exact position is in the book (no ancestor fallback). */
+export function isBookPosition(book: OpeningBook, fen: string | null): boolean {
+  const key = positionKey(fen);
+  return key !== null && book[key] !== undefined;
+}
+
+/**
+ * The mainline ply where the game leaves the opening book — the first
+ * non-book position after a run of book positions. Null when the game never
+ * enters (a custom setup) or never leaves (a short theory line) the book.
+ */
+export function openingExitPly(book: OpeningBook, root: GameNode): number | null {
+  let node: GameNode | null = root;
+  let seenBook = false;
+  while (node !== null) {
+    if (isBookPosition(book, node.fen)) {
+      seenBook = true;
+    } else if (seenBook) {
+      return node.ply;
+    }
+    node = node.children[0] ?? null;
+  }
+  return null;
+}

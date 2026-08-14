@@ -133,6 +133,7 @@
     "moves": "Moves",
     "gameFlow": "Game flow chart: engine evaluation by move. Click or drag to jump to a position.",
     "evalTab": "Eval",
+    "bookExit": "leaves the book",
     "commentPlaceholder": "Add a comment...",
     "saveComment": "Save comment",
     "shortcutNav": "previous/next move",

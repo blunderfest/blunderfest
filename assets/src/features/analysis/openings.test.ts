@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
-import { classifyOpening, type OpeningBook } from '@/features/analysis/openings';
+import { classifyOpening, type OpeningBook, openingExitPly } from '@/features/analysis/openings';
 import type { GameNode, GameTree } from '@/lib/api';
 
 function node(partial: Partial<GameNode> & { id: number }): GameNode {
@@ -141,5 +141,27 @@ describe('classifyOpening', () => {
       eco: 'B00',
       name: 'King Pawn',
     });
+  });
+});
+
+describe('openingExitPly', () => {
+  it('returns the first mainline ply outside the book', () => {
+    // e4 and e5 are in the book; Nf3 (ply 3) is not.
+    expect(openingExitPly(book, root)).toBe(3);
+  });
+
+  it('returns null when the game never enters the book', () => {
+    expect(openingExitPly({}, root)).toBeNull();
+  });
+
+  it('returns null when the game never leaves the book', () => {
+    const theory = node({
+      id: 0,
+      ply: 0,
+      san: null,
+      fen: fen('after-e4'),
+      children: [node({ id: 1, ply: 1, fen: fen('after-e4-e5') })],
+    });
+    expect(openingExitPly(book, theory)).toBeNull();
   });
 });

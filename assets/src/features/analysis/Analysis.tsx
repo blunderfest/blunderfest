@@ -15,7 +15,12 @@ import { legalMovesFor } from '@/features/analysis/legalMoves';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
-import { classifyOpening, loadOpeningBook, type OpeningBook } from '@/features/analysis/openings';
+import {
+  classifyOpening,
+  loadOpeningBook,
+  type OpeningBook,
+  openingExitPly,
+} from '@/features/analysis/openings';
 import SettingsTab from '@/features/analysis/SettingsTab';
 import ShortcutsDialog from '@/features/analysis/ShortcutsDialog';
 import SidebarTabs from '@/features/analysis/SidebarTabs';
@@ -140,6 +145,12 @@ export default function Analysis({
   const opening = useMemo(
     () => (book === null ? null : classifyOpening(book, byId, current)),
     [book, byId, current],
+  );
+
+  /** The mainline ply where the game leaves the opening book (chart marker). */
+  const bookExitPly = useMemo(
+    () => (book === null || tree === null ? null : openingExitPly(book, tree.root)),
+    [book, tree],
   );
 
   const canPlay = canEdit && current !== null && current.status === 'active';
@@ -698,6 +709,7 @@ export default function Analysis({
                           evals={analysis}
                           currentPly={current.ply}
                           flipped={flipped}
+                          openingExitPly={bookExitPly}
                           onSelectPly={handleFlowSelect}
                         />
                       ) : (

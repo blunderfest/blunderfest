@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { evalText } from '@/features/analysis/evalMarks';
+import { evalText, type MoveMark, moveMark } from '@/features/analysis/evalMarks';
 import { type WhiteEval, whiteShare } from '@/features/analysis/uci';
 import type { AnalysisEval } from '@/protocol/ops';
 
@@ -54,12 +54,15 @@ export default function GameFlow({
   evals,
   currentPly,
   flipped = false,
+  openingExitPly = null,
   onSelectPly,
 }: {
   evals: AnalysisEval[];
   currentPly: number;
   /** Board orientation: white's territory sits on white's side of the board. */
   flipped?: boolean;
+  /** The ply where the line leaves the opening book (dashed marker). */
+  openingExitPly?: number | null;
   onSelectPly: (ply: number) => void;
 }) {
   const { t } = useTranslation();
@@ -107,6 +110,33 @@ export default function GameFlow({
 
   if (maxPly === 0) {
     return null;
+  }
+
+  /** Move-quality dots on the curve, from consecutive evals (same math as the move list). */
+  const marks: { ply: number; mark: MoveMark; xPct: number; yPct: number }[] = [];
+  for (const evaluation of evals) {
+    if (evaluation.ply === 0 || evaluation.score === null) {
+      continue;
+    }
+    const mark = moveMark(
+      evalByPly.get(evaluation.ply - 1) ?? null,
+      evaluation.score,
+      evaluation.ply % 2 === 1,
+    );
+    if (mark === null) {
+      continue;
+    }
+    const white = toWhiteEval(evaluation.score);
+    if (white === null) {
+      continue;
+    }
+    const share = whiteShare(white);
+    marks.push({
+      ply: evaluation.ply,
+      mark,
+      xPct: (evaluation.ply / maxPly) * 100,
+      yPct: flipped ? share : 100 - share,
+    });
   }
 
   const markerX = (Math.min(Math.max(currentPly, 0), maxPly) / maxPly) * WIDTH;
@@ -219,14 +249,38 @@ export default function GameFlow({
           data-testid="game-flow-marker"
         />
       </svg>
+      {openingExitPly !== null && openingExitPly <= maxPly && (
+        <div
+          className="pointer-events-none absolute top-0 bottom-0 w-px border-l border-dashed border-white/40"
+          style={{ left: `${(openingExitPly / maxPly) * 100}%` }}
+          data-testid="game-flow-book-exit"
+        />
+      )}
+      {marks.map(({ ply, mark, xPct, yPct }) => (
+        <div
+          key={ply}
+          className={`pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ${
+            mark === '??' ? 'bg-bad-hi' : mark === '?' ? 'bg-gold-hi' : 'bg-muted'
+          }`}
+          style={{ left: `${xPct}%`, top: `${yPct}%` }}
+          data-testid="game-flow-mark"
+          data-mark={mark}
+        />
+      ))}
       {hoverPly !== null && (
         <div
           className={`pointer-events-none absolute z-10 rounded-chip border border-line-strong bg-panel/95 px-1.5 py-0.5 font-semibold text-[10px] whitespace-nowrap tabular-nums text-ink backdrop-blur-sm ${tooltipShift} ${tooltipVertical}`}
           style={{ left: `${hoverFraction * 100}%` }}
           data-testid="game-flow-tooltip"
         >
-          {plyLabel(hoverPly, t('analysis.startPosition'))}{' '}
-          {evalText(evalByPly.get(hoverPly) ?? null)}
+          {[
+            plyLabel(hoverPly, t('analysis.startPosition')),
+            marks.find((m) => m.ply === hoverPly)?.mark ?? null,
+            evalText(evalByPly.get(hoverPly) ?? null),
+            hoverPly === openingExitPly ? t('analysis.bookExit') : null,
+          ]
+            .filter(Boolean)
+            .join(' ')}
         </div>
       )}
     </div>

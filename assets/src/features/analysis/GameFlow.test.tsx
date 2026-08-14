@@ -117,4 +117,28 @@ describe('GameFlow', () => {
     fireEvent(chart, new MouseEvent('pointerout', { bubbles: true }));
     expect(screen.queryByTestId('game-flow-tooltip')).not.toBeInTheDocument();
   });
+
+  it('dots the curve with move-quality marks', () => {
+    // ?! at ply 1 (white loses 80), ? at ply 2 (black loses 240), ?? at ply 3 (white loses 310).
+    const swingy: AnalysisEval[] = [
+      { ply: 0, score: { cp: 0 }, best_move: null },
+      { ply: 1, score: { cp: -80 }, best_move: null },
+      { ply: 2, score: { cp: 160 }, best_move: null },
+      { ply: 3, score: { cp: -150 }, best_move: null },
+    ];
+    render(<GameFlow evals={swingy} currentPly={0} onSelectPly={vi.fn()} />);
+
+    const marks = screen.getAllByTestId('game-flow-mark');
+    expect(marks.map((m) => m.getAttribute('data-mark'))).toEqual(['?!', '?', '??']);
+  });
+
+  it('marks the opening-book exit and mentions it in the hover readout', () => {
+    render(<GameFlow evals={evals} currentPly={0} openingExitPly={2} onSelectPly={vi.fn()} />);
+    const chart = screen.getByTestId('game-flow');
+    mockChartRect(chart);
+
+    expect(screen.getByTestId('game-flow-book-exit')).toBeInTheDocument();
+    fireEvent(chart, new MouseEvent('pointermove', { bubbles: true, clientX: 100 }));
+    expect(screen.getByTestId('game-flow-tooltip')).toHaveTextContent('1… -1.5 leaves the book');
+  });
 });
