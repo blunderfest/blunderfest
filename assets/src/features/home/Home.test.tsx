@@ -8,12 +8,28 @@ function renderHome(onJoin = vi.fn()) {
 }
 
 function stubCreateRoom(ok = true) {
-  const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-    ok,
-    status: ok ? 201 : 422,
-    json: async () => (ok ? { code: 'abcde' } : { errors: { code: 'invalid_code' } }),
-  } as Response);
-  return fetchMock;
+  // Room creation carries the device identity; the library load answers empty.
+  localStorage.setItem(
+    'blunderfest.device',
+    JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+  );
+  return vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    const url = String(input);
+    if (url.includes('/library')) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ entries: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    }
+    return Promise.resolve(
+      new Response(JSON.stringify(ok ? { code: 'abcde' } : { errors: { code: 'invalid_code' } }), {
+        status: ok ? 201 : 422,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+  });
 }
 
 afterEach(() => {
@@ -43,7 +59,8 @@ describe('Home', () => {
       '/api/rooms',
       expect.objectContaining({ method: 'POST' }),
     );
-    const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
+    const createCall = fetchMock.mock.calls.find(([url]) => url === '/api/rooms');
+    const callArgs = createCall?.[1] as RequestInit;
     expect(JSON.parse(callArgs.body as string).code).toBe(code);
   });
 
@@ -74,6 +91,53 @@ describe('Home', () => {
     expect(screen.getByRole('button', { name: 'Create a room' })).toBeDisabled();
   });
 
+  it('re-heals a wiped profile and retries room creation on a 401', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'stale-profile', secret: 'stale-secret' }),
+    );
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+      const href = String(url);
+      if (href.includes('/library')) {
+        return { ok: true, status: 200, json: async () => ({ entries: [] }) } as Response;
+      }
+      if (href === '/api/profiles') {
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            profile: { id: 'fresh-profile', name: 'Newt', created_at: '…' },
+            secret: 'fresh-secret',
+          }),
+        } as Response;
+      }
+      if (href === '/api/rooms') {
+        const body = JSON.parse((init as RequestInit).body as string);
+        return body.profile_id === 'fresh-profile'
+          ? ({ ok: true, status: 201, json: async () => ({ code: 'abcde' }) } as Response)
+          : ({
+              ok: false,
+              status: 401,
+              json: async () => ({ errors: { code: 'unauthorized' } }),
+            } as Response);
+      }
+      throw new Error(`unmocked fetch: ${href}`);
+    });
+
+    const { onJoin } = renderHome();
+    fireEvent.click(screen.getByRole('button', { name: 'Create a room' }));
+    await waitFor(() => expect(onJoin).toHaveBeenCalledTimes(1));
+
+    // Stale create 401 → profile re-created → retried with the fresh identity.
+    const roomPosts = fetchMock.mock.calls.filter(([url]) => url === '/api/rooms');
+    expect(roomPosts).toHaveLength(2);
+    const retryBody = JSON.parse((roomPosts[1][1] as RequestInit).body as string);
+    expect(retryBody.profile_id).toBe('fresh-profile');
+    expect(localStorage.getItem('blunderfest.device')).toBe(
+      JSON.stringify({ id: 'fresh-profile', secret: 'fresh-secret' }),
+    );
+  });
+
   it('shows an error and stays home when room creation fails', async () => {
     stubCreateRoom(false);
     const { onJoin } = renderHome();
@@ -83,11 +147,25 @@ describe('Home', () => {
   });
 
   it('says so when the server rate-limits room creation', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-      ok: false,
-      status: 429,
-      json: async () => ({ errors: { code: 'rate_limited' } }),
-    } as Response);
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) =>
+      String(input).includes('/library')
+        ? Promise.resolve(
+            new Response(JSON.stringify({ entries: [] }), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            }),
+          )
+        : Promise.resolve(
+            new Response(JSON.stringify({ errors: { code: 'rate_limited' } }), {
+              status: 429,
+              headers: { 'Content-Type': 'application/json' },
+            }),
+          ),
+    );
     const { onJoin } = renderHome();
     fireEvent.click(screen.getByRole('button', { name: 'Create a room' }));
     expect(await screen.findByText(/Too many rooms created/)).toBeInTheDocument();

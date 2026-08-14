@@ -1,3 +1,5 @@
+import { clearDevice, loadDevice, saveDevice } from '@/lib/device';
+
 export type Profile = {
   id: string;
   name: string;
@@ -40,6 +42,49 @@ export async function createProfile(
   signal?: AbortSignal,
 ): Promise<{ profile: Profile; secret: string }> {
   return request('/api/profiles', { method: 'POST', signal });
+}
+
+/**
+ * Re-heals the device identity: the server keeps profiles in memory, so a
+ * redeploy wipes them and every stored device starts 401-ing. Drop it and
+ * mint a fresh profile.
+ */
+async function rehealDevice(): Promise<Device | null> {
+  clearDevice();
+  try {
+    const { profile, secret } = await createProfile();
+    const device = { id: profile.id, secret };
+    saveDevice(device);
+    return device;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Runs `fn` with the stored device identity; on an "unauthorized" reply
+ * (a wiped profile after a redeploy), re-heals once and retries.
+ */
+export async function withDeviceRetry<T>(fn: (device: Device) => Promise<T>): Promise<T> {
+  let device = loadDevice();
+  if (device === null) {
+    device = await rehealDevice();
+    if (device === null) {
+      throw new ApiError('unauthorized');
+    }
+  }
+  try {
+    return await fn(device);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.code !== 'unauthorized') {
+      throw error;
+    }
+    const fresh = await rehealDevice();
+    if (fresh === null) {
+      throw error;
+    }
+    return fn(fresh);
+  }
 }
 
 /**

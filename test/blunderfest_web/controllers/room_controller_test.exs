@@ -29,7 +29,7 @@ defmodule BlunderfestWeb.RoomControllerTest do
       assert Rooms.owner("abcde") == profile.id
     end
 
-    test "a mismatched profile is ignored and the room is created anonymously", %{conn: conn} do
+    test "a mismatched profile secret is rejected, not silently anonymous", %{conn: conn} do
       {:ok, _profile, secret} = Profiles.create()
       {:ok, other, _other_secret} = Profiles.create()
 
@@ -38,8 +38,8 @@ defmodule BlunderfestWeb.RoomControllerTest do
         |> put_req_header("authorization", "Bearer " <> secret)
         |> post("/api/rooms", %{"code" => "abcde", "profile_id" => other.id})
 
-      assert json_response(conn, 201)["code"] == "abcde"
-      assert Rooms.owner("abcde") == nil
+      assert %{"errors" => %{"code" => "unauthorized"}} = json_response(conn, 401)
+      refute Rooms.room_exists?("abcde")
     end
 
     test "rejects codes outside the canonical format", %{conn: conn} do

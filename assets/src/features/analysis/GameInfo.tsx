@@ -2,21 +2,21 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, panel } from '@/components/ui';
 import { downloadPgn } from '@/features/analysis/pgnExport';
-import { type GameTree, saveToLibrary } from '@/lib/api';
-import { loadDevice } from '@/lib/device';
+import { type GameTree, saveToLibrary, withDeviceRetry } from '@/lib/api';
 
 export default function GameInfo({ tree }: { tree: GameTree }) {
   const { t } = useTranslation();
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   async function handleSave() {
-    const device = loadDevice();
-    if (device === null || saveState !== 'idle') {
+    if (saveState !== 'idle') {
       return;
     }
     setSaveState('saving');
     try {
-      await saveToLibrary(device, tree);
+      // A 401 means the profile was wiped server-side (redeploy) — re-heal
+      // and retry once before giving up.
+      await withDeviceRetry((device) => saveToLibrary(device, tree));
       setSaveState('saved');
     } catch {
       setSaveState('error');

@@ -9,6 +9,7 @@ import {
   deleteFromLibrary,
   fetchLibrary,
   type LibraryEntry,
+  withDeviceRetry,
 } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
 import { formatRegion } from '@/lib/region';
@@ -77,8 +78,9 @@ export default function Home({
     try {
       const slug = generateRoomCode();
       // The device identifies the creator as the room's owner at creation —
-      // no "first profiled joiner wins" race with a slow profile heal.
-      await createRoom(slug, undefined, loadDevice());
+      // no "first profiled joiner wins" race with a slow profile heal. A 401
+      // (stale device after a redeploy) re-heals and retries once.
+      await withDeviceRetry((device) => createRoom(slug, undefined, device));
       onJoin(slug);
     } catch (error) {
       setCreateError(
@@ -108,7 +110,7 @@ export default function Home({
       const slug = generateRoomCode();
       // The room is created with the game already seeded — joining replays
       // it, no empty-room window.
-      await createRoom(slug, entry.tree, loadDevice());
+      await withDeviceRetry((device) => createRoom(slug, entry.tree, device));
       onJoin(slug);
     } catch (error) {
       setCreateError(

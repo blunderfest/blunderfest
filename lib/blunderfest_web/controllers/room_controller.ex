@@ -17,9 +17,8 @@ defmodule BlunderfestWeb.RoomController do
     with :ok <- check_code(code),
          :ok <- check_not_reserved(code),
          :ok <- check_rate_limit(conn),
-         :ok <- check_tree(params) do
-      profile_id = creator_profile_id(conn, params["profile_id"])
-
+         :ok <- check_tree(params),
+         {:ok, profile_id} <- creator_profile_id(conn, params["profile_id"]) do
       case Rooms.create(code, profile_id) do
         :ok ->
           maybe_seed(code, profile_id, params["tree"])
@@ -47,18 +46,19 @@ defmodule BlunderfestWeb.RoomController do
     |> json(%{errors: %{code: "invalid_code"}})
   end
 
-  # The creator may attach their profile; it is only honoured when the bearer
-  # secret matches, otherwise the room is created anonymously.
+  # The creator may attach their profile; it is honoured when the bearer
+  # secret matches. A mismatched secret is rejected (the client re-heals its
+  # profile and retries) rather than silently creating an ownerless room.
   defp creator_profile_id(conn, profile_id) when is_binary(profile_id) do
     with ["Bearer " <> secret] <- get_req_header(conn, "authorization"),
          true <- Profiles.authenticate(profile_id, secret) do
-      profile_id
+      {:ok, profile_id}
     else
-      _ -> "anonymous"
+      _ -> {:error, "unauthorized"}
     end
   end
 
-  defp creator_profile_id(_conn, _profile_id), do: "anonymous"
+  defp creator_profile_id(_conn, _profile_id), do: {:ok, "anonymous"}
 
   # Fly's proxy sets Fly-Client-IP; locally we see the peer directly.
   defp client_ip(conn) do
@@ -103,5 +103,6 @@ defmodule BlunderfestWeb.RoomController do
   defp game_id, do: Base.url_encode64(:crypto.strong_rand_bytes(8), padding: false)
 
   defp status_for("rate_limited"), do: :too_many_requests
+  defp status_for("unauthorized"), do: :unauthorized
   defp status_for(_code), do: :unprocessable_entity
 end
