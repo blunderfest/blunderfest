@@ -161,9 +161,9 @@ export default function ImportDialog({
         role="dialog"
         aria-modal="true"
         aria-label={t('import.title')}
-        className="mt-4 max-h-[calc(100vh-2rem)] w-full max-w-[640px] animate-pop overflow-y-auto overscroll-contain rounded-dialog border border-line-strong bg-overlay shadow-[0_40px_80px_-24px_rgba(0,0,0,0.9)] sm:mt-16"
+        className="mt-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-[640px] animate-pop flex-col overflow-hidden rounded-dialog border border-line-strong bg-overlay shadow-[0_40px_80px_-24px_rgba(0,0,0,0.9)] sm:mt-16"
       >
-        <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-line px-4 py-3">
           <h2 className="m-0 flex items-center gap-2 text-lead font-semibold">
             <UploadIcon />
             {t('import.title')}
@@ -178,7 +178,7 @@ export default function ImportDialog({
           </button>
         </div>
 
-        <div className="flex flex-col gap-3 p-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-baseline justify-between gap-2">
               <label
@@ -370,7 +370,7 @@ export default function ImportDialog({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-line px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-line px-4 py-3">
           <span className="text-note text-faint">
             {t('import.sharedNote')} <kbd>Esc</kbd> {t('import.escToCancel')}
           </span>
