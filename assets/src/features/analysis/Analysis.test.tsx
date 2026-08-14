@@ -93,6 +93,14 @@ describe('Analysis', () => {
     expect(pieceAt('square-e4')).toBe('wp');
   });
 
+  it('opens on the initial position with startAtRoot (a freshly imported game)', () => {
+    render(<Analysis tree={tree} startAtRoot />);
+
+    expect(pieceAt('square-e2')).toBe('wp');
+    expect(pieceAt('square-e4')).toBeNull();
+    expect(pieceAt('square-f3')).toBeNull();
+  });
+
   it('navigates forward and backward with the buttons', () => {
     renderAnalysis();
 
@@ -676,6 +684,15 @@ describe('game flow chart', () => {
     renderAnalysis();
 
     expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
+  });
+
+  it('holds the chart slot with the analyze button until an analysis exists', () => {
+    const onAnalyze = vi.fn();
+    render(<Analysis tree={tree} onAnalyze={onAnalyze} />);
+
+    expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Analyze game' }));
+    expect(onAnalyze).toHaveBeenCalledTimes(1);
   });
 });
 

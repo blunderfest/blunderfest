@@ -1,19 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { button, panel, panelHeader } from '@/components/ui';
+import { button, panel } from '@/components/ui';
 import { downloadPgn } from '@/features/analysis/pgnExport';
 import { type GameTree, saveToLibrary } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
 
-export default function GameInfo({
-  tree,
-  onAnalyze,
-  analyzing = null,
-}: {
-  tree: GameTree;
-  onAnalyze?: () => void;
-  analyzing?: { done: number; total: number } | null;
-}) {
+export default function GameInfo({ tree }: { tree: GameTree }) {
   const { t } = useTranslation();
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
@@ -34,10 +26,6 @@ export default function GameInfo({
 
   return (
     <section className={panel({ layout: 'none', pad: 'none' })}>
-      <div className={panelHeader()}>
-        <h2 className="m-0">{t('room.gameInfo')}</h2>
-        {tree.result !== '*' && <span className="text-muted">{tree.result}</span>}
-      </div>
       <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-1 p-3 text-ui">
         {tree.headers.Event && (
           <>
@@ -80,19 +68,6 @@ export default function GameInfo({
               ? t('room.saveLibraryError')
               : t('room.saveToLibrary')}
         </button>
-        {onAnalyze !== undefined && (
-          <button
-            type="button"
-            id="analyze-game-button"
-            className={button({ intent: 'quiet', size: 'sm' })}
-            onClick={onAnalyze}
-            disabled={analyzing !== null}
-          >
-            {analyzing !== null
-              ? t('room.analyzing', { done: analyzing.done, total: analyzing.total })
-              : t('room.analyzeGame')}
-          </button>
-        )}
       </div>
     </section>
   );

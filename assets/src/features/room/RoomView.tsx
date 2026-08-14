@@ -68,6 +68,8 @@ export default function RoomView({
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [followOverride, setFollowOverride] = useState<boolean | null>(null);
   const [showImport, setShowImport] = useState(false);
+  /** The game just imported here — it opens on the initial position. */
+  const [freshImportId, setFreshImportId] = useState<string | null>(null);
 
   const amPresenter = selfId !== null && presenter?.id === selfId;
 
@@ -160,6 +162,7 @@ export default function RoomView({
       const gameId = crypto.randomUUID();
       sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
       setActiveGameId(gameId);
+      setFreshImportId(gameId);
       setShowImport(false);
     },
     [sendOp],
@@ -170,12 +173,14 @@ export default function RoomView({
     const gameId = crypto.randomUUID();
     sendOp({ type: 'set_game', payload: { game_id: gameId, tree: emptyGameTree() } });
     setActiveGameId(gameId);
+    setFreshImportId(null);
     setShowImport(false);
   }
 
   function handleSelectGame(gameId: string) {
     setFollowOverride(false);
     setActiveGameId(gameId);
+    setFreshImportId(null);
     if (amPresenter) {
       sendOp({ type: 'select_game', payload: { game_id: gameId } });
     }
@@ -255,7 +260,7 @@ export default function RoomView({
 
   return (
     <div className="flex flex-1 flex-col items-stretch gap-3 p-3">
-      <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-[236px_1fr]">
+      <div className="relative grid flex-1 grid-cols-1 gap-3 md:grid-cols-[236px_1fr]">
         {/*
           On wide screens the rail is pinned to the board's height: Games
           caps at a share of it, Members sizes to content, and Activity takes
@@ -290,9 +295,12 @@ export default function RoomView({
         <section className="order-first flex flex-col items-center gap-4 md:order-none">
           {noGames ? (
             canEdit ? (
-              <div className="flex flex-1 items-center justify-center p-8">
+              // A lone call-to-action centers across the whole content area
+              // on wide screens (lg+), not within the main column — the rail
+              // stays clickable behind it. In-flow in the column below lg.
+              <div className="flex flex-1 items-center justify-center p-8 lg:pointer-events-none lg:absolute lg:inset-0">
                 <div
-                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] flex-col items-center gap-4 text-center`}
+                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] animate-pop flex-col items-center gap-4 text-center lg:pointer-events-auto`}
                 >
                   <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
                     <span className="text-3xl text-muted">♟</span>
@@ -320,9 +328,10 @@ export default function RoomView({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-1 items-center justify-center p-8">
+              // Same centering as the owner's empty state: page-wide on lg+.
+              <div className="flex flex-1 items-center justify-center p-8 lg:pointer-events-none lg:absolute lg:inset-0">
                 <div
-                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] flex-col items-center gap-4 text-center`}
+                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] flex-col items-center gap-4 text-center lg:pointer-events-auto`}
                 >
                   <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
                     <span className="text-3xl text-muted">⏳</span>
@@ -347,6 +356,7 @@ export default function RoomView({
               presenterCursorId={presenterCursor}
               following={following}
               canEdit={canEdit}
+              startAtRoot={effectiveGameId !== null && effectiveGameId === freshImportId}
               onFollowChange={setFollowOverride}
               onCursorChange={handleCursorChange}
               onPlayMove={handlePlayMove}

@@ -93,6 +93,7 @@ export function useCursor({
   presenterCursorId,
   lastPlayedId,
   amPresenter,
+  startAtRoot = false,
   onCursorChange,
   onFollowChange,
 }: {
@@ -102,6 +103,8 @@ export function useCursor({
   presenterCursorId: number | null;
   lastPlayedId: number | null;
   amPresenter: boolean;
+  /** Open on the initial position instead of the tail (fresh imports). */
+  startAtRoot?: boolean;
   onCursorChange?: (nodeId: number) => void;
   onFollowChange?: (following: boolean) => void;
 }) {
@@ -111,12 +114,16 @@ export function useCursor({
   /**
    * Start at the move last played (the newest move/setup node, wherever it
    * lives — variations included) once a tree arrives: a refresh restores the
-   * game as it was. Untouched imports fall back to the mainline tip. A
-   * one-time write during render (converges immediately) — subsequent cursor
-   * changes come only from navigation, playing moves, or the presenter cursor.
+   * game as it was. Untouched imports fall back to the mainline tip — except
+   * a game just imported here (`startAtRoot`), which opens on the initial
+   * position so it can be reviewed from the beginning. A one-time write
+   * during render (converges immediately) — subsequent cursor changes come
+   * only from navigation, playing moves, or the presenter cursor.
    */
   if (currentId === null && tree !== null) {
-    if (lastPlayedId !== null && byId.has(lastPlayedId)) {
+    if (startAtRoot) {
+      dispatch({ type: 'init', id: tree.root.id });
+    } else if (lastPlayedId !== null && byId.has(lastPlayedId)) {
       dispatch({ type: 'init', id: lastPlayedId });
     } else {
       let tip = tree.root;

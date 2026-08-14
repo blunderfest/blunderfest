@@ -348,6 +348,47 @@ describe('RoomView', () => {
     });
   });
 
+  it('starts a freshly imported game at the initial position, not the tail', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ tree: gameTree }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        ),
+      ),
+    );
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Import a game' }));
+    fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } });
+    await screen.findByText('Valid PGN');
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    await waitFor(() => expect(channel.pushes.length).toBeGreaterThan(0));
+    const setGame = channel.pushes[0].payload as {
+      type: string;
+      payload: { game_id: string; tree: GameTree };
+    };
+    act(() =>
+      channel.emit('new_op', {
+        seq: 1,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'set_game',
+        payload: { game_id: setGame.payload.game_id, tree: gameTree },
+      } as Op),
+    );
+
+    // The initial position, not the tail: nothing played yet.
+    expect(await screen.findByTestId('ply-counter')).toHaveTextContent('ply 0/2');
+    expect(pieceAt('square-e2')).toBe('wp');
+    expect(pieceAt('square-e4')).toBeNull();
+  });
+
   it('shows the board once the set_game echo arrives', async () => {
     renderRoom();
     await screen.findByTestId('member-list');
