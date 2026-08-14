@@ -178,8 +178,14 @@ export default function ImportDialog({
           </button>
         </div>
 
+        {/*
+          The shrink-0 on every direct child matters: without it a tight
+          viewport would flex-shrink the preview panel (which has
+          overflow-hidden) and silently clip the keep-cards instead of
+          letting this body scroll.
+        */}
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-4">
-          <div className="flex flex-col gap-1">
+          <div className="flex shrink-0 flex-col gap-1">
             <div className="flex items-baseline justify-between gap-2">
               <label
                 className="text-micro font-semibold uppercase tracking-[0.08em] text-muted"
@@ -213,7 +219,7 @@ export default function ImportDialog({
 
           {state.status === 'error' && (
             <div
-              className="flex items-start gap-2 rounded-control border border-bad/40 bg-bad/10 p-2.5"
+              className="flex shrink-0 items-start gap-2 rounded-control border border-bad/40 bg-bad/10 p-2.5"
               role="alert"
             >
               <span aria-hidden="true" className="text-bad-hi">
@@ -227,7 +233,7 @@ export default function ImportDialog({
           )}
 
           {displayTree !== null && (
-            <div className="flex flex-col gap-2 overflow-hidden rounded-control border border-line">
+            <div className="flex shrink-0 flex-col gap-2 overflow-hidden rounded-control border border-line">
               <div className="flex items-center justify-between gap-2 border-b border-line bg-raised px-3 py-2">
                 <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
                   {t('import.previewTitle')}
