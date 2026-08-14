@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import GameFlow from '@/features/analysis/GameFlow';
 import type { AnalysisEval } from '@/protocol/ops';
 
@@ -27,6 +27,10 @@ function mockChartRect(svg: HTMLElement, width = 200) {
 }
 
 describe('GameFlow', () => {
+  afterEach(() => {
+    localStorage.removeItem('blunderfest.eval-scale');
+  });
+
   it('draws one continuous area when every ply has an eval', () => {
     render(<GameFlow evals={evals} currentPly={0} onSelectPly={vi.fn()} />);
 
@@ -160,6 +164,24 @@ describe('GameFlow', () => {
     const cells = screen.getAllByTestId('game-flow-quality-cell');
     expect(cells).toHaveLength(2);
     expect(cells.map((c) => c.getAttribute('data-mark'))).toEqual(['', '']);
+  });
+
+  it('switches the chart and the readout to win probability', () => {
+    render(<GameFlow evals={evals} currentPly={0} onSelectPly={vi.fn()} />);
+    const chart = screen.getByTestId('game-flow');
+    mockChartRect(chart);
+
+    const before = screen.getByTestId('game-flow-area').getAttribute('d');
+    fireEvent.click(screen.getByTestId('eval-scale-toggle'));
+
+    // ply 2 = cp −150 → 100·σ(−0.55) ≈ 37% for white.
+    fireEvent(chart, new MouseEvent('pointermove', { bubbles: true, clientX: 100 }));
+    expect(screen.getByTestId('game-flow-tooltip')).toHaveTextContent('1… 37%');
+    expect(localStorage.getItem('blunderfest.eval-scale')).toBe('win');
+
+    // Toggling back restores the centipawn curve.
+    fireEvent.click(screen.getByTestId('eval-scale-toggle'));
+    expect(screen.getByTestId('game-flow-area').getAttribute('d')).toBe(before);
   });
 
   it('marks the opening-book exit and mentions it in the hover readout', () => {

@@ -7,6 +7,7 @@ import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceSrc } from '@/components
 import { button, statusDot } from '@/components/ui';
 import BoardControls from '@/features/analysis/BoardControls';
 import CommentPopup from '@/features/analysis/CommentPopup';
+import CriticalMoments from '@/features/analysis/CriticalMoments';
 import EngineReadout from '@/features/analysis/EngineReadout';
 import EvalBar from '@/features/analysis/EvalBar';
 import type { ChessEngine } from '@/features/analysis/engine';
@@ -416,34 +417,44 @@ export default function Analysis({
   // Analyze button holding its place), and the material timeline — which
   // needs no engine analysis, so even viewers get the box.
   const vizTabs: SidebarTab[] = [];
-  if ((analysis !== null && analysis.length > 1) || onAnalyze !== undefined) {
+  if (analysis !== null && analysis.length > 1) {
     vizTabs.push({
       id: 'eval',
       label: t('analysis.evalTab'),
-      content:
-        analysis !== null && analysis.length > 1 ? (
-          <GameFlow
-            evals={analysis}
-            currentPly={current.ply}
-            flipped={flipped}
-            openingExitPly={bookExitPly}
-            onSelectPly={handleFlowSelect}
-          />
-        ) : (
-          <div className="grid h-20 place-items-center rounded-control border border-line border-dashed">
-            <button
-              type="button"
-              id="analyze-game-button"
-              className={button({ intent: 'quiet', size: 'sm' })}
-              onClick={onAnalyze}
-              disabled={analyzing !== null}
-            >
-              {analyzing !== null
-                ? t('room.analyzing', { done: analyzing.done, total: analyzing.total })
-                : t('room.analyzeGame')}
-            </button>
-          </div>
-        ),
+      content: (
+        <GameFlow
+          evals={analysis}
+          currentPly={current.ply}
+          flipped={flipped}
+          openingExitPly={bookExitPly}
+          onSelectPly={handleFlowSelect}
+        />
+      ),
+    });
+    vizTabs.push({
+      id: 'moments',
+      label: t('analysis.momentsTab'),
+      content: <CriticalMoments tree={tree} evals={analysis} onSelectPly={handleFlowSelect} />,
+    });
+  } else if (onAnalyze !== undefined) {
+    vizTabs.push({
+      id: 'eval',
+      label: t('analysis.evalTab'),
+      content: (
+        <div className="grid h-20 place-items-center rounded-control border border-line border-dashed">
+          <button
+            type="button"
+            id="analyze-game-button"
+            className={button({ intent: 'quiet', size: 'sm' })}
+            onClick={onAnalyze}
+            disabled={analyzing !== null}
+          >
+            {analyzing !== null
+              ? t('room.analyzing', { done: analyzing.done, total: analyzing.total })
+              : t('room.analyzeGame')}
+          </button>
+        </div>
+      ),
     });
   }
   if (tree.mainline_ply_count > 0) {

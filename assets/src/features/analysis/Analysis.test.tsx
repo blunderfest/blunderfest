@@ -692,6 +692,12 @@ describe('game flow chart', () => {
     expect(screen.getByRole('tab', { name: 'Material' })).toBeInTheDocument();
   });
 
+  it('shows the moments tab once an analysis exists', () => {
+    render(<Analysis tree={tree} analysis={flowEvals} />);
+
+    expect(screen.getByRole('tab', { name: 'Moments' })).toBeInTheDocument();
+  });
+
   it('holds the chart slot with the analyze button until an analysis exists', () => {
     const onAnalyze = vi.fn();
     render(<Analysis tree={tree} onAnalyze={onAnalyze} />);

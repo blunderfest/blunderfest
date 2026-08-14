@@ -45,6 +45,21 @@ export function plyLabel(ply: number, startLabel: string): string {
 }
 
 /**
+ * Win probability as a share (50 = level), lichess's logistic: a pawn is
+ * ~57%, two pawns ~64%, and beyond +5 the curve flattens — where big cp
+ * swings stop mattering to humans.
+ */
+export function winShare(white: WhiteEval): number {
+  if (white.type === 'result') {
+    return white.result === '1-0' ? 99 : white.result === '0-1' ? 1 : 50;
+  }
+  if (white.type === 'mate') {
+    return white.moves > 0 ? 99 : 1;
+  }
+  return 100 / (1 + Math.exp(-0.00368208 * white.cp));
+}
+
+/**
  * The game-flow chart (ADR-0009): engine eval over the mainline, the same
  * mapping as the eval bar — white's territory on white's side of the chart,
  * mirrored when the board is flipped. Click or drag to jump to a ply;
@@ -77,6 +92,18 @@ export default function GameFlow({
    * tap also navigates to that ply, so it reads as the current eval.
    */
   const [coarse] = useState(() => window.matchMedia('(pointer: coarse)').matches);
+  /** The y-scale: centipawn share (default) or win probability. */
+  const [scale, setScale] = useState<'cp' | 'win'>(() =>
+    localStorage.getItem('blunderfest.eval-scale') === 'win' ? 'win' : 'cp',
+  );
+
+  function toggleScale() {
+    setScale((current) => {
+      const next = current === 'cp' ? 'win' : 'cp';
+      localStorage.setItem('blunderfest.eval-scale', next);
+      return next;
+    });
+  }
 
   const maxPly = evals.length > 0 ? evals[evals.length - 1].ply : 0;
 
@@ -84,6 +111,16 @@ export default function GameFlow({
     () => new Map(evals.map((evaluation) => [evaluation.ply, evaluation.score])),
     [evals],
   );
+
+  /** The hover readout: the eval in the active scale ("+1.3" or "63%"). */
+  function readoutFor(ply: number): string {
+    const score = evalByPly.get(ply) ?? null;
+    if (scale === 'win') {
+      const white = toWhiteEval(score);
+      return white === null ? '–' : `${Math.round(winShare(white))}%`;
+    }
+    return evalText(score);
+  }
 
   // Consecutive non-null evals form segments; a failed eval breaks the area.
   const segments: Point[][] = [];
@@ -98,7 +135,7 @@ export default function GameFlow({
         segment = [];
         continue;
       }
-      const share = whiteShare(white); // 2..98 — 50 is level, 98 white is winning
+      const share = scale === 'win' ? winShare(white) : whiteShare(white); // 50 is level
       segment.push({
         x: (evaluation.ply / maxPly) * WIDTH,
         y: ((flipped ? share : 100 - share) / 100) * HEIGHT,
@@ -131,7 +168,7 @@ export default function GameFlow({
     if (white === null) {
       continue;
     }
-    const share = whiteShare(white);
+    const share = scale === 'win' ? winShare(white) : whiteShare(white);
     marks.push({
       ply: evaluation.ply,
       mark,
@@ -280,13 +317,25 @@ export default function GameFlow({
             {[
               plyLabel(hoverPly, t('analysis.startPosition')),
               marks.find((m) => m.ply === hoverPly)?.mark ?? null,
-              evalText(evalByPly.get(hoverPly) ?? null),
+              readoutFor(hoverPly),
               hoverPly === openingExitPly ? t('analysis.bookExit') : null,
             ]
               .filter(Boolean)
               .join(' ')}
           </div>
         )}
+        <button
+          type="button"
+          className="absolute top-1 right-1 z-10 rounded-chip border border-line-strong bg-panel/90 px-1.5 py-0.5 font-semibold text-[10px] text-muted backdrop-blur-sm transition-colors hover:text-ink"
+          aria-label={t('analysis.evalScale')}
+          aria-pressed={scale === 'win'}
+          title={t('analysis.evalScale')}
+          data-testid="eval-scale-toggle"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={toggleScale}
+        >
+          {scale === 'win' ? '%' : 'cp'}
+        </button>
       </div>
       {/*
         The quality strip: one cell per move, colored by severity, aligned
