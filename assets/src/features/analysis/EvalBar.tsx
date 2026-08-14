@@ -29,6 +29,7 @@ export default function EvalBar({
       <div
         role="img"
         aria-label={label}
+        title={label}
         className={`relative flex w-6 flex-1 flex-col overflow-visible rounded-[5px] border border-board-edge ${
           unavailable ? 'opacity-20' : ''
         }`}
@@ -55,7 +56,7 @@ export default function EvalBar({
         </div>
         {white !== null && !unavailable && (
           <span
-            className={`absolute left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-chip border border-white/20 bg-background/90 px-1 py-0.5 text-[10px] font-semibold tabular-nums backdrop-blur-sm ${
+            className={`absolute left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-chip border border-white/20 bg-panel/95 px-1 py-0.5 text-[10px] font-semibold tabular-nums backdrop-blur-sm ${
               thinking ? 'text-faint' : 'text-ink'
             }`}
             style={{ top: `${flipped ? share : 100 - share}%` }}

@@ -91,4 +91,30 @@ describe('GameFlow', () => {
 
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('mirrors the territory when the board is flipped', () => {
+    const { rerender } = render(<GameFlow evals={evals} currentPly={0} onSelectPly={vi.fn()} />);
+
+    // Default: white's area fills from the bottom edge (y = 40)…
+    expect(screen.getByTestId('game-flow-area').getAttribute('d')).toMatch(/^M0\.00 40 /);
+    // …flipped: from the top edge (y = 0).
+    rerender(<GameFlow evals={evals} currentPly={0} flipped onSelectPly={vi.fn()} />);
+    expect(screen.getByTestId('game-flow-area').getAttribute('d')).toMatch(/^M0\.00 0 /);
+  });
+
+  it('shows the ply and its eval while hovering', () => {
+    render(<GameFlow evals={evals} currentPly={0} onSelectPly={vi.fn()} />);
+    const chart = screen.getByTestId('game-flow');
+    mockChartRect(chart);
+
+    expect(screen.queryByTestId('game-flow-tooltip')).not.toBeInTheDocument();
+    // 100px of 200px → ply 2 of 4 (cp −150 → -1.5).
+    fireEvent(chart, new MouseEvent('pointermove', { bubbles: true, clientX: 100 }));
+    expect(screen.getByTestId('game-flow-tooltip')).toHaveTextContent('1… -1.5');
+    expect(screen.getByTestId('game-flow-hover')).toHaveAttribute('x1', '50');
+
+    // React synthesizes pointerleave from the native pointerout event.
+    fireEvent(chart, new MouseEvent('pointerout', { bubbles: true }));
+    expect(screen.queryByTestId('game-flow-tooltip')).not.toBeInTheDocument();
+  });
 });

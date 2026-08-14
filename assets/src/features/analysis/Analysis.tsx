@@ -697,6 +697,7 @@ export default function Analysis({
                         <GameFlow
                           evals={analysis}
                           currentPly={current.ply}
+                          flipped={flipped}
                           onSelectPly={handleFlowSelect}
                         />
                       ) : (
