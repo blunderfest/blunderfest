@@ -45,13 +45,26 @@ export async function createProfile(
 /**
  * Explicitly creates a room on the server; rooms never exist until this
  * returns. With `tree`, the room is seeded with that game on creation
- * (the library "open in a new room" flow, ADR-0020).
+ * (the library "open in a new room" flow, ADR-0020). With `device`, the
+ * creator is recorded as the room's owner right away — without it the
+ * room starts ownerless and the first profiled joiner claims ownership.
  */
-export async function createRoom(code: string, tree?: GameTree): Promise<{ code: string }> {
+export async function createRoom(
+  code: string,
+  tree?: GameTree,
+  device?: Device | null,
+): Promise<{ code: string }> {
   return request('/api/rooms', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(tree === undefined ? { code } : { code, tree }),
+    headers: {
+      'Content-Type': 'application/json',
+      ...(device != null ? authHeaders(device) : {}),
+    },
+    body: JSON.stringify({
+      code,
+      ...(tree === undefined ? {} : { tree }),
+      ...(device != null ? { profile_id: device.id } : {}),
+    }),
   });
 }
 

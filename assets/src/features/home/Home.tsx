@@ -76,7 +76,9 @@ export default function Home({
     setCreateError(null);
     try {
       const slug = generateRoomCode();
-      await createRoom(slug);
+      // The device identifies the creator as the room's owner at creation —
+      // no "first profiled joiner wins" race with a slow profile heal.
+      await createRoom(slug, undefined, loadDevice());
       onJoin(slug);
     } catch (error) {
       setCreateError(
@@ -106,7 +108,7 @@ export default function Home({
       const slug = generateRoomCode();
       // The room is created with the game already seeded — joining replays
       // it, no empty-room window.
-      await createRoom(slug, entry.tree);
+      await createRoom(slug, entry.tree, loadDevice());
       onJoin(slug);
     } catch (error) {
       setCreateError(
@@ -152,7 +154,8 @@ export default function Home({
             id="create-room-button"
             className={button({ intent: 'primary', size: 'lg', block: true })}
             onClick={handleCreate}
-            disabled={creating}
+            // Without a resolved profile the room would start ownerless.
+            disabled={creating || userName === null}
           >
             {creating ? t('home.creating') : t('home.create')}
           </button>

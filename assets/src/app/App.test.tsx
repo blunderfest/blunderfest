@@ -170,6 +170,8 @@ describe('App', () => {
       </Provider>,
     );
 
+    // Creating waits for the resolved profile (owner recorded at creation).
+    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Create a room' }));
 
     await waitFor(() => {

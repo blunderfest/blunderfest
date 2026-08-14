@@ -18,6 +18,7 @@ function stubCreateRoom(ok = true) {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  localStorage.removeItem('blunderfest.device');
 });
 
 describe('Home', () => {
@@ -44,6 +45,33 @@ describe('Home', () => {
     );
     const callArgs = fetchMock.mock.calls[0][1] as RequestInit;
     expect(JSON.parse(callArgs.body as string).code).toBe(code);
+  });
+
+  it('attaches the stored device so the creator is recorded as the owner', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 's3cr3t' }),
+    );
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (url) =>
+        String(url).includes('/library')
+          ? ({ ok: true, status: 200, json: async () => ({ entries: [] }) } as Response)
+          : ({ ok: true, status: 201, json: async () => ({ code: 'abcde' }) } as Response),
+      );
+    const { onJoin } = renderHome();
+    fireEvent.click(screen.getByRole('button', { name: 'Create a room' }));
+    await waitFor(() => expect(onJoin).toHaveBeenCalledTimes(1));
+
+    const createCall = fetchMock.mock.calls.find(([url]) => url === '/api/rooms');
+    const init = createCall?.[1] as RequestInit;
+    expect((init.headers as Record<string, string>).Authorization).toBe('Bearer s3cr3t');
+    expect(JSON.parse(init.body as string).profile_id).toBe('profile-1');
+  });
+
+  it('cannot create a room until the profile has resolved', () => {
+    render(<Home backend="ok" userName={null} onJoin={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Create a room' })).toBeDisabled();
   });
 
   it('shows an error and stays home when room creation fails', async () => {
