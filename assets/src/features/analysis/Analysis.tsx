@@ -13,6 +13,7 @@ import type { ChessEngine } from '@/features/analysis/engine';
 import GameFlow from '@/features/analysis/GameFlow';
 import GameInfo from '@/features/analysis/GameInfo';
 import { legalMovesFor } from '@/features/analysis/legalMoves';
+import MaterialFlow from '@/features/analysis/MaterialFlow';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
@@ -24,7 +25,7 @@ import {
 } from '@/features/analysis/openings';
 import SettingsTab from '@/features/analysis/SettingsTab';
 import ShortcutsDialog from '@/features/analysis/ShortcutsDialog';
-import SidebarTabs from '@/features/analysis/SidebarTabs';
+import SidebarTabs, { type SidebarTab } from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useBoardKeyboard } from '@/features/analysis/useBoardKeyboard';
 import { useCursor } from '@/features/analysis/useCursor';
@@ -411,6 +412,55 @@ export default function Analysis({
 
   const boardArrows = [...hintArrows, ...nodeAnnotations.arrows];
 
+  // The visualization box: the eval chart with its quality strip (or the
+  // Analyze button holding its place), and the material timeline — which
+  // needs no engine analysis, so even viewers get the box.
+  const vizTabs: SidebarTab[] = [];
+  if ((analysis !== null && analysis.length > 1) || onAnalyze !== undefined) {
+    vizTabs.push({
+      id: 'eval',
+      label: t('analysis.evalTab'),
+      content:
+        analysis !== null && analysis.length > 1 ? (
+          <GameFlow
+            evals={analysis}
+            currentPly={current.ply}
+            flipped={flipped}
+            openingExitPly={bookExitPly}
+            onSelectPly={handleFlowSelect}
+          />
+        ) : (
+          <div className="grid h-20 place-items-center rounded-control border border-line border-dashed">
+            <button
+              type="button"
+              id="analyze-game-button"
+              className={button({ intent: 'quiet', size: 'sm' })}
+              onClick={onAnalyze}
+              disabled={analyzing !== null}
+            >
+              {analyzing !== null
+                ? t('room.analyzing', { done: analyzing.done, total: analyzing.total })
+                : t('room.analyzeGame')}
+            </button>
+          </div>
+        ),
+    });
+  }
+  if (tree.mainline_ply_count > 0) {
+    vizTabs.push({
+      id: 'material',
+      label: t('analysis.materialTab'),
+      content: (
+        <MaterialFlow
+          tree={tree}
+          currentPly={current.ply}
+          flipped={flipped}
+          onSelectPly={handleFlowSelect}
+        />
+      ),
+    });
+  }
+
   return (
     <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-3 md:gap-6">
       <div className="flex flex-col items-center gap-4 xl:flex-row xl:items-start xl:gap-6">
@@ -698,49 +748,13 @@ export default function Analysis({
             ]}
           />
           {/*
-            Visualizations live in their own tabbed box below the sidebar
-            tabs — today the eval chart with its quality strip (or the
-            Analyze button holding its place), later e.g. move times.
-            Always visible, no matter which sidebar tab is active, and a
-            constant height (h-20), so the move list never resizes.
+            The visualization box sits below the tabs so it stays visible no
+            matter which tab is active. A constant height (h-20), so the
+            move list never resizes.
           */}
-          {((analysis !== null && analysis.length > 1) || onAnalyze !== undefined) && (
+          {vizTabs.length > 0 && (
             <div className="shrink-0">
-              <SidebarTabs
-                tabs={[
-                  {
-                    id: 'eval',
-                    label: t('analysis.evalTab'),
-                    content:
-                      analysis !== null && analysis.length > 1 ? (
-                        <GameFlow
-                          evals={analysis}
-                          currentPly={current.ply}
-                          flipped={flipped}
-                          openingExitPly={bookExitPly}
-                          onSelectPly={handleFlowSelect}
-                        />
-                      ) : (
-                        <div className="grid h-20 place-items-center rounded-control border border-line border-dashed">
-                          <button
-                            type="button"
-                            id="analyze-game-button"
-                            className={button({ intent: 'quiet', size: 'sm' })}
-                            onClick={onAnalyze}
-                            disabled={analyzing !== null}
-                          >
-                            {analyzing !== null
-                              ? t('room.analyzing', {
-                                  done: analyzing.done,
-                                  total: analyzing.total,
-                                })
-                              : t('room.analyzeGame')}
-                          </button>
-                        </div>
-                      ),
-                  },
-                ]}
-              />
+              <SidebarTabs tabs={vizTabs} />
             </div>
           )}
         </aside>

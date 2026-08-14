@@ -686,6 +686,12 @@ describe('game flow chart', () => {
     expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
   });
 
+  it('shows the material tab even without an analysis (no engine needed)', () => {
+    renderAnalysis();
+
+    expect(screen.getByRole('tab', { name: 'Material' })).toBeInTheDocument();
+  });
+
   it('holds the chart slot with the analyze button until an analysis exists', () => {
     const onAnalyze = vi.fn();
     render(<Analysis tree={tree} onAnalyze={onAnalyze} />);

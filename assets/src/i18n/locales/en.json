@@ -133,6 +133,8 @@
     "moves": "Moves",
     "gameFlow": "Game flow chart: engine evaluation by move. Click or drag to jump to a position.",
     "evalTab": "Eval",
+    "materialTab": "Material",
+    "materialFlow": "Material balance by move. Click or drag to jump to a position.",
     "bookExit": "leaves the book",
     "commentPlaceholder": "Add a comment...",
     "saveComment": "Save comment",

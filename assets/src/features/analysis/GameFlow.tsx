@@ -37,7 +37,7 @@ function areaPath(segment: Point[], flipped: boolean): string {
 }
 
 /** "12." / "12…" / "start position" — the hovered ply as a move label. */
-function plyLabel(ply: number, startLabel: string): string {
+export function plyLabel(ply: number, startLabel: string): string {
   if (ply === 0) {
     return startLabel;
   }
