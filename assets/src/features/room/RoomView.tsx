@@ -1,6 +1,7 @@
 import type { Channel } from 'phoenix';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { pieceSrc } from '@/components/board';
 import { button, chip, panel, statusDot } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
 import ImportDialog from '@/features/import/ImportDialog';
@@ -303,7 +304,7 @@ export default function RoomView({
                   className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] animate-pop flex-col items-center gap-4 text-center lg:pointer-events-auto`}
                 >
                   <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
-                    <span className="text-3xl text-muted">♟</span>
+                    <img src={pieceSrc({ color: 'w', kind: 'p' })} alt="" className="h-10 w-10" />
                   </div>
                   <h2 className="m-0 text-display font-bold">{t('room.emptyTitle')}</h2>
                   <p className="m-0 text-body text-muted">{t('room.emptyOwner')}</p>

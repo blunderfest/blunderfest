@@ -1,6 +1,24 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import ArrowIcon from '@/components/ArrowIcon';
 import { useScrollLock } from '@/lib/useScrollLock';
+
+/** Arrow hints as icons — the mono font's subset has no ←/→ glyphs. */
+function KeyGlyph({ k }: { k: string }) {
+  if (k === '←') {
+    return <ArrowIcon of="left" className="h-3 w-3" />;
+  }
+  if (k === '→') {
+    return <ArrowIcon of="right" className="h-3 w-3" />;
+  }
+  if (k === '↑') {
+    return <ArrowIcon of="up" className="h-3 w-3" />;
+  }
+  if (k === '↓') {
+    return <ArrowIcon of="down" className="h-3 w-3" />;
+  }
+  return <>{k}</>;
+}
 
 function KeyRow({ keys, action }: { keys: string[]; action: string }) {
   return (
@@ -8,7 +26,9 @@ function KeyRow({ keys, action }: { keys: string[]; action: string }) {
       <span className="text-ui text-muted">{action}</span>
       <span className="flex shrink-0 gap-1">
         {keys.map((key) => (
-          <kbd key={key}>{key}</kbd>
+          <kbd key={key} className="inline-flex items-center">
+            <KeyGlyph k={key} />
+          </kbd>
         ))}
       </span>
     </div>

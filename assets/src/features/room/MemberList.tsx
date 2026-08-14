@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { pieceSrc } from '@/components/board';
 import { button, chip, panel, panelHeader } from '@/components/ui';
 import type { MemberRole, PresenceMember } from '@/protocol/ops';
 
@@ -77,13 +78,9 @@ export default function MemberList({
         {members.map((member) => {
           const role = roles[member.id] ?? 'viewer';
           const isBold = role === 'owner' || role === 'collaborator';
-          const icon = role === 'owner' ? '♚' : role === 'collaborator' ? '♞' : '♟';
-          const iconClass =
-            role === 'owner'
-              ? 'text-gold-hi'
-              : role === 'collaborator'
-                ? 'text-silver'
-                : 'text-faint';
+          // The role piece: king > knight > pawn, using the shipped cburnett
+          // SVGs — text glyphs like ♚ would fall back to a system font.
+          const kind = role === 'owner' ? 'k' : role === 'collaborator' ? 'n' : 'p';
           return (
             <li
               key={member.id}
@@ -94,9 +91,9 @@ export default function MemberList({
                 role="img"
                 aria-label={t(`room.role.${role}`)}
                 title={t(`room.role.${role}`)}
-                className={`inline-block w-4 shrink-0 text-center text-base leading-none ${iconClass}`}
+                className="inline-flex w-4 shrink-0 items-center justify-center"
               >
-                {icon}
+                <img src={pieceSrc({ color: 'w', kind })} alt="" className="h-4 w-4" />
               </span>
               <span className={isBold ? 'font-semibold text-ink' : 'text-muted'}>
                 {member.name}

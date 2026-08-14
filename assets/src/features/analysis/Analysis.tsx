@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import ArrowIcon from '@/components/ArrowIcon';
 import Board from '@/components/Board';
 import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceSrc } from '@/components/board';
 import { button, statusDot } from '@/components/ui';
@@ -624,7 +625,13 @@ export default function Analysis({
             }
           />
           <p className="m-0 hidden text-note text-faint md:block">
-            <kbd>←</kbd> <kbd>→</kbd> {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
+            <kbd className="inline-flex items-center">
+              <ArrowIcon of="left" className="h-3 w-3" />
+            </kbd>{' '}
+            <kbd className="inline-flex items-center">
+              <ArrowIcon of="right" className="h-3 w-3" />
+            </kbd>{' '}
+            {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
             {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')} · <kbd>c</kbd>{' '}
             {t('analysis.shortcutNote')}
           </p>
