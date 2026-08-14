@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import BookExitIcon from '@/features/analysis/BookExitIcon';
 import { evalText, type MoveMark, moveMark } from '@/features/analysis/evalMarks';
 import { type WhiteEval, whiteShare } from '@/features/analysis/uci';
 import type { AnalysisEval } from '@/protocol/ops';
@@ -251,10 +252,12 @@ export default function GameFlow({
       </svg>
       {openingExitPly !== null && openingExitPly <= maxPly && (
         <div
-          className="pointer-events-none absolute top-0 bottom-0 w-px border-l border-dashed border-white/40"
+          className="pointer-events-none absolute top-0 bottom-0 w-px border-l border-dashed border-info"
           style={{ left: `${(openingExitPly / maxPly) * 100}%` }}
           data-testid="game-flow-book-exit"
-        />
+        >
+          <BookExitIcon className="absolute -top-0.5 -left-[5px] h-2.5 w-2.5 text-info" />
+        </div>
       )}
       {marks.map(({ ply, mark, xPct, yPct }) => (
         <div

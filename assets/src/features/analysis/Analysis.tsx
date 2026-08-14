@@ -667,6 +667,7 @@ export default function Analysis({
                     currentPly={current.ply}
                     totalPly={tree.mainline_ply_count}
                     evalsByPly={evalsByPly}
+                    bookExitPly={bookExitPly}
                   />
                 ),
               },

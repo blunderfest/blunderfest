@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
@@ -132,6 +132,30 @@ describe('MoveList keyboard navigation (listbox pattern)', () => {
     fireEvent.keyDown(list, { key: 'ArrowDown' });
     fireEvent.keyDown(list, { key: 'Enter' });
     expect(onSelect).toHaveBeenCalledWith(2);
+  });
+});
+
+describe('MoveList book-exit marker', () => {
+  it('marks the mainline move that leaves the book — never a variation at the same ply', () => {
+    render(
+      <MoveList
+        rows={buildRows(makeTree(false))}
+        currentId={null}
+        onSelect={vi.fn()}
+        navTargets={{ first: 0, prev: null, next: null, last: null }}
+        currentPly={0}
+        totalPly={2}
+        bookExitPly={2}
+      />,
+    );
+
+    // 1…e5 (id 2, mainline) carries the marker; 2…c5 (id 3, variation, same ply) does not.
+    expect(
+      within(screen.getByTestId('analysis-move-2')).getByTestId('book-exit'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('analysis-move-3')).queryByTestId('book-exit'),
+    ).not.toBeInTheDocument();
   });
 });
 

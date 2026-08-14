@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
 import { button, panel } from '@/components/ui';
+import BookExitIcon from '@/features/analysis/BookExitIcon';
 import { evalText, moveMark } from '@/features/analysis/evalMarks';
 import type { Row } from '@/features/analysis/moveList';
 import type { GameNode } from '@/lib/api';
@@ -45,6 +46,7 @@ function MoveButton({
   onFocusMove,
   evaluation,
   before,
+  bookExit = false,
 }: {
   node: GameNode;
   selected: boolean;
@@ -57,6 +59,8 @@ function MoveButton({
   evaluation?: AnalysisEval;
   /** The eval before this move (for the quality mark). */
   before?: AnalysisEval;
+  /** This move left the opening book (mainline only). */
+  bookExit?: boolean;
 }) {
   const { t } = useTranslation();
   const isSetup = node.san === null;
@@ -83,6 +87,16 @@ function MoveButton({
       ) : (
         <>
           {showNumber && <span className="text-faint">{moveNumber(node)}</span>} {node.san}
+          {bookExit && (
+            <span
+              className="ml-0.5 inline-flex align-middle"
+              title={t('analysis.bookExit')}
+              data-testid="book-exit"
+            >
+              <BookExitIcon className="h-3 w-3 text-info" />
+              <span className="sr-only">{t('analysis.bookExit')}</span>
+            </span>
+          )}
           {mark !== null && <span className={`font-bold ${markClass}`}>{mark}</span>}
           {evaluation !== undefined && (
             <span className="ml-0.5 text-micro text-faint tabular-nums">
@@ -205,6 +219,7 @@ export default function MoveList({
   currentPly,
   totalPly,
   evalsByPly,
+  bookExitPly = null,
 }: {
   rows: Row[];
   currentId: number | null;
@@ -214,6 +229,8 @@ export default function MoveList({
   totalPly: number;
   /** Mainline evals by ply, when a whole-game analysis exists (ADR-0009). */
   evalsByPly?: Record<number, AnalysisEval>;
+  /** The mainline ply where the game leaves the opening book. */
+  bookExitPly?: number | null;
 }) {
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -305,6 +322,7 @@ export default function MoveList({
                 onFocusMove={setListFocusId}
                 evaluation={evalsByPly?.[row.white.ply]}
                 before={evalsByPly?.[row.white.ply - 1]}
+                bookExit={bookExitPly === row.white.ply}
               />
               {row.white.comment && (
                 <div className="basis-full border-l-2 border-line-strong pl-2 text-note italic text-muted">
@@ -322,6 +340,7 @@ export default function MoveList({
                   onFocusMove={setListFocusId}
                   evaluation={evalsByPly?.[row.black.ply]}
                   before={evalsByPly?.[row.black.ply - 1]}
+                  bookExit={bookExitPly === row.black.ply}
                 />
               )}
               {row.black?.comment && (
