@@ -9,6 +9,7 @@ import CommentPopup from '@/features/analysis/CommentPopup';
 import EngineReadout from '@/features/analysis/EngineReadout';
 import EvalBar from '@/features/analysis/EvalBar';
 import type { ChessEngine } from '@/features/analysis/engine';
+import GameFlow from '@/features/analysis/GameFlow';
 import GameInfo from '@/features/analysis/GameInfo';
 import { legalMovesFor } from '@/features/analysis/legalMoves';
 import MoveList from '@/features/analysis/MoveList';
@@ -292,6 +293,27 @@ export default function Analysis({
   const evalsByPly = useMemo(
     () => Object.fromEntries((analysis ?? []).map((evaluation) => [evaluation.ply, evaluation])),
     [analysis],
+  );
+
+  /** Mainline node ids by ply, for the game-flow chart's click-to-jump. */
+  const mainlineIdByPly = useMemo(() => {
+    const map = new Map<number, number>();
+    let node: GameNode | null = tree?.root ?? null;
+    while (node !== null) {
+      map.set(node.ply, node.id);
+      node = node.children[0] ?? null;
+    }
+    return map;
+  }, [tree]);
+
+  const handleFlowSelect = useCallback(
+    (ply: number) => {
+      const id = mainlineIdByPly.get(ply);
+      if (id !== undefined) {
+        navigate(id);
+      }
+    },
+    [mainlineIdByPly, navigate],
   );
 
   const handleFlip = useCallback(() => setFlipped((value) => !value), []);
@@ -631,6 +653,13 @@ export default function Analysis({
                       totalPly={tree.mainline_ply_count}
                       evalsByPly={evalsByPly}
                     />
+                    {analysis !== null && analysis.length > 1 && (
+                      <GameFlow
+                        evals={analysis}
+                        currentPly={current.ply}
+                        onSelectPly={handleFlowSelect}
+                      />
+                    )}
                     <GameInfo tree={tree} onAnalyze={onAnalyze} analyzing={analyzing} />
                   </>
                 ),

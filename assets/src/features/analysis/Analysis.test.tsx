@@ -639,6 +639,46 @@ describe('follow-the-tail cursor', () => {
   });
 });
 
+describe('game flow chart', () => {
+  const flowEvals = [
+    { ply: 0, score: { cp: 20 }, best_move: null },
+    { ply: 1, score: { cp: 40 }, best_move: null },
+    { ply: 2, score: { cp: -30 }, best_move: null },
+    { ply: 3, score: { cp: 10 }, best_move: null },
+  ];
+
+  it('shows the chart once an analysis exists and jumps to the clicked ply', () => {
+    render(<Analysis tree={tree} analysis={flowEvals} />);
+    const chart = screen.getByTestId('game-flow');
+    vi.spyOn(chart, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      width: 100,
+      top: 0,
+      height: 64,
+      right: 100,
+      bottom: 64,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    // Opens on the last mainline position (3. Nf3).
+    expect(pieceAt('square-f3')).toBe('wn');
+
+    // 25% across → ply 1: 1. e4 played, 1... e5 not yet.
+    fireEvent(chart, new MouseEvent('pointerdown', { bubbles: true, clientX: 25 }));
+    expect(pieceAt('square-e4')).toBe('wp');
+    expect(pieceAt('square-e5')).toBeNull();
+    expect(pieceAt('square-f3')).toBeNull();
+  });
+
+  it('stays hidden without an analysis', () => {
+    renderAnalysis();
+
+    expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
+  });
+});
+
 describe('analysis settings tab', () => {
   beforeEach(() => {
     localStorage.clear();
