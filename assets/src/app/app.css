@@ -160,6 +160,13 @@
 }
 
 @layer base {
+  html {
+    /* Reserve the scrollbar gutter even when nothing scrolls, so an
+       appearing scrollbar (e.g. the engine readout tipping the page past
+       the viewport height) never shifts the centered layout sideways. */
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-void font-sans text-ink;
   }

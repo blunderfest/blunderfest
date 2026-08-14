@@ -396,21 +396,27 @@ export default function Analysis({
           </p>
 
           {/*
+            The board column is always centered. The eval bar hangs off its
+            left edge, out of flow, so toggling the engine (or the edit
+            palette) never shifts the board. Phones have no margin to hang
+            into, so below 672px the column gets a compensating left margin
+            instead — the board's width formula already reserves exactly
+            that slot (100vw - page padding - 2.5rem - gap).
+
             The edit palette sits on each side's home edge (black pieces on
             black's side, white on white's — swapped when flipped), like
             lichess's editor. No scroll strip.
           */}
-          <div className="flex items-stretch gap-3">
-            {/*
-              Fixed-width slot for the eval bar / edit palette: it keeps its
-              width even when empty (engine off), so the board and sidebar
-              never shift when the engine display toggles.
-            */}
-            <div
-              className="flex w-10 shrink-0 flex-col justify-center self-stretch"
-              data-testid="board-left-slot"
-            >
-              {editor.editing ? null : engineOn ? (
+          <div
+            className={`relative flex flex-col items-stretch gap-2 ${
+              !editor.editing && engineOn ? 'ml-13 min-[672px]:ml-0' : ''
+            }`}
+          >
+            {!editor.editing && engineOn && (
+              <div
+                className="absolute top-0 right-full bottom-0 mr-3 flex w-10 flex-col justify-center"
+                data-testid="board-left-slot"
+              >
                 <EvalBar
                   eval={engineState.eval}
                   thinking={engineState.status === 'thinking'}
@@ -418,65 +424,59 @@ export default function Analysis({
                   flipped={flipped}
                   label={evalBarLabel}
                 />
-              ) : null}
-            </div>
-            {/*
-              The strips live in the board's own column, so the trays align
-              exactly with the board's edges on both axes.
-            */}
-            <div className="flex flex-col items-stretch gap-2">
-              {editor.editing && (
-                <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} side="top" />
-              )}
-              <Board
-                position={editor.editing ? editor.editPos : parseFen(current.fen ?? '')}
-                lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
-                flipped={flipped}
-                label={boardLabel}
-                interactive={editor.editing || canPlay || canEdit}
-                selected={editor.editing ? editor.editSelected : selected}
-                legalTargets={editor.editing ? [] : legalTargets}
-                arrows={editor.editing ? [] : boardArrows}
-                highlights={editor.editing ? [] : nodeAnnotations.highlights}
-                checkSquare={editor.editing ? null : checkSquare}
-                onSquareClick={
-                  editor.editing
-                    ? editor.handleEditSquareClick
-                    : canPlay
-                      ? handleSquareClick
-                      : undefined
-                }
-                onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
-                onDrawArrow={canEdit && !editor.editing ? handleDrawArrow : undefined}
-                onToggleHighlight={canEdit && !editor.editing ? handleToggleHighlight : undefined}
-                drawColor={drawColor}
-                onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
-                paintBrush={editor.editing ? editor.editBrush : null}
-                onPaintSquare={
-                  editor.editing && editor.editBrush !== null ? editor.paintSquare : undefined
-                }
-              />
-              {editor.editing && (
-                <div className="flex w-full items-center justify-between">
-                  <PaletteStrip editor={editor} color={flipped ? 'b' : 'w'} side="bottom" />
-                  {/* The eraser stands apart, flush with the board's right edge. */}
-                  <button
-                    type="button"
-                    aria-pressed={editor.editBrush === 'erase'}
-                    aria-label={t('analysis.eraser')}
-                    data-testid="eraser-button"
-                    className={`grid h-9 w-9 place-items-center rounded-control border text-base transition-colors ${
-                      editor.editBrush === 'erase'
-                        ? 'border-gold/60 bg-gold/20 text-gold-hi'
-                        : 'border-line bg-panel text-muted hover:bg-raised'
-                    }`}
-                    onClick={() => editor.toggleBrush('erase')}
-                  >
-                    ⌫
-                  </button>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+            {editor.editing && (
+              <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} side="top" />
+            )}
+            <Board
+              position={editor.editing ? editor.editPos : parseFen(current.fen ?? '')}
+              lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
+              flipped={flipped}
+              label={boardLabel}
+              interactive={editor.editing || canPlay || canEdit}
+              selected={editor.editing ? editor.editSelected : selected}
+              legalTargets={editor.editing ? [] : legalTargets}
+              arrows={editor.editing ? [] : boardArrows}
+              highlights={editor.editing ? [] : nodeAnnotations.highlights}
+              checkSquare={editor.editing ? null : checkSquare}
+              onSquareClick={
+                editor.editing
+                  ? editor.handleEditSquareClick
+                  : canPlay
+                    ? handleSquareClick
+                    : undefined
+              }
+              onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
+              onDrawArrow={canEdit && !editor.editing ? handleDrawArrow : undefined}
+              onToggleHighlight={canEdit && !editor.editing ? handleToggleHighlight : undefined}
+              drawColor={drawColor}
+              onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
+              paintBrush={editor.editing ? editor.editBrush : null}
+              onPaintSquare={
+                editor.editing && editor.editBrush !== null ? editor.paintSquare : undefined
+              }
+            />
+            {editor.editing && (
+              <div className="flex w-full items-center justify-between">
+                <PaletteStrip editor={editor} color={flipped ? 'b' : 'w'} side="bottom" />
+                {/* The eraser stands apart, flush with the board's right edge. */}
+                <button
+                  type="button"
+                  aria-pressed={editor.editBrush === 'erase'}
+                  aria-label={t('analysis.eraser')}
+                  data-testid="eraser-button"
+                  className={`grid h-9 w-9 place-items-center rounded-control border text-base transition-colors ${
+                    editor.editBrush === 'erase'
+                      ? 'border-gold/60 bg-gold/20 text-gold-hi'
+                      : 'border-line bg-panel text-muted hover:bg-raised'
+                  }`}
+                  onClick={() => editor.toggleBrush('erase')}
+                >
+                  ⌫
+                </button>
+              </div>
+            )}
           </div>
           {editor.editing && (
             <div

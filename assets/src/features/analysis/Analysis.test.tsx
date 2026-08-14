@@ -672,12 +672,14 @@ describe('analysis settings tab', () => {
 
     await waitFor(() => expect(screen.queryByTestId('engine-readout')).not.toBeInTheDocument());
     expect(screen.queryByTestId('eval-bar')).not.toBeInTheDocument();
-    // The board's left slot keeps its width so the layout doesn't shift.
-    expect(screen.getByTestId('board-left-slot')).toBeInTheDocument();
+    // The bar's slot leaves the flow entirely — it hangs off the board's
+    // left edge when shown, so the board never shifts either way.
+    expect(screen.queryByTestId('board-left-slot')).not.toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.engine')).toBe('off');
 
     fireEvent.click(screen.getByTestId('setting-engine'));
     expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();
+    expect(await screen.findByTestId('board-left-slot')).toBeInTheDocument();
   });
 
   it('disables the hint-arrow switch while the engine is off (not the reverse)', async () => {
