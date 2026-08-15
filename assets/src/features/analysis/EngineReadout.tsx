@@ -56,6 +56,15 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
   const { status, lines, retry } = state;
   const thinking = status === 'thinking';
 
+  // Terminal positions carry a result instead of engine lines — show it
+  // through the same single-line fallback.
+  const displayLines =
+    lines.length > 0
+      ? lines
+      : state.eval !== null
+        ? [{ eval: state.eval, depth: state.depth ?? 0, pv: state.pv }]
+        : [];
+
   if (status === 'error') {
     return (
       <div className="flex h-9 w-full items-center gap-2 px-3" data-testid="engine-readout">
@@ -72,7 +81,7 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
     );
   }
 
-  if (lines.length === 0) {
+  if (displayLines.length === 0) {
     return (
       <div className="flex h-9 w-full items-center gap-2 px-3" data-testid="engine-readout">
         <span className={statusDot({ tone: thinking ? 'warn' : 'ok', pulse: thinking })} />
@@ -85,7 +94,7 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
 
   return (
     <div className="flex w-full flex-col px-3 py-1" data-testid="engine-readout">
-      {lines.map((line, index) => (
+      {displayLines.map((line, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity — row N is always the Nth-best line
         <div key={index} className="flex h-7 items-center gap-2" data-testid="engine-line">
           {index === 0 ? (
