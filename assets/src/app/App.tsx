@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Logo from '@/components/Logo';
 import Home from '@/features/home/Home';
+import RegionChip from '@/features/room/RegionChip';
 import RoomHeader from '@/features/room/RoomHeader';
 import RoomView from '@/features/room/RoomView';
 import { getTheme, setTheme, type Theme } from '@/lib/theme';
@@ -111,17 +112,17 @@ export default function App() {
         {t('app.skipToContent')}
       </button>
       <header className="relative flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line bg-surface px-4 py-2">
-        <a href="#/" aria-label={t('app.name')} className="text-ink no-underline">
-          <Logo size="sm" />
-        </a>
-        {route.screen === 'room' && (
-          // The room chip is centered on the header (in-flow on phones,
-          // where the header wraps).
-          <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2">
-            <RoomHeader slug={route.slug} onLeave={navigateHome} />
-          </div>
-        )}
         <div className="flex items-center gap-3">
+          <a href="#/" aria-label={t('app.name')} className="text-ink no-underline">
+            <Logo size="sm" />
+          </a>
+          {route.screen === 'room' && (
+            // Room actions live on the left, next to the logo.
+            <RoomHeader slug={route.slug} onLeave={navigateHome} />
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {route.screen === 'room' && <RegionChip region={region} />}
           <button
             type="button"
             id="theme-toggle"

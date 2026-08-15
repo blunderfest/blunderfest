@@ -1,20 +1,17 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, chip } from '@/components/ui';
-import { formatRegion, regionFlag } from '@/lib/region';
 import { useAppSelector } from '@/store';
 
 /**
- * The compact room chip rendered in the app header for everyone in the room:
- * the code to copy and share (joiners land as viewers anyway) plus leave.
- * Also shows the region of the machine you're connected to (ADR-0013) — the
- * flag on small screens, flag + name from sm up. Read-only rooms (the demo,
- * ADR-0014) get a badge explaining why nothing can be edited.
+ * The compact room actions in the app header's left cluster for everyone in
+ * the room: the code to copy and share (joiners land as viewers anyway) plus
+ * leave. Read-only rooms (the demo, ADR-0014) get a badge explaining why
+ * nothing can be edited.
  */
 export default function RoomHeader({ slug, onLeave }: { slug: string; onLeave: () => void }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
-  const region = useAppSelector((state) => state.room.region);
   const readOnly = useAppSelector((state) => state.room.readOnly);
 
   async function handleCopy() {
@@ -92,28 +89,6 @@ export default function RoomHeader({ slug, onLeave }: { slug: string; onLeave: (
           {t('room.demoBadge')}
         </span>
       )}
-      <RegionChip region={region} />
     </div>
-  );
-}
-
-function RegionChip({ region: code }: { region: string | null }) {
-  const { t } = useTranslation();
-  const text = formatRegion(code);
-  if (text === null) {
-    return null;
-  }
-  const flag = regionFlag(code);
-
-  return (
-    <span
-      data-testid="region-chip"
-      title={t('room.regionLabel')}
-      className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-muted"
-    >
-      <span className="sr-only">{t('room.regionLabel')} </span>
-      {flag !== null ? <span className="sm:hidden">{flag}</span> : null}
-      <span className={flag !== null ? 'max-sm:hidden' : undefined}>{text}</span>
-    </span>
   );
 }
