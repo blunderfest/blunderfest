@@ -490,19 +490,6 @@ export default function Analysis({
       ),
     });
   }
-  vizTabs.push({
-    id: 'moments',
-    label: t('analysis.momentsTab'),
-    content: (
-      <div className="p-2">
-        {analysis !== null && analysis.length > 1 ? (
-          <CriticalMoments tree={tree} evals={analysis} onSelectPly={handleFlowSelect} />
-        ) : (
-          analyzePlaceholder
-        )}
-      </div>
-    ),
-  });
   if (tree.mainline_ply_count > 0) {
     vizTabs.push({
       id: 'material',
@@ -796,6 +783,40 @@ export default function Analysis({
                     />
                   </section>
                 ),
+              },
+              {
+                id: 'moments',
+                label: t('analysis.momentsTab'),
+                content:
+                  analysis !== null && analysis.length > 1 ? (
+                    <CriticalMoments
+                      tree={tree}
+                      evals={analysis}
+                      flipped={flipped}
+                      onSelectPly={handleFlowSelect}
+                    />
+                  ) : (
+                    <div className="grid flex-1 place-items-center p-4">
+                      {onAnalyze !== undefined ? (
+                        <button
+                          type="button"
+                          id="analyze-game-button-moments"
+                          className={button({ intent: 'secondary', size: 'sm' })}
+                          onClick={onAnalyze}
+                          disabled={analyzing !== null}
+                        >
+                          {analyzing !== null
+                            ? t('room.analyzing', {
+                                done: analyzing.done,
+                                total: analyzing.total,
+                              })
+                            : t('room.analyzeGame')}
+                        </button>
+                      ) : (
+                        <p className="m-0 text-note text-faint">{t('analysis.noAnalysisYet')}</p>
+                      )}
+                    </div>
+                  ),
               },
               {
                 id: 'game',

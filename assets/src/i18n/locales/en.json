@@ -137,6 +137,7 @@
     "materialFlow": "Material balance by move. Click or drag to jump to a position.",
     "evalScale": "Centipawns or win probability",
     "momentsTab": "Moments",
+    "momentBoard": "Position after {{move}}",
     "noMoments": "No big swings — a clean game.",
     "noAnalysisYet": "No analysis yet.",
     "bestMove": "best {{move}}",

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import CriticalMoments, { criticalMoments } from '@/features/analysis/CriticalMoments';
 import type { GameNode, GameTree } from '@/lib/api';
@@ -84,20 +84,22 @@ describe('criticalMoments', () => {
 });
 
 describe('CriticalMoments', () => {
-  it('renders clickable chips that jump to the position', () => {
+  it('renders mini-board rows that jump to the position on click', () => {
     const onSelectPly = vi.fn();
     render(<CriticalMoments tree={tree} evals={evals} onSelectPly={onSelectPly} />);
 
-    const chips = screen.getAllByTestId('critical-moment');
-    expect(chips).toHaveLength(2);
-    expect(chips[0]).toHaveTextContent('1… e5??');
-    expect(chips[0]).toHaveAttribute('title', '+0.4 → +3.4');
+    const rows = screen.getAllByTestId('critical-moment');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent('1… e5??');
+    expect(rows[0]).toHaveTextContent('+0.4 → +3.4');
+    // Each row carries a mini board.
+    expect(within(rows[0]).getByRole('img', { name: 'Position after 1… e5' })).toBeInTheDocument();
 
-    fireEvent.click(chips[0]);
+    fireEvent.click(rows[0]);
     expect(onSelectPly).toHaveBeenCalledWith(2);
   });
 
-  it('includes the best alternative in the chip title', () => {
+  it('shows the best alternative under the swing', () => {
     // The best move at ply 1 applies to the move at ply 2 (the ?? blunder).
     const withBest: AnalysisEval[] = evals.map((e) =>
       e.ply === 1 ? { ...e, best_move: 'e7e5' } : e,
@@ -116,10 +118,7 @@ describe('CriticalMoments', () => {
     };
     render(<CriticalMoments tree={realFenTree} evals={withBest} onSelectPly={vi.fn()} />);
 
-    expect(screen.getAllByTestId('critical-moment')[0]).toHaveAttribute(
-      'title',
-      '+0.4 → +3.4 · best e5',
-    );
+    expect(screen.getAllByTestId('critical-moment')[0]).toHaveTextContent('best e5');
   });
 
   it('shows a friendly empty state for a clean game', () => {
