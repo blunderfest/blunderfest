@@ -196,6 +196,7 @@
   },
   "room": {
     "connecting": "Connecting...",
+    "panelTitle": "Room",
     "codeLabel": "Room code",
     "regionLabel": "Server region",
     "copied": "Copied!",

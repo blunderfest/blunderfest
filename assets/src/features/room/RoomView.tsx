@@ -8,6 +8,7 @@ import ImportDialog from '@/features/import/ImportDialog';
 import ActivityFeed from '@/features/room/ActivityFeed';
 import GameList from '@/features/room/GameList';
 import MemberList from '@/features/room/MemberList';
+import RoomPanel from '@/features/room/RoomPanel';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
 import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
@@ -269,6 +270,7 @@ export default function RoomView({
           grows a body scrollbar.
         */}
         <aside className="flex flex-col gap-3 xl:h-[min(90vw,34rem)]">
+          <RoomPanel slug={slug} onLeave={onLeave} />
           <GameList
             games={games}
             activeGameId={effectiveGameId}

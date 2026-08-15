@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Logo from '@/components/Logo';
 import Home from '@/features/home/Home';
-import RegionChip from '@/features/room/RegionChip';
-import RoomHeader from '@/features/room/RoomHeader';
 import RoomView from '@/features/room/RoomView';
 import { getTheme, setTheme, type Theme } from '@/lib/theme';
 import { useProfile } from '@/lib/useProfile';
@@ -116,13 +114,8 @@ export default function App() {
           <a href="#/" aria-label={t('app.name')} className="text-ink no-underline">
             <Logo size="sm" />
           </a>
-          {route.screen === 'room' && (
-            // Room actions live on the left, next to the logo.
-            <RoomHeader slug={route.slug} onLeave={navigateHome} />
-          )}
         </div>
         <div className="flex items-center gap-3">
-          {route.screen === 'room' && <RegionChip region={region} />}
           <button
             type="button"
             id="theme-toggle"
