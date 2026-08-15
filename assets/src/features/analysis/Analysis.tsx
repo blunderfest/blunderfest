@@ -742,24 +742,21 @@ export default function Analysis({
                 id: 'analysis',
                 label: t('analysis.moves'),
                 content: (
-                  <>
-                    <MoveList
-                      rows={rows}
-                      currentId={current.id}
-                      onSelect={navigate}
-                      navTargets={{
-                        first: tree.root.id,
-                        prev: parent?.id ?? null,
-                        next: next?.id ?? null,
-                        last: current.children.length === 0 ? null : lastChildOf(current).id,
-                      }}
-                      currentPly={current.ply}
-                      totalPly={tree.mainline_ply_count}
-                      evalsByPly={evalsByPly}
-                      bookExitPly={bookExitPly}
-                    />
-                    <GameActions tree={tree} />
-                  </>
+                  <MoveList
+                    rows={rows}
+                    currentId={current.id}
+                    onSelect={navigate}
+                    navTargets={{
+                      first: tree.root.id,
+                      prev: parent?.id ?? null,
+                      next: next?.id ?? null,
+                      last: current.children.length === 0 ? null : lastChildOf(current).id,
+                    }}
+                    currentPly={current.ply}
+                    totalPly={tree.mainline_ply_count}
+                    evalsByPly={evalsByPly}
+                    bookExitPly={bookExitPly}
+                  />
                 ),
               },
               {
@@ -781,6 +778,11 @@ export default function Analysis({
               },
             ]}
           />
+          {/*
+            The game actions sit between the tabs and the visualization
+            box: tab-independent and always visible, like the viz box.
+          */}
+          <GameActions tree={tree} />
           {/*
             The visualization box sits below the tabs so it stays visible no
             matter which tab is active. A constant height (h-20 + padding),

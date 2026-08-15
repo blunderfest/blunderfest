@@ -698,6 +698,15 @@ describe('game flow chart', () => {
     expect(screen.getByRole('tab', { name: 'Moments' })).toBeInTheDocument();
   });
 
+  it('keeps the game actions visible across sidebar tab switches', () => {
+    renderAnalysis();
+
+    expect(screen.getByRole('button', { name: 'Export PGN' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
+    expect(screen.getByRole('button', { name: 'Export PGN' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save to library' })).toBeInTheDocument();
+  });
+
   it('holds the chart slot with the analyze button until an analysis exists', () => {
     const onAnalyze = vi.fn();
     render(<Analysis tree={tree} onAnalyze={onAnalyze} />);

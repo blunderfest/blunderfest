@@ -30,7 +30,7 @@ export default function GameActions({ tree }: { tree: GameTree }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2 pt-2">
+    <div className="flex flex-wrap gap-2">
       <button
         type="button"
         id="export-pgn-button"
