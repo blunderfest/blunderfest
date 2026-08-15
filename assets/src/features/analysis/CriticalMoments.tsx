@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { chip } from '@/components/ui';
-import { evalText, type MoveMark, moveMark, toCentipawns } from '@/features/analysis/evalMarks';
+import {
+  bestMoveSans,
+  evalText,
+  type MoveMark,
+  moveMark,
+  toCentipawns,
+} from '@/features/analysis/evalMarks';
 import { plyLabel } from '@/features/analysis/GameFlow';
 import type { GameNode, GameTree } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
@@ -61,6 +67,7 @@ export default function CriticalMoments({
 }) {
   const { t } = useTranslation();
   const moments = useMemo(() => criticalMoments(tree.root, evals), [tree, evals]);
+  const bestSans = useMemo(() => bestMoveSans(tree.root, evals), [tree, evals]);
 
   return (
     <div
@@ -80,7 +87,14 @@ export default function CriticalMoments({
               class:
                 'cursor-pointer normal-case tracking-normal transition-opacity hover:opacity-75',
             })}
-            title={`${evalText(moment.before)} → ${evalText(moment.after)}`}
+            title={[
+              `${evalText(moment.before)} → ${evalText(moment.after)}`,
+              bestSans.has(moment.ply)
+                ? t('analysis.bestMove', { move: bestSans.get(moment.ply) })
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
             data-testid="critical-moment"
             onClick={() => onSelectPly(moment.ply)}
           >

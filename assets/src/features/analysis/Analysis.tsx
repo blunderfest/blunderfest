@@ -11,6 +11,7 @@ import CriticalMoments from '@/features/analysis/CriticalMoments';
 import EngineReadout from '@/features/analysis/EngineReadout';
 import EvalBar from '@/features/analysis/EvalBar';
 import type { ChessEngine } from '@/features/analysis/engine';
+import { bestMoveSans } from '@/features/analysis/evalMarks';
 import GameActions from '@/features/analysis/GameActions';
 import GameFlow from '@/features/analysis/GameFlow';
 import GameInfo from '@/features/analysis/GameInfo';
@@ -314,6 +315,15 @@ export default function Analysis({
     [analysis],
   );
 
+  /** The engine's best move before each move, for "best was …" readouts. */
+  const bestMoves = useMemo(
+    () =>
+      tree === null || analysis === null
+        ? new Map<number, string>()
+        : bestMoveSans(tree.root, analysis),
+    [tree, analysis],
+  );
+
   /** Mainline node ids by ply, for the game-flow chart's click-to-jump. */
   const mainlineIdByPly = useMemo(() => {
     const map = new Map<number, number>();
@@ -453,6 +463,7 @@ export default function Analysis({
               currentPly={current.ply}
               flipped={flipped}
               openingExitPly={bookExitPly}
+              bestMoves={bestMoves}
               onSelectPly={handleFlowSelect}
             />
           ) : (
@@ -756,6 +767,7 @@ export default function Analysis({
                     totalPly={tree.mainline_ply_count}
                     evalsByPly={evalsByPly}
                     bookExitPly={bookExitPly}
+                    bestMoves={bestMoves}
                   />
                 ),
               },

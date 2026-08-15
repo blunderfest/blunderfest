@@ -1,3 +1,5 @@
+import { pvToSan } from '@/features/analysis/uci';
+import type { GameNode } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
 
 /**
@@ -60,4 +62,27 @@ export function evalText(score: AnalysisEval['score']): string {
   const cp = score.cp ?? 0;
   const value = (cp / 100).toFixed(1);
   return cp > 0 ? `+${value}` : value;
+}
+
+/**
+ * The engine's best move before each mainline move, as SAN, keyed by the
+ * move's ply: the stored `best_move` at ply N is the recommendation for the
+ * position of ply N — the alternative to whatever was played at ply N + 1.
+ */
+export function bestMoveSans(root: GameNode, evals: AnalysisEval[]): Map<number, string> {
+  const byPly = new Map(evals.map((evaluation) => [evaluation.ply, evaluation]));
+  const map = new Map<number, string>();
+  let node: GameNode | null = root;
+  while (node !== null) {
+    const child = node.children[0];
+    const best = byPly.get(node.ply)?.best_move ?? null;
+    if (child !== undefined && best !== null && node.fen !== null) {
+      const san = pvToSan(node.fen, [best])[0];
+      if (san !== undefined) {
+        map.set(child.ply, san);
+      }
+    }
+    node = node.children[0] ?? null;
+  }
+  return map;
 }

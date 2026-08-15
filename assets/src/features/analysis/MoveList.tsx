@@ -47,6 +47,7 @@ function MoveButton({
   evaluation,
   before,
   bookExit = false,
+  bestMove,
 }: {
   node: GameNode;
   selected: boolean;
@@ -61,6 +62,8 @@ function MoveButton({
   before?: AnalysisEval;
   /** This move left the opening book (mainline only). */
   bookExit?: boolean;
+  /** The engine's best alternative (shown when the move is marked). */
+  bestMove?: string;
 }) {
   const { t } = useTranslation();
   const isSetup = node.san === null;
@@ -97,7 +100,16 @@ function MoveButton({
               <span className="sr-only">{t('analysis.bookExit')}</span>
             </span>
           )}
-          {mark !== null && <span className={`font-bold ${markClass}`}>{mark}</span>}
+          {mark !== null && (
+            <span
+              className={`font-bold ${markClass}`}
+              title={
+                bestMove !== undefined ? t('analysis.bestMove', { move: bestMove }) : undefined
+              }
+            >
+              {mark}
+            </span>
+          )}
           {evaluation !== undefined && (
             <span className="ml-0.5 text-micro text-faint tabular-nums">
               {evalText(evaluation.score)}
@@ -220,6 +232,7 @@ export default function MoveList({
   totalPly,
   evalsByPly,
   bookExitPly = null,
+  bestMoves,
 }: {
   rows: Row[];
   currentId: number | null;
@@ -231,6 +244,8 @@ export default function MoveList({
   evalsByPly?: Record<number, AnalysisEval>;
   /** The mainline ply where the game leaves the opening book. */
   bookExitPly?: number | null;
+  /** The engine's best alternative per ply, when an analysis exists. */
+  bestMoves?: Map<number, string>;
 }) {
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -323,6 +338,7 @@ export default function MoveList({
                 evaluation={evalsByPly?.[row.white.ply]}
                 before={evalsByPly?.[row.white.ply - 1]}
                 bookExit={bookExitPly === row.white.ply}
+                bestMove={bestMoves?.get(row.white.ply)}
               />
               {row.white.comment && (
                 <div className="basis-full border-l-2 border-line-strong pl-2 text-note italic text-muted">
@@ -341,6 +357,7 @@ export default function MoveList({
                   evaluation={evalsByPly?.[row.black.ply]}
                   before={evalsByPly?.[row.black.ply - 1]}
                   bookExit={bookExitPly === row.black.ply}
+                  bestMove={bestMoves?.get(row.black.ply)}
                 />
               )}
               {row.black?.comment && (

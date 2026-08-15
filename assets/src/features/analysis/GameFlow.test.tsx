@@ -184,6 +184,23 @@ describe('GameFlow', () => {
     expect(screen.getByTestId('game-flow-area').getAttribute('d')).toBe(before);
   });
 
+  it('shows the best alternative for a marked move in the hover readout', () => {
+    render(
+      <GameFlow
+        evals={evals}
+        currentPly={0}
+        bestMoves={new Map([[3, 'Qd2']])}
+        onSelectPly={vi.fn()}
+      />,
+    );
+    const chart = screen.getByTestId('game-flow');
+    mockChartRect(chart);
+
+    // 150px of 200px → ply 3: a '?' mistake.
+    fireEvent(chart, new MouseEvent('pointermove', { bubbles: true, clientX: 150 }));
+    expect(screen.getByTestId('game-flow-tooltip')).toHaveTextContent('2. ? -3.0 best Qd2');
+  });
+
   it('marks the opening-book exit and mentions it in the hover readout', () => {
     render(<GameFlow evals={evals} currentPly={0} openingExitPly={2} onSelectPly={vi.fn()} />);
     const chart = screen.getByTestId('game-flow');

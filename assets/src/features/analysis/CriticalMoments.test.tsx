@@ -97,6 +97,31 @@ describe('CriticalMoments', () => {
     expect(onSelectPly).toHaveBeenCalledWith(2);
   });
 
+  it('includes the best alternative in the chip title', () => {
+    // The best move at ply 1 applies to the move at ply 2 (the ?? blunder).
+    const withBest: AnalysisEval[] = evals.map((e) =>
+      e.ply === 1 ? { ...e, best_move: 'e7e5' } : e,
+    );
+    const realFenTree: GameTree = {
+      ...tree,
+      root: {
+        ...tree.root,
+        children: [
+          {
+            ...tree.root.children[0],
+            fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+          },
+        ],
+      },
+    };
+    render(<CriticalMoments tree={realFenTree} evals={withBest} onSelectPly={vi.fn()} />);
+
+    expect(screen.getAllByTestId('critical-moment')[0]).toHaveAttribute(
+      'title',
+      '+0.4 → +3.4 · best e5',
+    );
+  });
+
   it('shows a friendly empty state for a clean game', () => {
     const flat: AnalysisEval[] = evals.map((e) => ({ ...e, score: { cp: 20 } }));
     render(<CriticalMoments tree={tree} evals={flat} onSelectPly={vi.fn()} />);

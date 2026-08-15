@@ -139,6 +139,7 @@
     "momentsTab": "Moments",
     "noMoments": "No big swings — a clean game.",
     "noAnalysisYet": "No analysis yet.",
+    "bestMove": "best {{move}}",
     "bookExit": "leaves the book",
     "commentPlaceholder": "Add a comment...",
     "saveComment": "Save comment",

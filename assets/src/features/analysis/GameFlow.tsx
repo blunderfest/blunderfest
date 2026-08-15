@@ -74,6 +74,7 @@ export default function GameFlow({
   currentPly,
   flipped = false,
   openingExitPly = null,
+  bestMoves,
   onSelectPly,
 }: {
   evals: AnalysisEval[];
@@ -82,6 +83,8 @@ export default function GameFlow({
   flipped?: boolean;
   /** The ply where the line leaves the opening book (dashed marker). */
   openingExitPly?: number | null;
+  /** The engine's best alternative per ply — shown for marked moves. */
+  bestMoves?: Map<number, string>;
   onSelectPly: (ply: number) => void;
 }) {
   const { t } = useTranslation();
@@ -317,14 +320,20 @@ export default function GameFlow({
             style={{ left: `${hoverFraction * 100}%` }}
             data-testid="game-flow-tooltip"
           >
-            {[
-              plyLabel(hoverPly, t('analysis.startPosition')),
-              marks.find((m) => m.ply === hoverPly)?.mark ?? null,
-              readoutFor(hoverPly),
-              hoverPly === openingExitPly ? t('analysis.bookExit') : null,
-            ]
-              .filter(Boolean)
-              .join(' ')}
+            {(() => {
+              const mark = marks.find((m) => m.ply === hoverPly)?.mark ?? null;
+              const best =
+                mark !== null && bestMoves !== undefined ? bestMoves.get(hoverPly) : undefined;
+              return [
+                plyLabel(hoverPly, t('analysis.startPosition')),
+                mark,
+                readoutFor(hoverPly),
+                hoverPly === openingExitPly ? t('analysis.bookExit') : null,
+                best !== undefined ? t('analysis.bestMove', { move: best }) : null,
+              ]
+                .filter(Boolean)
+                .join(' ');
+            })()}
           </div>
         )}
         <button

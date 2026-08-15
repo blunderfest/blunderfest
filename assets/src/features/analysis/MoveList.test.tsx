@@ -159,6 +159,29 @@ describe('MoveList book-exit marker', () => {
   });
 });
 
+describe('MoveList best-move hint', () => {
+  it('shows the best alternative on a marked move', () => {
+    render(
+      <MoveList
+        rows={buildRows(makeTree(false))}
+        currentId={null}
+        onSelect={vi.fn()}
+        navTargets={{ first: 0, prev: null, next: null, last: null }}
+        currentPly={0}
+        totalPly={2}
+        evalsByPly={{
+          0: { ply: 0, score: { cp: 0 }, best_move: null },
+          1: { ply: 1, score: { cp: -100 }, best_move: null },
+        }}
+        bestMoves={new Map([[1, 'Nf3']])}
+      />,
+    );
+
+    const mark = within(screen.getByTestId('analysis-move-1')).getByText('?!');
+    expect(mark).toHaveAttribute('title', 'best Nf3');
+  });
+});
+
 describe('MoveList nav buttons', () => {
   it('disables First while already at the first position', () => {
     renderList(makeTree(false), 0);
