@@ -27,7 +27,6 @@ import {
   type OpeningBook,
   openingExitPly,
 } from '@/features/analysis/openings';
-import SettingsTab from '@/features/analysis/SettingsTab';
 import ShortcutsDialog from '@/features/analysis/ShortcutsDialog';
 import SidebarTabs, { type SidebarTab } from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
@@ -765,8 +764,10 @@ export default function Analysis({
                       fen={current.fen ?? ''}
                       state={engineState}
                       engineOn={engineOn}
+                      arrowsOn={arrowsOn}
                       paused={editor.editing}
                       onToggleEngine={toggleEngine}
+                      onToggleArrows={toggleArrows}
                     />
                     <MoveList
                       rows={rows}
@@ -783,18 +784,6 @@ export default function Analysis({
                 id: 'game',
                 label: t('room.gameInfo'),
                 content: <GameInfo tree={tree} />,
-              },
-              {
-                id: 'settings',
-                label: t('analysis.settings'),
-                content: (
-                  <SettingsTab
-                    engineOn={engineOn}
-                    arrowsOn={arrowsOn}
-                    onToggleEngine={toggleEngine}
-                    onToggleArrows={toggleArrows}
-                  />
-                ),
               },
             ]}
           />

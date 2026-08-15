@@ -702,7 +702,7 @@ describe('game flow chart', () => {
     renderAnalysis();
 
     expect(screen.getByRole('button', { name: 'Export PGN' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Game info' }));
     expect(screen.getByRole('button', { name: 'Export PGN' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save to library' })).toBeInTheDocument();
   });
@@ -717,7 +717,7 @@ describe('game flow chart', () => {
   });
 });
 
-describe('analysis settings tab', () => {
+describe('engine box', () => {
   beforeEach(() => {
     localStorage.clear();
   });
@@ -741,15 +741,12 @@ describe('analysis settings tab', () => {
     };
   }
 
-  it('turns the engine display off and on from the settings tab', async () => {
+  it('turns the engine display off and on from the engine box switch', async () => {
     render(<Analysis tree={tree} engine={makeEngine()} />);
     expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
-    fireEvent.click(screen.getByTestId('setting-engine'));
+    fireEvent.click(screen.getByTestId('engine-box-switch'));
 
-    // The readout lives in the Moves tab's engine box now — switch back.
-    fireEvent.click(screen.getByRole('tab', { name: 'Moves' }));
     await waitFor(() => expect(screen.queryByTestId('engine-readout')).not.toBeInTheDocument());
     expect(screen.queryByTestId('eval-bar')).not.toBeInTheDocument();
     // The bar's slot leaves the flow entirely — it hangs off the board's
@@ -757,43 +754,38 @@ describe('analysis settings tab', () => {
     expect(screen.queryByTestId('board-left-slot')).not.toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.engine')).toBe('off');
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
-    fireEvent.click(screen.getByTestId('setting-engine'));
-    fireEvent.click(screen.getByRole('tab', { name: 'Moves' }));
+    fireEvent.click(screen.getByTestId('engine-box-switch'));
     expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();
     expect(await screen.findByTestId('board-left-slot')).toBeInTheDocument();
   });
 
-  it('disables the hint-arrow switch while the engine is off (not the reverse)', async () => {
+  it('disables the hint-arrow toggle while the engine is off (not the reverse)', async () => {
     render(<Analysis tree={tree} engine={makeEngine()} />);
     expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
-    const arrowsSwitch = screen.getByTestId('setting-arrows');
-    expect(arrowsSwitch).not.toBeDisabled();
+    const arrowsToggle = screen.getByTestId('engine-box-arrows');
+    expect(arrowsToggle).not.toBeDisabled();
 
-    fireEvent.click(screen.getByTestId('setting-engine'));
-    await waitFor(() => expect(screen.getByTestId('setting-arrows')).toBeDisabled());
+    fireEvent.click(screen.getByTestId('engine-box-switch'));
+    await waitFor(() => expect(screen.getByTestId('engine-box-arrows')).toBeDisabled());
     // Engine off hides everything, arrows preference is kept but inert.
     await waitFor(() => expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument());
     expect(localStorage.getItem('blunderfest.hints')).not.toBe('off');
 
     // Re-enabling the engine restores the arrows.
-    fireEvent.click(screen.getByTestId('setting-engine'));
-    await waitFor(() => expect(screen.getByTestId('setting-arrows')).not.toBeDisabled());
+    fireEvent.click(screen.getByTestId('engine-box-switch'));
+    await waitFor(() => expect(screen.getByTestId('engine-box-arrows')).not.toBeDisabled());
     expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
   });
 
-  it('turns only the hint arrows off from the settings tab', async () => {
+  it('turns only the hint arrows off from the engine box', async () => {
     render(<Analysis tree={tree} engine={makeEngine()} />);
     expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
-    fireEvent.click(screen.getByTestId('setting-arrows'));
+    fireEvent.click(screen.getByTestId('engine-box-arrows'));
 
     await waitFor(() => expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument());
-    // The rest of the engine display stays on (the box is in the Moves tab).
-    fireEvent.click(screen.getByRole('tab', { name: 'Moves' }));
+    // The rest of the engine display stays on.
     expect(screen.getByTestId('engine-readout')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.hints')).toBe('off');
   });

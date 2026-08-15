@@ -173,11 +173,7 @@
       "p": "pawn"
     },
     "engineToggle": "Engine",
-    "settings": "Settings",
-    "engineAnalysis": "Engine analysis",
-    "engineAnalysisHint": "Eval bar, readout and best-move hints for the current position.",
     "hintArrows": "Hint arrows",
-    "hintArrowsHint": "Draw the engine's best move on the board.",
     "drawColor": "Drawing color",
     "colors": {
       "0": "Blue",
