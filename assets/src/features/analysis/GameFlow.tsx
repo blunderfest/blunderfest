@@ -15,6 +15,9 @@ function toWhiteEval(score: AnalysisEval['score']): WhiteEval | null {
   if (score === null) {
     return null;
   }
+  if (score.result !== undefined) {
+    return { type: 'result', result: score.result };
+  }
   if (score.cp !== undefined) {
     return { type: 'cp', cp: score.cp };
   }

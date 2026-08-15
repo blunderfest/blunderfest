@@ -302,6 +302,38 @@ defmodule BlunderfestWeb.RoomChannelTest do
              ] = evals
     end
 
+    test "a checkmate is stored as the result, never as a mate-0 eval", %{} do
+      {:ok, _reply, socket} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+
+      ref =
+        push(socket, "analyze_game", %{
+          "game_id" => "game-1",
+          "positions" => [
+            %{
+              "ply" => 0,
+              "fen" => "rnbqkbnr/ppppp2p/5p2/7Q/8/2N5/PPPP1PPP/R1B1KBNR b KQkq - 1 3"
+            },
+            %{
+              "ply" => 1,
+              "fen" => "rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3"
+            }
+          ]
+        })
+
+      assert_reply ref, :ok
+
+      assert_broadcast "new_op", %{
+        "type" => "set_analysis",
+        "payload" => %{"evals" => evals}
+      }
+
+      # Black mated (Qh5#) is a white win; white mated (Qh4#) is a black win.
+      assert [
+               %{"ply" => 0, "score" => %{"result" => "1-0"}, "best_move" => nil},
+               %{"ply" => 1, "score" => %{"result" => "0-1"}, "best_move" => nil}
+             ] = evals
+    end
+
     test "viewers cannot start analysis", %{} do
       join_room("room:abcde", %{"profile_id" => "profile-1"})
       {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})

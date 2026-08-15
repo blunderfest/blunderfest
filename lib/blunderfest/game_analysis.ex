@@ -35,7 +35,17 @@ defmodule Blunderfest.GameAnalysis do
       positions
       |> Enum.with_index(1)
       |> Enum.map(fn {{ply, fen}, done} ->
-        result = Pool.eval(fen, @depth)
+        {score, best_move} =
+          case terminal_score(fen) do
+            nil ->
+              case Pool.eval(fen, @depth) do
+                {:ok, %{score: score, best_move: best_move}} -> {to_white(score, fen), best_move}
+                {:error, _} -> {nil, nil}
+              end
+
+            result ->
+              {result, nil}
+          end
 
         Endpoint.broadcast("room:" <> slug, "analysis_progress", %{
           "game_id" => game_id,
@@ -43,13 +53,7 @@ defmodule Blunderfest.GameAnalysis do
           "total" => total
         })
 
-        case result do
-          {:ok, %{score: score, best_move: best_move}} ->
-            %{"ply" => ply, "score" => to_white(score, fen), "best_move" => best_move}
-
-          {:error, _} ->
-            %{"ply" => ply, "score" => nil, "best_move" => nil}
-        end
+        %{"ply" => ply, "score" => score, "best_move" => best_move}
       end)
 
     op = %{
@@ -61,6 +65,33 @@ defmodule Blunderfest.GameAnalysis do
     case Rooms.append(slug, op) do
       {:ok, stamped} -> Endpoint.broadcast("room:" <> slug, "new_op", stamped)
       {:error, _} -> :ok
+    end
+  end
+
+  # Terminal positions never reach the engine: a mated side comes back as
+  # "mate 0", whose meaning ("side to move is mated") a perspective flip
+  # cannot represent — flipping zero is still zero, so a white mate read as
+  # a black win and the mating move was flagged as a blunder. The game's
+  # result is stored instead.
+  defp terminal_score(fen) do
+    game = Echecs.new_game(fen)
+
+    case Echecs.status(game) do
+      :checkmate ->
+        if fen |> String.split(" ") |> Enum.at(1) == "w" do
+          %{"result" => "0-1"}
+        else
+          %{"result" => "1-0"}
+        end
+
+      :stalemate ->
+        %{"result" => "1/2-1/2"}
+
+      :draw ->
+        %{"result" => "1/2-1/2"}
+
+      :active ->
+        nil
     end
   end
 

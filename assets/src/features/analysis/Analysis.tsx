@@ -4,13 +4,14 @@ import { useTranslation } from 'react-i18next';
 import ArrowIcon from '@/components/ArrowIcon';
 import Board from '@/components/Board';
 import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceSrc } from '@/components/board';
-import { button, statusDot } from '@/components/ui';
+import { button, panel, statusDot } from '@/components/ui';
 import BoardControls from '@/features/analysis/BoardControls';
 import CommentPopup from '@/features/analysis/CommentPopup';
 import CriticalMoments from '@/features/analysis/CriticalMoments';
 import EngineReadout from '@/features/analysis/EngineReadout';
 import EvalBar from '@/features/analysis/EvalBar';
 import type { ChessEngine } from '@/features/analysis/engine';
+import GameActions from '@/features/analysis/GameActions';
 import GameFlow from '@/features/analysis/GameFlow';
 import GameInfo from '@/features/analysis/GameInfo';
 import { legalMovesFor } from '@/features/analysis/legalMoves';
@@ -413,61 +414,80 @@ export default function Analysis({
 
   const boardArrows = [...hintArrows, ...nodeAnnotations.arrows];
 
-  // The visualization box: the eval chart with its quality strip (or the
-  // Analyze button holding its place), and the material timeline — which
-  // needs no engine analysis, so even viewers get the box.
+  // The visualization box: the eval chart with its quality strip, the
+  // critical moments, and the material timeline. The analyze button holds
+  // the place of both analysis-driven tabs until a job runs — Moments
+  // stays visible either way, like the other tabs.
   const vizTabs: SidebarTab[] = [];
-  if (analysis !== null && analysis.length > 1) {
+  const analyzePlaceholder =
+    onAnalyze !== undefined ? (
+      <div className="grid h-20 place-items-center rounded-control border border-line border-dashed">
+        <button
+          type="button"
+          id="analyze-game-button"
+          className={button({ intent: 'quiet', size: 'sm' })}
+          onClick={onAnalyze}
+          disabled={analyzing !== null}
+        >
+          {analyzing !== null
+            ? t('room.analyzing', { done: analyzing.done, total: analyzing.total })
+            : t('room.analyzeGame')}
+        </button>
+      </div>
+    ) : (
+      <div className="grid h-20 place-items-center">
+        <p className="m-0 text-note text-faint">{t('analysis.noAnalysisYet')}</p>
+      </div>
+    );
+  const hasAnalysis = analysis !== null && analysis.length > 1;
+
+  if (hasAnalysis || onAnalyze !== undefined) {
     vizTabs.push({
       id: 'eval',
       label: t('analysis.evalTab'),
       content: (
-        <GameFlow
-          evals={analysis}
-          currentPly={current.ply}
-          flipped={flipped}
-          openingExitPly={bookExitPly}
-          onSelectPly={handleFlowSelect}
-        />
-      ),
-    });
-    vizTabs.push({
-      id: 'moments',
-      label: t('analysis.momentsTab'),
-      content: <CriticalMoments tree={tree} evals={analysis} onSelectPly={handleFlowSelect} />,
-    });
-  } else if (onAnalyze !== undefined) {
-    vizTabs.push({
-      id: 'eval',
-      label: t('analysis.evalTab'),
-      content: (
-        <div className="grid h-20 place-items-center rounded-control border border-line border-dashed">
-          <button
-            type="button"
-            id="analyze-game-button"
-            className={button({ intent: 'quiet', size: 'sm' })}
-            onClick={onAnalyze}
-            disabled={analyzing !== null}
-          >
-            {analyzing !== null
-              ? t('room.analyzing', { done: analyzing.done, total: analyzing.total })
-              : t('room.analyzeGame')}
-          </button>
+        <div className="p-2">
+          {analysis !== null && analysis.length > 1 ? (
+            <GameFlow
+              evals={analysis}
+              currentPly={current.ply}
+              flipped={flipped}
+              openingExitPly={bookExitPly}
+              onSelectPly={handleFlowSelect}
+            />
+          ) : (
+            analyzePlaceholder
+          )}
         </div>
       ),
     });
   }
+  vizTabs.push({
+    id: 'moments',
+    label: t('analysis.momentsTab'),
+    content: (
+      <div className="p-2">
+        {analysis !== null && analysis.length > 1 ? (
+          <CriticalMoments tree={tree} evals={analysis} onSelectPly={handleFlowSelect} />
+        ) : (
+          analyzePlaceholder
+        )}
+      </div>
+    ),
+  });
   if (tree.mainline_ply_count > 0) {
     vizTabs.push({
       id: 'material',
       label: t('analysis.materialTab'),
       content: (
-        <MaterialFlow
-          tree={tree}
-          currentPly={current.ply}
-          flipped={flipped}
-          onSelectPly={handleFlowSelect}
-        />
+        <div className="p-2">
+          <MaterialFlow
+            tree={tree}
+            currentPly={current.ply}
+            flipped={flipped}
+            onSelectPly={handleFlowSelect}
+          />
+        </div>
       ),
     });
   }
@@ -722,21 +742,24 @@ export default function Analysis({
                 id: 'analysis',
                 label: t('analysis.moves'),
                 content: (
-                  <MoveList
-                    rows={rows}
-                    currentId={current.id}
-                    onSelect={navigate}
-                    navTargets={{
-                      first: tree.root.id,
-                      prev: parent?.id ?? null,
-                      next: next?.id ?? null,
-                      last: current.children.length === 0 ? null : lastChildOf(current).id,
-                    }}
-                    currentPly={current.ply}
-                    totalPly={tree.mainline_ply_count}
-                    evalsByPly={evalsByPly}
-                    bookExitPly={bookExitPly}
-                  />
+                  <>
+                    <MoveList
+                      rows={rows}
+                      currentId={current.id}
+                      onSelect={navigate}
+                      navTargets={{
+                        first: tree.root.id,
+                        prev: parent?.id ?? null,
+                        next: next?.id ?? null,
+                        last: current.children.length === 0 ? null : lastChildOf(current).id,
+                      }}
+                      currentPly={current.ply}
+                      totalPly={tree.mainline_ply_count}
+                      evalsByPly={evalsByPly}
+                      bookExitPly={bookExitPly}
+                    />
+                    <GameActions tree={tree} />
+                  </>
                 ),
               },
               {
@@ -760,13 +783,16 @@ export default function Analysis({
           />
           {/*
             The visualization box sits below the tabs so it stays visible no
-            matter which tab is active. A constant height (h-20), so the
-            move list never resizes.
+            matter which tab is active. A constant height (h-20 + padding),
+            so the move list never resizes.
           */}
           {vizTabs.length > 0 && (
-            <div className="shrink-0">
+            <section
+              className={`${panel({ layout: 'none', pad: 'none' })} shrink-0 overflow-hidden`}
+              data-testid="viz-box"
+            >
               <SidebarTabs tabs={vizTabs} />
-            </div>
+            </section>
           )}
         </aside>
       </div>

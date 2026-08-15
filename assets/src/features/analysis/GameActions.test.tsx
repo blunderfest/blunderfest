@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import GameInfo from '@/features/analysis/GameInfo';
+import GameActions from '@/features/analysis/GameActions';
 import type { GameTree } from '@/lib/api';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -40,7 +40,7 @@ const tree: GameTree = {
   },
 };
 
-describe('GameInfo', () => {
+describe('GameActions', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     localStorage.removeItem('blunderfest.device');
@@ -57,7 +57,7 @@ describe('GameInfo', () => {
       json: async () => ({ entry: { id: 'e1', title: 'Morphy game', saved_at: '…' } }),
     } as Response);
 
-    render(<GameInfo tree={tree} />);
+    render(<GameActions tree={tree} />);
     fireEvent.click(screen.getByRole('button', { name: 'Save to library' }));
 
     expect(await screen.findByRole('button', { name: 'Saved ✓' })).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe('GameInfo', () => {
       } as Response;
     });
 
-    render(<GameInfo tree={tree} />);
+    render(<GameActions tree={tree} />);
     fireEvent.click(screen.getByRole('button', { name: 'Save to library' }));
 
     expect(await screen.findByRole('button', { name: 'Saved ✓' })).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe('GameInfo', () => {
     });
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
-    render(<GameInfo tree={tree} />);
+    render(<GameActions tree={tree} />);
     fireEvent.click(screen.getByRole('button', { name: 'Export PGN' }));
 
     expect(createObjectUrl).toHaveBeenCalledTimes(1);
@@ -141,7 +141,7 @@ describe('GameInfo', () => {
     vi.stubGlobal('URL', { ...URL, createObjectURL: createObjectUrl, revokeObjectURL: vi.fn() });
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
-    render(<GameInfo tree={tree} />);
+    render(<GameActions tree={tree} />);
     fireEvent.click(screen.getByRole('button', { name: 'Export PGN' }));
 
     expect(click).toHaveBeenCalledTimes(1);

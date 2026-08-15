@@ -103,10 +103,12 @@ export type SetPositionOp = OpBase & {
  * A whole-game engine analysis (ADR-0009): appended by the server when a
  * job completes — one op carries every mainline eval. `score` is from
  * white's perspective; null when the engine couldn't evaluate that ply.
+ * Terminal positions carry `result` instead of a number (a mated side has
+ * no eval — "mate 0" would flip to the wrong winner).
  */
 export type AnalysisEval = {
   ply: number;
-  score: { cp?: number; mate?: number } | null;
+  score: { cp?: number; mate?: number; result?: string } | null;
   best_move: string | null;
 };
 

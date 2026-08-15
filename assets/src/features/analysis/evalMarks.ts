@@ -11,6 +11,9 @@ export function toCentipawns(score: AnalysisEval['score']): number | null {
   if (score === null) {
     return null;
   }
+  if (score.result !== undefined) {
+    return score.result === '1-0' ? 10_000 : score.result === '0-1' ? -10_000 : 0;
+  }
   if (score.cp !== undefined) {
     return score.cp;
   }
@@ -43,10 +46,13 @@ export function moveMark(
   return null;
 }
 
-/** "+0.4", "-1.2", "M3", "-M2" — white's perspective. */
+/** "+0.4", "-1.2", "M3", "1-0" — white's perspective. */
 export function evalText(score: AnalysisEval['score']): string {
   if (score === null) {
     return '–';
+  }
+  if (score.result !== undefined) {
+    return score.result;
   }
   if (score.mate !== undefined) {
     return score.mate > 0 ? `M${score.mate}` : `-M${-score.mate}`;
