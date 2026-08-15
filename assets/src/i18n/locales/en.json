@@ -197,6 +197,8 @@
   "room": {
     "connecting": "Connecting...",
     "panelTitle": "Room",
+    "lag": "{{ms}} ms",
+    "connectionSplit": "you: {{you}} · room: {{room}}",
     "codeLabel": "Room code",
     "regionLabel": "Server region",
     "copied": "Copied!",

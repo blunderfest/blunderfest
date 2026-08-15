@@ -97,6 +97,11 @@ defmodule Blunderfest.Room do
     {:reply, room.owner, room}
   end
 
+  # Evaluated on the room's node: its Fly region (for the you-vs-room split).
+  def handle_call(:region, _from, room) do
+    {:reply, Blunderfest.NodeInfo.region(), room}
+  end
+
   def handle_call(:roles, _from, room) do
     {:reply, room.roles, room}
   end

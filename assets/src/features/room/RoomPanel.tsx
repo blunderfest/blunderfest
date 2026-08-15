@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, chip, panel, panelHeader } from '@/components/ui';
-import RegionChip from '@/features/room/RegionChip';
+import { formatRegion } from '@/lib/region';
 import { useAppSelector } from '@/store';
 
 /**
@@ -14,7 +14,20 @@ export default function RoomPanel({ slug, onLeave }: { slug: string; onLeave: ()
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const region = useAppSelector((state) => state.room.region);
+  const roomRegion = useAppSelector((state) => state.room.roomRegion);
+  const lagMs = useAppSelector((state) => state.room.lagMs);
   const readOnly = useAppSelector((state) => state.room.readOnly);
+
+  /** The connection summary: region(s) plus the measured round-trip. */
+  const connectionText =
+    region === null
+      ? null
+      : roomRegion !== null && roomRegion !== region
+        ? t('room.connectionSplit', {
+            you: formatRegion(region) ?? region,
+            room: formatRegion(roomRegion) ?? roomRegion,
+          })
+        : (formatRegion(region) ?? region);
 
   async function handleCopy() {
     if (!navigator.clipboard) {
@@ -33,7 +46,22 @@ export default function RoomPanel({ slug, onLeave }: { slug: string; onLeave: ()
     <section className={panel({ layout: 'none', pad: 'none' })}>
       <div className={panelHeader()}>
         <h2 className="m-0">{t('room.panelTitle')}</h2>
-        <RegionChip region={region} />
+        <span className="flex items-center gap-1.5" data-testid="connection">
+          {connectionText !== null && (
+            <span
+              className="rounded-lg border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-muted"
+              title={t('room.regionLabel')}
+              data-testid="region-chip"
+            >
+              {connectionText}
+            </span>
+          )}
+          {lagMs !== null && (
+            <span className="text-faint tabular-nums" data-testid="lag-ms">
+              {t('room.lag', { ms: lagMs })}
+            </span>
+          )}
+        </span>
       </div>
       <div className="flex items-center gap-2 p-2">
         <code className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-0.5 text-sm tracking-widest">

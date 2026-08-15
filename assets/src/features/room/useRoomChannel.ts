@@ -11,10 +11,12 @@ import {
   leaveRoom,
   replayOps,
   setAnalysisProgress,
+  setLag,
   setMemberRole,
   setReadOnly,
   setRegion,
   setRoles,
+  setRoomRegion,
 } from '@/store/room';
 
 type PresenceState = Record<string, { metas: { name?: string }[] }>;
@@ -78,6 +80,7 @@ export function useRoomChannel(
     const channel = channelFactoryRef.current(`room:${slug}`, params);
     channelRef.current = channel;
     let retryTimer: number | null = null;
+    let lagTimer: number | null = null;
 
     dispatch(enterRoom({ slug }));
 
@@ -142,6 +145,7 @@ export function useRoomChannel(
           ops: Op[];
           roles?: Record<string, MemberRole>;
           region?: string;
+          room_region?: string | null;
           read_only?: boolean;
         }) => {
           if (channelRef.current === channel) {
@@ -149,9 +153,25 @@ export function useRoomChannel(
             dispatch(replayOps(payload.ops));
             dispatch(setRoles(payload.roles ?? {}));
             dispatch(setRegion(payload.region ?? null));
+            dispatch(setRoomRegion(payload.room_region ?? null));
             dispatch(setReadOnly(payload.read_only ?? false));
             lastSeq = payload.ops.reduce((max, op) => Math.max(max, op.seq), 0);
             setJoined(true);
+
+            // The lag probe: a trivial round-trip every 10s while joined.
+            const probe = () => {
+              if (channelRef.current !== channel) {
+                return;
+              }
+              const start = Date.now();
+              channel.push('ping', {}).receive('ok', () => {
+                if (channelRef.current === channel) {
+                  dispatch(setLag({ ms: Date.now() - start }));
+                }
+              });
+            };
+            probe();
+            lagTimer = window.setInterval(probe, 10_000);
           }
         },
       )
@@ -179,6 +199,9 @@ export function useRoomChannel(
     return () => {
       if (retryTimer !== null) {
         window.clearTimeout(retryTimer);
+      }
+      if (lagTimer !== null) {
+        window.clearInterval(lagTimer);
       }
       channel.leave();
       channelRef.current = null;

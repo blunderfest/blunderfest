@@ -194,6 +194,11 @@ defmodule Blunderfest.Rooms do
     with_pid(slug, scope, nil, fn pid -> GenServer.call(pid, :owner) end)
   end
 
+  @doc "The Fly region of the node hosting the room process (nil for unknown rooms)."
+  def region(slug, scope \\ default_scope()) do
+    with_pid(slug, scope, nil, fn pid -> GenServer.call(pid, :region) end)
+  end
+
   @doc "Returns the room's `profile_id => role` map (empty for unknown rooms)."
   def roles(slug, scope \\ default_scope()) do
     with_pid(slug, scope, %{}, fn pid -> GenServer.call(pid, :roles) end)

@@ -378,6 +378,8 @@ describe('useRoomChannel', () => {
       lastPlayed: {},
       annotations: {},
       region: null,
+      roomRegion: null,
+      lagMs: null,
       readOnly: false,
       analysis: {},
       analysisProgress: null,

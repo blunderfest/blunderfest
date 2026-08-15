@@ -42,6 +42,10 @@ export type RoomState = {
   lastPlayed: Record<string, number>;
   /** The Fly region of the machine this client is connected to (join reply). */
   region: string | null;
+  /** The Fly region hosting the room process (join reply; null pre-join). */
+  roomRegion: string | null;
+  /** Latest measured channel round-trip in milliseconds (10s ping probe). */
+  lagMs: number | null;
   /**
    * Read-only rooms (the demo, ADR-0014): no presence, no roles, and the
    * server rejects every op — clients don't even send cursor updates.
@@ -63,6 +67,8 @@ const initialState: RoomState = {
   lastPlayed: {},
   annotations: {},
   region: null,
+  roomRegion: null,
+  lagMs: null,
   readOnly: false,
   analysis: {},
   analysisProgress: null,
@@ -438,6 +444,8 @@ const roomSlice = createSlice({
       state.lastPlayed = {};
       state.annotations = {};
       state.region = null;
+      state.roomRegion = null;
+      state.lagMs = null;
       state.readOnly = false;
       state.analysis = {};
       state.analysisProgress = null;
@@ -452,6 +460,8 @@ const roomSlice = createSlice({
       state.lastPlayed = {};
       state.annotations = {};
       state.region = null;
+      state.roomRegion = null;
+      state.lagMs = null;
       state.readOnly = false;
       state.analysis = {};
       state.analysisProgress = null;
@@ -470,6 +480,12 @@ const roomSlice = createSlice({
     },
     setRegion(state, action: PayloadAction<string | null>) {
       state.region = action.payload;
+    },
+    setRoomRegion(state, action: PayloadAction<string | null>) {
+      state.roomRegion = action.payload;
+    },
+    setLag(state, action: PayloadAction<{ ms: number | null }>) {
+      state.lagMs = action.payload.ms;
     },
     setMemberRole(state, action: PayloadAction<{ member_id: string; role: MemberRole }>) {
       state.roles[action.payload.member_id] = action.payload.role;
@@ -572,6 +588,8 @@ export const {
   setRoles,
   setReadOnly,
   setRegion,
+  setRoomRegion,
+  setLag,
   setMemberRole,
   setAnalysisProgress,
   applyOp,

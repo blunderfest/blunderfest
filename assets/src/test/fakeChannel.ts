@@ -82,10 +82,17 @@ export class FakeChannel implements Channel {
   pushError: { reason?: string } | null = null;
 
   push(event: string, payload: unknown) {
-    this.pushes.push({ event, payload });
+    // Ambient telemetry (the lag probe) is not recorded as a domain push.
+    if (event !== 'ping') {
+      this.pushes.push({ event, payload });
+    }
     const error = this.pushError;
     const push = {
       receive: (status: string, handler: Handler) => {
+        // The lag probe always answers immediately (round-trip ~0 in tests).
+        if (status === 'ok' && event === 'ping') {
+          queueMicrotask(() => handler());
+        }
         if (status === 'error' && error !== null) {
           // Asynchronous, like a real server reply — callers' local state
           // updates (e.g. pending echoes) have already run by then.

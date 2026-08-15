@@ -69,6 +69,7 @@ defmodule BlunderfestWeb.RoomChannel do
        ops: snapshot.ops,
        roles: stringify_roles(snapshot.roles),
        region: Blunderfest.NodeInfo.region(),
+       room_region: Rooms.region(slug),
        read_only: snapshot.read_only
      }, socket}
   end
@@ -87,6 +88,12 @@ defmodule BlunderfestWeb.RoomChannel do
     end
 
     {:noreply, socket}
+  end
+
+  # A trivial round-trip probe for the client's lag measurement.
+  @impl true
+  def handle_in("ping", _params, socket) do
+    {:reply, :ok, socket}
   end
 
   @impl true
