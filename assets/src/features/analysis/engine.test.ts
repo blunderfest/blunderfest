@@ -50,7 +50,12 @@ describe('createStockfishEngine', () => {
     expect(worker.messages).toEqual(['uci']);
     worker.emit('uciok');
     await flush();
-    expect(worker.messages).toEqual(['uci', 'setoption name MultiPV value 3', 'isready']);
+    expect(worker.messages).toEqual([
+      'uci',
+      'setoption name MultiPV value 3',
+      'setoption name UCI_ShowWDL value true',
+      'isready',
+    ]);
     worker.emit('readyok');
     await init;
   });
@@ -67,7 +72,7 @@ describe('createStockfishEngine', () => {
       depth: 5,
       pv: ['e2e4'],
       bestMove: 'e2e4',
-      lines: [{ score: { type: 'cp', cp: 10 }, depth: 5, pv: ['e2e4'] }],
+      lines: [{ score: { type: 'cp', cp: 10 }, depth: 5, wdl: null, pv: ['e2e4'] }],
     });
   });
 
@@ -81,6 +86,7 @@ describe('createStockfishEngine', () => {
     expect(worker.messages).toEqual([
       'uci',
       'setoption name MultiPV value 3',
+      'setoption name UCI_ShowWDL value true',
       'isready',
       `position fen ${START_FEN}`,
       'go movetime 250',
@@ -95,7 +101,7 @@ describe('createStockfishEngine', () => {
       depth: 6,
       pv: ['e2e4', 'c7c5'],
       bestMove: 'e2e4',
-      lines: [{ score: { type: 'cp', cp: 22 }, depth: 6, pv: ['e2e4', 'c7c5'] }],
+      lines: [{ score: { type: 'cp', cp: 22 }, depth: 6, wdl: null, pv: ['e2e4', 'c7c5'] }],
     });
   });
 

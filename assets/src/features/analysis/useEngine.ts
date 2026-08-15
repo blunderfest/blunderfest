@@ -8,6 +8,8 @@ export type EngineStatus = 'idle' | 'thinking' | 'ready' | 'error';
 export type EngineLineState = {
   eval: WhiteEval;
   depth: number;
+  /** Win/draw/loss per mille from WHITE's perspective, when available. */
+  wdl: { win: number; draw: number; loss: number } | null;
   pv: string[];
 };
 
@@ -134,6 +136,13 @@ export function useEngine(
           const lines = result.lines.map((line) => ({
             eval: whiteEval(line.score, sideToMove),
             depth: line.depth,
+            // WDL arrives from the side to move; swap win/loss for black.
+            wdl:
+              line.wdl === null
+                ? null
+                : sideToMove === 'w'
+                  ? line.wdl
+                  : { win: line.wdl.loss, draw: line.wdl.draw, loss: line.wdl.win },
             pv: line.pv,
           }));
           setState({

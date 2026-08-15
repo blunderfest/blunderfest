@@ -17,8 +17,14 @@ describe('parseInfoLine', () => {
       depth: 15,
       score: { type: 'cp', cp: 32 },
       multipv: 1,
+      wdl: null,
       pv: ['e2e4', 'e7e5', 'g1f3'],
     });
+  });
+
+  it('parses win/draw/loss per mille when present', () => {
+    const info = parseInfoLine('info depth 18 score cp 41 wdl 523 428 49 pv e2e4');
+    expect(info?.wdl).toEqual({ win: 523, draw: 428, loss: 49 });
   });
 
   it('leaves multipv null when the engine output has none', () => {
@@ -41,6 +47,7 @@ describe('parseInfoLine', () => {
       depth: 1,
       score: null,
       multipv: null,
+      wdl: null,
       pv: [],
     });
   });

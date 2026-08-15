@@ -25,7 +25,7 @@ const RESULT: EngineResult = {
   depth: 9,
   pv: ['e2e4'],
   bestMove: 'e2e4',
-  lines: [{ score: { type: 'cp', cp: 30 }, depth: 9, pv: ['e2e4'] }],
+  lines: [{ score: { type: 'cp', cp: 30 }, depth: 9, wdl: null, pv: ['e2e4'] }],
 };
 
 describe('useEngine', () => {
@@ -45,7 +45,7 @@ describe('useEngine', () => {
     expect(result.current.bestMove).toEqual({ from: 'e2', to: 'e4' });
     expect(result.current.depth).toBe(9);
     expect(result.current.lines).toEqual([
-      { eval: { type: 'cp', cp: 30 }, depth: 9, pv: ['e2e4'] },
+      { eval: { type: 'cp', cp: 30 }, depth: 9, wdl: null, pv: ['e2e4'] },
     ]);
   });
 

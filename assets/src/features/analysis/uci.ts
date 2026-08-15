@@ -12,6 +12,8 @@ export type InfoLine = {
   score: InfoScore | null;
   /** The rank in a MultiPV search (1 = best); null in single-line output. */
   multipv: number | null;
+  /** Win/draw/loss per mille, from the side to move (UCI_ShowWDL). */
+  wdl: { win: number; draw: number; loss: number } | null;
   pv: string[];
 };
 
@@ -21,7 +23,7 @@ export function parseInfoLine(line: string): InfoLine | null {
     return null;
   }
   const tokens = match[1].split(/\s+/);
-  const result: InfoLine = { depth: null, score: null, multipv: null, pv: [] };
+  const result: InfoLine = { depth: null, score: null, multipv: null, wdl: null, pv: [] };
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
     if (token === 'depth' && i + 1 < tokens.length) {
@@ -36,6 +38,13 @@ export function parseInfoLine(line: string): InfoLine | null {
     } else if (token === 'multipv' && i + 1 < tokens.length) {
       const rank = Number.parseInt(tokens[i + 1], 10);
       result.multipv = Number.isNaN(rank) ? null : rank;
+    } else if (token === 'wdl' && i + 3 < tokens.length) {
+      const [win, draw, loss] = [
+        Number.parseInt(tokens[i + 1], 10),
+        Number.parseInt(tokens[i + 2], 10),
+        Number.parseInt(tokens[i + 3], 10),
+      ];
+      result.wdl = [win, draw, loss].some(Number.isNaN) ? null : { win, draw, loss };
     } else if (token === 'pv' && i + 1 < tokens.length) {
       result.pv = tokens.slice(i + 1);
       break;

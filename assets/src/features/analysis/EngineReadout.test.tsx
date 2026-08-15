@@ -36,8 +36,8 @@ describe('EngineReadout', () => {
           depth: 12,
           pv: ['e2e4'],
           lines: [
-            { eval: { type: 'cp', cp: 30 }, depth: 12, pv: ['e2e4'] },
-            { eval: { type: 'cp', cp: 12 }, depth: 11, pv: ['d2d4'] },
+            { eval: { type: 'cp', cp: 30 }, depth: 12, wdl: null, pv: ['e2e4'] },
+            { eval: { type: 'cp', cp: 12 }, depth: 11, wdl: null, pv: ['d2d4'] },
           ],
         })}
       />,
@@ -47,5 +47,27 @@ describe('EngineReadout', () => {
     expect(lines).toHaveLength(2);
     expect(lines[0]).toHaveTextContent('+0.30');
     expect(lines[1]).toHaveTextContent('+0.12');
+  });
+
+  it('shows the win/draw/loss bar for the best line', () => {
+    render(
+      <EngineReadout
+        fen={START_FEN}
+        state={state({
+          eval: { type: 'cp', cp: 30 },
+          lines: [
+            {
+              eval: { type: 'cp', cp: 30 },
+              depth: 12,
+              wdl: { win: 523, draw: 428, loss: 49 },
+              pv: ['e2e4'],
+            },
+          ],
+        })}
+      />,
+    );
+
+    const bar = screen.getByTestId('engine-wdl');
+    expect(bar).toHaveAttribute('title', 'White win · draw · black win: 52% · 43% · 5%');
   });
 });

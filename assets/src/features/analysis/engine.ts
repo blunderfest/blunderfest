@@ -23,6 +23,8 @@ const STOCKFISH_WORKER_URL = '/engine/stockfish-18-lite-single.js';
 export type EngineLine = {
   score: InfoScore;
   depth: number;
+  /** Win/draw/loss per mille from the side to move, when the engine emits it. */
+  wdl: { win: number; draw: number; loss: number } | null;
   pv: string[];
 };
 
@@ -142,6 +144,8 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
         worker.postMessage('uci');
         await waitForLine((line) => line === 'uciok', 30_000);
         worker.postMessage(`setoption name MultiPV value ${MULTI_PV}`);
+        // The lite build keeps WDL off by default; we want it for the box.
+        worker.postMessage('setoption name UCI_ShowWDL value true');
         worker.postMessage('isready');
         await waitForLine((line) => line === 'readyok', 30_000);
       } catch (error) {
@@ -208,6 +212,7 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
             .map(([, info]) => ({
               score: info.score,
               depth: info.depth ?? 0,
+              wdl: info.wdl,
               pv: info.pv,
             }));
           const best = lines[0];

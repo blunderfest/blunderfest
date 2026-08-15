@@ -62,7 +62,7 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
     lines.length > 0
       ? lines
       : state.eval !== null
-        ? [{ eval: state.eval, depth: state.depth ?? 0, pv: state.pv }]
+        ? [{ eval: state.eval, depth: state.depth ?? 0, wdl: null, pv: state.pv }]
         : [];
 
   if (status === 'error') {
@@ -92,6 +92,8 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
     );
   }
 
+  const wdl = displayLines[0]?.wdl ?? null;
+
   return (
     <div className="flex w-full flex-col px-3 py-1" data-testid="engine-readout">
       {displayLines.map((line, index) => (
@@ -115,6 +117,17 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
           />
         </div>
       ))}
+      {wdl !== null && (
+        <div
+          className="mt-0.5 mb-1 flex h-1.5 overflow-hidden rounded-full border border-line"
+          title={`${t('analysis.wdl')}: ${Math.round(wdl.win / 10)}% · ${Math.round(wdl.draw / 10)}% · ${Math.round(wdl.loss / 10)}%`}
+          data-testid="engine-wdl"
+        >
+          <span className="bg-[#f4f6fb]" style={{ width: `${wdl.win / 10}%` }} />
+          <span className="bg-line-strong" style={{ width: `${wdl.draw / 10}%` }} />
+          <span className="bg-[#1a1d24]" style={{ width: `${wdl.loss / 10}%` }} />
+        </div>
+      )}
     </div>
   );
 }

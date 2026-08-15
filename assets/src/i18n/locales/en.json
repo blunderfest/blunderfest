@@ -140,6 +140,7 @@
     "noMoments": "No big swings — a clean game.",
     "noAnalysisYet": "No analysis yet.",
     "bestMove": "best {{move}}",
+    "wdl": "White win · draw · black win",
     "bookExit": "leaves the book",
     "commentPlaceholder": "Add a comment...",
     "saveComment": "Save comment",
