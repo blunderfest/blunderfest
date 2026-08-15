@@ -215,7 +215,7 @@ export default function GameFlow({
 
   return (
     <div
-      className="cursor-crosshair touch-none select-none"
+      className="flex h-44 cursor-crosshair flex-col touch-none select-none"
       role="img"
       aria-label={t('analysis.gameFlow')}
       data-testid="game-flow"
@@ -245,12 +245,12 @@ export default function GameFlow({
         }
       }}
     >
-      <div className="relative">
+      <div className="relative min-h-0 flex-1">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           preserveAspectRatio="none"
           aria-hidden="true"
-          className="block h-16 w-full rounded-control border border-line bg-[#1a1d24]"
+          className="block h-full w-full rounded-control border border-line bg-[#1a1d24]"
         >
           {segments.map((segment) =>
             segment.length > 1 ? (

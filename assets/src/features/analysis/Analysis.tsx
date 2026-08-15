@@ -448,7 +448,7 @@ export default function Analysis({
   const vizTabs: SidebarTab[] = [];
   const analyzePlaceholder =
     onAnalyze !== undefined ? (
-      <div className="grid h-20 place-items-center rounded-control border border-line border-dashed">
+      <div className="grid h-44 place-items-center rounded-control border border-line border-dashed">
         <button
           type="button"
           id="analyze-game-button"
@@ -462,7 +462,7 @@ export default function Analysis({
         </button>
       </div>
     ) : (
-      <div className="grid h-20 place-items-center">
+      <div className="grid h-44 place-items-center">
         <p className="m-0 text-note text-faint">{t('analysis.noAnalysisYet')}</p>
       </div>
     );
@@ -495,18 +495,20 @@ export default function Analysis({
       id: 'moments',
       label: t('analysis.momentsTab'),
       content: (
-        // Taller than the chart tabs: the mini-board rows scroll vertically.
-        <div className="h-44 overflow-y-auto p-2">
-          {analysis !== null && analysis.length > 1 ? (
-            <CriticalMoments
-              tree={tree}
-              evals={analysis}
-              flipped={flipped}
-              onSelectPly={handleFlowSelect}
-            />
-          ) : (
-            <div className="grid h-full place-items-center">{analyzePlaceholder}</div>
-          )}
+        // Same outer height as the chart tabs (p-2 + h-44): no shift on switch.
+        <div className="p-2">
+          <div className="h-44 overflow-y-auto">
+            {analysis !== null && analysis.length > 1 ? (
+              <CriticalMoments
+                tree={tree}
+                evals={analysis}
+                flipped={flipped}
+                onSelectPly={handleFlowSelect}
+              />
+            ) : (
+              <div className="grid h-full place-items-center">{analyzePlaceholder}</div>
+            )}
+          </div>
         </div>
       ),
     });
@@ -767,14 +769,18 @@ export default function Analysis({
         </div>
 
         {/*
-          The sidebar gets a fixed height on wide screens (the board's own
-          height), so a long move list scrolls *inside* the sidebar and never
-          stretches the page. Below xl it stacks full-width with a capped list.
-          Tabs split the jobs: Moves = navigation, Game = metadata and
-          actions, Settings = preferences. Comments live in a popup (the `c`
-          key or the board controls), not here.
+          The sidebar stretches to the board column's height on wide
+          screens, so a long move list scrolls *inside* it and never
+          stretches the page. Below xl it stacks full-width with a capped
+          list. Comments live in a popup (the `c` key or the board
+          controls), not here.
         */}
-        <aside className="flex w-full max-w-[min(100%,24rem)] flex-col gap-3 xl:h-[min(90vw,34rem)] xl:w-[340px]">
+        {/*
+          The sidebar stretches to the board column's height at xl (the
+          board plus the nav/controls below it), not just the board's
+          height — that space belongs to the move list.
+        */}
+        <aside className="flex w-full max-w-[min(100%,24rem)] flex-col gap-3 xl:w-[340px] xl:self-stretch">
           <SidebarTabs
             tabs={[
               {
@@ -817,8 +823,8 @@ export default function Analysis({
           />
           {/*
             The visualization box sits below the tabs so it stays visible no
-            matter which tab is active. A constant height (h-20 + padding),
-            so the move list never resizes.
+            matter which tab is active. A constant height (h-44 + padding),
+            so the move list never resizes — the charts stretch to fill it.
           */}
           {vizTabs.length > 0 && (
             <section
