@@ -5,6 +5,7 @@ import ArrowIcon from '@/components/ArrowIcon';
 import Board from '@/components/Board';
 import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceSrc } from '@/components/board';
 import { button, panel } from '@/components/ui';
+import ActivityFlow from '@/features/analysis/ActivityFlow';
 import BoardControls from '@/features/analysis/BoardControls';
 import CommentPopup from '@/features/analysis/CommentPopup';
 import CriticalMoments from '@/features/analysis/CriticalMoments';
@@ -520,6 +521,20 @@ export default function Analysis({
       content: (
         <div className="p-2">
           <MaterialFlow
+            tree={tree}
+            currentPly={current.ply}
+            flipped={flipped}
+            onSelectPly={handleFlowSelect}
+          />
+        </div>
+      ),
+    });
+    vizTabs.push({
+      id: 'activity',
+      label: t('analysis.activityTab'),
+      content: (
+        <div className="p-2">
+          <ActivityFlow
             tree={tree}
             currentPly={current.ply}
             flipped={flipped}

@@ -692,6 +692,13 @@ describe('game flow chart', () => {
     expect(screen.getByRole('tab', { name: 'Material' })).toBeInTheDocument();
   });
 
+  it('shows the activity tab even without an analysis (no engine needed)', () => {
+    renderAnalysis();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    expect(screen.getByTestId('activity-flow')).toBeInTheDocument();
+  });
+
   it('shows the moments tab once an analysis exists', () => {
     render(<Analysis tree={tree} analysis={flowEvals} />);
 
