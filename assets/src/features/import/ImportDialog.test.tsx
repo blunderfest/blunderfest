@@ -65,7 +65,29 @@ describe('ImportDialog', () => {
     expect(onImported).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
-    expect(onImported).toHaveBeenCalledWith(expect.objectContaining({ headers: tree.headers }));
+    expect(onImported).toHaveBeenCalledWith([expect.objectContaining({ headers: tree.headers })]);
+  });
+
+  it('previews a multi-game PGN and imports every game on confirmation', async () => {
+    const other = { ...tree, headers: { White: 'Carol', Black: 'Dave' }, result: '0-1' };
+    stubFetch({
+      '/api/import/pgn': () => jsonResponse({ trees: [tree, other] }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} />);
+
+    const multiPgn = '[Event "G1"]\n\n1. e4 e5 *\n\n[Event "G2"]\n\n1. d4 d5 *\n';
+    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: multiPgn } });
+
+    expect(await screen.findByText('2 games found')).toBeInTheDocument();
+    expect(screen.getByText('Alice – Bob')).toBeInTheDocument();
+    expect(screen.getByText('Carol – Dave')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    const trees = onImported.mock.calls[0][0] as (typeof tree)[];
+    expect(trees).toHaveLength(2);
+    expect(trees[0].headers).toEqual(tree.headers);
+    expect(trees[1].headers).toEqual(other.headers);
   });
 
   it('parses a Lichess URL via the lichess endpoint', async () => {
@@ -173,7 +195,7 @@ describe('ImportDialog', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
-    const imported = onImported.mock.calls[0][0] as typeof annotated;
+    const imported = (onImported.mock.calls[0][0] as (typeof annotated)[])[0];
     const first = imported.root.children[0];
     // The eval marker is gone but the human comment survives...
     expect(first.comment).toBe('Sharp.');

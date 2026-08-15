@@ -14,7 +14,7 @@ import { useScrollLock } from '@/lib/useScrollLock';
 type PreviewState =
   | { status: 'idle' }
   | { status: 'parsing' }
-  | { status: 'preview'; tree: GameTree; source: 'pgn' | 'lichess' }
+  | { status: 'preview'; trees: GameTree[]; source: 'pgn' | 'lichess' }
   | { status: 'error'; code: string };
 
 const SAMPLE_PGN = `[Event "Friendly sample"]
@@ -54,7 +54,7 @@ export default function ImportDialog({
   onImported,
   onClose,
 }: {
-  onImported: (tree: GameTree) => void;
+  onImported: (trees: GameTree[]) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -98,9 +98,10 @@ export default function ImportDialog({
     const timer = window.setTimeout(() => {
       const request = isUrl ? importLichess(text) : importPgn(text);
       request.then(
-        ({ tree }) => {
+        (result) => {
           if (!cancelled) {
-            setState({ status: 'preview', tree, source: isUrl ? 'lichess' : 'pgn' });
+            const trees = 'trees' in result ? result.trees : [result.tree];
+            setState({ status: 'preview', trees, source: isUrl ? 'lichess' : 'pgn' });
           }
         },
         (error) => {
@@ -116,11 +117,11 @@ export default function ImportDialog({
     };
   }, [input, isUrl]);
 
-  const preview = state.status === 'preview' ? state.tree : null;
+  const preview = state.status === 'preview' ? state.trees : null;
 
-  // The preview shows the tree *after* stripping — what's previewed is
+  // The preview shows the trees *after* stripping — what's imported is
   // exactly what enters the room.
-  const displayTree = useMemo(() => {
+  const displayTrees = useMemo(() => {
     if (preview === null) {
       return null;
     }
@@ -130,7 +131,7 @@ export default function ImportDialog({
       variations: !keep.variations,
       metadata: !keep.metadata,
     };
-    return stripTree(preview, strip);
+    return preview.map((tree) => stripTree(tree, strip));
   }, [preview, keep]);
 
   const strippable = useMemo(
@@ -138,10 +139,10 @@ export default function ImportDialog({
       preview === null
         ? null
         : {
-            evaluations: hasEvaluations(preview.root),
-            comments: hasComments(preview.root),
-            variations: countVariations(preview.root) > 0,
-            metadata: Object.keys(preview.headers).length > 0,
+            evaluations: preview.some((tree) => hasEvaluations(tree.root)),
+            comments: preview.some((tree) => hasComments(tree.root)),
+            variations: preview.some((tree) => countVariations(tree.root) > 0),
+            metadata: preview.some((tree) => Object.keys(tree.headers).length > 0),
           },
     [preview],
   );
@@ -232,148 +233,178 @@ export default function ImportDialog({
             </div>
           )}
 
-          {displayTree !== null && (
-            <div className="flex shrink-0 flex-col gap-2 overflow-hidden rounded-control border border-line">
-              <div className="flex items-center justify-between gap-2 border-b border-line bg-raised px-3 py-2">
-                <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
-                  {t('import.previewTitle')}
-                </span>
-                <span className={chip({ tone: 'ok' })}>{t('import.validBadge')}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 p-3">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
-                    {t('import.players')}
+          {displayTrees !== null &&
+            (displayTrees.length === 1 ? (
+              <div className="flex shrink-0 flex-col gap-2 overflow-hidden rounded-control border border-line">
+                <div className="flex items-center justify-between gap-2 border-b border-line bg-raised px-3 py-2">
+                  <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
+                    {t('import.previewTitle')}
                   </span>
-                  <span className="flex items-center gap-1.5 text-ui text-ink">
-                    <span className="inline-block h-3 w-3 rounded-[2px] border border-line-strong bg-[#f9f9f9]" />
-                    {displayTree.headers.White ?? '?'}
-                    <span className="text-faint">vs</span>
-                    <span className="inline-block h-3 w-3 rounded-[2px] border border-line-strong bg-[#1a1a1a]" />
-                    {displayTree.headers.Black ?? '?'}
-                  </span>
+                  <span className={chip({ tone: 'ok' })}>{t('import.validBadge')}</span>
                 </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
-                    {t('import.result')}
-                  </span>
-                  <span className="text-ui font-semibold text-ink">{displayTree.result}</span>
-                </div>
-                {(displayTree.headers.Event || displayTree.headers.Date) && (
+                <div className="grid grid-cols-2 gap-3 p-3">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
-                      {t('import.eventDate')}
+                      {t('import.players')}
                     </span>
-                    <span className="text-ui text-ink">
-                      {[displayTree.headers.Event, displayTree.headers.Date]
-                        .filter(Boolean)
-                        .join(' · ')}
+                    <span className="flex items-center gap-1.5 text-ui text-ink">
+                      <span className="inline-block h-3 w-3 rounded-[2px] border border-line-strong bg-[#f9f9f9]" />
+                      {displayTrees[0].headers.White ?? '?'}
+                      <span className="text-faint">vs</span>
+                      <span className="inline-block h-3 w-3 rounded-[2px] border border-line-strong bg-[#1a1a1a]" />
+                      {displayTrees[0].headers.Black ?? '?'}
                     </span>
                   </div>
-                )}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
-                    {t('import.stats')}
-                  </span>
-                  <span className="text-ui text-ink tabular-nums">
-                    {t('import.size', {
-                      plies: displayTree.mainline_ply_count,
-                      nodes: displayTree.node_count,
-                    }) +
-                      ' · ' +
-                      t('import.variationCount', { count: countVariations(displayTree.root) })}
-                  </span>
-                </div>
-                <div className="col-span-2">
-                  <span
-                    className={chip({
-                      tone:
-                        state.status === 'preview' && state.source === 'lichess'
-                          ? 'info'
-                          : 'neutral',
-                    })}
-                  >
-                    {state.status === 'preview' && state.source === 'lichess' ? 'lichess' : 'pgn'}
-                  </span>
-                </div>
-                {strippable !== null &&
-                  (strippable.evaluations ||
-                    strippable.comments ||
-                    strippable.variations ||
-                    strippable.metadata) && (
-                    <fieldset className="col-span-2 m-0 border-0 border-t border-line p-0 pt-2">
-                      <legend className="mb-1.5 text-micro font-semibold uppercase tracking-[0.08em] text-faint">
-                        {t('import.keepLabel')}
-                      </legend>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {(
-                          [
-                            [
-                              'comments',
-                              t('import.keepComments'),
-                              t('import.keepCommentsDesc'),
-                              strippable.comments,
-                            ],
-                            [
-                              'variations',
-                              t('import.keepVariations'),
-                              t('import.keepVariationsDesc'),
-                              strippable.variations,
-                            ],
-                            [
-                              'metadata',
-                              t('import.keepMetadata'),
-                              t('import.keepMetadataDesc'),
-                              strippable.metadata,
-                            ],
-                            [
-                              'evaluations',
-                              t('import.keepEvaluations'),
-                              t('import.keepEvaluationsDesc'),
-                              strippable.evaluations,
-                            ],
-                          ] as const
-                        ).map(([key, title, description, applicable]) =>
-                          applicable ? (
-                            <label
-                              key={key}
-                              className="group/card flex cursor-pointer items-start gap-2 rounded-control border border-line bg-raised p-2.5 transition-colors has-[:checked]:border-gold/60 has-[:checked]:bg-gold/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-gold-hi"
-                            >
-                              <input
-                                type="checkbox"
-                                className="sr-only"
-                                aria-label={title}
-                                checked={keep[key]}
-                                onChange={(event) =>
-                                  setKeep({ ...keep, [key]: event.target.checked })
-                                }
-                              />
-                              <span
-                                aria-hidden="true"
-                                className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border border-line-strong transition-colors group-has-[:checked]/card:border-gold group-has-[:checked]/card:bg-gold"
-                              >
-                                {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative tick — the wrapping span is aria-hidden and the real checkbox carries the state */}
-                                <svg
-                                  viewBox="0 0 20 20"
-                                  fill="currentColor"
-                                  className="h-3 w-3 text-[#20180a] opacity-0 transition-opacity group-has-[:checked]/card:opacity-100"
-                                >
-                                  <path d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.8 3.8 6.8-6.8a1 1 0 0 1 1.4 0Z" />
-                                </svg>
-                              </span>
-                              <span className="flex min-w-0 flex-col">
-                                <span className="text-ui font-semibold text-ink">{title}</span>
-                                <span className="text-note text-faint">{description}</span>
-                              </span>
-                            </label>
-                          ) : null,
-                        )}
-                      </div>
-                    </fieldset>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                      {t('import.result')}
+                    </span>
+                    <span className="text-ui font-semibold text-ink">{displayTrees[0].result}</span>
+                  </div>
+                  {(displayTrees[0].headers.Event || displayTrees[0].headers.Date) && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                        {t('import.eventDate')}
+                      </span>
+                      <span className="text-ui text-ink">
+                        {[displayTrees[0].headers.Event, displayTrees[0].headers.Date]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                    </div>
                   )}
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                      {t('import.stats')}
+                    </span>
+                    <span className="text-ui text-ink tabular-nums">
+                      {t('import.size', {
+                        plies: displayTrees[0].mainline_ply_count,
+                        nodes: displayTrees[0].node_count,
+                      }) +
+                        ' · ' +
+                        t('import.variationCount', {
+                          count: countVariations(displayTrees[0].root),
+                        })}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span
+                      className={chip({
+                        tone:
+                          state.status === 'preview' && state.source === 'lichess'
+                            ? 'info'
+                            : 'neutral',
+                      })}
+                    >
+                      {state.status === 'preview' && state.source === 'lichess' ? 'lichess' : 'pgn'}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="flex shrink-0 flex-col gap-2 overflow-hidden rounded-control border border-line">
+                <div className="flex items-center justify-between gap-2 border-b border-line bg-raised px-3 py-2">
+                  <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
+                    {t('import.previewTitle')}
+                  </span>
+                  <span className={chip({ tone: 'ok' })}>{t('import.validBadge')}</span>
+                </div>
+                <div className="flex flex-col gap-1.5 p-3">
+                  <p className="m-0 text-ui font-semibold text-ink">
+                    {t('import.gamesFound', { count: displayTrees.length })}
+                  </p>
+                  <ul className="m-0 flex max-h-44 flex-col gap-0.5 overflow-y-auto">
+                    {displayTrees.map((tree, index) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: the preview list is static per parse — the index IS the identity
+                      <li key={index} className="flex items-center gap-2 text-ui">
+                        <span className="min-w-0 flex-1 truncate text-ink">
+                          {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
+                        </span>
+                        <span className="text-faint">{tree.result}</span>
+                        <span className="tabular-nums text-faint">
+                          {t('import.pliesShort', { count: tree.mainline_ply_count })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          {displayTrees !== null &&
+            strippable !== null &&
+            (strippable.evaluations ||
+              strippable.comments ||
+              strippable.variations ||
+              strippable.metadata) && (
+              <fieldset className="m-0 border-0 border-t border-line p-0 pt-2">
+                <legend className="mb-1.5 text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                  {t('import.keepLabel')}
+                </legend>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {(
+                    [
+                      [
+                        'comments',
+                        t('import.keepComments'),
+                        t('import.keepCommentsDesc'),
+                        strippable.comments,
+                      ],
+                      [
+                        'variations',
+                        t('import.keepVariations'),
+                        t('import.keepVariationsDesc'),
+                        strippable.variations,
+                      ],
+                      [
+                        'metadata',
+                        t('import.keepMetadata'),
+                        t('import.keepMetadataDesc'),
+                        strippable.metadata,
+                      ],
+                      [
+                        'evaluations',
+                        t('import.keepEvaluations'),
+                        t('import.keepEvaluationsDesc'),
+                        strippable.evaluations,
+                      ],
+                    ] as const
+                  ).map(([key, title, description, applicable]) =>
+                    applicable ? (
+                      <label
+                        key={key}
+                        className="group/card flex cursor-pointer items-start gap-2 rounded-control border border-line bg-raised p-2.5 transition-colors has-[:checked]:border-gold/60 has-[:checked]:bg-gold/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-gold-hi"
+                      >
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          aria-label={title}
+                          checked={keep[key]}
+                          onChange={(event) => setKeep({ ...keep, [key]: event.target.checked })}
+                        />
+                        <span
+                          aria-hidden="true"
+                          className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border border-line-strong transition-colors group-has-[:checked]/card:border-gold group-has-[:checked]/card:bg-gold"
+                        >
+                          {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative tick — the wrapping span is aria-hidden and the real checkbox carries the state */}
+                          <svg
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="h-3 w-3 text-[#20180a] opacity-0 transition-opacity group-has-[:checked]/card:opacity-100"
+                          >
+                            <path d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.8 3.8 6.8-6.8a1 1 0 0 1 1.4 0Z" />
+                          </svg>
+                        </span>
+                        <span className="flex min-w-0 flex-col">
+                          <span className="text-ui font-semibold text-ink">{title}</span>
+                          <span className="text-note text-faint">{description}</span>
+                        </span>
+                      </label>
+                    ) : null,
+                  )}
+                </div>
+              </fieldset>
+            )}
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-2 border-t border-line px-4 py-3">
@@ -392,10 +423,10 @@ export default function ImportDialog({
               type="button"
               id="import-submit-button"
               className={button({ intent: 'primary', size: 'md' })}
-              disabled={displayTree === null}
+              disabled={displayTrees === null}
               onClick={() => {
-                if (displayTree !== null) {
-                  onImported(displayTree);
+                if (displayTrees !== null) {
+                  onImported(displayTrees);
                   onClose();
                 }
               }}

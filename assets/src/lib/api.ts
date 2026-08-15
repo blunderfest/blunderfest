@@ -144,12 +144,14 @@ export type GameTree = {
   node_count: number;
 };
 
-export async function importPgn(pgn: string): Promise<{ tree: GameTree }> {
-  return request('/api/import/pgn', {
+/** Imports a PGN — one or several games (multi-game PGN). */
+export async function importPgn(pgn: string): Promise<{ trees: GameTree[] }> {
+  const body = await request<{ tree?: GameTree; trees?: GameTree[] }>('/api/import/pgn', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ pgn }),
   });
+  return { trees: body.trees ?? (body.tree !== undefined ? [body.tree] : []) };
 }
 
 export async function importLichess(url: string): Promise<{ tree: GameTree }> {

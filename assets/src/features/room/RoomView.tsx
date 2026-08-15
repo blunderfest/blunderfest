@@ -159,12 +159,18 @@ export default function RoomView({
   );
 
   const handleImported = useCallback(
-    (tree: GameTree) => {
+    (trees: GameTree[]) => {
       setFollowOverride(false);
-      const gameId = crypto.randomUUID();
-      sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
-      setActiveGameId(gameId);
-      setFreshImportId(gameId);
+      let firstId: string | null = null;
+      for (const tree of trees) {
+        const gameId = crypto.randomUUID();
+        firstId ??= gameId;
+        sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
+      }
+      if (firstId !== null) {
+        setActiveGameId(firstId);
+        setFreshImportId(firstId);
+      }
       setShowImport(false);
     },
     [sendOp],

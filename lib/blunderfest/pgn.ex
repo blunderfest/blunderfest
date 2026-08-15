@@ -61,6 +61,62 @@ defmodule Blunderfest.PGN do
     end
   end
 
+  @doc """
+  Parses a multi-game PGN (several games concatenated) into a list of
+  trees. Single-game input yields a one-element list. Blank-only chunks
+  between games are ignored; the first failing game aborts with its error.
+  """
+  @spec parse_many(binary()) :: {:ok, [Tree.t()]} | {:error, error_detail()}
+  def parse_many(pgn) when is_binary(pgn) do
+    pgn
+    |> split_games()
+    |> Enum.reduce_while({:ok, []}, fn chunk, {:ok, trees} ->
+      case parse(chunk) do
+        {:ok, tree} -> {:cont, {:ok, [tree | trees]}}
+        {:error, detail} -> {:halt, {:error, detail}}
+      end
+    end)
+    |> case do
+      {:ok, trees} -> {:ok, Enum.reverse(trees)}
+      error -> error
+    end
+  end
+
+  # Splits concatenated games: a new game starts at a `[`-line at top level
+  # once the previous chunk has movetext (header lines of the same game
+  # don't split). Bracket-depth tracking keeps `[`-lines inside {comments}
+  # from falsely starting a game.
+  defp split_games(pgn) do
+    {chunks, current, _depth, _movetext?} =
+      pgn
+      |> String.split("\n")
+      |> Enum.reduce({[], [], 0, false}, fn line, {chunks, current, depth, movetext?} ->
+        header_line? = String.starts_with?(String.trim_leading(line), "[")
+
+        if depth == 0 and header_line? and movetext? do
+          {[Enum.reverse(current) | chunks], [line], update_depth(line, depth), false}
+        else
+          movetext? = movetext? or (not header_line? and String.trim(line) != "")
+          {chunks, [line | current], update_depth(line, depth), movetext?}
+        end
+      end)
+
+    (if current == [], do: chunks, else: [Enum.reverse(current) | chunks])
+    |> Enum.reverse()
+    |> Enum.map(&Enum.join(&1, "\n"))
+    |> Enum.reject(&(String.trim(&1) == ""))
+  end
+
+  defp update_depth(line, depth) do
+    line
+    |> String.to_charlist()
+    |> Enum.reduce(depth, fn
+      ?{, d -> d + 1
+      ?}, d -> max(d - 1, 0)
+      _, d -> d
+    end)
+  end
+
   ## Headers
 
   defp strip_bom(<<0xEF, 0xBB, 0xBF, rest::binary>>), do: rest

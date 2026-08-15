@@ -277,4 +277,47 @@ defmodule Blunderfest.PGNTest do
       assert Tree.node_count(tree) == 9
     end
   end
+
+  describe "multi-game PGN" do
+    test "two concatenated games parse into two trees" do
+      assert {:ok, [g1, g2]} =
+               PGN.parse_many("""
+               [Event "G1"]
+               [Result "1-0"]
+
+               1. e4 e5 2. Nf3 1-0
+
+               [Event "G2"]
+               [Result "0-1"]
+
+               1. d4 d5 2. c4 0-1
+               """)
+
+      assert g1.headers["Event"] == "G1"
+      assert g2.headers["Event"] == "G2"
+      assert g1.result == "1-0"
+      assert g2.result == "0-1"
+    end
+
+    test "a single game yields a one-element list" do
+      assert {:ok, [_]} = PGN.parse_many("1. e4 e5 2. Nf3 *\n")
+    end
+
+    test "a bracket inside a multiline comment does not start a game" do
+      assert {:ok, [_, _]} =
+               PGN.parse_many("""
+               1. e4 e5 {a comment
+               [still the comment] 2. Nf3 Nc6 }
+
+               [Event "Second"]
+
+               1. d4 d5 *
+               """)
+    end
+
+    test "a failing game aborts with its error" do
+      assert {:error, %{reason: :invalid_san_format}} =
+               PGN.parse_many("1. e4 e5 *\n\n[Event \"G2\"]\n\n1. d4 garbage *\n")
+    end
+  end
 end

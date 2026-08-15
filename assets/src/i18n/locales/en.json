@@ -86,6 +86,8 @@
     },
     "previewTitle": "Parsed preview",
     "validBadge": "Valid PGN",
+    "gamesFound": "{{count}} games found",
+    "pliesShort": "{{count}} ply",
     "players": "Players",
     "eventDate": "Event / Date",
     "stats": "Stats",
