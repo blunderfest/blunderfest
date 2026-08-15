@@ -16,8 +16,13 @@ describe('parseInfoLine', () => {
     expect(info).toEqual({
       depth: 15,
       score: { type: 'cp', cp: 32 },
+      multipv: 1,
       pv: ['e2e4', 'e7e5', 'g1f3'],
     });
+  });
+
+  it('leaves multipv null when the engine output has none', () => {
+    expect(parseInfoLine('info depth 3 score cp 10 pv e2e4')?.multipv).toBeNull();
   });
 
   it('parses a mate score', () => {
@@ -32,7 +37,12 @@ describe('parseInfoLine', () => {
   });
 
   it('returns nulls for info lines without a score', () => {
-    expect(parseInfoLine('info depth 1 nodes 10')).toEqual({ depth: 1, score: null, pv: [] });
+    expect(parseInfoLine('info depth 1 nodes 10')).toEqual({
+      depth: 1,
+      score: null,
+      multipv: null,
+      pv: [],
+    });
   });
 });
 

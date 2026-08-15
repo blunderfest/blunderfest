@@ -79,7 +79,7 @@ export default function EngineBox({
             <span className="text-ui text-gold-hi">{t('analysis.enginePaused')}</span>
           </div>
         ) : (
-          <EngineReadout fen={fen} state={state} framed={false} />
+          <EngineReadout fen={fen} state={state} />
         ))}
     </section>
   );

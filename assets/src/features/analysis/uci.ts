@@ -10,6 +10,8 @@ export type InfoScore = { type: 'cp'; cp: number } | { type: 'mate'; mate: numbe
 export type InfoLine = {
   depth: number | null;
   score: InfoScore | null;
+  /** The rank in a MultiPV search (1 = best); null in single-line output. */
+  multipv: number | null;
   pv: string[];
 };
 
@@ -19,7 +21,7 @@ export function parseInfoLine(line: string): InfoLine | null {
     return null;
   }
   const tokens = match[1].split(/\s+/);
-  const result: InfoLine = { depth: null, score: null, pv: [] };
+  const result: InfoLine = { depth: null, score: null, multipv: null, pv: [] };
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
     if (token === 'depth' && i + 1 < tokens.length) {
@@ -31,6 +33,9 @@ export function parseInfoLine(line: string): InfoLine | null {
       } else if (tokens[i + 1] === 'mate') {
         result.score = { type: 'mate', mate: Number.parseInt(tokens[i + 2], 10) };
       }
+    } else if (token === 'multipv' && i + 1 < tokens.length) {
+      const rank = Number.parseInt(tokens[i + 1], 10);
+      result.multipv = Number.isNaN(rank) ? null : rank;
     } else if (token === 'pv' && i + 1 < tokens.length) {
       result.pv = tokens.slice(i + 1);
       break;

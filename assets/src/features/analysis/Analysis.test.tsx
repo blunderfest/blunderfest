@@ -731,6 +731,7 @@ describe('engine box', () => {
     depth: 9,
     pv: ['e2e4'],
     bestMove: 'e2e4',
+    lines: [{ score: { type: 'cp', cp: 42 } as const, depth: 9, pv: ['e2e4'] }],
   };
 
   function makeEngine() {
@@ -802,6 +803,7 @@ describe('engine analysis', () => {
       depth: number;
       pv: string[];
       bestMove: string;
+      lines: { score: { type: 'cp'; cp: number }; depth: number; pv: string[] }[];
     } | null,
   ): {
     init: ReturnType<typeof vi.fn>;
@@ -824,6 +826,7 @@ describe('engine analysis', () => {
           depth: 9,
           pv: ['e2e4'],
           bestMove: 'e2e4',
+          lines: [{ score: { type: 'cp', cp: 42 }, depth: 9, pv: ['e2e4'] }],
         })}
       />,
     );

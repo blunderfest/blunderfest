@@ -20,12 +20,23 @@ import {
 
 const STOCKFISH_WORKER_URL = '/engine/stockfish-18-lite-single.js';
 
+export type EngineLine = {
+  score: InfoScore;
+  depth: number;
+  pv: string[];
+};
+
 export type EngineResult = {
   score: InfoScore;
   depth: number;
   pv: string[];
   bestMove: string;
+  /** Every MultiPV line, best first (rank 1 is mirrored in score/pv above). */
+  lines: EngineLine[];
 };
+
+/** How many lines the engine reports per position (lichess default: 3). */
+const MULTI_PV = 3;
 
 export type WorkerLike = {
   postMessage(message: string): void;
@@ -130,6 +141,7 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
       try {
         worker.postMessage('uci');
         await waitForLine((line) => line === 'uciok', 30_000);
+        worker.postMessage(`setoption name MultiPV value ${MULTI_PV}`);
         worker.postMessage('isready');
         await waitForLine((line) => line === 'readyok', 30_000);
       } catch (error) {
@@ -160,7 +172,8 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
     cancelCurrentSearch?.();
 
     const search = ++currentSearch;
-    let latest: InfoLine | null = null;
+    /** The latest info line per MultiPV rank (rank 1 = the best line). */
+    const latestByRank = new Map<number, InfoLine>();
     let bestMove: string | null = null;
 
     return new Promise((resolve, reject) => {
@@ -171,7 +184,7 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
         const info = parseInfoLine(line);
         if (info !== null) {
           if (info.depth !== null && info.score !== null) {
-            latest = info;
+            latestByRank.set(info.multipv ?? 1, info);
           }
           return;
         }
@@ -186,12 +199,25 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
           if (search !== currentSearch) {
             return;
           }
-          if (latest !== null && latest.score !== null && bestMove !== null) {
+          const lines = [...latestByRank.entries()]
+            .sort(([a], [b]) => a - b)
+            .filter((entry): entry is [number, InfoLine & { score: InfoScore }] => {
+              const [, info] = entry;
+              return info.score !== null;
+            })
+            .map(([, info]) => ({
+              score: info.score,
+              depth: info.depth ?? 0,
+              pv: info.pv,
+            }));
+          const best = lines[0];
+          if (best !== undefined) {
             resolve({
-              score: latest.score,
-              depth: latest.depth ?? 0,
-              pv: latest.pv,
+              score: best.score,
+              depth: best.depth,
+              pv: best.pv,
               bestMove,
+              lines,
             });
           } else {
             resolve(null);

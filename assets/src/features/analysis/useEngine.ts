@@ -4,12 +4,21 @@ import { bestMoveSquares, type WhiteEval, whiteEval } from '@/features/analysis/
 
 export type EngineStatus = 'idle' | 'thinking' | 'ready' | 'error';
 
+/** One engine line (MultiPV rank), white-perspective. */
+export type EngineLineState = {
+  eval: WhiteEval;
+  depth: number;
+  pv: string[];
+};
+
 export type EngineState = {
   status: EngineStatus;
   eval: WhiteEval | null;
   bestMove: { from: string; to: string } | null;
   depth: number | null;
   pv: string[];
+  /** Every MultiPV line, best first (empty until the first result lands). */
+  lines: EngineLineState[];
   retry: () => void;
 };
 
@@ -48,6 +57,7 @@ export function useEngine(
     bestMove: null,
     depth: null,
     pv: [],
+    lines: [],
   });
   const [attempt, setAttempt] = useState(0);
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
@@ -67,7 +77,7 @@ export function useEngine(
           : getSharedEngineLazy();
 
     if (!enabled || fen === null) {
-      setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [] });
+      setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [], lines: [] });
       return;
     }
 
@@ -82,12 +92,13 @@ export function useEngine(
         bestMove: null,
         depth: null,
         pv: [],
+        lines: [],
       });
       return;
     }
 
     if (engineRef.current === null) {
-      setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [] });
+      setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [], lines: [] });
       return;
     }
 
@@ -110,15 +121,28 @@ export function useEngine(
             return;
           }
           if (result === null) {
-            setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [] });
+            setState({
+              status: 'idle',
+              eval: null,
+              bestMove: null,
+              depth: null,
+              pv: [],
+              lines: [],
+            });
             return;
           }
+          const lines = result.lines.map((line) => ({
+            eval: whiteEval(line.score, sideToMove),
+            depth: line.depth,
+            pv: line.pv,
+          }));
           setState({
             status: 'ready',
             eval: whiteEval(result.score, sideToMove),
             bestMove: bestMoveSquares(result.bestMove),
             depth: result.depth,
             pv: result.pv,
+            lines,
           });
         })
         .catch(() => {

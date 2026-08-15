@@ -1,89 +1,111 @@
 import { useTranslation } from 'react-i18next';
 import { statusDot } from '@/components/ui';
-import { evalLabel, pvToSan } from '@/features/analysis/uci';
-import type { EngineState } from '@/features/analysis/useEngine';
+import { evalLabel, pvToSan, type WhiteEval } from '@/features/analysis/uci';
+import type { EngineLineState, EngineState } from '@/features/analysis/useEngine';
 
-/**
- * The 36px engine readout bar below the board: status dot, depth, eval badge
- * (light when white is better, dark otherwise), and the principal variation
- * in SAN. Always rendered at a fixed height so engine updates never shift
- * the layout; the previous eval stays visible while thinking.
- */
-export default function EngineReadout({
+function evalBadgeClass(white: WhiteEval, dimmed: boolean): string {
+  const light =
+    white.type === 'result'
+      ? white.result === '1-0'
+      : (white.type === 'cp' && white.cp >= 0) || (white.type === 'mate' && white.moves > 0);
+  const tone =
+    white.type === 'result' && white.result === '1/2-1/2'
+      ? 'bg-raised text-muted'
+      : light
+        ? 'bg-[#f4f6fb] text-[#20180a]'
+        : 'bg-[#1a1d24] text-[#e8eaf0]';
+  return `rounded-chip border border-line px-1.5 py-0.5 text-note font-semibold tabular-nums ${tone} ${
+    dimmed ? 'opacity-85' : ''
+  }`;
+}
+
+function Line({
   fen,
-  state,
-  framed = true,
+  line,
+  dimmed,
+  badgeTestId,
 }: {
   fen: string;
-  state: EngineState;
-  /** Standalone bar chrome (border, panel background) — off inside a panel. */
-  framed?: boolean;
+  line: EngineLineState;
+  dimmed: boolean;
+  badgeTestId?: string;
 }) {
-  const { t } = useTranslation();
-  const { status, eval: white, depth, pv, retry } = state;
+  const pvSan = line.pv.length > 0 ? pvToSan(fen, line.pv) : [];
+  return (
+    <>
+      <span className={evalBadgeClass(line.eval, dimmed)} data-testid={badgeTestId}>
+        {evalLabel(line.eval)}
+      </span>
+      {pvSan.length > 0 && (
+        <span className="truncate text-ui text-muted tabular-nums" data-testid="engine-pv">
+          {pvSan.join(' ')}
+        </span>
+      )}
+    </>
+  );
+}
 
-  const pvSan = pv.length > 0 ? pvToSan(fen, pv) : [];
+/**
+ * The engine's readout inside the engine box: one row per MultiPV line
+ * (best first) — eval badge (light when white is better) plus the principal
+ * variation in SAN. The first row carries the status dot and depth. The
+ * previous lines stay visible while the next position is analyzed.
+ */
+export default function EngineReadout({ fen, state }: { fen: string; state: EngineState }) {
+  const { t } = useTranslation();
+  const { status, lines, retry } = state;
+  const thinking = status === 'thinking';
+
+  if (status === 'error') {
+    return (
+      <div className="flex h-9 w-full items-center gap-2 px-3" data-testid="engine-readout">
+        <span className={statusDot({ tone: 'bad' })} />
+        <span className="text-ui text-muted">{t('analysis.engineUnavailable')}</span>
+        <button
+          type="button"
+          className="text-ui font-semibold text-gold-hi hover:underline"
+          onClick={retry}
+        >
+          {t('analysis.engineRetry')}
+        </button>
+      </div>
+    );
+  }
+
+  if (lines.length === 0) {
+    return (
+      <div className="flex h-9 w-full items-center gap-2 px-3" data-testid="engine-readout">
+        <span className={statusDot({ tone: thinking ? 'warn' : 'ok', pulse: thinking })} />
+        <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+          {thinking ? t('analysis.engineThinking') : ''}
+        </span>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={`flex h-9 w-full items-center gap-2 ${
-        framed ? 'rounded-control border border-line bg-panel px-3' : 'px-3'
-      }`}
-      data-testid="engine-readout"
-    >
-      <span
-        className={statusDot({
-          tone: status === 'error' ? 'bad' : status === 'thinking' ? 'warn' : 'ok',
-          pulse: status === 'thinking',
-        })}
-      />
-      {status === 'error' ? (
-        <>
-          <span className="text-ui text-muted">{t('analysis.engineUnavailable')}</span>
-          <button
-            type="button"
-            className="text-ui font-semibold text-gold-hi hover:underline"
-            onClick={retry}
-          >
-            {t('analysis.engineRetry')}
-          </button>
-        </>
-      ) : (
-        <>
-          <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
-            {status === 'thinking' && t('analysis.engineThinking')}
-            {status === 'ready' && depth !== null && (
-              <>
-                {t('analysis.depthLabel')} <span className="text-muted">{depth}</span>
-              </>
-            )}
-          </span>
-          {white !== null && (
-            <span
-              className={`rounded-chip border border-line px-1.5 py-0.5 text-note font-semibold tabular-nums ${
-                white.type === 'result'
-                  ? white.result === '1-0'
-                    ? 'bg-[#f4f6fb] text-[#20180a]'
-                    : white.result === '0-1'
-                      ? 'bg-[#1a1d24] text-[#e8eaf0]'
-                      : 'bg-raised text-muted'
-                  : (white.type === 'cp' && white.cp < 0) ||
-                      (white.type === 'mate' && white.moves < 0)
-                    ? 'bg-[#1a1d24] text-[#e8eaf0]'
-                    : 'bg-[#f4f6fb] text-[#20180a]'
-              } ${status === 'thinking' ? 'opacity-85' : ''}`}
-              data-testid="engine-eval-badge"
-            >
-              {evalLabel(white)}
+    <div className="flex w-full flex-col px-3 py-1" data-testid="engine-readout">
+      {lines.map((line, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity — row N is always the Nth-best line
+        <div key={index} className="flex h-7 items-center gap-2" data-testid="engine-line">
+          {index === 0 ? (
+            <span className={statusDot({ tone: thinking ? 'warn' : 'ok', pulse: thinking })} />
+          ) : (
+            <span className="w-1.5 shrink-0" />
+          )}
+          {index === 0 && line.depth > 0 && (
+            <span className="shrink-0 text-micro font-semibold uppercase tracking-[0.08em] whitespace-nowrap text-faint">
+              {t('analysis.depthLabel')} <span className="text-muted">{line.depth}</span>
             </span>
           )}
-          {pvSan.length > 0 && (
-            <span className="truncate text-ui text-muted tabular-nums" data-testid="engine-pv">
-              {pvSan.join(' ')}
-            </span>
-          )}
-        </>
-      )}
+          <Line
+            fen={fen}
+            line={line}
+            dimmed={thinking}
+            badgeTestId={index === 0 ? 'engine-eval-badge' : undefined}
+          />
+        </div>
+      ))}
     </div>
   );
 }

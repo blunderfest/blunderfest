@@ -50,7 +50,7 @@ describe('createStockfishEngine', () => {
     expect(worker.messages).toEqual(['uci']);
     worker.emit('uciok');
     await flush();
-    expect(worker.messages).toEqual(['uci', 'isready']);
+    expect(worker.messages).toEqual(['uci', 'setoption name MultiPV value 3', 'isready']);
     worker.emit('readyok');
     await init;
   });
@@ -67,6 +67,7 @@ describe('createStockfishEngine', () => {
       depth: 5,
       pv: ['e2e4'],
       bestMove: 'e2e4',
+      lines: [{ score: { type: 'cp', cp: 10 }, depth: 5, pv: ['e2e4'] }],
     });
   });
 
@@ -79,6 +80,7 @@ describe('createStockfishEngine', () => {
 
     expect(worker.messages).toEqual([
       'uci',
+      'setoption name MultiPV value 3',
       'isready',
       `position fen ${START_FEN}`,
       'go movetime 250',
@@ -93,6 +95,30 @@ describe('createStockfishEngine', () => {
       depth: 6,
       pv: ['e2e4', 'c7c5'],
       bestMove: 'e2e4',
+      lines: [{ score: { type: 'cp', cp: 22 }, depth: 6, pv: ['e2e4', 'c7c5'] }],
+    });
+  });
+
+  it('collects one line per MultiPV rank, best first', async () => {
+    const worker = new FakeWorker();
+    const engine = await bootReady(worker);
+
+    const promise = engine.analyze(START_FEN, { movetimeMs: 250 }, new AbortController().signal);
+    await flush();
+
+    worker.emit('info depth 12 multipv 1 score cp 30 pv e2e4');
+    worker.emit('info depth 12 multipv 2 score cp 12 pv d2d4');
+    worker.emit('info depth 11 multipv 3 score cp -5 pv c2c4');
+    worker.emit('info depth 12 multipv 2 score cp 18 pv g1f3');
+    worker.emit('bestmove e2e4');
+
+    await expect(promise).resolves.toMatchObject({
+      bestMove: 'e2e4',
+      lines: [
+        { score: { type: 'cp', cp: 30 }, pv: ['e2e4'] },
+        { score: { type: 'cp', cp: 18 }, pv: ['g1f3'] },
+        { score: { type: 'cp', cp: -5 }, pv: ['c2c4'] },
+      ],
     });
   });
 
