@@ -141,6 +141,7 @@
     "noAnalysisYet": "No analysis yet.",
     "bestMove": "best {{move}}",
     "wdl": "White win · draw · black win",
+    "engineLines": "Engine lines",
     "bookExit": "leaves the book",
     "commentPlaceholder": "Add a comment...",
     "saveComment": "Save comment",

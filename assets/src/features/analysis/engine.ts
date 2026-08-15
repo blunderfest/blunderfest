@@ -58,6 +58,8 @@ export interface ChessEngine {
   terminate(): void;
   /** True once the worker died fatally (script/wasm/exception) — it will never answer again. */
   hasFailed?(): boolean;
+  /** Changes the MultiPV line count for subsequent searches. */
+  setMultiPV?(count: number): void;
 }
 
 function abortError(): DOMException {
@@ -254,6 +256,9 @@ export function createStockfishEngine(workerFactory?: () => WorkerLike): ChessEn
     },
     hasFailed() {
       return fatal !== null;
+    },
+    setMultiPV(count: number) {
+      worker.postMessage(`setoption name MultiPV value ${count}`);
     },
   };
 }

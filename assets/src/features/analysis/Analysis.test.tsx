@@ -790,6 +790,22 @@ describe('engine box', () => {
     expect(screen.getByTestId('engine-readout')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.hints')).toBe('off');
   });
+
+  it('configures the engine line count', async () => {
+    const engine = {
+      init: vi.fn(() => Promise.resolve()),
+      analyze: vi.fn(async () => RESULT),
+      terminate: vi.fn(),
+      setMultiPV: vi.fn(),
+    };
+    render(<Analysis tree={tree} engine={engine} />);
+    expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId('engine-lines-select'), { target: { value: '5' } });
+
+    expect(localStorage.getItem('blunderfest.engineLines')).toBe('5');
+    await waitFor(() => expect(engine.setMultiPV).toHaveBeenCalledWith(5));
+  });
 });
 
 describe('engine analysis', () => {

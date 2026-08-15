@@ -1,42 +1,59 @@
 import { useTranslation } from 'react-i18next';
 import Switch from '@/components/Switch';
-import { panel, statusDot } from '@/components/ui';
+import { statusDot } from '@/components/ui';
 import EngineReadout from '@/features/analysis/EngineReadout';
 import type { EngineState } from '@/features/analysis/useEngine';
 
 /**
- * The engine box at the top of the Moves tab (lichess-style): the on/off
- * switch in the header, the live readout for the current position below
- * it — or the paused note while the position editor is open. The Settings
- * tab keeps the full preferences (hint arrows & co.).
+ * The engine section at the top of the Moves panel (lichess-style): the
+ * on/off switch, hint-arrows toggle and line-count selector in the header;
+ * the live readout for the current position below — or the paused note
+ * while the position editor is open.
  */
 export default function EngineBox({
   fen,
   state,
   engineOn,
   arrowsOn,
+  linesCount,
   paused = false,
   onToggleEngine,
   onToggleArrows,
+  onLinesCount,
 }: {
   fen: string;
   state: EngineState;
   engineOn: boolean;
   arrowsOn: boolean;
+  linesCount: number;
   /** Position editor is open: the engine is paused, show that instead. */
   paused?: boolean;
   onToggleEngine: () => void;
   onToggleArrows: () => void;
+  onLinesCount: (count: number) => void;
 }) {
   const { t } = useTranslation();
 
   return (
-    <section className={panel({ layout: 'none', pad: 'none' })} data-testid="engine-box">
+    <div className="shrink-0" data-testid="engine-box">
       <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-1.5">
         <span className="text-micro font-semibold uppercase tracking-[0.11em] text-muted">
           {t('analysis.engineToggle')}
         </span>
         <span className="flex items-center gap-2">
+          <select
+            aria-label={t('analysis.engineLines')}
+            data-testid="engine-lines-select"
+            className="h-6 rounded-control border border-line bg-transparent px-1 text-micro text-muted"
+            value={linesCount}
+            onChange={(event) => onLinesCount(Number(event.target.value))}
+          >
+            {[1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             aria-label={t('analysis.hintArrows')}
@@ -81,6 +98,6 @@ export default function EngineBox({
         ) : (
           <EngineReadout fen={fen} state={state} />
         ))}
-    </section>
+    </div>
   );
 }

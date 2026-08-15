@@ -101,6 +101,16 @@ export default function Analysis({
   const [arrowsOn, setArrowsOn] = useState(
     () => localStorage.getItem('blunderfest.hints') !== 'off',
   );
+  /** How many MultiPV lines the engine reports (1–5, persisted). */
+  const [engineLines, setEngineLines] = useState(() => {
+    const stored = Number(localStorage.getItem('blunderfest.engineLines'));
+    return stored >= 1 && stored <= 5 ? stored : 3;
+  });
+
+  function setEngineLinesCount(count: number) {
+    setEngineLines(count);
+    localStorage.setItem('blunderfest.engineLines', String(count));
+  }
 
   function toggleEngine() {
     setEngineOn((on) => {
@@ -167,6 +177,7 @@ export default function Analysis({
     // The engine pauses while the position editor owns the board.
     enabled: engineOn && current !== null && !editor.editing,
     positionStatus: current?.status ?? 'active',
+    multiPv: engineLines,
   });
 
   const checkSquare = useMemo(() => kingInCheckSquare(current?.fen ?? ''), [current?.fen]);
@@ -759,15 +770,21 @@ export default function Analysis({
                 id: 'analysis',
                 label: t('analysis.moves'),
                 content: (
-                  <>
+                  // One coherent panel: the engine section on top, the move
+                  // list scrolling below — lichess's analysis panel.
+                  <section
+                    className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+                  >
                     <EngineBox
                       fen={current.fen ?? ''}
                       state={engineState}
                       engineOn={engineOn}
                       arrowsOn={arrowsOn}
+                      linesCount={engineLines}
                       paused={editor.editing}
                       onToggleEngine={toggleEngine}
                       onToggleArrows={toggleArrows}
+                      onLinesCount={setEngineLinesCount}
                     />
                     <MoveList
                       rows={rows}
@@ -777,7 +794,7 @@ export default function Analysis({
                       bookExitPly={bookExitPly}
                       bestMoves={bestMoves}
                     />
-                  </>
+                  </section>
                 ),
               },
               {

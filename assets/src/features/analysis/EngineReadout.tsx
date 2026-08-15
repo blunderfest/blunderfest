@@ -118,14 +118,16 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
         </div>
       ))}
       {wdl !== null && (
+        // Segment tones are chosen to read on both panel themes — the eval
+        // bar's pure white/black disappear against the matching panel.
         <div
           className="mt-0.5 mb-1 flex h-1.5 overflow-hidden rounded-full border border-line"
           title={`${t('analysis.wdl')}: ${Math.round(wdl.win / 10)}% · ${Math.round(wdl.draw / 10)}% · ${Math.round(wdl.loss / 10)}%`}
           data-testid="engine-wdl"
         >
-          <span className="bg-[#f4f6fb]" style={{ width: `${wdl.win / 10}%` }} />
-          <span className="bg-line-strong" style={{ width: `${wdl.draw / 10}%` }} />
-          <span className="bg-[#1a1d24]" style={{ width: `${wdl.loss / 10}%` }} />
+          <span className="bg-[#dfe4ee]" style={{ width: `${wdl.win / 10}%` }} />
+          <span className="bg-[#7a8499]" style={{ width: `${wdl.draw / 10}%` }} />
+          <span className="bg-[#2e3442]" style={{ width: `${wdl.loss / 10}%` }} />
         </div>
       )}
     </div>

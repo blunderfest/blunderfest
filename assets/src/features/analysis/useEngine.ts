@@ -42,6 +42,8 @@ export function useEngine(
     debounceMs?: number;
     /** The node's game status; terminal positions skip the engine. */
     positionStatus?: string;
+    /** How many MultiPV lines to request (1–5); pushed to the engine live. */
+    multiPv?: number;
   } = {},
 ): EngineState {
   const { enabled = true, movetimeMs = 250, debounceMs = 120 } = options;
@@ -77,6 +79,8 @@ export function useEngine(
         : typeof Worker === 'undefined'
           ? null
           : getSharedEngineLazy();
+
+    engineRef.current?.setMultiPV?.(options.multiPv ?? 3);
 
     if (!enabled || fen === null) {
       setState({ status: 'idle', eval: null, bestMove: null, depth: null, pv: [], lines: [] });
@@ -165,7 +169,16 @@ export function useEngine(
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [fen, enabled, movetimeMs, debounceMs, options.engine, attempt, positionStatus]);
+  }, [
+    fen,
+    enabled,
+    movetimeMs,
+    debounceMs,
+    options.engine,
+    options.multiPv,
+    attempt,
+    positionStatus,
+  ]);
 
   return { ...state, retry };
 }

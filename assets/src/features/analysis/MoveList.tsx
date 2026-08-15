@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
-import { panel } from '@/components/ui';
+
 import BookExitIcon from '@/features/analysis/BookExitIcon';
 import { evalText, moveMark } from '@/features/analysis/evalMarks';
 import type { Row } from '@/features/analysis/moveList';
@@ -285,9 +285,7 @@ export default function MoveList({
   }
 
   return (
-    <section
-      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col xl:flex-1`}
-    >
+    <section className="flex min-h-0 flex-col border-t border-line xl:flex-1">
       <div
         ref={listRef}
         id="analysis-move-list"
