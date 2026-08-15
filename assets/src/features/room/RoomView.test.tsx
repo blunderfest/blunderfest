@@ -100,10 +100,10 @@ function selectOp(seq: number, gameId: string, author = 'profile-1'): Op {
   };
 }
 
-function cursorOp(seq: number, node_id: number): Op {
+function cursorOp(seq: number, node_id: number, author = 'profile-1'): Op {
   return {
     seq,
-    author: 'profile-1',
+    author,
     ts: '2026-01-01T00:00:00Z',
     type: 'set_cursor',
     payload: { node_id },
@@ -471,6 +471,37 @@ describe('RoomView', () => {
     act(() => channel.emit('new_op', cursorOp(3, 1)));
 
     await waitFor(() => expect(pieceAt('square-e4')).toBe('wp'));
+  });
+
+  it('follows a handed-off presenter (and falls back to the owner when they leave)', async () => {
+    channel.joinReturn = {
+      ops: [setGameOp(1, followTree), cursorOp(2, 2)],
+      roles: { 'profile-1': 'owner', 'profile-2': 'collaborator' },
+    };
+    renderRoom();
+
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Owner' }] },
+        'profile-2': { metas: [{ name: 'Driver' }] },
+      }),
+    );
+    await waitFor(() => expect(pieceAt('square-e5')).toBe('bp'));
+
+    // The owner hands the mic to the collaborator; their cursor drives now.
+    act(() => channel.emit('presenter_update', { member_id: 'profile-2' }));
+    act(() => channel.emit('new_op', cursorOp(3, 1, 'profile-2')));
+    await waitFor(() => expect(pieceAt('square-e4')).toBe('wp'));
+
+    // The driver leaves: the floor falls back to the owner's cursor.
+    act(() =>
+      channel.emit('presence_diff', {
+        joins: {},
+        leaves: { 'profile-2': { metas: [{ name: 'Driver' }] } },
+      }),
+    );
+    act(() => channel.emit('new_op', cursorOp(4, 2)));
+    await waitFor(() => expect(pieceAt('square-e5')).toBe('bp'));
   });
 
   it('creates an empty game with the New game button', async () => {

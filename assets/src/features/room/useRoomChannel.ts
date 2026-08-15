@@ -13,6 +13,7 @@ import {
   setAnalysisProgress,
   setLag,
   setMemberRole,
+  setPresenter,
   setReadOnly,
   setRegion,
   setRoles,
@@ -105,6 +106,11 @@ export function useRoomChannel(
         dispatch(setMemberRole(update));
       }
     });
+    channel.on('presenter_update', (update: { member_id: string | null }) => {
+      if (channelRef.current === channel) {
+        dispatch(setPresenter(update.member_id));
+      }
+    });
     channel.on('presence_state', (state: PresenceState) => {
       if (channelRef.current === channel) {
         membersFrom(state).forEach((member) => {
@@ -144,6 +150,7 @@ export function useRoomChannel(
         (payload: {
           ops: Op[];
           roles?: Record<string, MemberRole>;
+          presenter?: string | null;
           region?: string;
           room_region?: string | null;
           read_only?: boolean;
@@ -152,6 +159,7 @@ export function useRoomChannel(
             setJoinError(null);
             dispatch(replayOps(payload.ops));
             dispatch(setRoles(payload.roles ?? {}));
+            dispatch(setPresenter(payload.presenter ?? null));
             dispatch(setRegion(payload.region ?? null));
             dispatch(setRoomRegion(payload.room_region ?? null));
             dispatch(setReadOnly(payload.read_only ?? false));
@@ -222,10 +230,15 @@ export function useRoomChannel(
     channelRef.current?.push('set_role', { member_id: memberId, role });
   }, []);
 
+  /** Hands the presenter mic to a member (owner only). */
+  const sendPresenter = useCallback((memberId: string) => {
+    channelRef.current?.push('set_presenter', { member_id: memberId });
+  }, []);
+
   /** Requests a whole-game engine analysis (ADR-0009); the result arrives as a set_analysis op. */
   const sendAnalyze = useCallback((gameId: string, positions: { ply: number; fen: string }[]) => {
     channelRef.current?.push('analyze_game', { game_id: gameId, positions });
   }, []);
 
-  return { joined, joinError, sendOp, sendRole, sendAnalyze };
+  return { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze };
 }

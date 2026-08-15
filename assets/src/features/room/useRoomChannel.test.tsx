@@ -380,6 +380,7 @@ describe('useRoomChannel', () => {
       region: null,
       roomRegion: null,
       lagMs: null,
+      presenterId: null,
       readOnly: false,
       analysis: {},
       analysisProgress: null,

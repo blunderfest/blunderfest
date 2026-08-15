@@ -46,6 +46,8 @@ export type RoomState = {
   roomRegion: string | null;
   /** Latest measured channel round-trip in milliseconds (10s ping probe). */
   lagMs: number | null;
+  /** The member the mic was handed to; null means the owner presents (ADR-0021). */
+  presenterId: string | null;
   /**
    * Read-only rooms (the demo, ADR-0014): no presence, no roles, and the
    * server rejects every op — clients don't even send cursor updates.
@@ -69,6 +71,7 @@ const initialState: RoomState = {
   region: null,
   roomRegion: null,
   lagMs: null,
+  presenterId: null,
   readOnly: false,
   analysis: {},
   analysisProgress: null,
@@ -346,13 +349,21 @@ export function selectCanEdit(state: RoomState, profileId: string | null): boole
 }
 
 /**
- * The presenter is the room's owner — the member holding the `owner` role,
- * as long as they are still in the room. Nobody presents until an owner is
- * present.
+ * The presenter: the member the mic was handed to (`presenterId`), as long
+ * as they are in the room; otherwise the owner, as long as they are in the
+ * room. Presenting derives from presence, so an absent presenter yields the
+ * floor back to the owner automatically (ADR-0021).
  */
 export const selectPresenter = createSelector(
-  [(state: RoomState) => state.roles, (state: RoomState) => state.presence],
-  (roles, presence) => {
+  [
+    (state: RoomState) => state.roles,
+    (state: RoomState) => state.presence,
+    (state: RoomState) => state.presenterId,
+  ],
+  (roles, presence, presenterId) => {
+    if (presenterId !== null && presence[presenterId] !== undefined) {
+      return presence[presenterId];
+    }
     let ownerId: string | null = null;
     for (const [id, role] of Object.entries(roles)) {
       if (role === 'owner') {
@@ -446,6 +457,7 @@ const roomSlice = createSlice({
       state.region = null;
       state.roomRegion = null;
       state.lagMs = null;
+      state.presenterId = null;
       state.readOnly = false;
       state.analysis = {};
       state.analysisProgress = null;
@@ -462,6 +474,7 @@ const roomSlice = createSlice({
       state.region = null;
       state.roomRegion = null;
       state.lagMs = null;
+      state.presenterId = null;
       state.readOnly = false;
       state.analysis = {};
       state.analysisProgress = null;
@@ -483,6 +496,9 @@ const roomSlice = createSlice({
     },
     setRoomRegion(state, action: PayloadAction<string | null>) {
       state.roomRegion = action.payload;
+    },
+    setPresenter(state, action: PayloadAction<string | null>) {
+      state.presenterId = action.payload;
     },
     setLag(state, action: PayloadAction<{ ms: number | null }>) {
       state.lagMs = action.payload.ms;
@@ -591,6 +607,7 @@ export const {
   setRoomRegion,
   setLag,
   setMemberRole,
+  setPresenter,
   setAnalysisProgress,
   applyOp,
   replayOps,

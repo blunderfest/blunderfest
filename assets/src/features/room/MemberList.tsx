@@ -52,6 +52,7 @@ export default function MemberList({
   following,
   onFollowChange,
   onSetRole,
+  onSetPresenter,
 }: {
   members: PresenceMember[];
   roles: Record<string, MemberRole>;
@@ -62,6 +63,8 @@ export default function MemberList({
   following: boolean;
   onFollowChange: (following: boolean) => void;
   onSetRole: (memberId: string, role: MemberRole) => void;
+  /** Hand the presenter mic to a member (owner only). */
+  onSetPresenter?: (memberId: string) => void;
 }) {
   const { t } = useTranslation();
 
@@ -113,11 +116,23 @@ export default function MemberList({
                   {following ? `⇢ ${t('room.followingShort')}` : t('room.followShort')}
                 </button>
               )}
+              {myRole === 'owner' && onSetPresenter !== undefined && member.id !== presenterId && (
+                <button
+                  type="button"
+                  data-testid={`set-presenter-${member.id}`}
+                  aria-label={t('room.makePresenter')}
+                  title={t('room.makePresenter')}
+                  className={`${button({ intent: 'quiet', size: 'xs' })} ml-auto`}
+                  onClick={() => onSetPresenter(member.id)}
+                >
+                  ⇢
+                </button>
+              )}
               {myRole === 'owner' && member.id !== selfId && role !== 'owner' && (
                 <button
                   type="button"
                   data-testid={`set-role-${member.id}`}
-                  className={`${button({ intent: 'quiet', size: 'xs' })} ml-auto`}
+                  className={`${button({ intent: 'quiet', size: 'xs' })} ${onSetPresenter === undefined ? 'ml-auto' : ''}`}
                   onClick={() =>
                     onSetRole(member.id, role === 'collaborator' ? 'viewer' : 'collaborator')
                   }

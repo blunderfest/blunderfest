@@ -35,6 +35,7 @@ defmodule Blunderfest.Room do
        op_count: 0,
        ops: [],
        owner: nil,
+       presenter: nil,
        roles: %{},
        read_only: Keyword.get(opts, :read_only, false),
        last_active_at: DateTime.utc_now()
@@ -60,6 +61,7 @@ defmodule Blunderfest.Room do
     reply = %{
       ops: Enum.reverse(room.ops),
       roles: room.roles,
+      presenter: room.presenter,
       read_only: room.read_only
     }
 
@@ -124,6 +126,25 @@ defmodule Blunderfest.Room do
 
       true ->
         {:reply, {:ok, role}, touch(%{room | roles: Map.put(room.roles, member_id, role)})}
+    end
+  end
+
+  # Presenting handoff (ADR-0021): the owner may pass the mic to any recorded
+  # member, or back to themselves (member_id == owner or nil). Presenting
+  # still derives from presence — an absent presenter yields the floor back
+  # to the owner until they return.
+  def handle_call({:set_presenter, actor_id, member_id}, _from, room) do
+    cond do
+      room.owner != actor_id ->
+        {:reply, {:error, :forbidden}, room}
+
+      member_id == "anonymous" or
+        (member_id != nil and not Map.has_key?(room.roles, member_id)) ->
+        {:reply, {:error, :invalid_member}, room}
+
+      true ->
+        presenter = if member_id == room.owner, do: nil, else: member_id
+        {:reply, {:ok, presenter}, touch(%{room | presenter: presenter})}
     end
   end
 

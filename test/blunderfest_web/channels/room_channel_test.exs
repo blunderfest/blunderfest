@@ -268,6 +268,29 @@ defmodule BlunderfestWeb.RoomChannelTest do
     assert_reply ref, :error, %{reason: :invalid_member}
   end
 
+  test "the owner can hand presenting to a member and take it back", %{} do
+    {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+    {:ok, join_reply, _member} = join_room("room:abcde", %{"profile_id" => "profile-2"})
+
+    assert join_reply.presenter == nil
+
+    ref = push(owner, "set_presenter", %{"member_id" => "profile-2"})
+    assert_reply ref, :ok
+    assert_broadcast "presenter_update", %{"member_id" => "profile-2"}
+
+    ref = push(owner, "set_presenter", %{"member_id" => "profile-1"})
+    assert_reply ref, :ok
+    assert_broadcast "presenter_update", %{"member_id" => nil}
+  end
+
+  test "non-owners cannot hand presenting", %{} do
+    {:ok, _reply, _owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+    {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})
+
+    ref = push(viewer, "set_presenter", %{"member_id" => "profile-2"})
+    assert_reply ref, :error, %{reason: :forbidden}
+  end
+
   test "invalid roles are rejected", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
     join_room("room:abcde", %{"profile_id" => "profile-2"})

@@ -224,6 +224,18 @@ defmodule Blunderfest.Rooms do
 
   def set_role(_slug, _actor_id, _member_id, _role, _scope), do: {:error, :invalid_role}
 
+  @doc """
+  Hands presenting to `member_id` (any recorded member) or back to the owner
+  (`member_id` equal to the owner or nil). Only the room's owner may do this.
+  Returns `{:ok, presenter_id}` or `{:error, :forbidden | :invalid_member}`.
+  """
+  def set_presenter(slug, actor_id, member_id, scope \\ default_scope()) do
+    case lookup(slug, scope) do
+      nil -> {:error, :forbidden}
+      pid -> GenServer.call(pid, {:set_presenter, actor_id, member_id})
+    end
+  end
+
   @doc "Whether `profile_id` may push edit ops in this room (owner or collaborator)."
   def can_edit?(slug, profile_id, scope \\ default_scope()) do
     with_pid(slug, scope, false, fn pid -> GenServer.call(pid, {:can_edit?, profile_id}) end)

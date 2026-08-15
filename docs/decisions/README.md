@@ -62,3 +62,4 @@ here, or point to the ADR that superseded this one.
 | [0018](adr-0018-server-understands-chess.md) | The server keeps first-class chess understanding (parsing, later materialization/search); the client is the interactivity layer, not the game authority | Accepted (2026-08-11) |
 | [0019](adr-0019-echecs-dependency-posture.md) | Keep echecs (contained risk, server-side import parsing only); fork/vendor if it stalls | Accepted (2026-08-11) |
 | [0020](adr-0020-anonymous-game-library.md) | Game library v1 on anonymous profiles, session-scoped (in-memory); re-keys to accounts when storage lands | Accepted (2026-08-11) |
+| [0021](adr-0021-presenter-handoff.md) | The owner can hand presenting to another member; presence-derived fallback amends ADR-0015 | Accepted (2026-08-15) |

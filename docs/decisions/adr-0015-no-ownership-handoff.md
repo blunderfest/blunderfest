@@ -1,6 +1,6 @@
 # ADR-0015: No ownership handoff when the owner leaves
 
-Status: Accepted (2026-08-11)
+Status: Accepted (2026-08-11) — amended by ADR-0021 (presenting CAN be handed off by the owner; this ADR still governs ownership only)
 
 ## Context
 

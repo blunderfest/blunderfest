@@ -47,7 +47,7 @@ export default function RoomView({
   channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
 }) {
   const { t } = useTranslation();
-  const { joined, joinError, sendOp, sendRole, sendAnalyze } = useRoomChannel(
+  const { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze } = useRoomChannel(
     slug,
     selfId,
     selfName,
@@ -290,6 +290,7 @@ export default function RoomView({
               following={following}
               onFollowChange={setFollowOverride}
               onSetRole={handleSetRole}
+              onSetPresenter={sendPresenter}
             />
           )}
           <ActivityFeed ops={activityOps} presence={storePresence} names={names} />

@@ -212,6 +212,7 @@ describe('room slice', () => {
       analysis: {},
       roomRegion: null,
       lagMs: null,
+      presenterId: null,
       analysisProgress: null,
     });
   });
@@ -232,6 +233,7 @@ describe('room slice', () => {
         analysis: {},
         roomRegion: null,
         lagMs: null,
+        presenterId: null,
         analysisProgress: null,
       },
       enterRoom({ slug: 'room-123' }),
@@ -250,6 +252,7 @@ describe('room slice', () => {
       analysis: {},
       roomRegion: null,
       lagMs: null,
+      presenterId: null,
       analysisProgress: null,
     });
   });
@@ -270,6 +273,7 @@ describe('room slice', () => {
         analysis: {},
         roomRegion: null,
         lagMs: null,
+        presenterId: null,
         analysisProgress: null,
       },
       leaveRoom(),
@@ -288,6 +292,7 @@ describe('room slice', () => {
       analysis: {},
       roomRegion: null,
       lagMs: null,
+      presenterId: null,
       analysisProgress: null,
     });
   });

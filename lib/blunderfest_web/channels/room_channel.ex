@@ -68,6 +68,7 @@ defmodule BlunderfestWeb.RoomChannel do
      %{
        ops: snapshot.ops,
        roles: stringify_roles(snapshot.roles),
+       presenter: snapshot.presenter,
        region: Blunderfest.NodeInfo.region(),
        room_region: Rooms.region(slug),
        read_only: snapshot.read_only
@@ -117,6 +118,18 @@ defmodule BlunderfestWeb.RoomChannel do
       {:reply, :ok, socket}
     else
       {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
+    end
+  end
+
+  @impl true
+  def handle_in("set_presenter", %{"member_id" => member_id}, socket) do
+    case Rooms.set_presenter(socket.assigns.slug, socket.assigns.profile_id, member_id) do
+      {:ok, presenter} ->
+        broadcast!(socket, "presenter_update", %{"member_id" => presenter})
+        {:reply, :ok, socket}
+
+      {:error, reason} ->
+        {:reply, {:error, %{reason: reason}}, socket}
     end
   end
 
