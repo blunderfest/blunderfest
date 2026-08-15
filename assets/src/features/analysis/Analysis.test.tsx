@@ -748,6 +748,8 @@ describe('analysis settings tab', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
     fireEvent.click(screen.getByTestId('setting-engine'));
 
+    // The readout lives in the Moves tab's engine box now — switch back.
+    fireEvent.click(screen.getByRole('tab', { name: 'Moves' }));
     await waitFor(() => expect(screen.queryByTestId('engine-readout')).not.toBeInTheDocument());
     expect(screen.queryByTestId('eval-bar')).not.toBeInTheDocument();
     // The bar's slot leaves the flow entirely — it hangs off the board's
@@ -755,7 +757,9 @@ describe('analysis settings tab', () => {
     expect(screen.queryByTestId('board-left-slot')).not.toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.engine')).toBe('off');
 
+    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
     fireEvent.click(screen.getByTestId('setting-engine'));
+    fireEvent.click(screen.getByRole('tab', { name: 'Moves' }));
     expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();
     expect(await screen.findByTestId('board-left-slot')).toBeInTheDocument();
   });
@@ -788,7 +792,8 @@ describe('analysis settings tab', () => {
     fireEvent.click(screen.getByTestId('setting-arrows'));
 
     await waitFor(() => expect(screen.queryByTestId('board-arrows')).not.toBeInTheDocument());
-    // The rest of the engine display stays on.
+    // The rest of the engine display stays on (the box is in the Moves tab).
+    fireEvent.click(screen.getByRole('tab', { name: 'Moves' }));
     expect(screen.getByTestId('engine-readout')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.hints')).toBe('off');
   });

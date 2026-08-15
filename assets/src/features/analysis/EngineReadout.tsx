@@ -9,7 +9,16 @@ import type { EngineState } from '@/features/analysis/useEngine';
  * in SAN. Always rendered at a fixed height so engine updates never shift
  * the layout; the previous eval stays visible while thinking.
  */
-export default function EngineReadout({ fen, state }: { fen: string; state: EngineState }) {
+export default function EngineReadout({
+  fen,
+  state,
+  framed = true,
+}: {
+  fen: string;
+  state: EngineState;
+  /** Standalone bar chrome (border, panel background) — off inside a panel. */
+  framed?: boolean;
+}) {
   const { t } = useTranslation();
   const { status, eval: white, depth, pv, retry } = state;
 
@@ -17,7 +26,9 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
 
   return (
     <div
-      className="flex h-9 w-full items-center gap-2 rounded-control border border-line bg-panel px-3"
+      className={`flex h-9 w-full items-center gap-2 ${
+        framed ? 'rounded-control border border-line bg-panel px-3' : 'px-3'
+      }`}
       data-testid="engine-readout"
     >
       <span

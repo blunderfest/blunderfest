@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tv } from 'tailwind-variants';
-import { button, panel } from '@/components/ui';
+import { panel } from '@/components/ui';
 import BookExitIcon from '@/features/analysis/BookExitIcon';
 import { evalText, moveMark } from '@/features/analysis/evalMarks';
 import type { Row } from '@/features/analysis/moveList';
@@ -201,35 +201,10 @@ function VariationLine({
   );
 }
 
-/** Uniform nav glyphs — font glyphs like ⏮/◀ render at mismatched sizes. */
-function NavIcon({ of }: { of: 'first' | 'prev' | 'next' | 'last' }) {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-      {of === 'first' && (
-        <>
-          <polygon points="12,3 5,8 12,13" />
-          <rect x="3" y="3" width="2" height="10" />
-        </>
-      )}
-      {of === 'prev' && <polygon points="11,3 4,8 11,13" />}
-      {of === 'next' && <polygon points="5,3 12,8 5,13" />}
-      {of === 'last' && (
-        <>
-          <polygon points="4,3 11,8 4,13" />
-          <rect x="11" y="3" width="2" height="10" />
-        </>
-      )}
-    </svg>
-  );
-}
-
 export default function MoveList({
   rows,
   currentId,
   onSelect,
-  navTargets,
-  currentPly,
-  totalPly,
   evalsByPly,
   bookExitPly = null,
   bestMoves,
@@ -237,9 +212,6 @@ export default function MoveList({
   rows: Row[];
   currentId: number | null;
   onSelect: (id: number) => void;
-  navTargets: { first: number; prev: number | null; next: number | null; last: number | null };
-  currentPly: number;
-  totalPly: number;
   /** Mainline evals by ply, when a whole-game analysis exists (ADR-0009). */
   evalsByPly?: Record<number, AnalysisEval>;
   /** The mainline ply where the game leaves the opening book. */
@@ -377,56 +349,6 @@ export default function MoveList({
             />
           ),
         )}
-      </div>
-
-      <div className="flex shrink-0 items-center justify-center gap-1 border-t border-line p-2">
-        <button
-          type="button"
-          id="analysis-first-button"
-          className={button({ intent: 'secondary', size: 'icon' })}
-          disabled={currentId === navTargets.first}
-          aria-label={t('analysis.first')}
-          aria-keyshortcuts="Home"
-          onClick={() => onSelect(navTargets.first)}
-        >
-          <NavIcon of="first" />
-        </button>
-        <button
-          type="button"
-          id="analysis-prev-button"
-          className={button({ intent: 'secondary', size: 'icon' })}
-          disabled={navTargets.prev === null}
-          aria-label={t('analysis.prev')}
-          aria-keyshortcuts="ArrowLeft"
-          onClick={() => navTargets.prev !== null && onSelect(navTargets.prev)}
-        >
-          <NavIcon of="prev" />
-        </button>
-        <span className="px-2 text-ui text-muted tabular-nums" data-testid="ply-counter">
-          {t('analysis.position', { ply: currentPly, total: totalPly })}
-        </span>
-        <button
-          type="button"
-          id="analysis-next-button"
-          className={button({ intent: 'secondary', size: 'icon' })}
-          disabled={navTargets.next === null}
-          aria-label={t('analysis.next')}
-          aria-keyshortcuts="ArrowRight"
-          onClick={() => navTargets.next !== null && onSelect(navTargets.next)}
-        >
-          <NavIcon of="next" />
-        </button>
-        <button
-          type="button"
-          id="analysis-last-button"
-          className={button({ intent: 'secondary', size: 'icon' })}
-          disabled={navTargets.last === null}
-          aria-label={t('analysis.last')}
-          aria-keyshortcuts="End"
-          onClick={() => navTargets.last !== null && onSelect(navTargets.last)}
-        >
-          <NavIcon of="last" />
-        </button>
       </div>
     </section>
   );

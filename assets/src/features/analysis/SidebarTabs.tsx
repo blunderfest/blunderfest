@@ -42,7 +42,7 @@ export default function SidebarTabs({ tabs }: { tabs: SidebarTab[] }) {
           </button>
         ))}
       </div>
-      <div role="tabpanel" className="flex min-h-0 flex-1 flex-col">
+      <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2">
         {current.content}
       </div>
     </div>

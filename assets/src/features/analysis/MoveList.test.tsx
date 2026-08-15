@@ -45,16 +45,7 @@ function makeTree(withNested: boolean): GameTree {
 }
 
 function renderList(t: GameTree = makeTree(false), currentId: number | null = null) {
-  return render(
-    <MoveList
-      rows={buildRows(t)}
-      currentId={currentId}
-      onSelect={vi.fn()}
-      navTargets={{ first: 0, prev: null, next: null, last: null }}
-      currentPly={0}
-      totalPly={t.mainline_ply_count}
-    />,
-  );
+  return render(<MoveList rows={buildRows(t)} currentId={currentId} onSelect={vi.fn()} />);
 }
 
 function moveText(id: number): string {
@@ -118,16 +109,7 @@ describe('MoveList keyboard navigation (listbox pattern)', () => {
 
   it('selects the focused move with Enter', () => {
     const onSelect = vi.fn();
-    render(
-      <MoveList
-        rows={buildRows(makeTree(false))}
-        currentId={1}
-        onSelect={onSelect}
-        navTargets={{ first: 0, prev: null, next: null, last: null }}
-        currentPly={1}
-        totalPly={2}
-      />,
-    );
+    render(<MoveList rows={buildRows(makeTree(false))} currentId={1} onSelect={onSelect} />);
     const list = screen.getByRole('listbox');
     fireEvent.keyDown(list, { key: 'ArrowDown' });
     fireEvent.keyDown(list, { key: 'Enter' });
@@ -142,9 +124,6 @@ describe('MoveList book-exit marker', () => {
         rows={buildRows(makeTree(false))}
         currentId={null}
         onSelect={vi.fn()}
-        navTargets={{ first: 0, prev: null, next: null, last: null }}
-        currentPly={0}
-        totalPly={2}
         bookExitPly={2}
       />,
     );
@@ -166,9 +145,6 @@ describe('MoveList best-move hint', () => {
         rows={buildRows(makeTree(false))}
         currentId={null}
         onSelect={vi.fn()}
-        navTargets={{ first: 0, prev: null, next: null, last: null }}
-        currentPly={0}
-        totalPly={2}
         evalsByPly={{
           0: { ply: 0, score: { cp: 0 }, best_move: null },
           1: { ply: 1, score: { cp: -100 }, best_move: null },
@@ -179,18 +155,6 @@ describe('MoveList best-move hint', () => {
 
     const mark = within(screen.getByTestId('analysis-move-1')).getByText('?!');
     expect(mark).toHaveAttribute('title', 'best Nf3');
-  });
-});
-
-describe('MoveList nav buttons', () => {
-  it('disables First while already at the first position', () => {
-    renderList(makeTree(false), 0);
-    expect(screen.getByRole('button', { name: 'First' })).toBeDisabled();
-  });
-
-  it('enables First away from the first position', () => {
-    renderList(makeTree(false), 1);
-    expect(screen.getByRole('button', { name: 'First' })).toBeEnabled();
   });
 });
 

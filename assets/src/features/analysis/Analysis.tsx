@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 import ArrowIcon from '@/components/ArrowIcon';
 import Board from '@/components/Board';
 import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceSrc } from '@/components/board';
-import { button, panel, statusDot } from '@/components/ui';
+import { button, panel } from '@/components/ui';
 import BoardControls from '@/features/analysis/BoardControls';
 import CommentPopup from '@/features/analysis/CommentPopup';
 import CriticalMoments from '@/features/analysis/CriticalMoments';
-import EngineReadout from '@/features/analysis/EngineReadout';
+import EngineBox from '@/features/analysis/EngineBox';
 import EvalBar from '@/features/analysis/EvalBar';
 import type { ChessEngine } from '@/features/analysis/engine';
 import { bestMoveSans } from '@/features/analysis/evalMarks';
@@ -19,6 +19,7 @@ import { legalMovesFor } from '@/features/analysis/legalMoves';
 import MaterialFlow from '@/features/analysis/MaterialFlow';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
+import NavControls from '@/features/analysis/NavControls';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
 import {
   classifyOpening,
@@ -415,6 +416,12 @@ export default function Analysis({
 
   const parent = byId.get(current.id)?.parent ?? null;
   const next = current.children[0] ?? null;
+  const navTargets = {
+    first: tree.root.id,
+    prev: parent?.id ?? null,
+    next: next?.id ?? null,
+    last: current.children.length === 0 ? null : lastChildOf(current).id,
+  };
   const boardLabel = t('analysis.boardLabel', { move: current.san ?? t('analysis.startPosition') });
   const evalBarLabel = evalAriaLabel(engineState.eval, t);
   const hintArrows =
@@ -662,19 +669,19 @@ export default function Analysis({
               )}
             </div>
           )}
-          {editor.editing && engineOn ? (
-            <div
-              className="flex h-9 w-[min(90vw,34rem)] items-center gap-2 rounded-control border border-gold/30 bg-gold/10 px-3"
-              data-testid="engine-paused"
-            >
-              <span className={statusDot({ tone: 'warn', pulse: true })} />
-              <span className="text-ui text-gold-hi">{t('analysis.enginePaused')}</span>
-            </div>
-          ) : editor.editing ? null : engineOn ? (
-            <div className="w-[min(90vw,34rem)]">
-              <EngineReadout fen={current.fen ?? ''} state={engineState} />
-            </div>
-          ) : null}
+          {/*
+            The move navigation lives directly under the board at every
+            size (lichess-style) — the move list is a pure list now.
+          */}
+          {!editor.editing && (
+            <NavControls
+              navTargets={navTargets}
+              currentId={current.id}
+              currentPly={current.ply}
+              totalPly={tree.mainline_ply_count}
+              onSelect={navigate}
+            />
+          )}
           {current.comment !== null && (
             <div
               className="w-[min(90vw,34rem)] rounded-control border border-line bg-panel p-3 text-body text-ink"
@@ -753,22 +760,23 @@ export default function Analysis({
                 id: 'analysis',
                 label: t('analysis.moves'),
                 content: (
-                  <MoveList
-                    rows={rows}
-                    currentId={current.id}
-                    onSelect={navigate}
-                    navTargets={{
-                      first: tree.root.id,
-                      prev: parent?.id ?? null,
-                      next: next?.id ?? null,
-                      last: current.children.length === 0 ? null : lastChildOf(current).id,
-                    }}
-                    currentPly={current.ply}
-                    totalPly={tree.mainline_ply_count}
-                    evalsByPly={evalsByPly}
-                    bookExitPly={bookExitPly}
-                    bestMoves={bestMoves}
-                  />
+                  <>
+                    <EngineBox
+                      fen={current.fen ?? ''}
+                      state={engineState}
+                      engineOn={engineOn}
+                      paused={editor.editing}
+                      onToggleEngine={toggleEngine}
+                    />
+                    <MoveList
+                      rows={rows}
+                      currentId={current.id}
+                      onSelect={navigate}
+                      evalsByPly={evalsByPly}
+                      bookExitPly={bookExitPly}
+                      bestMoves={bestMoves}
+                    />
+                  </>
                 ),
               },
               {
