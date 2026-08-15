@@ -776,11 +776,12 @@ export default function Analysis({
           controls), not here.
         */}
         {/*
-          The sidebar stretches to the board column's height at xl (the
-          board plus the nav/controls below it), not just the board's
-          height — that space belongs to the move list.
+          The sidebar's height matches the board column's at xl: the board
+          (34rem) plus the nav row, controls and hints (13rem, measured).
+          A computed cap, not self-stretch — stretch lets a long move list
+          grow the flex line instead of scrolling inside itself.
         */}
-        <aside className="flex w-full max-w-[min(100%,24rem)] flex-col gap-3 xl:w-[340px] xl:self-stretch">
+        <aside className="flex w-full max-w-[min(100%,24rem)] flex-col gap-3 xl:h-[calc(min(90vw,34rem)+13rem)] xl:w-[340px]">
           <SidebarTabs
             tabs={[
               {
