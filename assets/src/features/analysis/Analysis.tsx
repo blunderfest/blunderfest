@@ -536,7 +536,10 @@ export default function Analysis({
             <h2 className="m-0 text-display font-bold tracking-[-0.02em]">
               {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
             </h2>
-            <p className="m-0 text-muted">{tree.result}</p>
+            <div className="flex items-center gap-2">
+              <p className="m-0 text-muted">{tree.result}</p>
+              <GameActions tree={tree} />
+            </div>
           </div>
           {/*
             Fixed-height slot: the board must never shift when the name
@@ -812,11 +815,6 @@ export default function Analysis({
               },
             ]}
           />
-          {/*
-            The game actions sit between the tabs and the visualization
-            box: tab-independent and always visible, like the viz box.
-          */}
-          <GameActions tree={tree} />
           {/*
             The visualization box sits below the tabs so it stays visible no
             matter which tab is active. A constant height (h-20 + padding),
