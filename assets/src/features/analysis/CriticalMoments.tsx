@@ -89,17 +89,14 @@ export default function CriticalMoments({
 
   if (moments.length === 0) {
     return (
-      <div className="grid flex-1 place-items-center p-4">
+      <div className="grid h-full place-items-center p-4">
         <p className="m-0 text-note text-faint">{t('analysis.noMoments')}</p>
       </div>
     );
   }
 
   return (
-    <div
-      className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2"
-      data-testid="critical-moments"
-    >
+    <div className="flex flex-col gap-1" data-testid="critical-moments">
       {moments.map((moment) => (
         <button
           key={moment.ply}
