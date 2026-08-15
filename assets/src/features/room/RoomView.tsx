@@ -308,7 +308,7 @@ export default function RoomView({
                   </div>
                   <h2 className="m-0 text-display font-bold">{t('room.emptyTitle')}</h2>
                   <p className="m-0 text-body text-muted">{t('room.emptyOwner')}</p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 self-stretch sm:flex-row sm:justify-center sm:self-auto">
                     <button
                       type="button"
                       id="empty-import-button"
