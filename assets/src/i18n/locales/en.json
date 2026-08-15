@@ -240,6 +240,7 @@
     "gameInfo": "Game info",
     "exportPgn": "Export PGN",
     "saveToLibrary": "Save to library",
+    "removeFromLibrary": "Remove from library",
     "savedToLibrary": "Saved ✓",
     "saveLibraryError": "Couldn't save",
     "analyzeGame": "Analyze game",
