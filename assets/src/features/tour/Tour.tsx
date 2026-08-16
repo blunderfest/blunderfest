@@ -1,14 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button } from '@/components/ui';
+import { placeTooltip, type Spot } from '@/features/tour/placement';
 import type { TourStepDef } from '@/features/tour/steps';
 
 /** Breathing room around the spotlighted element. */
 const PAD = 8;
-/** Gap between the spotlight and the tooltip card. */
-const GAP = 12;
-
-type Spot = { top: number; left: number; width: number; height: number };
 
 /**
  * The guided tour: a spotlight (a ring whose giant box-shadow dims the rest
@@ -89,9 +86,9 @@ export default function Tour({ steps, onClose }: { steps: TourStepDef[]; onClose
     };
   }, [step]);
 
-  // Place the tooltip below the spotlight, above when there is more room
-  // there, clamped into the viewport horizontally. Null spot = centered
-  // (handled with CSS classes, no measurement needed).
+  // Place the tooltip near the spotlight, always inside the viewport
+  // (zoomed viewports and oversized targets included). Null spot =
+  // centered (handled with CSS classes, no measurement needed).
   useLayoutEffect(() => {
     if (spot === null) {
       setTipPos(null);
@@ -101,16 +98,13 @@ export default function Tour({ steps, onClose }: { steps: TourStepDef[]; onClose
     if (tipEl === null) {
       return;
     }
-    const tipW = tipEl.offsetWidth;
-    const tipH = tipEl.offsetHeight;
-    const below = window.innerHeight - (spot.top + spot.height);
-    const top =
-      below >= tipH + GAP || below >= spot.top
-        ? spot.top + spot.height + GAP
-        : Math.max(8, spot.top - GAP - tipH);
-    const centerX = spot.left + spot.width / 2;
-    const left = Math.min(Math.max(8, centerX - tipW / 2), window.innerWidth - tipW - 8);
-    setTipPos({ top, left });
+    setTipPos(
+      placeTooltip(
+        spot,
+        { width: tipEl.offsetWidth, height: tipEl.offsetHeight },
+        { width: window.innerWidth, height: window.innerHeight },
+      ),
+    );
   }, [spot]);
 
   // Keyboard focus follows the tour so Enter advances and Esc always lands.
@@ -144,14 +138,14 @@ export default function Tour({ steps, onClose }: { steps: TourStepDef[]; onClose
         role="dialog"
         aria-modal="true"
         aria-label={t(step.titleKey)}
-        className={`absolute w-72 max-w-[calc(100vw-2rem)] rounded-dialog border border-line-strong bg-overlay p-4 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.9)] ${
+        className={`absolute w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-dialog border border-line-strong bg-overlay p-4 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.9)] ${
           spot === null ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' : ''
         }`}
         style={
           spot === null
-            ? undefined
+            ? { maxHeight: 'calc(100vh - 1rem)' }
             : tipPos !== null
-              ? { top: tipPos.top, left: tipPos.left }
+              ? { top: tipPos.top, left: tipPos.left, maxHeight: 'calc(100vh - 1rem)' }
               : { visibility: 'hidden' }
         }
       >
