@@ -2,3 +2,7 @@ The chess piece images in this directory are the "cburnett" piece set by
 Colin M.L. Burnett (https://en.wikipedia.org/wiki/User:Cburnett), as
 distributed by the lila project (https://github.com/lichess-org/lila),
 licensed GPLv2+.
+
+The lichess knight mark inlined in assets/src/components/LichessMark.tsx
+is from the lila project (https://github.com/lichess-org/lila), licensed
+AGPLv3 — compatible with this GPLv3 project.

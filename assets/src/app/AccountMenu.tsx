@@ -1,22 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { pieceSrc } from '@/components/board';
+import LichessMark from '@/components/LichessMark';
 import { lichessAuthStart, type Profile, unlinkLichess } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
 
 const menuItem =
   'block w-full rounded-md px-2.5 py-1.5 text-left text-ui text-ink transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40';
-
-/**
- * The knight mark for Lichess actions — the shipped cburnett knight
- * (GPLv2+, already used on the board) rather than lichess's own logo
- * file, so no third-party asset is redistributed.
- */
-function LichessMark() {
-  return (
-    <img src={pieceSrc({ color: 'b', kind: 'n' })} alt="" className="h-4 w-4" aria-hidden="true" />
-  );
-}
 
 /**
  * The app-bar account menu (ADR-0022): the fun name opens a small menu
