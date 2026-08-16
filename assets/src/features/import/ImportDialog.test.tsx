@@ -127,6 +127,55 @@ describe('ImportDialog', () => {
     expect(screen.getByText('lichess')).toBeInTheDocument();
   });
 
+  it('imports several Lichess URLs at once, reporting the one that fails', async () => {
+    const other = { ...tree, headers: { White: 'Carol', Black: 'Dave' } };
+    stubFetch({
+      '/api/import/lichess': (init) => {
+        const body = JSON.parse(String(init?.body)) as { url: string };
+        return body.url.endsWith('abc123')
+          ? jsonResponse({ errors: { code: 'lichess_game_not_found' } }, 404)
+          : jsonResponse({ tree: other });
+      },
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText('PGN'), {
+      target: {
+        value: 'https://lichess.org/abc123\nhttps://lichess.org/def456\nhttps://lichess.org/ghi789',
+      },
+    });
+
+    expect(await screen.findByText('2 games found')).toBeInTheDocument();
+    const alert = screen.getByTestId('import-failures');
+    expect(alert).toHaveTextContent('Lichess game https://lichess.org/abc123: not found');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    expect(onImported).toHaveBeenCalledTimes(1);
+    expect(onImported.mock.calls[0][0]).toHaveLength(2);
+  });
+
+  it('imports a PGN and a Lichess URL pasted together', async () => {
+    const fromLichess = { ...tree, headers: { White: 'Carol', Black: 'Dave' } };
+    stubFetch({
+      '/api/import/pgn': () => jsonResponse({ tree }),
+      '/api/import/lichess': () => jsonResponse({ tree: fromLichess }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText('PGN'), {
+      target: { value: '1. e4 e5 *\nhttps://lichess.org/abc123' },
+    });
+
+    expect(await screen.findByText('2 games found')).toBeInTheDocument();
+    expect(screen.getByText('Alice – Bob')).toBeInTheDocument();
+    expect(screen.getByText('Carol – Dave')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    expect(onImported.mock.calls[0][0]).toHaveLength(2);
+  });
+
   it('shows the error message when the PGN is invalid', async () => {
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ errors: { code: 'invalid_pgn' } }, 422),

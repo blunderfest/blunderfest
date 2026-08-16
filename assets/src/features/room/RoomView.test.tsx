@@ -63,23 +63,6 @@ function makeStore() {
   return configureStore({ reducer: { room: roomReducer } });
 }
 
-const moveOp: Op = {
-  seq: 1,
-  author: 'profile-1',
-  ts: '2026-01-01T00:00:00Z',
-  type: 'move_at_ply',
-  payload: {
-    game_id: 'game-1',
-    ply: 1,
-    san: 'e4',
-    from: 'e2',
-    to: 'e4',
-    promotion: null,
-    fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
-    status: 'active',
-  },
-};
-
 function setGameOp(seq: number, tree: GameTree, gameId = 'game-1'): Op {
   return {
     seq,
@@ -246,32 +229,19 @@ describe('RoomView', () => {
     expect(await screen.findByText('Swift Falcon 17')).toBeInTheDocument();
   });
 
-  it('lists ops replayed on join with author names', async () => {
-    channel.joinReturn = { ops: [moveOp] };
-    renderRoom();
-    expect(await screen.findByText('1. e4')).toBeInTheDocument();
-  });
-
-  it('appends echoed ops from the channel', async () => {
-    renderRoom();
-    await screen.findByTestId('member-list');
-    act(() => channel.emit('new_op', moveOp));
-    expect(await screen.findByText('1. e4')).toBeInTheDocument();
-  });
-
   it('shows the empty state with import and fresh-board actions when the room has no game', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
     expect(await screen.findByText('Empty room')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Import a game' }));
+    fireEvent.click(document.getElementById('empty-import-button') as HTMLElement);
     expect(await screen.findByLabelText('PGN')).toBeInTheDocument();
   });
 
   it('shows a waiting message to viewers in an empty room', async () => {
     renderRoom();
     expect(await screen.findByText('Nothing to analyse yet')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Import a game' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Import games' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Fresh board' })).not.toBeInTheDocument();
   });
 
@@ -299,7 +269,7 @@ describe('RoomView', () => {
 
     expect(await screen.findByTestId('square-e4')).toBeInTheDocument();
     expect(screen.queryByTestId('member-list')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Import game' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Import games' })).not.toBeInTheDocument();
 
     // Navigation is local; nothing is sent to a read-only room.
     fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
@@ -336,7 +306,8 @@ describe('RoomView', () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Import a game' }));
+    await waitFor(() => expect(document.getElementById('empty-import-button')).not.toBeNull());
+    fireEvent.click(document.getElementById('empty-import-button') as HTMLElement);
     fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } });
     await screen.findByText('Valid PGN');
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
@@ -363,7 +334,8 @@ describe('RoomView', () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Import a game' }));
+    await waitFor(() => expect(document.getElementById('empty-import-button')).not.toBeNull());
+    fireEvent.click(document.getElementById('empty-import-button') as HTMLElement);
     fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } });
     await screen.findByText('Valid PGN');
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
@@ -404,7 +376,6 @@ describe('RoomView', () => {
 
     expect(await screen.findAllByText('Alice – Bob')).toHaveLength(2);
     expect(pieceAt('square-e4')).toBe('wp');
-    expect(screen.getByText('Imported a game')).toBeInTheDocument();
   });
 
   it('reopens the import form to add another game', async () => {
@@ -419,7 +390,7 @@ describe('RoomView', () => {
     renderRoom('abc12', vi.fn(), 'profile-1');
 
     expect(await screen.findByRole('button', { name: 'Alice – Bob' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Import game' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import games' }));
     expect(screen.getByLabelText('PGN')).toBeInTheDocument();
   });
 
@@ -433,20 +404,11 @@ describe('RoomView', () => {
       }),
     );
 
-    expect(await screen.findAllByText('Brave Otter 42')).toHaveLength(2);
+    const list = screen.getByTestId('member-list');
+    expect(await within(list).findByText('Brave Otter 42')).toBeInTheDocument();
     expect(screen.getAllByText('Presenting')).toHaveLength(1);
     // …and the games list marks the presented game with a compact gold dot.
     expect(screen.getByRole('img', { name: 'Presenting' })).toBeInTheDocument();
-  });
-
-  it('keeps cursor ops out of the activity feed', async () => {
-    channel.joinReturn = {
-      ops: [setGameOp(1, gameTree), cursorOp(2, 1)],
-    };
-    renderRoom();
-
-    expect(await screen.findByText('Imported a game')).toBeInTheDocument();
-    expect(screen.queryByText('#2')).not.toBeInTheDocument();
   });
 
   it('follows the presenter cursor through the room', async () => {

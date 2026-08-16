@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, chip, textarea } from '@/components/ui';
+import { type ImportSkip, importAnything } from '@/features/import/importSources';
 import {
   countVariations,
   hasComments,
@@ -9,13 +10,18 @@ import {
   type StripOptions,
   stripTree,
 } from '@/features/import/stripTree';
-import { ApiError, type GameTree, type ImportFailure, importLichess, importPgn } from '@/lib/api';
+import { ApiError, type GameTree } from '@/lib/api';
 import { useScrollLock } from '@/lib/useScrollLock';
 
 type PreviewState =
   | { status: 'idle' }
   | { status: 'parsing' }
-  | { status: 'preview'; trees: GameTree[]; failures: ImportFailure[]; source: 'pgn' | 'lichess' }
+  | {
+      status: 'preview';
+      trees: GameTree[];
+      skips: ImportSkip[];
+      source: 'pgn' | 'lichess' | 'mixed';
+    }
   | { status: 'error'; code: string };
 
 const SAMPLE_PGN = `[Event "Friendly sample"]
@@ -46,12 +52,24 @@ function UploadIcon() {
   );
 }
 
-/** Localized one-line reason for a skipped game; the SAN is appended when known. */
-function failureReasonText(t: TFunction, failure: ImportFailure): string {
-  const reason = t(`import.reasons.${failure.detail.reason}`, {
-    defaultValue: t('import.reasons.unknown'),
-  });
-  return failure.detail.san !== undefined ? `${reason} (${failure.detail.san})` : reason;
+/** A one-line reason for a skipped game/URL, for the warning box. */
+function skipLine(t: TFunction, skip: ImportSkip): string {
+  if (skip.kind === 'pgnGame') {
+    const reason = t(`import.reasons.${skip.detail.reason}`, {
+      defaultValue: t('import.reasons.unknown'),
+    });
+    return t('import.skipGame', {
+      index: skip.index,
+      reason: skip.detail.san !== undefined ? `${reason} (${skip.detail.san})` : reason,
+    });
+  }
+  if (skip.kind === 'lichess') {
+    return t('import.skipLichess', {
+      url: skip.url,
+      reason: t(`import.reasons.${skip.code}`, { defaultValue: t('import.reasons.unknown') }),
+    });
+  }
+  return t(`import.errors.${skip.code}`, { defaultValue: t('import.errors.unknown') });
 }
 
 /**
@@ -94,8 +112,6 @@ export default function ImportDialog({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const isUrl = /lichess\.org|^[A-Za-z0-9]{6,12}$/.test(input.trim()) && !input.includes(' ');
-
   useEffect(() => {
     const text = input.trim();
     if (text === '') {
@@ -105,13 +121,10 @@ export default function ImportDialog({
     setState({ status: 'parsing' });
     let cancelled = false;
     const timer = window.setTimeout(() => {
-      const request = isUrl ? importLichess(text) : importPgn(text);
-      request.then(
-        (result) => {
+      importAnything(text).then(
+        (preview) => {
           if (!cancelled) {
-            const trees = 'trees' in result ? result.trees : [result.tree];
-            const failures = 'failures' in result ? result.failures : [];
-            setState({ status: 'preview', trees, failures, source: isUrl ? 'lichess' : 'pgn' });
+            setState({ status: 'preview', ...preview });
           }
         },
         (error) => {
@@ -125,10 +138,10 @@ export default function ImportDialog({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [input, isUrl]);
+  }, [input]);
 
   const preview = state.status === 'preview' ? state.trees : null;
-  const failures = state.status === 'preview' ? state.failures : [];
+  const skips = state.status === 'preview' ? state.skips : [];
 
   // The preview shows the trees *after* stripping — what's imported is
   // exactly what enters the room.
@@ -227,6 +240,7 @@ export default function ImportDialog({
               value={input}
               onChange={(event) => setInput(event.target.value)}
             />
+            <p className="m-0 text-note text-faint">{t('import.multiHint')}</p>
           </div>
 
           {state.status === 'error' && (
@@ -244,7 +258,7 @@ export default function ImportDialog({
             </div>
           )}
 
-          {failures.length > 0 && (
+          {skips.length > 0 && (
             <div
               className="flex shrink-0 items-start gap-2 rounded-control border border-gold/40 bg-gold/10 p-2.5"
               role="alert"
@@ -257,12 +271,10 @@ export default function ImportDialog({
                 <span className="text-ui font-semibold text-gold-hi">
                   {t('import.partialTitle')}
                 </span>
-                {failures.map((failure) => (
-                  <span key={failure.index} className="text-note text-gold-hi/90">
-                    {t('import.failureLine', {
-                      index: failure.index,
-                      reason: failureReasonText(t, failure),
-                    })}
+                {skips.map((skip, position) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: the skip list is static per parse — the index IS the identity
+                  <span key={position} className="text-note text-gold-hi/90">
+                    {skipLine(t, skip)}
                   </span>
                 ))}
               </div>
@@ -328,12 +340,14 @@ export default function ImportDialog({
                     <span
                       className={chip({
                         tone:
-                          state.status === 'preview' && state.source === 'lichess'
-                            ? 'info'
-                            : 'neutral',
+                          state.status === 'preview' && state.source !== 'pgn' ? 'info' : 'neutral',
                       })}
                     >
-                      {state.status === 'preview' && state.source === 'lichess' ? 'lichess' : 'pgn'}
+                      {state.status === 'preview' && state.source === 'mixed'
+                        ? 'pgn + lichess'
+                        : state.status === 'preview' && state.source === 'lichess'
+                          ? 'lichess'
+                          : 'pgn'}
                     </span>
                   </div>
                 </div>

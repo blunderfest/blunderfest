@@ -104,7 +104,10 @@ so clients send nothing and hide the member list.
 - `assets/src/app/App.tsx` — hash routing (`#/r/<code>` rooms, anything else
   home; strict code regex, ADR-0007), backend health check, profile bootstrap.
 - `assets/src/lib/` — API client (`api.ts`: `request<T>`, `ApiError`,
-  `createProfile`, `fetchProfile`, `createRoom`, `importPgn`, `importLichess`),
+  `createProfile`, `fetchProfile`, `createRoom`, `importPgn`, `importLichess`).
+  `features/import/importSources.ts` splits the import box line-wise into
+  Lichess URLs (lines starting `https://lichess.org`) and PGN text, so any
+  mixture imports in one go; skips per game/URL are reported in the dialog.
   device secret in `localStorage` (`device.ts`,
   `blunderfest.device`), profile hook (`useProfile.ts`), room code helpers
   (`roomCode.ts`), Phoenix socket wiring (`socket.ts`).
@@ -115,8 +118,7 @@ so clients send nothing and hide the member list.
   `useRoomChannel` (join, op/role/presence handling, `sendOp`/`sendRole`,
   10s ping loop → `lagMs`; events from superseded channels are ignored),
   `RoomPanel` (code/copy/leave + a single-line region/lag readout inside
-  the box), `MemberList` (follow toggle, presenter handoff), `GameList`,
-  `ActivityFeed`.
+  the box), `MemberList` (follow toggle, presenter handoff), `GameList`.
 - `assets/src/features/tour/` + `assets/src/app/HelpMenu.tsx` — the guided
   tour: a hand-rolled spotlight (a ring whose box-shadow dims the page) and
   tooltip stepping through `data-tour` landmarks; steps that don't resolve

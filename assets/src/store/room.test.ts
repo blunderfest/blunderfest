@@ -8,7 +8,6 @@ import roomReducer, {
   leaveMember,
   leaveRoom,
   replayOps,
-  selectActivityOps,
   selectCanEdit,
   selectFirstGameId,
   selectLastPlayed,
@@ -373,12 +372,6 @@ describe('room slice', () => {
     expect(state.presence).toEqual({ 'author-1': member });
     state = roomReducer(state, leaveMember({ id: 'author-1' }));
     expect(state.presence).toEqual({});
-  });
-
-  it('selectActivityOps filters out cursor and selection noise', () => {
-    let state = roomReducer(undefined, replayOps([cursorOp(1), moveOp(2), selectOp(3, 'game-1')]));
-    state = roomReducer(state, applyOp(setGameOp(4, 'Alice')));
-    expect(selectActivityOps(state).map((op) => op.seq)).toEqual([2, 4]);
   });
 
   it('selectRoleOf defaults unknown and anonymous members to viewer', () => {

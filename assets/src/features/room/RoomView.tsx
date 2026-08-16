@@ -5,7 +5,6 @@ import { pieceSrc } from '@/components/board';
 import { button, chip, panel, statusDot } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
 import ImportDialog from '@/features/import/ImportDialog';
-import ActivityFeed from '@/features/room/ActivityFeed';
 import GameList from '@/features/room/GameList';
 import MemberList from '@/features/room/MemberList';
 import RoomPanel from '@/features/room/RoomPanel';
@@ -15,7 +14,6 @@ import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp, SetPositionOp } from '@/p
 import { useAppSelector } from '@/store';
 import type { BoardAnnotations } from '@/store/room';
 import {
-  selectActivityOps,
   selectCanEdit,
   selectFirstGameId,
   selectLastPlayed,
@@ -53,15 +51,12 @@ export default function RoomView({
     selfName,
     channelFactory,
   );
-  const storePresence = useAppSelector((state) => state.room.presence);
-  const names = useAppSelector((state) => state.room.names);
   const members = useAppSelector((state) => selectSortedMembers(state.room));
   const roles = useAppSelector((state) => state.room.roles);
   const games = useAppSelector((state) => state.room.games);
   const presenter = useAppSelector((state) => selectPresenter(state.room));
   const presenterGameId = useAppSelector((state) => selectPresenterGameId(state.room));
   const presenterCursor = useAppSelector((state) => selectPresenterCursor(state.room));
-  const activityOps = useAppSelector((state) => selectActivityOps(state.room));
   const myRole: MemberRole = useAppSelector((state) => selectRoleOf(state.room, selfId));
   const canEdit = useAppSelector((state) => selectCanEdit(state.room, selfId));
   const readOnly = useAppSelector((state) => state.room.readOnly);
@@ -271,9 +266,8 @@ export default function RoomView({
       <div className="relative grid flex-1 grid-cols-1 gap-3 md:grid-cols-[236px_1fr]">
         {/*
           On wide screens the rail is pinned to the board's height: Games
-          caps at a share of it, Members sizes to content, and Activity takes
-          what is left — each scrolls inside its own panel, so the page never
-          grows a body scrollbar.
+          caps at a share of it, Members sizes to content — each scrolls
+          inside its own panel, so the page never grows a body scrollbar.
         */}
         <aside className="flex flex-col gap-3 xl:h-[min(90vw,34rem)]">
           <RoomPanel slug={slug} onLeave={onLeave} />
@@ -299,7 +293,6 @@ export default function RoomView({
               onSetPresenter={sendPresenter}
             />
           )}
-          <ActivityFeed ops={activityOps} presence={storePresence} names={names} />
         </aside>
 
         <section className="order-first flex flex-col items-center gap-4 md:order-none">

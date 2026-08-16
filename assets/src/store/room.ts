@@ -322,14 +322,6 @@ export const selectSortedMembers = createSelector(
 );
 
 /**
- * Ops worth showing in the activity feed — cursor and selection noise
- * filtered out.
- */
-export const selectActivityOps = createSelector([(state: RoomState) => state.ops], (ops) =>
-  ops.filter((op) => op.type !== 'set_cursor' && op.type !== 'select_game'),
-);
-
-/**
  * The room role of `profileId` (everyone without an explicit role is a
  * viewer, including anonymous members).
  */

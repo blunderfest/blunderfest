@@ -71,11 +71,10 @@
     "joinError": "Enter a room code"
   },
   "import": {
-    "title": "Import a game",
-    "inputLabel": "PGN or Lichess URL",
+    "title": "Import games",
+    "inputLabel": "PGN or Lichess URLs",
     "errorTitle": "Couldn't import it",
     "partialTitle": "Some games couldn't be parsed and were skipped",
-    "failureLine": "Game {{index}}: {{reason}}",
     "reasons": {
       "unknown": "couldn't be parsed",
       "too_large": "game too large",
@@ -91,7 +90,10 @@
       "unexpected_token": "unexpected token",
       "unterminated_comment": "unterminated comment",
       "invalid_nag": "invalid annotation symbol",
-      "invalid_pgn": "invalid PGN"
+      "invalid_pgn": "invalid PGN",
+      "lichess_game_not_found": "not found",
+      "lichess_fetch_failed": "couldn't be fetched",
+      "invalid_lichess_url": "not a Lichess game URL"
     },
     "pgnLabel": "PGN",
     "pgnPlaceholder": "1. e4 e5 2. Nf3 Nc6 ...  or  https://lichess.org/…",
@@ -136,7 +138,10 @@
     "players": "Players",
     "eventDate": "Event / Date",
     "stats": "Stats",
-    "escToCancel": "to cancel"
+    "escToCancel": "to cancel",
+    "multiHint": "One game or many — paste PGNs and Lichess URLs, one URL per line.",
+    "skipGame": "Game {{index}}: {{reason}}",
+    "skipLichess": "Lichess game {{url}}: {{reason}}"
   },
   "analysis": {
     "noGame": "Import a game to start analyzing.",
@@ -260,13 +265,11 @@
     "following": "Following presenter",
     "followShort": "Follow",
     "followingShort": "Following",
-    "activity": "Activity",
-    "emptyActivity": "No moves yet",
     "leave": "Leave room",
     "game": "Imported a game",
     "games": "Games",
     "emptyGames": "No games yet",
-    "addGame": "Import game",
+    "addGame": "Import games",
     "newGame": "New game",
     "untitledGame": "Untitled game",
     "move": "{{ply}}. {{san}}",
@@ -284,8 +287,8 @@
     "demote": "Demote",
     "viewerWaiting": "Waiting for the room owner to share a game. You'll see it appear here the moment they do.",
     "emptyTitle": "Empty room",
-    "emptyOwner": "Import a PGN or a Lichess game, or start from the initial position and just play.",
-    "emptyImport": "Import a game",
+    "emptyOwner": "Import games from PGN or Lichess, or start from the initial position and just play.",
+    "emptyImport": "Import games",
     "emptyFresh": "Fresh board",
     "emptyViewerTitle": "Nothing to analyse yet",
     "listening": "listening for updates",
