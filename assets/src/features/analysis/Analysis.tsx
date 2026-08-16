@@ -545,14 +545,20 @@ export default function Analysis({
 
   return (
     <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-3 md:gap-6">
-      <div className="flex flex-col items-center gap-4 xl:flex-row xl:items-start xl:gap-6">
+      {/*
+        w-full is load-bearing: without it this wrapper shrink-wraps to its
+        widest child's max-content (a long PV in the engine readout, a
+        one-line game title), balloons past the viewport on phones, and the
+        whole page pans sideways.
+      */}
+      <div className="flex w-full flex-col items-center gap-4 xl:flex-row xl:items-start xl:gap-6">
         <div className="flex flex-col items-center gap-4">
           <div className="flex w-full items-baseline justify-between gap-4">
-            <h2 className="m-0 text-display font-bold tracking-[-0.02em]">
+            <h2 className="m-0 min-w-0 text-display font-bold tracking-[-0.02em]">
               {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
             </h2>
-            <div className="flex items-center gap-2">
-              <p className="m-0 text-muted">{tree.result}</p>
+            <div className="flex shrink-0 items-center gap-2">
+              <p className="m-0 whitespace-nowrap text-muted">{tree.result}</p>
               <GameActions tree={tree} />
             </div>
           </div>

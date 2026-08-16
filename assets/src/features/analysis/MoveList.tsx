@@ -25,6 +25,21 @@ const moveButton = tv({
 const moveNumber = (node: GameNode) =>
   `${Math.ceil(node.ply / 2)}${node.ply % 2 === 1 ? '.' : '...'}`;
 
+/**
+ * block:'nearest', but scoped to the list itself: element.scrollIntoView
+ * also scrolls outer containers, which on mobile yanked the whole page up
+ * (or sideways) whenever the selected move changed.
+ */
+function scrollOptionIntoView(list: HTMLElement, option: Element): void {
+  const listRect = list.getBoundingClientRect();
+  const rect = option.getBoundingClientRect();
+  if (rect.top < listRect.top) {
+    list.scrollTop += rect.top - listRect.top;
+  } else if (rect.bottom > listRect.bottom) {
+    list.scrollTop += rect.bottom - listRect.bottom;
+  }
+}
+
 function CommentDot() {
   const { t } = useTranslation();
   return (
@@ -239,14 +254,15 @@ export default function MoveList({
 
   // Keep the current move visible while navigating; at the root (no move is
   // current) scroll back to the beginning of the list. (jsdom has no
-  // scrollIntoView/scrollTo, hence the optional calls.)
+  // scrollTo, hence the optional call.)
   // biome-ignore lint/correctness/useExhaustiveDependencies: currentId is the trigger, not a referenced value
   useEffect(() => {
-    const current = listRef.current?.querySelector('[aria-current="true"]');
-    if (current !== undefined && current !== null) {
-      current.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    const list = listRef.current;
+    const current = list?.querySelector('[aria-current="true"]');
+    if (list != null && current != null) {
+      scrollOptionIntoView(list, current);
     } else {
-      listRef.current?.scrollTo?.({ top: 0 });
+      list?.scrollTo?.({ top: 0 });
     }
     setListFocusId(null);
   }, [currentId]);
@@ -274,7 +290,7 @@ export default function MoveList({
       const nextId = Number(buttons[nextIndex].dataset.moveId);
       setListFocusId(nextId);
       buttons[nextIndex].focus();
-      buttons[nextIndex].scrollIntoView?.({ block: 'nearest' });
+      scrollOptionIntoView(listRef.current, buttons[nextIndex]);
       return;
     }
     if (event.key === 'Enter' || event.key === ' ') {

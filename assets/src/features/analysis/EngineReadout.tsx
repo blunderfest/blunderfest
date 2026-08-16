@@ -14,7 +14,7 @@ function evalBadgeClass(white: WhiteEval, dimmed: boolean): string {
       : light
         ? 'bg-[#f4f6fb] text-[#20180a]'
         : 'bg-[#1a1d24] text-[#e8eaf0]';
-  return `rounded-chip border border-line px-1.5 py-0.5 text-note font-semibold tabular-nums ${tone} ${
+  return `shrink-0 rounded-chip border border-line px-1.5 py-0.5 text-note font-semibold whitespace-nowrap tabular-nums ${tone} ${
     dimmed ? 'opacity-85' : ''
   }`;
 }

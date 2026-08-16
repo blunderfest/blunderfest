@@ -159,13 +159,41 @@ describe('MoveList best-move hint', () => {
 });
 
 describe('MoveList scrolling', () => {
-  it('scrolls the current move into view', () => {
-    const scrollSpy = vi.fn();
-    Element.prototype.scrollIntoView = scrollSpy;
+  it('scrolls the current move into view within the list, never the page', () => {
+    // scrollIntoView would drag outer containers (the page) along — the
+    // list must scroll itself instead.
+    const scrollIntoViewSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoViewSpy;
+    const realGBCR = Element.prototype.getBoundingClientRect;
+    const rectFor = (top: number, bottom: number) =>
+      ({
+        top,
+        bottom,
+        left: 0,
+        right: 100,
+        width: 100,
+        height: bottom - top,
+        x: 0,
+        y: top,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    Element.prototype.getBoundingClientRect = function (this: Element) {
+      if ((this as HTMLElement).id === 'analysis-move-list') {
+        return rectFor(0, 100);
+      }
+      if (this instanceof HTMLElement && this.dataset.moveId === '3') {
+        return rectFor(300, 320);
+      }
+      return realGBCR.call(this);
+    };
     try {
       renderList(makeTree(false), 3);
-      expect(scrollSpy).toHaveBeenCalled();
+      const list = document.getElementById('analysis-move-list');
+      // The move sits at 300–320px, the visible list ends at 100px.
+      expect(list?.scrollTop).toBe(220);
+      expect(scrollIntoViewSpy).not.toHaveBeenCalled();
     } finally {
+      Element.prototype.getBoundingClientRect = realGBCR;
       delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
     }
   });
