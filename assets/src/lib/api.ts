@@ -1,9 +1,16 @@
 import { clearDevice, loadDevice, saveDevice } from '@/lib/device';
 
+export type LinkedAccount = {
+  type: string;
+  username: string;
+  linked_at: string;
+};
+
 export type Profile = {
   id: string;
   name: string;
   created_at: string;
+  accounts?: LinkedAccount[];
 };
 
 export type Device = {
@@ -42,6 +49,36 @@ export async function createProfile(
   signal?: AbortSignal,
 ): Promise<{ profile: Profile; secret: string }> {
   return request('/api/profiles', { method: 'POST', signal });
+}
+
+/**
+ * Starts the Lichess OAuth flow (ADR-0022): with device credentials the
+ * account links to the current profile, without them it recovers a linked
+ * profile onto this device. Returns the lichess authorize URL.
+ */
+export async function lichessAuthStart(device: Device | null): Promise<{ url: string }> {
+  return request('/api/auth/lichess/start', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(device !== null ? { Authorization: `Bearer ${device.secret}` } : {}),
+    },
+    body: JSON.stringify(device !== null ? { profile_id: device.id } : {}),
+  });
+}
+
+/**
+ * Trades the one-time recovery code from the OAuth callback for fresh
+ * device credentials.
+ */
+export async function exchangeAuthCode(
+  code: string,
+): Promise<{ profile: Profile; secret: string }> {
+  return request('/api/auth/exchange', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
 }
 
 /**

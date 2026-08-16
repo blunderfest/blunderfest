@@ -18,6 +18,13 @@ defmodule BlunderfestWeb.Router do
     get "/profiles/:id/library", LibraryController, :index
     post "/profiles/:id/library", LibraryController, :create
     delete "/profiles/:id/library/:entry_id", LibraryController, :delete
+
+    post "/auth/lichess/start", AuthController, :lichess_start
+    post "/auth/exchange", AuthController, :exchange
+  end
+
+  scope "/auth", BlunderfestWeb do
+    get "/lichess/callback", AuthController, :lichess_callback
   end
 
   # The single-page application shell. Everything that is not a JSON API

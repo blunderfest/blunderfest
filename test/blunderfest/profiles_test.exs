@@ -48,4 +48,55 @@ defmodule Blunderfest.ProfilesTest do
     Profiles.reset()
     assert :error = Profiles.get(profile.id)
   end
+
+  describe "linked accounts" do
+    defp lichess_account(username \\ "dr_ny") do
+      %{
+        type: "lichess",
+        username: username,
+        token: "tok",
+        scopes: ["study:read", "game:read"],
+        linked_at: DateTime.utc_now()
+      }
+    end
+
+    test "link_account attaches the account and upserts by type" do
+      {:ok, profile, _secret} = Profiles.create()
+
+      {:ok, _} = Profiles.link_account(profile.id, lichess_account())
+      {:ok, _} = Profiles.link_account(profile.id, lichess_account("dr_ny_2"))
+
+      {:ok, updated} = Profiles.get(profile.id)
+      assert [%{username: "dr_ny_2"}] = updated.accounts
+    end
+
+    test "link_account fails for an unknown profile" do
+      assert {:error, :not_found} = Profiles.link_account("nope", lichess_account())
+    end
+
+    test "profile_by_account finds the linked profile, else :not_found" do
+      {:ok, profile, _secret} = Profiles.create()
+      {:ok, _} = Profiles.link_account(profile.id, lichess_account())
+
+      assert {:ok, found} = Profiles.profile_by_account("lichess", "dr_ny")
+      assert found.id == profile.id
+      assert {:error, :not_found} = Profiles.profile_by_account("lichess", "someone_else")
+      assert {:error, :not_found} = Profiles.profile_by_account("chesscom", "dr_ny")
+    end
+  end
+
+  describe "issue_secret" do
+    test "adds a working secret without invalidating the old one" do
+      {:ok, profile, first} = Profiles.create()
+
+      assert {:ok, _updated, second} = Profiles.issue_secret(profile.id)
+      assert second != first
+      assert Profiles.authenticate(profile.id, first)
+      assert Profiles.authenticate(profile.id, second)
+    end
+
+    test "fails for an unknown profile" do
+      assert {:error, :not_found} = Profiles.issue_secret("nope")
+    end
+  end
 end

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import AccountMenu from '@/app/AccountMenu';
 import HelpMenu from '@/app/HelpMenu';
 import Logo from '@/components/Logo';
 import Home from '@/features/home/Home';
@@ -195,13 +196,17 @@ export default function App() {
               </svg>
             )}
           </button>
-          <p
-            className="m-0 hidden text-ui text-muted md:block"
-            role="status"
-            data-status={profile.status}
-          >
-            {name}
-          </p>
+          {profile.status === 'ready' ? (
+            <AccountMenu profile={profile.profile} />
+          ) : (
+            <p
+              className="m-0 hidden text-ui text-muted md:block"
+              role="status"
+              data-status={profile.status}
+            >
+              {name}
+            </p>
+          )}
         </div>
       </header>
 

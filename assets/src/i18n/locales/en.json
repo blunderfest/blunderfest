@@ -45,6 +45,14 @@
     "name": "{{name}}",
     "error": "Could not prepare your identity"
   },
+  "account": {
+    "menu": "Account",
+    "anonymous": "Anonymous device",
+    "lichessLinked": "Lichess: {{username}}",
+    "link": "Link Lichess account",
+    "recover": "Recover with Lichess",
+    "linking": "Opening Lichess..."
+  },
   "home": {
     "create": "Create a room",
     "creating": "Creating...",

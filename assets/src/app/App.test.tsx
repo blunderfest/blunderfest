@@ -483,4 +483,23 @@ describe('App', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Help' }));
     expect(screen.queryByRole('menuitem', { name: 'Take the guided tour' })).toBeNull();
   });
+
+  it('recovers a profile from a Lichess exchange code in the URL', async () => {
+    window.location.hash = '#/?exchange=code-123';
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/auth/exchange': () => jsonResponse(profileBody, 200),
+    });
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
+    expect(localStorage.getItem('blunderfest.device')).toBe(
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    expect(window.location.hash).toBe('#/');
+  });
 });

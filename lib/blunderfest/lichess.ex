@@ -38,7 +38,75 @@ defmodule Blunderfest.Lichess do
     _ -> {:error, :fetch_failed}
   end
 
-  defp req_options(url) do
+  ## OAuth2+PKCE (ADR-0022)
+
+  @authorize_url "https://lichess.org/oauth"
+  @token_url "https://lichess.org/api/token"
+
+  @doc "The registered OAuth client id (public client — PKCE, no secret)."
+  def client_id do
+    Application.get_env(:blunderfest, :lichess_client_id, "blunderfest-dev")
+  end
+
+  @doc """
+  Builds the authorize URL for a flow: `redirect_uri` is our callback,
+  `challenge` the PKCE S256 challenge, `state` the CSRF token, `scope`
+  from `Blunderfest.LichessAuth.oauth_scope/0`.
+  """
+  @spec authorize_url(binary(), binary(), binary()) :: binary()
+  def authorize_url(redirect_uri, challenge, state) do
+    @authorize_url <>
+      "?" <>
+      URI.encode_query(
+        response_type: "code",
+        client_id: client_id(),
+        redirect_uri: redirect_uri,
+        code_challenge_method: "S256",
+        code_challenge: challenge,
+        state: state,
+        scope: Blunderfest.LichessAuth.oauth_scope()
+      )
+  end
+
+  @doc "Exchanges an authorization code + PKCE verifier for an access token."
+  @spec exchange_token(binary(), binary(), binary()) ::
+          {:ok, binary()} | {:error, :fetch_failed}
+  def exchange_token(code, redirect_uri, verifier) do
+    body = %{
+      grant_type: "authorization_code",
+      code: code,
+      redirect_uri: redirect_uri,
+      client_id: client_id(),
+      code_verifier: verifier
+    }
+
+    case Req.post(req_options(@token_url), form: body) do
+      {:ok, %Req.Response{status: 200, body: %{"access_token" => token}}} when is_binary(token) ->
+        {:ok, token}
+
+      _ ->
+        {:error, :fetch_failed}
+    end
+  rescue
+    _ -> {:error, :fetch_failed}
+  end
+
+  @doc "Fetches the authenticated account's username."
+  @spec account_username(binary()) :: {:ok, binary()} | {:error, :fetch_failed}
+  def account_username(token) do
+    case Req.get(req_options("/api/account", auth: {:bearer, token})) do
+      {:ok, %Req.Response{status: 200, body: %{"username" => username}}}
+      when is_binary(username) ->
+        {:ok, username}
+
+      _ ->
+        {:error, :fetch_failed}
+    end
+  rescue
+    _ -> {:error, :fetch_failed}
+  end
+
+  defp req_options(url, extra \\ []) do
     [
       url: url,
       base_url: "https://lichess.org",
@@ -46,5 +114,6 @@ defmodule Blunderfest.Lichess do
       retry: false
     ]
     |> Keyword.merge(Application.get_env(:blunderfest, :lichess_req_options, []))
+    |> Keyword.merge(extra)
   end
 end
