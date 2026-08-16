@@ -82,6 +82,21 @@ export async function exchangeAuthCode(
 }
 
 /**
+ * Detaches the lichess account from the profile (and revokes the token
+ * server-side). Returns the updated profile.
+ */
+export async function unlinkLichess(device: Device): Promise<{ profile: Profile }> {
+  return request('/api/auth/unlink', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${device.secret}`,
+    },
+    body: JSON.stringify({ profile_id: device.id }),
+  });
+}
+
+/**
  * Re-heals the device identity: the server keeps profiles in memory, so a
  * redeploy wipes them and every stored device starts 401-ing. Drop it and
  * mint a fresh profile.

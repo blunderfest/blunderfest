@@ -83,6 +83,16 @@ defmodule Blunderfest.ProfilesTest do
       assert {:error, :not_found} = Profiles.profile_by_account("lichess", "someone_else")
       assert {:error, :not_found} = Profiles.profile_by_account("chesscom", "dr_ny")
     end
+
+    test "unlink_account detaches the account" do
+      {:ok, profile, _secret} = Profiles.create()
+      {:ok, _} = Profiles.link_account(profile.id, lichess_account())
+
+      assert {:ok, updated} = Profiles.unlink_account(profile.id, "lichess")
+      assert updated.accounts == []
+      assert {:error, :not_found} = Profiles.profile_by_account("lichess", "dr_ny")
+      assert {:error, :not_found} = Profiles.unlink_account("nope", "lichess")
+    end
   end
 
   describe "issue_secret" do

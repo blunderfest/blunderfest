@@ -50,6 +50,8 @@
     "anonymous": "Anonymous device",
     "lichessLinked": "Lichess: {{username}}",
     "link": "Link Lichess account",
+    "unlink": "Unlink Lichess account",
+    "unlinking": "Unlinking...",
     "recover": "Recover with Lichess",
     "linking": "Opening Lichess..."
   },

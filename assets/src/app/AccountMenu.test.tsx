@@ -71,4 +71,33 @@ describe('AccountMenu', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('menu')).toBeNull();
   });
+
+  it('unlinks with the device credentials and hides the link', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    const fetchMock = vi.fn((_input: RequestInfo | URL, _init?: RequestInit) =>
+      Promise.resolve(
+        new Response(JSON.stringify({ profile: linked }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    render(<AccountMenu profile={linked} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    expect(screen.getByText('Lichess: dr_ny')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Unlink Lichess account' }));
+
+    await screen.findByText('Anonymous device');
+    expect(screen.queryByText('Lichess: dr_ny')).toBeNull();
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe('/api/auth/unlink');
+    const headers = (init?.headers ?? {}) as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer the-secret');
+  });
 });

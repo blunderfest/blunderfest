@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { lichessAuthStart, type Profile } from '@/lib/api';
+import { lichessAuthStart, type Profile, unlinkLichess } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
 
 const menuItem =
@@ -16,7 +16,14 @@ export default function AccountMenu({ profile }: { profile: Profile }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [starting, setStarting] = useState(false);
-  const lichess = profile.accounts?.find((account) => account.type === 'lichess') ?? null;
+  const [busy, setBusy] = useState(false);
+  // The unlink result, applied optimistically — the menu is the only
+  // consumer of the accounts list today, and the server is the source of
+  // truth on the next load.
+  const [unlinked, setUnlinked] = useState(false);
+  const lichess = unlinked
+    ? null
+    : (profile.accounts?.find((account) => account.type === 'lichess') ?? null);
 
   useEffect(() => {
     if (!open) {
@@ -41,6 +48,22 @@ export default function AccountMenu({ profile }: { profile: Profile }) {
       window.location.assign(url);
     } catch {
       setStarting(false);
+    }
+  }
+
+  async function handleUnlink() {
+    const device = loadDevice();
+    if (device === null || busy) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await unlinkLichess(device);
+      setUnlinked(true);
+    } catch {
+      // The link is still there; the menu keeps showing it.
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -81,6 +104,17 @@ export default function AccountMenu({ profile }: { profile: Profile }) {
                 onClick={() => void startFlow()}
               >
                 {starting ? t('account.linking') : t('account.link')}
+              </button>
+            )}
+            {lichess !== null && (
+              <button
+                type="button"
+                role="menuitem"
+                className={menuItem}
+                disabled={busy}
+                onClick={() => void handleUnlink()}
+              >
+                {busy ? t('account.unlinking') : t('account.unlink')}
               </button>
             )}
             <button

@@ -110,6 +110,18 @@ defmodule Blunderfest.Lichess do
     _ -> {:error, :fetch_failed}
   end
 
+  @doc """
+  Revokes an access token at lichess (`DELETE /api/token`). Best-effort
+  hygiene when unlinking — the caller proceeds regardless of the outcome.
+  """
+  @spec revoke_token(binary()) :: :ok
+  def revoke_token(token) do
+    _ = Req.delete(req_options("/api/token", auth: {:bearer, token}))
+    :ok
+  rescue
+    _ -> :ok
+  end
+
   defp req_options(url, extra \\ []) do
     [
       url: url,

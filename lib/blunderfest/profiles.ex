@@ -42,6 +42,11 @@ defmodule Blunderfest.Profiles do
     GenServer.call(server, {:profile_by_account, type, username})
   end
 
+  @doc "Detaches an external account (and its token) from the profile."
+  def unlink_account(id, type, server \\ __MODULE__) do
+    GenServer.call(server, {:unlink_account, id, type})
+  end
+
   @doc """
   Issues an additional device secret for an existing profile — how a
   recovered identity reaches a new device (ADR-0022). Older secrets keep
@@ -96,6 +101,18 @@ defmodule Blunderfest.Profiles do
         accounts =
           [account | Enum.reject(profile.accounts, &(&1.type == account.type))]
 
+        profiles = Map.put(state.profiles, id, %{profile | accounts: accounts})
+        {:reply, {:ok, Map.fetch!(profiles, id)}, %{state | profiles: profiles}}
+
+      :error ->
+        {:reply, {:error, :not_found}, state}
+    end
+  end
+
+  def handle_call({:unlink_account, id, type}, _from, state) do
+    case Map.fetch(state.profiles, id) do
+      {:ok, profile} ->
+        accounts = Enum.reject(profile.accounts, &(&1.type == type))
         profiles = Map.put(state.profiles, id, %{profile | accounts: accounts})
         {:reply, {:ok, Map.fetch!(profiles, id)}, %{state | profiles: profiles}}
 

@@ -66,6 +66,31 @@ defmodule BlunderfestWeb.AuthController do
 
   def exchange(conn, _params), do: invalid_request(conn)
 
+  @doc """
+  Detaches the lichess account from the device-authenticated profile and
+  revokes the token at lichess (best-effort). Returns the updated profile.
+  """
+  def unlink(conn, _params) do
+    case bearer_profile(conn) do
+      {:ok, profile} ->
+        account = Enum.find(profile.accounts, &(&1.type == "lichess"))
+        if account != nil, do: Lichess.revoke_token(account.token)
+
+        case Profiles.unlink_account(profile.id, "lichess") do
+          {:ok, updated} ->
+            json(conn, %{profile: profile_json(updated)})
+
+          {:error, :not_found} ->
+            conn
+            |> put_status(:not_found)
+            |> json(%{errors: %{code: "profile_not_found"}})
+        end
+
+      :error ->
+        unauthorized(conn)
+    end
+  end
+
   ## Internals
 
   defp finish_callback(conn, %{intent: :link, profile_id: profile_id}, account)
@@ -122,7 +147,23 @@ defmodule BlunderfestWeb.AuthController do
     |> json(%{errors: %{code: "invalid_request"}})
   end
 
+  defp unauthorized(conn) do
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{errors: %{code: "unauthorized"}})
+  end
+
   defp profile_json(profile) do
-    %{id: profile.id, name: profile.name, created_at: profile.created_at}
+    %{
+      id: profile.id,
+      name: profile.name,
+      created_at: profile.created_at,
+      accounts: Enum.map(profile.accounts, &account_json/1)
+    }
+  end
+
+  # The token is a server-side credential and never leaves the server.
+  defp account_json(account) do
+    %{type: account.type, username: account.username, linked_at: account.linked_at}
   end
 end

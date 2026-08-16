@@ -123,4 +123,41 @@ defmodule BlunderfestWeb.AuthControllerTest do
       assert %{"errors" => %{"code" => "invalid_request"}} = json_response(conn, 400)
     end
   end
+
+  describe "POST /api/auth/unlink" do
+    test "detaches the account, revokes the token, and returns the updated profile", %{
+      conn: conn
+    } do
+      {:ok, profile, secret} = Profiles.create()
+
+      {:ok, _} =
+        Profiles.link_account(profile.id, %{
+          type: "lichess",
+          username: "dr_ny",
+          token: "tok-123",
+          scopes: ["study:read"],
+          linked_at: DateTime.utc_now()
+        })
+
+      Req.Test.stub(Blunderfest.Lichess, fn conn ->
+        assert conn.method == "DELETE"
+        assert conn.request_path == "/api/token"
+        Plug.Conn.send_resp(conn, 204, "")
+      end)
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{secret}")
+        |> post("/api/auth/unlink", %{"profile_id" => profile.id})
+
+      assert %{"profile" => %{"accounts" => []}} = json_response(conn, 200)
+      assert {:error, :not_found} = Profiles.profile_by_account("lichess", "dr_ny")
+    end
+
+    test "requires device credentials", %{conn: conn} do
+      conn = post(conn, "/api/auth/unlink", %{"profile_id" => "nope"})
+
+      assert %{"errors" => %{"code" => "unauthorized"}} = json_response(conn, 401)
+    end
+  end
 end
