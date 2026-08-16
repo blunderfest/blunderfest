@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { pieceSrc } from '@/components/board';
 import { lichessAuthStart, type Profile, unlinkLichess } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
 
 const menuItem =
   'block w-full rounded-md px-2.5 py-1.5 text-left text-ui text-ink transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40';
+
+/**
+ * The knight mark for Lichess actions — the shipped cburnett knight
+ * (GPLv2+, already used on the board) rather than lichess's own logo
+ * file, so no third-party asset is redistributed.
+ */
+function LichessMark() {
+  return (
+    <img src={pieceSrc({ color: 'b', kind: 'n' })} alt="" className="h-4 w-4" aria-hidden="true" />
+  );
+}
 
 /**
  * The app-bar account menu (ADR-0022): the fun name opens a small menu
@@ -91,7 +103,8 @@ export default function AccountMenu({ profile }: { profile: Profile }) {
             aria-label={t('account.menu')}
             className="absolute top-full right-0 z-50 mt-1 w-64 rounded-control border border-line-strong bg-overlay p-1 shadow-[0_24px_48px_-16px_rgba(0,0,0,0.8)]"
           >
-            <p className="m-0 px-2.5 py-1.5 text-note text-faint">
+            <p className="m-0 flex items-center gap-1.5 px-2.5 py-1.5 text-note text-faint">
+              {lichess !== null && <LichessMark />}
               {lichess !== null
                 ? t('account.lichessLinked', { username: lichess.username })
                 : t('account.anonymous')}
@@ -100,10 +113,11 @@ export default function AccountMenu({ profile }: { profile: Profile }) {
               <button
                 type="button"
                 role="menuitem"
-                className={menuItem}
+                className={`${menuItem} flex items-center gap-1.5`}
                 disabled={starting}
                 onClick={() => void startFlow()}
               >
+                <LichessMark />
                 {starting ? t('account.signingIn') : t('account.signIn')}
               </button>
             )}
