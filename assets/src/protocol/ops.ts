@@ -51,6 +51,29 @@ export type ReplaceLineOp = OpBase & {
   payload: { ply: number; moves: string[] };
 };
 
+/**
+ * A whole line inserted under a node in one op (e.g. an engine line as a
+ * variation): atomic, so no client has to predict derived node ids for a
+ * chain of moves. Clients dedupe against existing children (same
+ * from/to/promotion) — a line that starts with the already-played move
+ * descends into it instead of duplicating it.
+ */
+export type AddLineOp = OpBase & {
+  type: 'add_line';
+  payload: {
+    game_id: string;
+    parent_id: number;
+    moves: {
+      san: string;
+      from: string;
+      to: string;
+      promotion: string | null;
+      fen: string;
+      status: string;
+    }[];
+  };
+};
+
 export type CommentAtPlyOp = OpBase & {
   type: 'comment_at_ply';
   payload: {
@@ -91,6 +114,16 @@ export type SetCursorOp = OpBase & {
 };
 
 /**
+ * A node's NAGs (numeric annotation glyphs, `$1`.. in PGN), full-replace
+ * like `set_annotations`. Only the move-quality set ($1 !$2 ? $3 !! $4 ??
+ * $5 !? $6 ?!) gets UI; any code round-trips through import/export.
+ */
+export type SetNagsOp = OpBase & {
+  type: 'set_nags';
+  payload: { game_id: string; node_id: number; nags: number[] };
+};
+
+/**
  * A free-form position edit (ADR-0011): not a move — the resulting position,
  * however reached, as a FEN. Replays as a setup node under `parent_id`.
  */
@@ -122,9 +155,11 @@ export type Op =
   | SelectGameOp
   | MoveAtPlyOp
   | ReplaceLineOp
+  | AddLineOp
   | CommentAtPlyOp
   | SetAnnotationsOp
   | SetCursorOp
+  | SetNagsOp
   | SetPositionOp
   | SetAnalysisOp;
 

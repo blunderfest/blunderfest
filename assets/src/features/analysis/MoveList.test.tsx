@@ -158,6 +158,49 @@ describe('MoveList best-move hint', () => {
   });
 });
 
+describe('MoveList NAG glyphs', () => {
+  function treeWithNag(nags: number[]): GameTree {
+    const base = makeTree(false);
+    return {
+      ...base,
+      root: {
+        ...base.root,
+        children: [{ ...base.root.children[0], nags }],
+      },
+    };
+  }
+
+  it('renders the glyph for a quality NAG', () => {
+    render(<MoveList rows={buildRows(treeWithNag([4]))} currentId={null} onSelect={vi.fn()} />);
+    expect(within(screen.getByTestId('analysis-move-1')).getByTestId('nag-glyph')).toHaveTextContent(
+      '??',
+    );
+  });
+
+  it('prefers the annotated glyph over the analysis mark', () => {
+    render(
+      <MoveList
+        rows={buildRows(treeWithNag([1]))}
+        currentId={null}
+        onSelect={vi.fn()}
+        evalsByPly={{
+          0: { ply: 0, score: { cp: 0 }, best_move: null },
+          1: { ply: 1, score: { cp: -100 }, best_move: null },
+        }}
+      />,
+    );
+
+    const move = screen.getByTestId('analysis-move-1');
+    expect(within(move).getByTestId('nag-glyph')).toHaveTextContent('!');
+    expect(within(move).queryByText('?!')).toBeNull();
+  });
+
+  it('renders nothing for unsupported codes', () => {
+    render(<MoveList rows={buildRows(treeWithNag([14]))} currentId={null} onSelect={vi.fn()} />);
+    expect(screen.queryByTestId('nag-glyph')).toBeNull();
+  });
+});
+
 describe('MoveList scrolling', () => {
   it('scrolls the current move into view within the list, never the page', () => {
     // scrollIntoView would drag outer containers (the page) along — the

@@ -1,6 +1,7 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { GameNode, GameTree } from '@/lib/api';
 import type {
+  AddLineOp,
   AnalysisEval,
   CommentAtPlyOp,
   DrawnArrow,
@@ -10,6 +11,7 @@ import type {
   Op,
   PresenceMember,
   SetGameOp,
+  SetNagsOp,
   SetPositionOp,
 } from '@/protocol/ops';
 
@@ -257,7 +259,95 @@ export function applySetPosition(tree: GameTree, payload: SetPositionOp['payload
   return { ...tree, root, node_count: tree.node_count + 1 };
 }
 
-function applyOpToGame(state: RoomState, op: MoveAtPlyOp | CommentAtPlyOp | SetPositionOp): void {
+/**
+ * Inserts a whole line under a node (ADR-0005 echo path, e.g. an engine
+ * line as a variation). Moves that already exist as a child of the current
+ * node (same from/to/promotion) are descended into instead of duplicated;
+ * new nodes take the deterministic max+1 ids, so every client replays to
+ * the same tree. Only extending the mainline tip moves the game's result
+ * and ply count.
+ */
+export function applyAddLine(tree: GameTree, payload: AddLineOp['payload']): GameTree {
+  if (payload.moves.length === 0 || findNode(tree.root, payload.parent_id) === null) {
+    return tree;
+  }
+
+  let root = tree.root;
+  let nextId = maxNodeId(root) + 1;
+  let cursorId = payload.parent_id;
+  let result = tree.result;
+  let mainlinePlyCount = tree.mainline_ply_count;
+  let added = 0;
+
+  for (const move of payload.moves) {
+    const cursor = findNode(root, cursorId);
+    if (cursor === null) {
+      return { ...tree, root, result, mainline_ply_count: mainlinePlyCount };
+    }
+    const existing = cursor.children.find(
+      (child) =>
+        child.from === move.from && child.to === move.to && child.promotion === move.promotion,
+    );
+    if (existing !== undefined) {
+      cursorId = existing.id;
+      continue;
+    }
+    let tip = root;
+    while (tip.children[0] !== undefined) {
+      tip = tip.children[0];
+    }
+    const extendsMainline = cursor.id === tip.id;
+    const ply = cursor.ply + 1;
+    const node: GameNode = {
+      id: nextId,
+      ply,
+      san: move.san,
+      from: move.from,
+      to: move.to,
+      promotion: move.promotion,
+      comment: null,
+      nags: [],
+      status: move.status,
+      fen: move.fen,
+      children: [],
+    };
+    nextId += 1;
+    added += 1;
+    root = replaceNode(root, cursorId, (current) => ({
+      ...current,
+      children: [...current.children, node],
+    }));
+    if (extendsMainline) {
+      result = resultFor(move.status, ply) ?? result;
+      mainlinePlyCount = Math.max(mainlinePlyCount, ply);
+    }
+    cursorId = node.id;
+  }
+
+  return {
+    ...tree,
+    root,
+    result,
+    mainline_ply_count: mainlinePlyCount,
+    node_count: tree.node_count + added,
+  };
+}
+
+/** Sets (or clears, with an empty list) a node's NAGs — full replace. */
+export function applySetNags(tree: GameTree, payload: SetNagsOp['payload']): GameTree {
+  if (findNode(tree.root, payload.node_id) === null) {
+    return tree;
+  }
+  return {
+    ...tree,
+    root: replaceNode(tree.root, payload.node_id, (node) => ({ ...node, nags: payload.nags })),
+  };
+}
+
+function applyOpToGame(
+  state: RoomState,
+  op: MoveAtPlyOp | CommentAtPlyOp | SetPositionOp | AddLineOp | SetNagsOp,
+): void {
   const tree = state.games[op.payload.game_id];
   if (tree === undefined) {
     return;
@@ -266,6 +356,10 @@ function applyOpToGame(state: RoomState, op: MoveAtPlyOp | CommentAtPlyOp | SetP
     state.games[op.payload.game_id] = applyMoveAtPly(tree, op.payload);
   } else if (op.type === 'comment_at_ply') {
     state.games[op.payload.game_id] = applyCommentAtPly(tree, op.payload);
+  } else if (op.type === 'add_line') {
+    state.games[op.payload.game_id] = applyAddLine(tree, op.payload);
+  } else if (op.type === 'set_nags') {
+    state.games[op.payload.game_id] = applySetNags(tree, op.payload);
   } else {
     state.games[op.payload.game_id] = applySetPosition(tree, op.payload);
   }
@@ -523,18 +617,21 @@ const roomSlice = createSlice({
             highlights: op.payload.highlights,
           };
         }
-        if (op.type === 'move_at_ply' || op.type === 'set_position') {
-          const tree = state.games[op.payload.game_id];
-          if (tree !== undefined) {
-            state.lastPlayed[op.payload.game_id] = maxNodeId(tree.root) + 1;
-          }
-        }
         if (
           op.type === 'move_at_ply' ||
           op.type === 'comment_at_ply' ||
-          op.type === 'set_position'
+          op.type === 'set_position' ||
+          op.type === 'add_line' ||
+          op.type === 'set_nags'
         ) {
           applyOpToGame(state, op);
+          if (op.type === 'move_at_ply' || op.type === 'set_position' || op.type === 'add_line') {
+            const tree = state.games[op.payload.game_id];
+            if (tree !== undefined) {
+              // Post-apply max is the newest node — for a line, its end.
+              state.lastPlayed[op.payload.game_id] = maxNodeId(tree.root);
+            }
+          }
         }
       }
     },
@@ -565,18 +662,21 @@ const roomSlice = createSlice({
         }
       }
       for (const op of state.ops) {
-        if (op.type === 'move_at_ply' || op.type === 'set_position') {
-          const tree = state.games[op.payload.game_id];
-          if (tree !== undefined) {
-            state.lastPlayed[op.payload.game_id] = maxNodeId(tree.root) + 1;
-          }
-        }
         if (
           op.type === 'move_at_ply' ||
           op.type === 'comment_at_ply' ||
-          op.type === 'set_position'
+          op.type === 'set_position' ||
+          op.type === 'add_line' ||
+          op.type === 'set_nags'
         ) {
           applyOpToGame(state, op);
+          if (op.type === 'move_at_ply' || op.type === 'set_position' || op.type === 'add_line') {
+            const tree = state.games[op.payload.game_id];
+            if (tree !== undefined) {
+              // Post-apply max is the newest node — for a line, its end.
+              state.lastPlayed[op.payload.game_id] = maxNodeId(tree.root);
+            }
+          }
         }
       }
     },

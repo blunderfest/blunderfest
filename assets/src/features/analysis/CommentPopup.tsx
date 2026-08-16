@@ -1,26 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, textarea } from '@/components/ui';
+import { QUALITY_NAGS } from '@/features/analysis/nags';
 import { useScrollLock } from '@/lib/useScrollLock';
 
 /**
- * The per-move note editor, as a small modal. Opened from the board controls
- * or the `c` key; Esc or a backdrop click closes it, ⌘↵ saves.
+ * The per-move annotation editor, as a small modal: the note plus the
+ * quality glyphs (!, ?, ...). Opened from the board controls or the `c`
+ * key; Esc or a backdrop click closes it, ⌘↵ saves.
  */
 export default function CommentPopup({
   comment,
+  nags = [],
   moveLabel,
   onSave,
   onClose,
 }: {
   comment: string | null;
+  /** The move's current NAG codes (at most one quality glyph is kept). */
+  nags?: number[];
   moveLabel: string | null;
-  onSave: (text: string) => void;
+  onSave: (text: string, nags: number[]) => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
   useScrollLock();
   const [draft, setDraft] = useState(comment ?? '');
+  const [selectedNag, setSelectedNag] = useState<number | null>(
+    nags.find((code) => QUALITY_NAGS.some((nag) => nag.code === code)) ?? null,
+  );
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
@@ -40,7 +48,7 @@ export default function CommentPopup({
   const dirty = draft !== (comment ?? '');
 
   function save() {
-    onSave(draft.trim());
+    onSave(draft.trim(), selectedNag === null ? [] : [selectedNag]);
     onClose();
   }
 
@@ -68,6 +76,29 @@ export default function CommentPopup({
           )}
         </div>
         <div className="flex flex-col gap-3 p-4">
+          <fieldset className="m-0 flex items-center gap-1 border-none p-0">
+            <legend className="sr-only">{t('analysis.nagGroup')}</legend>
+            {QUALITY_NAGS.map((nag) => (
+              <button
+                key={nag.code}
+                type="button"
+                aria-pressed={selectedNag === nag.code}
+                aria-label={t('analysis.nagLabel', { glyph: nag.glyph })}
+                title={t('analysis.nagLabel', { glyph: nag.glyph })}
+                data-testid={`nag-${nag.code}`}
+                className={`min-w-9 rounded-control border px-2 py-1 text-ui font-bold transition-colors ${
+                  selectedNag === nag.code
+                    ? 'border-gold/60 bg-gold/20 text-gold-hi'
+                    : 'border-line text-muted hover:border-line-strong hover:text-ink'
+                }`}
+                onClick={() =>
+                  setSelectedNag((current) => (current === nag.code ? null : nag.code))
+                }
+              >
+                {nag.glyph}
+              </button>
+            ))}
+          </fieldset>
           <textarea
             ref={inputRef}
             value={draft}
@@ -96,7 +127,7 @@ export default function CommentPopup({
                   className={button({ intent: 'quiet', size: 'sm' })}
                   onClick={() => {
                     setDraft('');
-                    onSave('');
+                    onSave('', selectedNag === null ? [] : [selectedNag]);
                     onClose();
                   }}
                 >

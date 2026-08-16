@@ -24,23 +24,38 @@ function Line({
   line,
   dimmed,
   badgeTestId,
+  onInsertLine,
 }: {
   fen: string;
   line: EngineLineState;
   dimmed: boolean;
   badgeTestId?: string;
+  /** When set (editors only), clicking a line inserts it as a variation. */
+  onInsertLine?: (pv: string[]) => void;
 }) {
+  const { t } = useTranslation();
   const pvSan = line.pv.length > 0 ? pvToSan(fen, line.pv) : [];
   return (
     <>
       <span className={evalBadgeClass(line.eval, dimmed)} data-testid={badgeTestId}>
         {evalLabel(line.eval)}
       </span>
-      {pvSan.length > 0 && (
-        <span className="truncate text-ui text-muted tabular-nums" data-testid="engine-pv">
-          {pvSan.join(' ')}
-        </span>
-      )}
+      {pvSan.length > 0 &&
+        (onInsertLine !== undefined ? (
+          <button
+            type="button"
+            className="min-w-0 cursor-pointer truncate rounded-control text-left text-ui text-muted tabular-nums transition-colors hover:bg-raised hover:text-ink"
+            title={t('analysis.insertLine')}
+            data-testid="engine-pv-insert"
+            onClick={() => onInsertLine(line.pv)}
+          >
+            {pvSan.join(' ')}
+          </button>
+        ) : (
+          <span className="truncate text-ui text-muted tabular-nums" data-testid="engine-pv">
+            {pvSan.join(' ')}
+          </span>
+        ))}
     </>
   );
 }
@@ -51,7 +66,16 @@ function Line({
  * variation in SAN. The first row carries the status dot and depth. The
  * previous lines stay visible while the next position is analyzed.
  */
-export default function EngineReadout({ fen, state }: { fen: string; state: EngineState }) {
+export default function EngineReadout({
+  fen,
+  state,
+  onInsertLine,
+}: {
+  fen: string;
+  state: EngineState;
+  /** When set (editors only), a line can be clicked to insert it as a variation. */
+  onInsertLine?: (pv: string[]) => void;
+}) {
   const { t } = useTranslation();
   const { status, lines, retry } = state;
   const thinking = status === 'thinking';
@@ -114,6 +138,7 @@ export default function EngineReadout({ fen, state }: { fen: string; state: Engi
             line={line}
             dimmed={thinking}
             badgeTestId={index === 0 ? 'engine-eval-badge' : undefined}
+            onInsertLine={onInsertLine}
           />
         </div>
       ))}

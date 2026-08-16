@@ -65,12 +65,81 @@ defmodule Blunderfest.OpsTest do
              })
   end
 
+  test "accepts a well-formed add_line op" do
+    assert :ok =
+             Ops.validate(%{
+               "type" => "add_line",
+               "payload" => %{
+                 "game_id" => "game-1",
+                 "parent_id" => 0,
+                 "moves" => [
+                   %{
+                     "san" => "e4",
+                     "from" => "e2",
+                     "to" => "e4",
+                     "promotion" => nil,
+                     "fen" => "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+                     "status" => "active"
+                   }
+                 ]
+               }
+             })
+  end
+
+  test "rejects malformed add_line payloads" do
+    assert {:error, :invalid_op} =
+             Ops.validate(%{
+               "type" => "add_line",
+               "payload" => %{
+                 "game_id" => "game-1",
+                 "parent_id" => 0,
+                 "moves" => [%{"san" => "e4", "from" => "e9"}]
+               }
+             })
+
+    assert {:error, :invalid_op} =
+             Ops.validate(%{
+               "type" => "add_line",
+               "payload" => %{"game_id" => "game-1", "parent_id" => 0, "moves" => "e4 e5"}
+             })
+  end
+
+  test "accepts a well-formed set_nags op" do
+    assert :ok =
+             Ops.validate(%{
+               "type" => "set_nags",
+               "payload" => %{"game_id" => "game-1", "node_id" => 3, "nags" => [1, 4]}
+             })
+
+    assert :ok =
+             Ops.validate(%{
+               "type" => "set_nags",
+               "payload" => %{"game_id" => "game-1", "node_id" => 3, "nags" => []}
+             })
+  end
+
+  test "rejects malformed set_nags payloads" do
+    assert {:error, :invalid_op} =
+             Ops.validate(%{
+               "type" => "set_nags",
+               "payload" => %{"game_id" => "game-1", "node_id" => 3, "nags" => [999]}
+             })
+
+    assert {:error, :invalid_op} =
+             Ops.validate(%{
+               "type" => "set_nags",
+               "payload" => %{"game_id" => "game-1", "node_id" => 3, "nags" => "1"}
+             })
+  end
+
   test "edit_op? classifies room edit ops" do
     assert Ops.edit_op?(%{"type" => "move_at_ply"})
     assert Ops.edit_op?(%{"type" => "set_game"})
     assert Ops.edit_op?(%{"type" => "comment_at_ply"})
     assert Ops.edit_op?(%{"type" => "set_annotations"})
     assert Ops.edit_op?(%{"type" => "replace_line"})
+    assert Ops.edit_op?(%{"type" => "add_line"})
+    assert Ops.edit_op?(%{"type" => "set_nags"})
     refute Ops.edit_op?(%{"type" => "set_cursor"})
     refute Ops.edit_op?(%{"type" => "select_game"})
     refute Ops.edit_op?(%{"type" => "unknown"})

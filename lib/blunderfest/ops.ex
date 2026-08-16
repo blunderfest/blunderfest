@@ -10,10 +10,11 @@ defmodule Blunderfest.Ops do
   @max_san_bytes 16
   @max_comment_bytes 2_000
   @max_annotations 64
+  @max_line_moves 64
   @max_tree_nodes 2_000
   @max_tree_depth 1_500
 
-  @edit_op_types ~w(set_game move_at_ply replace_line comment_at_ply set_annotations set_position)
+  @edit_op_types ~w(set_game move_at_ply replace_line add_line comment_at_ply set_annotations set_nags set_position)
 
   @square ~r/^[a-h][1-8]$/
   @color ~r/^#[0-9a-f]{6}$/
@@ -85,6 +86,17 @@ defmodule Blunderfest.Ops do
     end
   end
 
+  defp check_type("add_line", payload) do
+    with :ok <- string_field(payload, "game_id"),
+         :ok <- int_field(payload, "parent_id"),
+         :ok <- list_field(payload, "moves", @max_line_moves),
+         true <- Enum.all?(payload["moves"], &valid_line_move?/1) do
+      :ok
+    else
+      _ -> {:error, :invalid_op}
+    end
+  end
+
   defp check_type("comment_at_ply", payload) do
     with :ok <- int_field(payload, "ply"),
          :ok <- string_field(payload, "text", @max_comment_bytes) do
@@ -103,6 +115,17 @@ defmodule Blunderfest.Ops do
          :ok <- arrows_field(payload, "arrows"),
          :ok <- highlights_field(payload, "highlights") do
       :ok
+    end
+  end
+
+  defp check_type("set_nags", payload) do
+    with :ok <- string_field(payload, "game_id"),
+         :ok <- int_field(payload, "node_id"),
+         {:ok, nags} when is_list(nags) and length(nags) <= 8 <- Map.fetch(payload, "nags"),
+         true <- Enum.all?(nags, &(is_integer(&1) and &1 >= 0 and &1 <= 255)) do
+      :ok
+    else
+      _ -> {:error, :invalid_op}
     end
   end
 
@@ -263,4 +286,15 @@ defmodule Blunderfest.Ops do
   end
 
   defp valid_highlight?(_), do: false
+
+  defp valid_line_move?(move) when is_map(move) do
+    string_field(move, "san", @max_san_bytes) == :ok and
+      optional_square(move, "from") == :ok and
+      optional_square(move, "to") == :ok and
+      optional_string(move, "promotion", 2) == :ok and
+      optional_string(move, "fen", @max_fen_bytes) == :ok and
+      optional_string(move, "status", 16) == :ok
+  end
+
+  defp valid_line_move?(_), do: false
 end

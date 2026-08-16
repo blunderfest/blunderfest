@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { legalMovesFor } from '@/features/analysis/legalMoves';
+import { legalMovesFor, uciLineToMoves } from '@/features/analysis/legalMoves';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
@@ -29,5 +29,28 @@ describe('legalMovesFor', () => {
 
   it('returns an empty list for invalid fens', () => {
     expect(legalMovesFor('garbage')).toEqual([]);
+  });
+});
+
+describe('uciLineToMoves', () => {
+  it('converts a UCI line into fully described legal moves', () => {
+    const moves = uciLineToMoves(START, ['e2e4', 'e7e5', 'g1f3']);
+
+    expect(moves.map((move) => move.san)).toEqual(['e4', 'e5', 'Nf3']);
+    expect(moves[0].fen).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1');
+    expect(moves[2].status).toBe('active');
+  });
+
+  it('resolves promotions', () => {
+    const fen = '8/2P5/8/8/8/6k1/8/4K3 w - - 0 1';
+    const moves = uciLineToMoves(fen, ['c7c8q']);
+    expect(moves).toHaveLength(1);
+    expect(moves[0].promotion).toBe('q');
+    expect(moves[0].san).toBe('c8=Q');
+  });
+
+  it('stops at the first illegal move', () => {
+    expect(uciLineToMoves(START, ['e2e4', 'e7e9'])).toHaveLength(1);
+    expect(uciLineToMoves(START, ['e2e5'])).toEqual([]);
   });
 });

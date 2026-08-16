@@ -38,3 +38,31 @@ export function legalMovesFor(fen: string): LegalMove[] {
     return [];
   }
 }
+
+/**
+ * Converts a UCI move list (e.g. an engine's principal variation, "e2e4"
+ * "e7e8q") into fully-described moves from `fen`, each legality-checked
+ * against the running position. Stops short (possibly empty) at the first
+ * move that isn't legal — callers insert whatever prefix resolved.
+ */
+export function uciLineToMoves(fen: string, uciMoves: string[]): LegalMove[] {
+  const moves: LegalMove[] = [];
+  let currentFen = fen;
+  for (const uci of uciMoves) {
+    const from = uci.slice(0, 2);
+    const to = uci.slice(2, 4);
+    const promotion = uci.length > 4 ? uci.slice(4) : null;
+    const move = legalMovesFor(currentFen).find(
+      (candidate) =>
+        candidate.from === from &&
+        candidate.to === to &&
+        (candidate.promotion ?? null) === promotion,
+    );
+    if (move === undefined) {
+      break;
+    }
+    moves.push(move);
+    currentFen = move.fen;
+  }
+  return moves;
+}

@@ -20,6 +20,7 @@ export default function EngineBox({
   onToggleEngine,
   onToggleArrows,
   onLinesCount,
+  onInsertLine,
 }: {
   fen: string;
   state: EngineState;
@@ -31,6 +32,8 @@ export default function EngineBox({
   onToggleEngine: () => void;
   onToggleArrows: () => void;
   onLinesCount: (count: number) => void;
+  /** When set (editors only), a line can be clicked to insert it as a variation. */
+  onInsertLine?: (pv: string[]) => void;
 }) {
   const { t } = useTranslation();
 
@@ -96,7 +99,7 @@ export default function EngineBox({
             <span className="text-ui text-gold-hi">{t('analysis.enginePaused')}</span>
           </div>
         ) : (
-          <EngineReadout fen={fen} state={state} />
+          <EngineReadout fen={fen} state={state} onInsertLine={onInsertLine} />
         ))}
     </div>
   );

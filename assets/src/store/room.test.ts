@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { GameNode, GameTree } from '@/lib/api';
-import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp, Op, SetGameOp } from '@/protocol/ops';
+import type {
+  AddLineOp,
+  CommentAtPlyOp,
+  MemberRole,
+  MoveAtPlyOp,
+  Op,
+  SetGameOp,
+} from '@/protocol/ops';
 import roomReducer, {
   applyOp,
   enterRoom,
@@ -508,6 +515,136 @@ describe('room slice', () => {
       const game = state.games['game-1'];
       expect(game.mainline_ply_count).toBe(2);
       expect(game.node_count).toBe(3);
+    });
+  });
+
+  describe('add_line transforms', () => {
+    function lineMove(partial: Partial<AddLineOp['payload']['moves'][number]> = {}) {
+      return {
+        san: 'c5',
+        from: 'c7',
+        to: 'c5',
+        promotion: null,
+        fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        status: 'active',
+        ...partial,
+      };
+    }
+
+    function addLine(seq: number, parentId: number, moves: AddLineOp['payload']['moves']): Op {
+      return {
+        seq,
+        author: 'author-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'add_line',
+        payload: { game_id: 'game-1', parent_id: parentId, moves },
+      };
+    }
+
+    it('inserts a line as a variation under the named parent', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(
+        state,
+        applyOp(
+          addLine(2, 1, [
+            lineMove({ san: 'c5', from: 'c7', to: 'c5' }),
+            lineMove({ san: 'd4', from: 'd2', to: 'd4' }),
+          ]),
+        ),
+      );
+
+      const game = state.games['game-1'];
+      const e4 = game.root.children[0];
+      expect(e4.children.map((c) => c.san)).toEqual(['e5', 'c5']);
+      const c5 = e4.children[1];
+      expect(c5).toMatchObject({ id: 3, ply: 2, san: 'c5' });
+      expect(c5.children[0]).toMatchObject({ id: 4, ply: 3, san: 'd4' });
+      expect(game.mainline_ply_count).toBe(2);
+      expect(game.node_count).toBe(5);
+    });
+
+    it('descends into existing children instead of duplicating them', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(
+        state,
+        applyOp(
+          addLine(2, 1, [
+            lineMove({ san: 'e5', from: 'e7', to: 'e5' }),
+            lineMove({ san: 'Nc6', from: 'b8', to: 'c6' }),
+          ]),
+        ),
+      );
+
+      const game = state.games['game-1'];
+      const e4 = game.root.children[0];
+      expect(e4.children).toHaveLength(1);
+      expect(e4.children[0].children[0]).toMatchObject({ id: 3, ply: 3, san: 'Nc6' });
+      expect(game.node_count).toBe(4);
+    });
+
+    it('extends the mainline (and the result) when the parent is the tip', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(
+        state,
+        applyOp(
+          addLine(2, 2, [
+            lineMove({ san: 'Qh5', from: 'd1', to: 'h5' }),
+            lineMove({ san: 'Nc6', from: 'b8', to: 'c6' }),
+            lineMove({ san: 'Qxf7#', from: 'h5', to: 'f7', status: 'checkmate' }),
+          ]),
+        ),
+      );
+
+      const game = state.games['game-1'];
+      expect(game.mainline_ply_count).toBe(5);
+      expect(game.result).toBe('1-0');
+      const e5 = game.root.children[0].children[0];
+      expect(e5.children[0].children[0].children[0]).toMatchObject({
+        id: 5,
+        ply: 5,
+        san: 'Qxf7#',
+      });
+      // lastPlayed points at the line's end node.
+      expect(state.lastPlayed['game-1']).toBe(5);
+    });
+
+    it('ignores empty lines and unknown parents', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(addLine(2, 1, [])));
+      state = roomReducer(state, applyOp(addLine(3, 99, [lineMove()])));
+
+      expect(state.games['game-1'].node_count).toBe(3);
+    });
+  });
+
+  describe('set_nags transforms', () => {
+    function setNags(seq: number, nodeId: number, nags: number[], gameId = 'game-1'): Op {
+      return {
+        seq,
+        author: 'author-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'set_nags',
+        payload: { game_id: gameId, node_id: nodeId, nags },
+      };
+    }
+
+    it('sets and clears a node’s nags', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(setNags(2, 1, [1])));
+
+      expect(state.games['game-1'].root.children[0].nags).toEqual([1]);
+
+      state = roomReducer(state, applyOp(setNags(3, 1, [])));
+      expect(state.games['game-1'].root.children[0].nags).toEqual([]);
+    });
+
+    it('ignores nags for unknown nodes or games', () => {
+      let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+      state = roomReducer(state, applyOp(setNags(2, 99, [1])));
+      expect(state.games['game-1'].root.children[0].nags).toEqual([]);
+
+      state = roomReducer(state, applyOp(setNags(3, 1, [1], 'nope')));
+      expect(state.games['game-1'].root.children[0].nags).toEqual([]);
     });
   });
 

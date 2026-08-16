@@ -10,7 +10,14 @@ import MemberList from '@/features/room/MemberList';
 import RoomPanel from '@/features/room/RoomPanel';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
-import type { CommentAtPlyOp, MemberRole, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
+import type {
+  AddLineOp,
+  CommentAtPlyOp,
+  MemberRole,
+  MoveAtPlyOp,
+  SetNagsOp,
+  SetPositionOp,
+} from '@/protocol/ops';
 import { useAppSelector } from '@/store';
 import type { BoardAnnotations } from '@/store/room';
 import {
@@ -119,6 +126,24 @@ export default function RoomView({
     (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => {
       if (effectiveGameId !== null) {
         sendOp({ type: 'comment_at_ply', payload: { game_id: effectiveGameId, ...payload } });
+      }
+    },
+    [sendOp, effectiveGameId],
+  );
+
+  const handleAddLine = useCallback(
+    (payload: Omit<AddLineOp['payload'], 'game_id'>) => {
+      if (effectiveGameId !== null) {
+        sendOp({ type: 'add_line', payload: { game_id: effectiveGameId, ...payload } });
+      }
+    },
+    [sendOp, effectiveGameId],
+  );
+
+  const handleSetNags = useCallback(
+    (payload: Omit<SetNagsOp['payload'], 'game_id'>) => {
+      if (effectiveGameId !== null) {
+        sendOp({ type: 'set_nags', payload: { game_id: effectiveGameId, ...payload } });
       }
     },
     [sendOp, effectiveGameId],
@@ -372,6 +397,8 @@ export default function RoomView({
               lastPlayedId={lastPlayedId}
               onComment={handleComment}
               onSetPosition={handleSetPosition}
+              onAddLine={handleAddLine}
+              onSetNags={handleSetNags}
               annotations={gameAnnotations}
               onAnnotations={handleAnnotations}
               onAnalyze={canEdit ? handleAnalyze : undefined}

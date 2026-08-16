@@ -16,7 +16,7 @@ import { bestMoveSans } from '@/features/analysis/evalMarks';
 import GameActions from '@/features/analysis/GameActions';
 import GameFlow from '@/features/analysis/GameFlow';
 import GameInfo from '@/features/analysis/GameInfo';
-import { legalMovesFor } from '@/features/analysis/legalMoves';
+import { legalMovesFor, uciLineToMoves } from '@/features/analysis/legalMoves';
 import MaterialFlow from '@/features/analysis/MaterialFlow';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
@@ -35,7 +35,14 @@ import { useCursor } from '@/features/analysis/useCursor';
 import { useEngine } from '@/features/analysis/useEngine';
 import { usePositionEditor } from '@/features/analysis/usePositionEditor';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
-import type { AnalysisEval, CommentAtPlyOp, MoveAtPlyOp, SetPositionOp } from '@/protocol/ops';
+import type {
+  AddLineOp,
+  AnalysisEval,
+  CommentAtPlyOp,
+  MoveAtPlyOp,
+  SetNagsOp,
+  SetPositionOp,
+} from '@/protocol/ops';
 import { type BoardAnnotations, setupPlyFromFen } from '@/store/room';
 
 export default function Analysis({
@@ -52,6 +59,8 @@ export default function Analysis({
   onPlayMove,
   onComment,
   onSetPosition,
+  onAddLine,
+  onSetNags,
   annotations = {},
   onAnnotations,
   onAnalyze,
@@ -75,6 +84,10 @@ export default function Analysis({
     payload: Omit<SetPositionOp['payload'], 'game_id'>,
     onError?: () => void,
   ) => void;
+  /** Insert an engine line as a variation under the viewed node (editors). */
+  onAddLine?: (payload: Omit<AddLineOp['payload'], 'game_id'>) => void;
+  /** Set a node's NAGs (quality glyphs), full replace (editors). */
+  onSetNags?: (payload: Omit<SetNagsOp['payload'], 'game_id'>) => void;
   /** Board drawings for the active game, keyed by node id. */
   annotations?: Record<number, BoardAnnotations>;
   onAnnotations?: (set: BoardAnnotations, nodeId: number) => void;
@@ -249,6 +262,32 @@ export default function Analysis({
     });
     setSelected(null);
     navigate(nodeId);
+  }
+
+  /**
+   * Inserts an engine line as a variation under the viewed node. No
+   * optimistic update and no navigation: the echo adds the line, and the
+   * user stays where they were analyzing.
+   */
+  function handleInsertLine(pv: string[]) {
+    if (!canEdit || editor.editing || current === null || onAddLine === undefined) {
+      return;
+    }
+    const moves = uciLineToMoves(current.fen ?? '', pv);
+    if (moves.length === 0) {
+      return;
+    }
+    onAddLine({
+      parent_id: current.id,
+      moves: moves.map((move) => ({
+        san: move.san,
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion,
+        fen: move.fen,
+        status: move.status,
+      })),
+    });
   }
 
   function handleSetPosition() {
@@ -826,6 +865,11 @@ export default function Analysis({
                       onToggleEngine={toggleEngine}
                       onToggleArrows={toggleArrows}
                       onLinesCount={setEngineLinesCount}
+                      onInsertLine={
+                        canEdit && !editor.editing && onAddLine !== undefined
+                          ? handleInsertLine
+                          : undefined
+                      }
                     />
                     <MoveList
                       rows={rows}
@@ -876,12 +920,20 @@ export default function Analysis({
       {commentOpen && (
         <CommentPopup
           comment={current.comment}
+          nags={current.nags}
           moveLabel={
             current.san
               ? `${Math.ceil(current.ply / 2)}${current.ply % 2 === 1 ? '.' : '...'} ${current.san}`
               : null
           }
-          onSave={(text) => onComment?.({ ply: current.ply, text, node_id: current.id })}
+          onSave={(text, nags) => {
+            if (text !== (current.comment ?? '')) {
+              onComment?.({ ply: current.ply, text, node_id: current.id });
+            }
+            if (nags.join(',') !== current.nags.join(',')) {
+              onSetNags?.({ node_id: current.id, nags });
+            }
+          }}
           onClose={() => setCommentOpen(false)}
         />
       )}

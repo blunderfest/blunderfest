@@ -5,6 +5,7 @@ import { tv } from 'tailwind-variants';
 import BookExitIcon from '@/features/analysis/BookExitIcon';
 import { evalText, moveMark } from '@/features/analysis/evalMarks';
 import type { Row } from '@/features/analysis/moveList';
+import { nagGlyph } from '@/features/analysis/nags';
 import type { GameNode } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
 
@@ -82,11 +83,14 @@ function MoveButton({
 }) {
   const { t } = useTranslation();
   const isSetup = node.san === null;
+  // An explicitly annotated glyph (a NAG) wins over the analysis-derived mark.
+  const nag = node.nags.map(nagGlyph).find((glyph) => glyph !== null) ?? null;
   const mark =
     evaluation !== undefined && before !== undefined
       ? moveMark(before.score, evaluation.score, node.ply % 2 === 1)
       : null;
-  const markClass = mark === '??' ? 'text-bad-hi' : mark === '?' ? 'text-gold-hi' : 'text-muted';
+  const shown = nag ?? mark;
+  const markClass = shown === '??' ? 'text-bad-hi' : shown === '?' ? 'text-gold-hi' : 'text-muted';
   return (
     <button
       type="button"
@@ -115,14 +119,17 @@ function MoveButton({
               <span className="sr-only">{t('analysis.bookExit')}</span>
             </span>
           )}
-          {mark !== null && (
+          {shown !== null && (
             <span
               className={`font-bold ${markClass}`}
+              data-testid={nag !== null ? 'nag-glyph' : undefined}
               title={
-                bestMove !== undefined ? t('analysis.bestMove', { move: bestMove }) : undefined
+                nag === null && bestMove !== undefined
+                  ? t('analysis.bestMove', { move: bestMove })
+                  : undefined
               }
             >
-              {mark}
+              {shown}
             </span>
           )}
           {evaluation !== undefined && (
