@@ -9,10 +9,10 @@ defmodule Blunderfest.LichessAuthTest do
   end
 
   test "a flow round-trips intent, profile and verifier, once" do
-    {state, verifier} = LichessAuth.begin_flow(:link, "profile-1")
+    {state, verifier} = LichessAuth.begin_flow(:sign_in, "profile-1")
 
     assert {:ok, flow} = LichessAuth.pop_flow(state)
-    assert flow.intent == :link
+    assert flow.intent == :sign_in
     assert flow.profile_id == "profile-1"
     assert flow.verifier == verifier
 
@@ -20,9 +20,9 @@ defmodule Blunderfest.LichessAuthTest do
     assert :error = LichessAuth.pop_flow(state)
   end
 
-  test "recover flows carry no profile id" do
-    {state, _verifier} = LichessAuth.begin_flow(:recover)
-    assert {:ok, %{intent: :recover, profile_id: nil}} = LichessAuth.pop_flow(state)
+  test "flows without a profile id round-trip as nil" do
+    {state, _verifier} = LichessAuth.begin_flow(:sign_in, nil)
+    assert {:ok, %{intent: :sign_in, profile_id: nil}} = LichessAuth.pop_flow(state)
   end
 
   test "unknown state params are rejected" do

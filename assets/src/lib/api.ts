@@ -52,18 +52,20 @@ export async function createProfile(
 }
 
 /**
- * Starts the Lichess OAuth flow (ADR-0022): with device credentials the
- * account links to the current profile, without them it recovers a linked
- * profile onto this device. Returns the lichess authorize URL.
+ * Starts the Lichess sign-in flow (ADR-0022): one action — the callback
+ * binds the account to the current profile when it is new, or adopts the
+ * profile the account is already bound to. Device credentials identify
+ * the current profile for the bind case. Returns the lichess authorize
+ * URL.
  */
-export async function lichessAuthStart(device: Device | null): Promise<{ url: string }> {
+export async function lichessAuthStart(device: Device): Promise<{ url: string }> {
   return request('/api/auth/lichess/start', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(device !== null ? { Authorization: `Bearer ${device.secret}` } : {}),
+      Authorization: `Bearer ${device.secret}`,
     },
-    body: JSON.stringify(device !== null ? { profile_id: device.id } : {}),
+    body: JSON.stringify({ profile_id: device.id }),
   });
 }
 

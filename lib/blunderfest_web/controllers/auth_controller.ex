@@ -11,22 +11,23 @@ defmodule BlunderfestWeb.AuthController do
   alias Blunderfest.{Lichess, LichessAuth, Profiles}
 
   @doc """
-  Starts a flow. With device credentials (link intent) the account attaches
-  to the current profile; without them the flow recovers a linked profile
-  onto this device. Returns the authorize URL — a JSON round trip, so the
-  bearer secret never lands in a redirect URL.
+  Starts the sign-in flow. One action: the callback binds the account to
+  the current profile when it is new, or adopts the profile the account
+  is already bound to (ADR-0022). Device credentials are required — the
+  bearer identifies the current profile for the bind case; a JSON round
+  trip means the secret never lands in a redirect URL.
   """
   def lichess_start(conn, _params) do
-    {intent, profile_id} =
-      case bearer_profile(conn) do
-        {:ok, profile} -> {:link, profile.id}
-        :error -> {:recover, nil}
-      end
+    case bearer_profile(conn) do
+      {:ok, profile} ->
+        {state, verifier} = LichessAuth.begin_flow(:sign_in, profile.id)
+        challenge = Base.url_encode64(:crypto.hash(:sha256, verifier), padding: false)
 
-    {state, verifier} = LichessAuth.begin_flow(intent, profile_id)
-    challenge = Base.url_encode64(:crypto.hash(:sha256, verifier), padding: false)
+        json(conn, %{url: Lichess.authorize_url(callback_url(conn), challenge, state)})
 
-    json(conn, %{url: Lichess.authorize_url(callback_url(conn), challenge, state)})
+      :error ->
+        unauthorized(conn)
+    end
   end
 
   def lichess_callback(conn, %{"code" => code, "state" => state}) do
@@ -93,7 +94,24 @@ defmodule BlunderfestWeb.AuthController do
 
   ## Internals
 
-  defp finish_callback(conn, %{intent: :link, profile_id: profile_id}, account)
+  # The account is already bound: this session adopts the known profile —
+  # the name follows the binding (use case: a second browser). The fresh
+  # token replaces the stored one.
+  defp finish_callback(conn, flow, account) do
+    case Profiles.profile_by_account("lichess", account.username) do
+      {:ok, known} ->
+        {:ok, _} = Profiles.link_account(known.id, account)
+        code = LichessAuth.issue_exchange_code(known.id)
+        redirect(conn, to: "/#/?exchange=#{code}")
+
+      {:error, :not_found} ->
+        bind_to_current(conn, flow, account)
+    end
+  end
+
+  # First sighting of the account: bind it to the current profile. The
+  # current name stays.
+  defp bind_to_current(conn, %{profile_id: profile_id}, account)
        when is_binary(profile_id) do
     case Profiles.link_account(profile_id, account) do
       {:ok, _} -> redirect(conn, to: "/#/?linked=lichess")
@@ -101,22 +119,9 @@ defmodule BlunderfestWeb.AuthController do
     end
   end
 
-  defp finish_callback(conn, %{intent: :recover}, account) do
-    case Profiles.profile_by_account("lichess", account.username) do
-      {:ok, profile} ->
-        # Keep the link fresh (a new token, possibly widened scopes).
-        {:ok, _} = Profiles.link_account(profile.id, account)
-        code = LichessAuth.issue_exchange_code(profile.id)
-        redirect(conn, to: "/#/?exchange=#{code}")
-
-      {:error, :not_found} ->
-        redirect(conn, to: "/#/?auth_error=not_linked")
-    end
+  defp bind_to_current(conn, _flow, _account) do
+    redirect(conn, to: "/#/?auth_error=profile_gone")
   end
-
-  # A link intent whose profile vanished mid-flow falls back to recover.
-  defp finish_callback(conn, %{intent: :link, profile_id: nil}, account),
-    do: finish_callback(conn, %{intent: :recover}, account)
 
   defp bearer_profile(conn) do
     with ["Bearer " <> secret] <- get_req_header(conn, "authorization"),

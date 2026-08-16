@@ -24,11 +24,12 @@ defmodule Blunderfest.LichessAuth do
 
   @doc """
   Starts a flow: returns `{state_param, pkce_verifier}` to embed in the
-  authorize URL and the token exchange respectively. `intent` is
-  `:link` (attach to the current profile) or `:recover` (sign in anew).
+  authorize URL and the token exchange respectively. The single
+  `:sign_in` intent binds when the account is new and adopts the known
+  profile when it is bound (ADR-0022).
   """
   def begin_flow(intent, profile_id \\ nil, server \\ __MODULE__)
-      when intent in [:link, :recover] do
+      when intent in [:sign_in] do
     GenServer.call(server, {:begin_flow, intent, profile_id})
   end
 

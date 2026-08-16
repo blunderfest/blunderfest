@@ -20,7 +20,12 @@ defmodule BlunderfestWeb.AuthControllerTest do
 
   describe "POST /api/auth/lichess/start" do
     test "returns an authorize URL with PKCE parameters", %{conn: conn} do
-      conn = post(conn, "/api/auth/lichess/start", %{})
+      {:ok, profile, secret} = Profiles.create()
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{secret}")
+        |> post("/api/auth/lichess/start", %{"profile_id" => profile.id})
 
       assert %{"url" => url} = json_response(conn, 200)
       assert url =~ "https://lichess.org/oauth?"
@@ -30,35 +35,23 @@ defmodule BlunderfestWeb.AuthControllerTest do
 
       assert url =~
                "redirect_uri=#{URI.encode_www_form("http://www.example.com/auth/lichess/callback")}"
-    end
 
-    test "with device credentials the flow links to that profile", %{conn: conn} do
-      {:ok, profile, secret} = Profiles.create()
-
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{secret}")
-        |> post("/api/auth/lichess/start", %{"profile_id" => profile.id})
-
-      assert %{"url" => url} = json_response(conn, 200)
       [_, state_param] = Regex.run(~r/state=([^&]+)/, url)
-      assert {:ok, %{intent: :link, profile_id: got}} = LichessAuth.pop_flow(state_param)
+      assert {:ok, %{intent: :sign_in, profile_id: got}} = LichessAuth.pop_flow(state_param)
       assert got == profile.id
     end
 
-    test "without credentials the flow recovers", %{conn: conn} do
+    test "requires device credentials", %{conn: conn} do
       conn = post(conn, "/api/auth/lichess/start", %{})
 
-      assert %{"url" => url} = json_response(conn, 200)
-      [_, state_param] = Regex.run(~r/state=([^&]+)/, url)
-      assert {:ok, %{intent: :recover}} = LichessAuth.pop_flow(state_param)
+      assert %{"errors" => %{"code" => "unauthorized"}} = json_response(conn, 401)
     end
   end
 
   describe "GET /auth/lichess/callback" do
-    test "a link flow attaches the account and lands home", %{conn: conn} do
+    test "an unknown account binds to the current profile and lands home", %{conn: conn} do
       {:ok, profile, _secret} = Profiles.create()
-      {state, _verifier} = LichessAuth.begin_flow(:link, profile.id)
+      {state, _verifier} = LichessAuth.begin_flow(:sign_in, profile.id)
       stub_lichess_oauth("dr_ny")
 
       conn = get(conn, "/auth/lichess/callback", %{"code" => "code-1", "state" => state})
@@ -68,11 +61,15 @@ defmodule BlunderfestWeb.AuthControllerTest do
       assert [%{type: "lichess", username: "dr_ny", token: "tok-123"}] = updated.accounts
     end
 
-    test "a recover flow issues a one-time exchange into device credentials", %{conn: conn} do
-      {:ok, profile, _secret} = Profiles.create()
+    test "a bound account adopts the known profile via a one-time exchange", %{conn: conn} do
+      # The use case: signing in from a second browser — the session
+      # becomes the known profile (name follows the binding), with a
+      # fresh token stored.
+      {:ok, known, _secret} = Profiles.create()
+      {:ok, current, _secret} = Profiles.create()
 
       {:ok, _} =
-        Profiles.link_account(profile.id, %{
+        Profiles.link_account(known.id, %{
           type: "lichess",
           username: "dr_ny",
           token: "old-tok",
@@ -80,7 +77,7 @@ defmodule BlunderfestWeb.AuthControllerTest do
           linked_at: DateTime.utc_now()
         })
 
-      {state, _verifier} = LichessAuth.begin_flow(:recover)
+      {state, _verifier} = LichessAuth.begin_flow(:sign_in, current.id)
       stub_lichess_oauth("dr_ny")
 
       conn = get(conn, "/auth/lichess/callback", %{"code" => "code-1", "state" => state})
@@ -89,24 +86,19 @@ defmodule BlunderfestWeb.AuthControllerTest do
 
       conn = post(conn, "/api/auth/exchange", %{"code" => code})
 
-      assert %{"profile" => %{"id" => got, "name" => _}, "secret" => new_secret} =
-               json_response(conn, 200)
+      assert %{"profile" => %{"id" => got}, "secret" => new_secret} = json_response(conn, 200)
+      assert got == known.id
+      assert Profiles.authenticate(known.id, new_secret)
 
-      assert got == profile.id
-      assert Profiles.authenticate(profile.id, new_secret)
+      {:ok, refreshed} = Profiles.get(known.id)
+      assert [%{token: "tok-123"}] = refreshed.accounts
 
-      # Single use.
+      # The current profile gained no account, and the code is single-use.
+      {:ok, current_after} = Profiles.get(current.id)
+      assert current_after.accounts == []
+
       conn = post(conn, "/api/auth/exchange", %{"code" => code})
       assert %{"errors" => %{"code" => "invalid_exchange_code"}} = json_response(conn, 401)
-    end
-
-    test "a recover flow for an unlinked account explains itself", %{conn: conn} do
-      {state, _verifier} = LichessAuth.begin_flow(:recover)
-      stub_lichess_oauth("unknown_user")
-
-      conn = get(conn, "/auth/lichess/callback", %{"code" => "code-1", "state" => state})
-
-      assert redirected_to(conn) == "/#/?auth_error=not_linked"
     end
 
     test "a stale state fails the flow", %{conn: conn} do

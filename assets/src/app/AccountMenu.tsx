@@ -39,12 +39,13 @@ export default function AccountMenu({ profile }: { profile: Profile }) {
   }, [open]);
 
   async function startFlow() {
-    if (starting) {
+    const device = loadDevice();
+    if (device === null || starting) {
       return;
     }
     setStarting(true);
     try {
-      const { url } = await lichessAuthStart(loadDevice());
+      const { url } = await lichessAuthStart(device);
       window.location.assign(url);
     } catch {
       setStarting(false);
@@ -103,7 +104,7 @@ export default function AccountMenu({ profile }: { profile: Profile }) {
                 disabled={starting}
                 onClick={() => void startFlow()}
               >
-                {starting ? t('account.linking') : t('account.link')}
+                {starting ? t('account.signingIn') : t('account.signIn')}
               </button>
             )}
             {lichess !== null && (
@@ -114,18 +115,9 @@ export default function AccountMenu({ profile }: { profile: Profile }) {
                 disabled={busy}
                 onClick={() => void handleUnlink()}
               >
-                {busy ? t('account.unlinking') : t('account.unlink')}
+                {busy ? t('account.signingOut') : t('account.signOut')}
               </button>
             )}
-            <button
-              type="button"
-              role="menuitem"
-              className={menuItem}
-              disabled={starting}
-              onClick={() => void startFlow()}
-            >
-              {starting ? t('account.linking') : t('account.recover')}
-            </button>
           </div>
         </>
       )}

@@ -15,24 +15,24 @@ afterEach(() => {
 });
 
 describe('AccountMenu', () => {
-  it('shows the fun name and the anonymous state', () => {
+  it('shows the fun name, the anonymous state and only the sign-in action', () => {
     render(<AccountMenu profile={profile} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
 
     expect(screen.getByText('Anonymous device')).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Link Lichess account' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Recover with Lichess' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Sign in with Lichess' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Sign out' })).toBeNull();
   });
 
-  it('shows the linked Lichess account and hides the link action', () => {
+  it('shows the linked Lichess account and only the sign-out action', () => {
     render(<AccountMenu profile={linked} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
 
     expect(screen.getByText('Lichess: dr_ny')).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: 'Link Lichess account' })).toBeNull();
-    expect(screen.getByRole('menuitem', { name: 'Recover with Lichess' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Sign in with Lichess' })).toBeNull();
+    expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument();
   });
 
   it('starts the flow with the device credentials for linking', async () => {
@@ -52,7 +52,7 @@ describe('AccountMenu', () => {
     render(<AccountMenu profile={profile} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Link Lichess account' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Sign in with Lichess' }));
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [url, init] = fetchMock.mock.calls[0];
@@ -91,7 +91,7 @@ describe('AccountMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Account' }));
     expect(screen.getByText('Lichess: dr_ny')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Unlink Lichess account' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Sign out' }));
 
     await screen.findByText('Anonymous device');
     expect(screen.queryByText('Lichess: dr_ny')).toBeNull();
