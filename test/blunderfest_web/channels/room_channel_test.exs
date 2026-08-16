@@ -77,6 +77,19 @@ defmodule BlunderfestWeb.RoomChannelTest do
     assert %{"seq" => 1, "author" => "profile-1"} = hd(reply.ops)
   end
 
+  test "any member can chat — the message appends and broadcasts", %{} do
+    {:ok, _reply, socket} = join_room("room:abcde", %{"profile_id" => "viewer-1"})
+
+    ref = push(socket, "op", %{"type" => "chat", "payload" => %{"text" => "hello room"}})
+    assert_reply ref, :ok
+
+    assert_broadcast "new_op", %{
+      "type" => "chat",
+      "author" => "viewer-1",
+      "payload" => %{"text" => "hello room"}
+    }
+  end
+
   test "authors without a profile fall back to anonymous", %{} do
     {:ok, _reply, socket} = join_room("room:abcde")
 

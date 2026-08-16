@@ -40,7 +40,12 @@ release and served by a catch-all (`SpaController`).
   - `LichessAuth` (GenServer): ephemeral OAuth state/PKCE verifiers and
     the single-use recovery exchange codes.
   - `lichess.ex` — fetches PGNs from Lichess for URL imports, plus the
-    OAuth calls (authorize URL, token exchange, `/api/account`).
+    OAuth calls (authorize URL, token exchange, `/api/account`) and the
+    linked-account study/games fetches (ADR-0022).
+  - `chesscom.ex` — chess.com game browsing for import, strictly via the
+    official public API (`api.chess.com/pub`); their robots.txt/User
+    Agreement forbid callback/service endpoints and scraping, so no other
+    channel is used. Monthly archives carry full PGNs inline.
   - `pgn.ex`, `game/tree.ex` — PGN parsing to a variation tree. Move
     legality and SAN are computed client-side (chess.js); the server checks
     op shape, not chess rules. `PGN.parse_many/1` parses each game
@@ -48,7 +53,6 @@ release and served by a catch-all (`SpaController`).
     failures, so one unparseable game (variants, from-position quirks)
     never sinks a multi-game import; the import endpoint reports the
     failures alongside the trees.
-  - `lichess.ex` — fetches PGNs from Lichess for URL imports.
   - `engine/pool.ex` + `engine/worker.ex` — the batch engine layer
     (ADR-0009): a pool of Stockfish binaries speaking UCI over Ports,
     queued with backpressure and crash replacement.
@@ -58,7 +62,9 @@ release and served by a catch-all (`SpaController`).
   - `secrets.ex` — hashing helpers.
 - `lib/blunderfest_web/` — HTTP and channel surface:
   - `router.ex` — `/api` scope: `healthz`, `profiles`, `rooms`, `import/pgn`,
-    `import/lichess`, `auth/lichess/start`, `auth/exchange`; `/auth` scope:
+    `import/lichess`, `import/lichess-study`, `import/lichess-games`,
+    `lichess/studies`, `lichess/games`, `chesscom/games`,
+    `auth/lichess/start`, `auth/exchange`, `auth/unlink`; `/auth` scope:
     `lichess/callback`; catch-all for the SPA.
   - `controllers/` — thin: validate params, call domain, return structured
     JSON. Errors use `error_json.ex` with machine-readable codes (ADR-0003).
@@ -99,7 +105,9 @@ means an echo was lost or reordered, so the client resyncs by rejoining
 `presence_state` / `presence_diff` carry member names. Ops are type-tagged
 payloads (`move_at_ply`, `add_line` (a whole line in one op — engine lines
 become variations atomically), `comment_at_ply`, `set_nags`, `set_game`,
-`select_game`, `set_cursor`, `set_role`, ...) with `seq`, `author`, `ts` —
+`select_game`, `set_cursor`, `set_role`, `chat` (room chat — replay is the
+history; not an edit op, so any joined member can send), ...) with `seq`,
+`author`, `ts` —
 the shared vocabulary is mirrored in `assets/src/protocol/ops.ts`. `analyze_game` (push, editors
 only) starts a whole-game engine job; progress arrives as transient
 `analysis_progress` events and the result as a `set_analysis` op replayed

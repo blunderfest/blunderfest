@@ -419,6 +419,32 @@ describe('RoomView', () => {
     expect(pieceAt('square-e4')).toBe('wp');
   });
 
+  it('shows chat messages from the channel and sends chat ops', async () => {
+    renderRoom();
+    await screen.findByTestId('member-list');
+
+    act(() =>
+      channel.emit('new_op', {
+        seq: 1,
+        author: 'profile-2',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'chat',
+        payload: { text: 'anyone here?' },
+      } as Op),
+    );
+
+    expect(await screen.findByText('anyone here?')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Message the room...'), {
+      target: { value: 'yes!' },
+    });
+    fireEvent.keyDown(screen.getByLabelText('Message the room...'), { key: 'Enter' });
+
+    expect(channel.pushes).toEqual([
+      { event: 'op', payload: { type: 'chat', payload: { text: 'yes!' } } },
+    ]);
+  });
+
   it('reopens the import form to add another game', async () => {
     const op: Op = {
       seq: 1,

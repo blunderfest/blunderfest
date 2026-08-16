@@ -31,13 +31,13 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Rooms with 5-char unambiguous codes; explicit creation (`POST /api/rooms`); deep links `#/r/<code>`
 - ✅ Real-time sync via op log (replay on join, single echo path)
 - ✅ Presence (who's here, names) and roles: owner / collaborator / viewer, server-enforced edit rights, promote/demote
+- ✅ Room chat: messages ride the op log (history replays on join), any member can write, viewers included
 - ✅ Presenter/follow mode: cursor + game-selection sync, break-away/re-follow; the owner can hand the mic to any member (ADR-0021)
 - ✅ Multiple games per room: import, new blank game, switch
 - ✅ Room panel in the rail: code + copy, leave, read-only badge, connection telemetry (region + lag probe)
 - ✅ Read-only demo room at `#/r/chess` (annotated Opera Game), seeded on demand — linked from the home page (ADR-0014)
 - ✅ Sidebar tab shell (Analysis now; Explorer + Search get a home when they land)
 - 💡 Private rooms with owner-approved joins (the `:pending` approval seam already exists — ADR-0006)
-- 💡 Text chat
 - 💡 Per-member cursor/arrow colors (see who points where)
 - 💡 Share links with preset roles (view-only link vs editor link)
 - 💡 Move voting/polls ("what's the best move here?" — members vote, owner reveals)
@@ -64,7 +64,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ PGN export (annotated: variations, comments, NAGs; setup analysis exports as extra games with SetUp/FEN headers)
 - ✅ Per-profile game library (ADR-0020): save a room game, reopen it in a fresh room — session-scoped until the storage decision
 - 💡 Sign-in (magic links) + durable accounts — the claiming half of the library; gated on the ADR-0001 storage decision
-- 💡 Chess.com game URL import
+- ✅ Chess.com import: browse a player's monthly archive (official public API — their terms forbid callback endpoints/scraping, so no per-URL import), multi-select games, inline PGNs
 - ✅ Bulk import: multi-game PGNs (per-game failures reported, good games import), multiple Lichess URLs, and PGN+URL mixtures — the import box splits line-wise; single-game-URL import unchanged
 - ✅ Guided tour of the room UI (help-menu entry; hand-rolled spotlight)
 - 💡 FEN share links / position-only URLs

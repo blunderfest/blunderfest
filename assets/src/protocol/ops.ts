@@ -124,6 +124,18 @@ export type SetNagsOp = OpBase & {
 };
 
 /**
+ * A room chat message. Chat rides the op log like everything else
+ * (ADR-0005): replay on join gives history for free, seq ordering is the
+ * shared truth, and no second sync channel exists. Not an edit op — any
+ * joined member can chat, viewers included; read-only rooms reject it
+ * like all ops.
+ */
+export type ChatOp = OpBase & {
+  type: 'chat';
+  payload: { text: string };
+};
+
+/**
  * A free-form position edit (ADR-0011): not a move — the resulting position,
  * however reached, as a FEN. Replays as a setup node under `parent_id`.
  */
@@ -161,7 +173,8 @@ export type Op =
   | SetCursorOp
   | SetNagsOp
   | SetPositionOp
-  | SetAnalysisOp;
+  | SetAnalysisOp
+  | ChatOp;
 
 export type PresenceMember = {
   id: string;

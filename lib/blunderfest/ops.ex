@@ -9,6 +9,7 @@ defmodule Blunderfest.Ops do
   @max_fen_bytes 128
   @max_san_bytes 16
   @max_comment_bytes 2_000
+  @max_chat_bytes 500
   @max_annotations 64
   @max_line_moves 64
   @max_tree_nodes 2_000
@@ -128,6 +129,8 @@ defmodule Blunderfest.Ops do
       _ -> {:error, :invalid_op}
     end
   end
+
+  defp check_type("chat", payload), do: string_field(payload, "text", @max_chat_bytes)
 
   defp check_type(_type, _payload), do: {:error, :invalid_op}
 

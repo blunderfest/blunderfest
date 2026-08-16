@@ -5,6 +5,7 @@ import { pieceSrc } from '@/components/board';
 import { button, chip, panel, statusDot } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
 import ImportDialog from '@/features/import/ImportDialog';
+import ChatPanel from '@/features/room/ChatPanel';
 import GameList from '@/features/room/GameList';
 import MemberList from '@/features/room/MemberList';
 import RoomPanel from '@/features/room/RoomPanel';
@@ -141,6 +142,13 @@ export default function RoomView({
       }
     },
     [sendOp, effectiveGameId],
+  );
+
+  const handleChatSend = useCallback(
+    (text: string) => {
+      sendOp({ type: 'chat', payload: { text } });
+    },
+    [sendOp],
   );
 
   const handleSetNags = useCallback(
@@ -327,6 +335,7 @@ export default function RoomView({
               onSetPresenter={sendPresenter}
             />
           )}
+          {!readOnly && <ChatPanel onSend={handleChatSend} />}
         </aside>
 
         <section className="order-first flex flex-col items-center gap-4 md:order-none">

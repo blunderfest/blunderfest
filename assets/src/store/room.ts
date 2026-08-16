@@ -57,6 +57,8 @@ export type RoomState = {
   readOnly: boolean;
   /** Whole-game engine analysis per game (ADR-0009), from `set_analysis` ops. */
   analysis: Record<string, { depth: number; evals: AnalysisEval[] }>;
+  /** Room chat, newest last, capped (chat rides the op log — replay is the sync). */
+  chatMessages: { seq: number; author: string; text: string; ts: string }[];
   /** Live progress of a running analysis job (transient broadcast). */
   analysisProgress: { gameId: string; done: number; total: number } | null;
 };
@@ -77,7 +79,11 @@ const initialState: RoomState = {
   readOnly: false,
   analysis: {},
   analysisProgress: null,
+  chatMessages: [],
 };
+
+/** Chat history cap per room session (newest kept). */
+const MAX_CHAT_MESSAGES = 200;
 
 /**
  * The mainline node at the given ply (the root is ply 0), or null when the
@@ -597,6 +603,17 @@ const roomSlice = createSlice({
       const lastSeq = state.ops.length > 0 ? state.ops[state.ops.length - 1].seq : -1;
       if (op.seq > lastSeq) {
         state.ops.push(op);
+        if (op.type === 'chat') {
+          state.chatMessages.push({
+            seq: op.seq,
+            author: op.author,
+            text: op.payload.text,
+            ts: op.ts,
+          });
+          if (state.chatMessages.length > MAX_CHAT_MESSAGES) {
+            state.chatMessages.splice(0, state.chatMessages.length - MAX_CHAT_MESSAGES);
+          }
+        }
         if (op.type === 'set_analysis') {
           state.analysis[op.payload.game_id] = {
             depth: op.payload.depth,
@@ -642,6 +659,10 @@ const roomSlice = createSlice({
       state.annotations = {};
       state.analysis = {};
       state.analysisProgress = null;
+      state.chatMessages = state.ops
+        .filter((op): op is Extract<Op, { type: 'chat' }> => op.type === 'chat')
+        .slice(-MAX_CHAT_MESSAGES)
+        .map((op) => ({ seq: op.seq, author: op.author, text: op.payload.text, ts: op.ts }));
       for (const op of state.ops) {
         if (op.type === 'set_analysis') {
           state.analysis[op.payload.game_id] = {

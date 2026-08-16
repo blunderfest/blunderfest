@@ -220,6 +220,7 @@ describe('room slice', () => {
       lagMs: null,
       presenterId: null,
       analysisProgress: null,
+      chatMessages: [],
     });
   });
 
@@ -241,6 +242,7 @@ describe('room slice', () => {
         lagMs: null,
         presenterId: null,
         analysisProgress: null,
+        chatMessages: [],
       },
       enterRoom({ slug: 'room-123' }),
     );
@@ -260,6 +262,7 @@ describe('room slice', () => {
       lagMs: null,
       presenterId: null,
       analysisProgress: null,
+      chatMessages: [],
     });
   });
 
@@ -281,6 +284,7 @@ describe('room slice', () => {
         lagMs: null,
         presenterId: null,
         analysisProgress: null,
+        chatMessages: [],
       },
       leaveRoom(),
     );
@@ -300,6 +304,7 @@ describe('room slice', () => {
       lagMs: null,
       presenterId: null,
       analysisProgress: null,
+      chatMessages: [],
     });
   });
 
@@ -614,6 +619,42 @@ describe('room slice', () => {
       state = roomReducer(state, applyOp(addLine(3, 99, [lineMove()])));
 
       expect(state.games['game-1'].node_count).toBe(3);
+    });
+  });
+
+  describe('chat ops', () => {
+    function chatOp(seq: number, text: string, author = 'author-1'): Op {
+      return {
+        seq,
+        author,
+        ts: '2026-01-01T00:00:00Z',
+        type: 'chat',
+        payload: { text },
+      };
+    }
+
+    it('appends chat messages in order and replays them', () => {
+      let state = roomReducer(undefined, applyOp(chatOp(1, 'first')));
+      state = roomReducer(state, applyOp(chatOp(2, 'second', 'author-2')));
+
+      expect(state.chatMessages.map((m) => m.text)).toEqual(['first', 'second']);
+      expect(state.chatMessages[1].author).toBe('author-2');
+
+      const replayed = roomReducer(undefined, replayOps([chatOp(1, 'first'), chatOp(2, 'second')]));
+      expect(replayed.chatMessages.map((m) => m.text)).toEqual(['first', 'second']);
+    });
+
+    it('caps the history at 200 messages', () => {
+      let state = roomReducer(
+        undefined,
+        replayOps(Array.from({ length: 210 }, (_, i) => chatOp(i + 1, `msg ${i + 1}`))),
+      );
+      expect(state.chatMessages).toHaveLength(200);
+      expect(state.chatMessages[0].text).toBe('msg 11');
+
+      state = roomReducer(state, applyOp(chatOp(211, 'latest')));
+      expect(state.chatMessages).toHaveLength(200);
+      expect(state.chatMessages[state.chatMessages.length - 1].text).toBe('latest');
     });
   });
 

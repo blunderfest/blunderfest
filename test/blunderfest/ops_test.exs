@@ -132,6 +132,21 @@ defmodule Blunderfest.OpsTest do
              })
   end
 
+  test "accepts a well-formed chat op" do
+    assert :ok = Ops.validate(%{"type" => "chat", "payload" => %{"text" => "hello room"}})
+  end
+
+  test "rejects malformed chat ops" do
+    assert {:error, :invalid_op} = Ops.validate(%{"type" => "chat", "payload" => %{}})
+    assert {:error, :invalid_op} = Ops.validate(%{"type" => "chat", "payload" => %{"text" => 42}})
+
+    assert {:error, :invalid_op} =
+             Ops.validate(%{
+               "type" => "chat",
+               "payload" => %{"text" => String.duplicate("x", 501)}
+             })
+  end
+
   test "edit_op? classifies room edit ops" do
     assert Ops.edit_op?(%{"type" => "move_at_ply"})
     assert Ops.edit_op?(%{"type" => "set_game"})
@@ -142,6 +157,7 @@ defmodule Blunderfest.OpsTest do
     assert Ops.edit_op?(%{"type" => "set_nags"})
     refute Ops.edit_op?(%{"type" => "set_cursor"})
     refute Ops.edit_op?(%{"type" => "select_game"})
+    refute Ops.edit_op?(%{"type" => "chat"})
     refute Ops.edit_op?(%{"type" => "unknown"})
     refute Ops.edit_op?(%{})
     refute Ops.edit_op?(nil)

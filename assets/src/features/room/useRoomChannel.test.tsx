@@ -384,6 +384,7 @@ describe('useRoomChannel', () => {
       readOnly: false,
       analysis: {},
       analysisProgress: null,
+      chatMessages: [],
     });
   });
 
