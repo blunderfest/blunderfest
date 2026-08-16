@@ -41,3 +41,9 @@ blunderfest-*.tar
 # Design-tool staging area (keep only the extracted spec tracked)
 /design/*
 !/design/DESIGN-SYSTEM.md
+
+# Playwright MCP browser-session artifacts
+/.playwright-mcp/
+
+# Standalone spike sub-project (local only; its reports live in docs/)
+/spike/

@@ -30,10 +30,10 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Rooms with 5-char unambiguous codes; explicit creation (`POST /api/rooms`); deep links `#/r/<code>`
 - ✅ Real-time sync via op log (replay on join, single echo path)
 - ✅ Presence (who's here, names) and roles: owner / collaborator / viewer, server-enforced edit rights, promote/demote
-- ✅ Presenter/follow mode: cursor + game-selection sync, break-away/re-follow
+- ✅ Presenter/follow mode: cursor + game-selection sync, break-away/re-follow; the owner can hand the mic to any member (ADR-0021)
 - ✅ Multiple games per room: import, new blank game, switch
 - ✅ Activity feed (who did what, minus cursor noise)
-- ✅ Room code in the app header (copy to share; joiners land as viewers)
+- ✅ Room panel in the rail: code + copy, leave, read-only badge, connection telemetry (region + lag probe)
 - ✅ Read-only demo room at `#/r/chess` (annotated Opera Game), seeded on demand — linked from the home page (ADR-0014)
 - ✅ Sidebar tab shell (Analysis now; Explorer + Search get a home when they land)
 - 💡 Private rooms with owner-approved joins (the `:pending` approval seam already exists — ADR-0006)
@@ -50,8 +50,9 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Floating eval badge at the bar's split point; result display on terminal positions
 - ✅ Opening classification (ECO + name under the players, follows the viewed line incl. variations; lichess book, position-keyed)
 - ✅ Server-side UCI worker pool (ADR-0009): whole-game analysis on demand, per-move evals + quality marks in the move list, results synced to all members as a `set_analysis` op
-- 🚧 Eval-curve chart with blunder/brilliant markers (the "Game Flow" panel from the design explorations)
-  - Visual targets from the design explorations (`design/analysis1.html`): "Game Flow" eval curve with blunder/brilliant markers, per-move eval column in the move list, `!!`/`??` row treatments, inline "Engine Top Line" box
+- ✅ Viz box (Eval | Moments | Material | Activity tabs): eval chart with blunder dots, cp/win% toggle, real WDL segments (`UCI_ShowWDL`), opening book-exit marker; critical moments as mini boards; material and piece-activity timelines (pure FEN data, no engine)
+- ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted)
+- 💡 Click an engine line to insert it as a variation
 - 💡 Cloud eval cache (share computed evals across users/rooms)
 - 💡 "Learn from this game" report: mistakes, turning points, best-move diffs
 - 💡 3D board (Three.js) — cool but heavy; the cheap version is a 3D-styled piece sprite theme on the 2D board
@@ -65,7 +66,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Per-profile game library (ADR-0020): save a room game, reopen it in a fresh room — session-scoped until the storage decision
 - 💡 Sign-in (magic links) + durable accounts — the claiming half of the library; gated on the ADR-0001 storage decision
 - 💡 Chess.com game URL import
-- 💡 Bulk PGN import (multi-game files)
+- ✅ Bulk PGN import (multi-game files, per-game preview) — known issue: multi-game *lichess* exports fail, fix pending (see PROJECT.md handoff)
+- 💡 Guided tour of the app for first-time users
 - 💡 FEN share links / position-only URLs
 - 💡 Folders/tags for games; repertoire storage
 - 💡 Board-as-image export (PNG of a position)

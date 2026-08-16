@@ -73,11 +73,16 @@ hour (ADR-0016), so the room cap refills itself.
 ### Channel protocol
 
 Topic `room:<slug>`. Join reply: `{ops: Op[], roles: {member_id => role},
-region, read_only}` (one atomic room call). Events: `op` (push) → validated
+region, room_region, presenter, read_only}` (one atomic room call;
+`room_region` is asked on the room's own node, `presenter` is the member
+the mic was handed to or nil = owner, ADR-0021). Events: `op` (push) →
+validated
 shape-first by `Blunderfest.Ops` (including a recursive shape/depth/node
 cap for `set_game` trees), then permission-checked and appended atomically
 by the room process → `new_op` (broadcast echo); `set_role` →
-`role_update`. Clients apply echoes strictly in `seq` order; a `seq` gap
+`role_update`; `set_presenter` (owner only) → `presenter_update`;
+`ping` is a no-op probe the client uses for lag telemetry.
+Clients apply echoes strictly in `seq` order; a `seq` gap
 means an echo was lost or reordered, so the client resyncs by rejoining
 (replay is the one application path, ADR-0005). Presence events
 `presence_state` / `presence_diff` carry member names. Ops are type-tagged
@@ -103,9 +108,11 @@ so clients send nothing and hide the member list.
   (`applyOp`, `replayOps`), games map, presence, roles; selectors derive
   presenter, following, can-edit, activity feed.
 - `assets/src/features/room/` — `RoomView` (layout, join/not-found states),
-  `useRoomChannel` (join, op/role/presence handling, `sendOp`/`sendRole`;
-  events from superseded channels are ignored), `RoomHeader`, `MemberList`,
-  `GameList`, `ActivityFeed`.
+  `useRoomChannel` (join, op/role/presence handling, `sendOp`/`sendRole`,
+  10s ping loop → `lagMs`; events from superseded channels are ignored),
+  `RoomPanel` (code/copy/leave + region/lag telemetry in the rail),
+  `MemberList` (follow toggle, presenter handoff), `GameList`,
+  `ActivityFeed`.
 - `assets/src/features/analysis/` — the board: hand-rolled `Board.tsx`
   (keyboard-playable squares, drag, arrows, highlights, roles), `Analysis`
   (navigation, comments, present/follow), `legalMoves.ts` (client-side legal

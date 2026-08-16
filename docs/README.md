@@ -12,6 +12,10 @@ directory holds the durable record of how and why the system is built.
 | `operations.md` | Branches, deploy, local dev, verification commands. |
 | `decisions/` | Architecture Decision Records (ADRs) — one file per decision, most recent first. |
 | `storage-options.md` | Decision support for the future durable store (corpus, index, accounts): workload, options, deciding questions. Not a decision. |
+| `technical-spike-01-position-retrieval.md` | Spike brief: storage/indexing investigation for the position corpus. |
+| `technical-spike-01-position-retrieval-report.md` | Spike 01 results: position key design (EP convention), benchmarks (PG/SQLite/DuckDB/ETS/flatfile) at 100k/1M/10M games, recommendation. Code in `spike/position_retrieval/`. |
+| `technical-spike-02-similarity-and-relevance.md` | Spike 02 brief: which similarity/context dimensions produce useful historical candidates (experiment, not spec). |
+| `technical-spike-02-similarity-and-relevance-report.md` | Spike 02 results: feature dimensions, seven retrieval strategies, candidate pools/performance at 100k games, evaluation sheet loop. Code in `spike/position_retrieval/lib/sim/`. |
 
 ## How to use the ADRs
 
