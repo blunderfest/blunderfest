@@ -25,8 +25,11 @@ function KeyRow({ keys, action }: { keys: string[]; action: string }) {
     <div className="flex items-center justify-between gap-4 py-1">
       <span className="text-ui text-muted">{action}</span>
       <span className="flex shrink-0 gap-1">
-        {keys.map((key) => (
-          <kbd key={key} className="inline-flex items-center">
+        {keys.map((key, position) => (
+          // A row can repeat a key ('a a' = press a twice); the list is
+          // static, so position-keying is stable.
+          // biome-ignore lint/suspicious/noArrayIndexKey: static per-row list, repeats possible
+          <kbd key={`${position}-${key}`} className="inline-flex items-center">
             <KeyGlyph k={key} />
           </kbd>
         ))}

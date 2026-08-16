@@ -55,6 +55,7 @@ describe('App', () => {
   it('shows the app name and tagline', () => {
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => new Promise(() => {}),
     });
     render(
       <Provider store={store}>
@@ -301,6 +302,7 @@ describe('App', () => {
     window.location.hash = '#/r/kjhkjhkjhkj';
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => new Promise(() => {}),
     });
     socketMocks.channelFor.mockReturnValue(new FakeChannel());
     render(
@@ -442,5 +444,57 @@ describe('App', () => {
     await screen.findByText('Analysis service online');
     const results = await axe(view.container);
     expect(results).toHaveNoViolations();
+  });
+
+  it('starts the guided tour on the first home visit and marks it seen on close', async () => {
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
+    });
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    expect(await screen.findByText('Welcome to Blunderfest')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Skip tour' }));
+
+    expect(screen.queryByText('Welcome to Blunderfest')).not.toBeInTheDocument();
+    expect(localStorage.getItem('blunderfest.tourSeen')).toBe('1');
+  });
+
+  it('does not auto-start the tour once seen', async () => {
+    localStorage.setItem('blunderfest.tourSeen', '1');
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
+    });
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
+    expect(screen.queryByText('Welcome to Blunderfest')).not.toBeInTheDocument();
+  });
+
+  it('re-triggers the tour from the help menu', async () => {
+    localStorage.setItem('blunderfest.tourSeen', '1');
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles': () => jsonResponse(profileBody, 201),
+    });
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Help' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Take the guided tour' }));
+
+    expect(await screen.findByText('Welcome to Blunderfest')).toBeInTheDocument();
   });
 });

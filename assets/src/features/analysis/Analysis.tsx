@@ -28,7 +28,6 @@ import {
   type OpeningBook,
   openingExitPly,
 } from '@/features/analysis/openings';
-import ShortcutsDialog from '@/features/analysis/ShortcutsDialog';
 import SidebarTabs, { type SidebarTab } from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useBoardKeyboard } from '@/features/analysis/useBoardKeyboard';
@@ -93,7 +92,6 @@ export default function Analysis({
   const [selected, setSelected] = useState<string | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
   const [drawColor, setDrawColor] = useState<string>(DRAW_COLORS[0]);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // Per-viewer engine display toggles; persisted — analysis is a local aid,
   // never shared state.
   const [engineOn, setEngineOn] = useState(
@@ -586,6 +584,7 @@ export default function Analysis({
             className={`relative flex flex-col items-stretch gap-2 ${
               !editor.editing && engineOn ? 'ml-13 min-[672px]:ml-0' : ''
             }`}
+            data-tour="board"
           >
             {!editor.editing && engineOn && (
               <div
@@ -807,6 +806,7 @@ export default function Analysis({
                   // list scrolling below — lichess's analysis panel.
                   <section
                     className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+                    data-tour="analysis-panel"
                   >
                     <EngineBox
                       fen={current.fen ?? ''}
@@ -846,6 +846,7 @@ export default function Analysis({
             <section
               className={`${panel({ layout: 'none', pad: 'none' })} shrink-0 overflow-hidden`}
               data-testid="viz-box"
+              data-tour="viz-box"
             >
               <SidebarTabs tabs={vizTabs} />
             </section>
@@ -863,8 +864,6 @@ export default function Analysis({
           style={{ left: editor.paletteGhost.x, top: editor.paletteGhost.y }}
         />
       )}
-
-      {shortcutsOpen && <ShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
 
       {commentOpen && (
         <CommentPopup

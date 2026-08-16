@@ -69,7 +69,10 @@ export default function MemberList({
   const { t } = useTranslation();
 
   return (
-    <section className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col`}>
+    <section
+      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col`}
+      data-tour="member-list"
+    >
       <div className={panelHeader()}>
         <h2 className="m-0">{t('room.members')}</h2>
         <span className="text-faint tabular-nums">{members.length}</span>

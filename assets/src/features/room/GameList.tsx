@@ -34,6 +34,7 @@ export default function GameList({
   return (
     <section
       className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col xl:max-h-[45%]`}
+      data-tour="game-list"
     >
       <div className={panelHeader()}>
         <h2 className="m-0">{t('room.games')}</h2>

@@ -44,7 +44,7 @@ export default function RoomPanel({ slug, onLeave }: { slug: string; onLeave: ()
   }
 
   return (
-    <section className={panel({ layout: 'none', pad: 'none' })}>
+    <section className={panel({ layout: 'none', pad: 'none' })} data-tour="room-panel">
       <div className={panelHeader()}>
         <h2 className="m-0">{t('room.panelTitle')}</h2>
       </div>
