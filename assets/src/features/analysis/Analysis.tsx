@@ -471,7 +471,6 @@ export default function Analysis({
     vizTabs.push({
       id: 'eval',
       label: t('analysis.evalTab'),
-      caption: t('analysis.evalCaption'),
       content: (
         <div className="p-2">
           {analysis !== null && analysis.length > 1 ? (
@@ -494,7 +493,6 @@ export default function Analysis({
     vizTabs.push({
       id: 'moments',
       label: t('analysis.momentsTab'),
-      caption: t('analysis.momentsCaption'),
       content: (
         // Same outer height as the chart tabs (p-2 + h-44): no shift on switch.
         <div className="p-2">
@@ -518,7 +516,6 @@ export default function Analysis({
     vizTabs.push({
       id: 'material',
       label: t('analysis.materialTab'),
-      caption: t('analysis.materialCaption'),
       content: (
         <div className="p-2">
           <MaterialFlow
@@ -533,7 +530,6 @@ export default function Analysis({
     vizTabs.push({
       id: 'activity',
       label: t('analysis.activityTab'),
-      caption: t('analysis.activityCaption'),
       content: (
         <div className="p-2">
           <ActivityFlow

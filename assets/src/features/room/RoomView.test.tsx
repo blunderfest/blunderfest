@@ -299,7 +299,7 @@ describe('RoomView', () => {
 
     expect(await screen.findByTestId('square-e4')).toBeInTheDocument();
     expect(screen.queryByTestId('member-list')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Import PGN' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Import game' })).not.toBeInTheDocument();
 
     // Navigation is local; nothing is sent to a read-only room.
     fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
@@ -419,7 +419,7 @@ describe('RoomView', () => {
     renderRoom('abc12', vi.fn(), 'profile-1');
 
     expect(await screen.findByRole('button', { name: 'Alice – Bob' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Import PGN' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import game' }));
     expect(screen.getByLabelText('PGN')).toBeInTheDocument();
   });
 
