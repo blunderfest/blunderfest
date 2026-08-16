@@ -10,7 +10,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 
 - ✅ Hand-rolled board (no library): click-to-play legal moves, square highlights for selection/targets/last move, board flip
 - ✅ cburnett SVG piece set (GPLv2+, crisp at any size, identical on every platform)
-- ✅ Variation tree with nested variations; conventional move numbering (`2...` only at line starts/interruptions); root variations
+- ✅ Variation tree with nested variations rendered as indented blocks at every level (no inline parens); conventional move numbering (`2...` only at line starts/interruptions); root variations
+- ✅ Line-path breadcrumb inside variations: the path from the branch point above the move list, one click back to the mainline
 - ✅ Per-position comments (collaborative)
 - ✅ Keyboard navigation everywhere (`←` `→` `Home` `End`, `f` flip); square-level keyboard play via `:focus-visible` grid navigation
 - ✅ Engine eval bar + best-move hint arrow (Stockfish 18 Lite WASM, in-browser, per-viewer)

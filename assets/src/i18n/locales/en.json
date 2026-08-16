@@ -199,6 +199,7 @@
     "insertLine": "Insert this line as a variation",
     "nagGroup": "Move quality",
     "nagLabel": "Mark as {{glyph}}",
+    "backToMainline": "Back to the mainline",
     "wdl": "White win · draw · black win",
     "engineLines": "Engine lines",
     "bookExit": "leaves the book",

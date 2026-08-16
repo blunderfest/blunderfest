@@ -174,6 +174,58 @@ export default function Analysis({
     [book, byId, current],
   );
 
+  /** The mainline ids (first-child chain), for off-mainline detection. */
+  const mainlineIds = useMemo(() => {
+    const ids = new Set<number>();
+    let node = tree?.root ?? null;
+    while (node !== null) {
+      ids.add(node.id);
+      node = node.children[0] ?? null;
+    }
+    return ids;
+  }, [tree]);
+
+  /**
+   * When the viewed node sits inside a variation: the path from the branch
+   * point down to it (and the branch's node id, for a one-click return).
+   * Null on the mainline.
+   */
+  const linePath = useMemo(() => {
+    if (current === null || mainlineIds.has(current.id)) {
+      return null;
+    }
+    const nodes: GameNode[] = [];
+    let entry = byId.get(current.id);
+    let branchId: number | null = null;
+    while (entry !== undefined && entry.parent !== null) {
+      nodes.push(entry.node);
+      if (mainlineIds.has(entry.parent.id)) {
+        branchId = entry.parent.id;
+        break;
+      }
+      entry = byId.get(entry.parent.id);
+    }
+    nodes.reverse();
+    return { nodes, branchId };
+  }, [current, byId, mainlineIds]);
+
+  /** The breadcrumb text: the last three moves of the path, numbered. */
+  const linePathText = useMemo(() => {
+    if (linePath === null) {
+      return null;
+    }
+    const shown = linePath.nodes.slice(-3);
+    const parts = shown.map((node, index) => {
+      const san = node.san ?? t('analysis.setupNode');
+      const number = Math.ceil(node.ply / 2);
+      if (index === 0) {
+        return `${number}${node.ply % 2 === 1 ? '.' : '...'} ${san}`;
+      }
+      return node.ply % 2 === 1 ? `${number}. ${san}` : san;
+    });
+    return `${linePath.nodes.length > 3 ? '… ' : ''}${parts.join(' ')}`;
+  }, [linePath, t]);
+
   /** The mainline ply where the game leaves the opening book (chart marker). */
   const bookExitPly = useMemo(
     () => (book === null || tree === null ? null : openingExitPly(book, tree.root)),
@@ -871,6 +923,25 @@ export default function Analysis({
                           : undefined
                       }
                     />
+                    {linePath !== null && linePathText !== null && (
+                      // Off-mainline bearings: the path from the branch
+                      // point; clicking returns to it.
+                      <button
+                        type="button"
+                        data-testid="line-path"
+                        title={t('analysis.backToMainline')}
+                        aria-label={t('analysis.backToMainline')}
+                        className="flex shrink-0 items-center gap-1.5 border-t border-line px-3 py-1.5 text-left text-note text-muted transition-colors hover:bg-raised hover:text-ink"
+                        onClick={() => {
+                          if (linePath.branchId !== null) {
+                            navigate(linePath.branchId);
+                          }
+                        }}
+                      >
+                        <ArrowIcon of="left" className="h-3 w-3 shrink-0" />
+                        <span className="truncate tabular-nums">{linePathText}</span>
+                      </button>
+                    )}
                     <MoveList
                       rows={rows}
                       currentId={current.id}

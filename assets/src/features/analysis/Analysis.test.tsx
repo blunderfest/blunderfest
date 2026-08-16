@@ -135,6 +135,23 @@ describe('Analysis', () => {
     expect(screen.getByTestId('comment-bubble')).toHaveTextContent('Sicilian');
   });
 
+  it('shows a line path inside a variation, returning to the branch point on click', () => {
+    renderAnalysis();
+
+    // Mainline position: no breadcrumb.
+    expect(screen.queryByTestId('line-path')).toBeNull();
+
+    // Into the 1... c5 variation: the path shows.
+    fireEvent.click(screen.getByTestId('analysis-move-3'));
+    const path = screen.getByTestId('line-path');
+    expect(path).toHaveTextContent('1... c5');
+
+    // Clicking it returns to the branch point — the e4 node.
+    fireEvent.click(path);
+    expect(screen.getByTestId('analysis-move-1')).toHaveAttribute('aria-current', 'true');
+    expect(screen.queryByTestId('line-path')).toBeNull();
+  });
+
   it('shows the checkmate status badge', () => {
     const mateTree: GameTree = {
       ...tree,

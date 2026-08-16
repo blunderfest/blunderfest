@@ -150,14 +150,15 @@ function VariationLine({
   activeOptionId,
   onFocusMove,
   onSelect,
-  nested = false,
+  depth = 0,
 }: {
   root: GameNode;
   currentId: number | null;
   activeOptionId: number | null;
   onFocusMove: (id: number) => void;
   onSelect: (id: number) => void;
-  nested?: boolean;
+  /** 0 = a first-level variation row; 1+ nests inside another variation. */
+  depth?: number;
 }) {
   const nodes: GameNode[] = [];
   let node: GameNode | null = root;
@@ -166,16 +167,29 @@ function VariationLine({
     node = node.children[0] ?? null;
   }
 
-  /**
-   * Move-number rules: white moves always carry their number; black moves
-   * only when the line starts with black (a black-to-move variation) or when
-   * the line resumes after a nested variation has interrupted it.
-   */
+  // The line always starts with a number; an interruption restates it.
   let interrupted = true;
-  const content = (
-    <Fragment>
-      <span className="text-faint">(</span>
+
+  /**
+   * Every variation level is its own indented, left-bordered block (no
+   * inline parens) — deep trees read as a tree. The indent caps at one
+   * step: past that, extra pixels stop adding information and the
+   * line-path breadcrumb carries the "where am I" instead. Nested blocks
+   * take a full row (`basis-full`) inside the parent's flex flow.
+   */
+  return (
+    <div
+      className={`flex flex-wrap items-baseline gap-x-1 gap-y-0.5 border-l-2 pl-2 ${
+        depth === 0 ? 'border-line-strong' : 'ml-1.5 basis-full border-line'
+      }`}
+    >
       {nodes.map((node) => {
+        /**
+         * Move-number rules: white moves always carry their number; black
+         * moves only when the line starts with black (a black-to-move
+         * variation) or when the line resumes after a nested variation has
+         * interrupted it.
+         */
         const showNumber = node.ply % 2 === 1 || interrupted;
         const nestedVariations = node.children.slice(1);
         // A nested variation or a setup node breaks the flow — the next
@@ -203,22 +217,12 @@ function VariationLine({
                 activeOptionId={activeOptionId}
                 onFocusMove={onFocusMove}
                 onSelect={onSelect}
-                nested
+                depth={depth + 1}
               />
             ))}
           </Fragment>
         );
       })}
-      <span className="text-faint">)</span>
-    </Fragment>
-  );
-
-  if (nested) {
-    return content;
-  }
-  return (
-    <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 border-l-2 border-line-strong pl-2">
-      {content}
     </div>
   );
 }

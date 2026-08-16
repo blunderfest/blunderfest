@@ -158,6 +158,27 @@ describe('MoveList best-move hint', () => {
   });
 });
 
+describe('MoveList variation nesting', () => {
+  it('renders every variation level as its own bordered block, no inline parens', () => {
+    render(<MoveList rows={buildRows(makeTree(true))} currentId={null} onSelect={vi.fn()} />);
+
+    // No parenthesis characters anywhere in the list.
+    expect(screen.queryByText('(')).toBeNull();
+    expect(screen.queryByText(')')).toBeNull();
+
+    // The nested variation (dxe5, two levels down) gets a full-row,
+    // indented block inside its parent variation's block.
+    const nested = screen.getByTestId('analysis-move-6');
+    const nestedBlock = nested.closest('div');
+    expect(nestedBlock?.className).toContain('basis-full');
+    expect(nestedBlock?.className).toContain('border-l-2');
+
+    const parentBlock = nestedBlock?.parentElement;
+    expect(parentBlock?.className).toContain('border-l-2');
+    expect(parentBlock?.className).not.toContain('basis-full');
+  });
+});
+
 describe('MoveList NAG glyphs', () => {
   function treeWithNag(nags: number[]): GameTree {
     const base = makeTree(false);
