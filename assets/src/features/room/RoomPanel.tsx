@@ -6,9 +6,10 @@ import { useAppSelector } from '@/store';
 
 /**
  * The room's home in the rail: the share code with copy, a leave action,
- * and the connection chip (region — later lag/region telemetry). Keeps the
- * app bar purely application-level. Read-only rooms (the demo, ADR-0014)
- * get a badge explaining why nothing can be edited.
+ * and a compact single-line region/lag readout inside the box (it wrapped
+ * badly in the narrow header). Keeps the app bar purely application-level.
+ * Read-only rooms (the demo, ADR-0014) get a badge explaining why nothing
+ * can be edited.
  */
 export default function RoomPanel({ slug, onLeave }: { slug: string; onLeave: () => void }) {
   const { t } = useTranslation();
@@ -46,22 +47,6 @@ export default function RoomPanel({ slug, onLeave }: { slug: string; onLeave: ()
     <section className={panel({ layout: 'none', pad: 'none' })}>
       <div className={panelHeader()}>
         <h2 className="m-0">{t('room.panelTitle')}</h2>
-        <span className="flex items-center gap-1.5" data-testid="connection">
-          {connectionText !== null && (
-            <span
-              className="rounded-lg border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-muted"
-              title={t('room.regionLabel')}
-              data-testid="region-chip"
-            >
-              {connectionText}
-            </span>
-          )}
-          {lagMs !== null && (
-            <span className="text-faint tabular-nums" data-testid="lag-ms">
-              {t('room.lag', { ms: lagMs })}
-            </span>
-          )}
-        </span>
       </div>
       <div className="flex items-center gap-2 p-2">
         <code className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-0.5 text-sm tracking-widest">
@@ -125,6 +110,24 @@ export default function RoomPanel({ slug, onLeave }: { slug: string; onLeave: ()
           {t('room.leave')}
         </button>
       </div>
+      {(connectionText !== null || lagMs !== null) && (
+        <div
+          className="flex items-center gap-1.5 border-t border-white/10 px-2.5 py-1.5 text-xs whitespace-nowrap text-muted"
+          data-testid="connection"
+          title={t('room.regionLabel')}
+        >
+          {connectionText !== null && (
+            <span className="truncate" data-testid="region-chip">
+              {connectionText}
+            </span>
+          )}
+          {lagMs !== null && (
+            <span className="ml-auto shrink-0 tabular-nums text-faint" data-testid="lag-ms">
+              {t('room.lag', { ms: lagMs })}
+            </span>
+          )}
+        </div>
+      )}
     </section>
   );
 }
