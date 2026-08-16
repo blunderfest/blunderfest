@@ -172,9 +172,9 @@ describe('MoveList NAG glyphs', () => {
 
   it('renders the glyph for a quality NAG', () => {
     render(<MoveList rows={buildRows(treeWithNag([4]))} currentId={null} onSelect={vi.fn()} />);
-    expect(within(screen.getByTestId('analysis-move-1')).getByTestId('nag-glyph')).toHaveTextContent(
-      '??',
-    );
+    expect(
+      within(screen.getByTestId('analysis-move-1')).getByTestId('nag-glyph'),
+    ).toHaveTextContent('??');
   });
 
   it('prefers the annotated glyph over the analysis mark', () => {
