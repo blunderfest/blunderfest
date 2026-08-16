@@ -88,6 +88,12 @@
     "studiesLabel": "Your Lichess studies",
     "studiesLoading": "Loading your studies...",
     "studiesEmpty": "No studies on your Lichess account yet.",
+    "gamesTab": "My games",
+    "gamesLabel": "Your recent Lichess games",
+    "gamesLoading": "Loading your recent games...",
+    "gamesEmpty": "No games on your Lichess account yet.",
+    "importSelected_one": "Import {{count}} game",
+    "importSelected_other": "Import {{count}} games",
     "errorTitle": "Couldn't import it",
     "partialTitle": "Some games couldn't be parsed and were skipped",
     "reasons": {

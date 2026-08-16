@@ -83,6 +83,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 
 - ✅ Anonymous-first profiles: fun generated name, device secret in localStorage, salted hash server-side, zero stored PII
 - ✅ Lichess-linked accounts (ADR-0022): OAuth2+PKCE, link as recovery key + data source (never a persona), one-time exchange code signs a new device in — in-memory until the storage decision
+- ✅ Lichess study import: every chapter imports as a game, from the import dialog's "My Lichess studies" tab
+- ✅ Lichess recent-games import: multi-select your recent games and import them in bulk ("My games" tab)
 - 🚧 Optional sign-in (magic link / external provider) stored as keyed hashes — cross-device identity without PII (the lichess account is the first external account; more can follow)
 - 💡 Profile settings (rename, preferred piece set/theme)
 

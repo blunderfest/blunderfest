@@ -26,9 +26,12 @@ defmodule Blunderfest.Lichess do
 
   def game_id(_), do: {:error, :invalid_url}
 
-  @spec export_pgn(binary()) :: {:ok, binary()} | {:error, :not_found | :fetch_failed}
-  def export_pgn(game_id) do
-    case Req.get(req_options("/game/export/#{game_id}")) do
+  @spec export_pgn(binary(), binary() | nil) ::
+          {:ok, binary()} | {:error, :not_found | :fetch_failed}
+  def export_pgn(game_id, token \\ nil) do
+    auth = if token != nil, do: [auth: {:bearer, token}], else: []
+
+    case Req.get(req_options("/game/export/#{game_id}", auth)) do
       {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) -> {:ok, body}
       {:ok, %Req.Response{status: 404}} -> {:error, :not_found}
       {:ok, %Req.Response{}} -> {:error, :fetch_failed}
@@ -168,6 +171,65 @@ defmodule Blunderfest.Lichess do
     end
   rescue
     _ -> {:error, :fetch_failed}
+  end
+
+  @doc """
+  The token owner's recent games as compact maps
+  `%{id, white, black, result, date, speed}` — the endpoint streams ndjson
+  (per-user rate limits with the token).
+  """
+  @spec recent_games(binary(), binary(), pos_integer()) ::
+          {:ok, [map()]} | {:error, :fetch_failed}
+  def recent_games(token, username, max \\ 10) do
+    options =
+      req_options("/api/games/user/#{username}",
+        auth: {:bearer, token},
+        params: [max: max],
+        headers: [accept: "application/x-ndjson"]
+      )
+
+    case Req.get(options) do
+      {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) ->
+        games =
+          body
+          |> String.split("\n", trim: true)
+          |> Enum.map(&parse_game_line/1)
+          |> Enum.reject(&is_nil/1)
+
+        {:ok, games}
+
+      _ ->
+        {:error, :fetch_failed}
+    end
+  rescue
+    _ -> {:error, :fetch_failed}
+  end
+
+  defp parse_game_line(line) do
+    case Jason.decode(line) do
+      {:ok, %{"id" => id} = game} ->
+        %{
+          id: id,
+          white: get_in(game, ["players", "white", "user", "name"]) || "?",
+          black: get_in(game, ["players", "black", "user", "name"]) || "?",
+          result: game_result(game),
+          date: game["lastMoveAt"] || game["createdAt"],
+          speed: game["speed"]
+        }
+
+      _ ->
+        nil
+    end
+  end
+
+  defp game_result(game) do
+    case {game["status"], game["winner"]} do
+      {_, "white"} -> "1-0"
+      {_, "black"} -> "0-1"
+      {"draw", _} -> "1/2-1/2"
+      {"stalemate", _} -> "1/2-1/2"
+      _ -> "*"
+    end
   end
 
   defp req_options(url, extra \\ []) do

@@ -12,9 +12,12 @@ import {
 } from '@/features/import/stripTree';
 import {
   ApiError,
+  fetchLichessGames,
   fetchStudies,
   type GameTree,
+  importLichessGames,
   importLichessStudy,
+  type LichessGame,
   type LichessStudy,
 } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
@@ -35,6 +38,12 @@ type StudiesState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'loaded'; studies: LichessStudy[] }
+  | { status: 'error'; code: string };
+
+type GamesState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'loaded'; games: LichessGame[] }
   | { status: 'error'; code: string };
 
 const SAMPLE_PGN = `[Event "Friendly sample"]
@@ -106,8 +115,10 @@ export default function ImportDialog({
   useScrollLock();
   const [input, setInput] = useState('');
   const [state, setState] = useState<PreviewState>({ status: 'idle' });
-  const [sourceTab, setSourceTab] = useState<'paste' | 'lichess'>('paste');
+  const [sourceTab, setSourceTab] = useState<'paste' | 'studies' | 'games'>('paste');
   const [studies, setStudies] = useState<StudiesState>({ status: 'idle' });
+  const [games, setGames] = useState<GamesState>({ status: 'idle' });
+  const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set());
   // What the import keeps, not what it strips: checked = included. Engine
   // annotations are the one thing excluded by default.
   const [keep, setKeep] = useState({
@@ -164,7 +175,7 @@ export default function ImportDialog({
   // (a ref guard: flipping to `loading` must not re-run and self-cancel).
   const studiesRequested = useRef(false);
   useEffect(() => {
-    if (sourceTab !== 'lichess' || studiesRequested.current) {
+    if (sourceTab !== 'studies' || studiesRequested.current) {
       return;
     }
     studiesRequested.current = true;
@@ -184,6 +195,28 @@ export default function ImportDialog({
     );
   }, [sourceTab]);
 
+  const gamesRequested = useRef(false);
+  useEffect(() => {
+    if (sourceTab !== 'games' || gamesRequested.current) {
+      return;
+    }
+    gamesRequested.current = true;
+    const device = loadDevice();
+    if (device === null) {
+      setGames({ status: 'error', code: 'unauthorized' });
+      return;
+    }
+    setGames({ status: 'loading' });
+    fetchLichessGames(device).then(
+      (result) => setGames({ status: 'loaded', games: result.games }),
+      (error) =>
+        setGames({
+          status: 'error',
+          code: error instanceof ApiError ? error.code : 'unknown',
+        }),
+    );
+  }, [sourceTab]);
+
   function handlePickStudy(studyId: string) {
     const device = loadDevice();
     if (device === null) {
@@ -191,6 +224,27 @@ export default function ImportDialog({
     }
     setState({ status: 'parsing' });
     importLichessStudy(device, studyId).then(
+      (result) => {
+        setState({
+          status: 'preview',
+          trees: result.trees,
+          skips: result.failures.map((failure) => ({ kind: 'pgnGame' as const, ...failure })),
+          source: 'lichess',
+        });
+      },
+      (error) => {
+        setState({ status: 'error', code: error instanceof ApiError ? error.code : 'unknown' });
+      },
+    );
+  }
+
+  function handleImportSelectedGames() {
+    const device = loadDevice();
+    if (device === null || selectedGames.size === 0) {
+      return;
+    }
+    setState({ status: 'parsing' });
+    importLichessGames(device, [...selectedGames]).then(
       (result) => {
         setState({
           status: 'preview',
@@ -281,7 +335,7 @@ export default function ImportDialog({
               role="tablist"
               aria-label={t('import.sourceLabel')}
             >
-              {(['paste', 'lichess'] as const).map((tab) => (
+              {(['paste', 'studies', 'games'] as const).map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -294,7 +348,13 @@ export default function ImportDialog({
                   }`}
                   onClick={() => setSourceTab(tab)}
                 >
-                  {t(tab === 'paste' ? 'import.pasteTab' : 'import.studiesTab')}
+                  {t(
+                    tab === 'paste'
+                      ? 'import.pasteTab'
+                      : tab === 'studies'
+                        ? 'import.studiesTab'
+                        : 'import.gamesTab',
+                  )}
                 </button>
               ))}
             </div>
@@ -333,7 +393,7 @@ export default function ImportDialog({
               />
               <p className="m-0 text-note text-faint">{t('import.multiHint')}</p>
             </div>
-          ) : (
+          ) : sourceTab === 'studies' ? (
             <div className="flex shrink-0 flex-col gap-1" data-testid="studies-panel">
               <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
                 {t('import.studiesLabel')}
@@ -363,6 +423,66 @@ export default function ImportDialog({
                           {new Date(study.updated_at).toLocaleDateString()}
                         </span>
                       </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : (
+            <div className="flex shrink-0 flex-col gap-1" data-testid="games-panel">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
+                  {t('import.gamesLabel')}
+                </span>
+                <button
+                  type="button"
+                  id="import-selected-games-button"
+                  className={button({ intent: 'secondary', size: 'xs' })}
+                  disabled={selectedGames.size === 0}
+                  onClick={handleImportSelectedGames}
+                >
+                  {t('import.importSelected', { count: selectedGames.size })}
+                </button>
+              </div>
+              {games.status === 'loading' && (
+                <p className="m-0 text-ui text-faint">{t('import.gamesLoading')}</p>
+              )}
+              {games.status === 'error' && (
+                <p className="m-0 text-ui text-bad-hi" role="alert">
+                  {t(`import.errors.${games.code}`)}
+                </p>
+              )}
+              {games.status === 'loaded' && games.games.length === 0 && (
+                <p className="m-0 text-ui text-faint">{t('import.gamesEmpty')}</p>
+              )}
+              {games.status === 'loaded' && games.games.length > 0 && (
+                <ul className="m-0 flex max-h-44 flex-col gap-0.5 overflow-y-auto">
+                  {games.games.map((game) => (
+                    <li key={game.id}>
+                      <label className="flex cursor-pointer items-baseline gap-2 rounded-control px-2 py-1.5 text-ui text-ink transition-colors hover:bg-raised">
+                        <input
+                          type="checkbox"
+                          className="relative top-px"
+                          checked={selectedGames.has(game.id)}
+                          onChange={(event) => {
+                            setSelectedGames((current) => {
+                              const next = new Set(current);
+                              if (event.target.checked) {
+                                next.add(game.id);
+                              } else {
+                                next.delete(game.id);
+                              }
+                              return next;
+                            });
+                          }}
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {game.white} – {game.black}
+                        </span>
+                        <span className="shrink-0 text-note text-faint tabular-nums">
+                          {game.result} · {game.speed}
+                        </span>
+                      </label>
                     </li>
                   ))}
                 </ul>

@@ -272,6 +272,49 @@ export async function importLichessStudy(
   };
 }
 
+/** A recent lichess game of the linked account (metadata only). */
+export type LichessGame = {
+  id: string;
+  white: string;
+  black: string;
+  result: string;
+  date: number;
+  speed: string;
+};
+
+/** Lists the linked account's recent lichess games (ADR-0022). */
+export async function fetchLichessGames(
+  device: Device,
+  max = 10,
+): Promise<{ games: LichessGame[] }> {
+  return request(`/api/lichess/games?profile_id=${encodeURIComponent(device.id)}&max=${max}`, {
+    headers: { Authorization: `Bearer ${device.secret}` },
+  });
+}
+
+/** Imports selected lichess games (up to 10 per call). */
+export async function importLichessGames(
+  device: Device,
+  gameIds: string[],
+): Promise<{ trees: GameTree[]; failures: ImportFailure[] }> {
+  const body = await request<{
+    tree?: GameTree;
+    trees?: GameTree[];
+    failures?: ImportFailure[];
+  }>('/api/import/lichess-games', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${device.secret}`,
+    },
+    body: JSON.stringify({ profile_id: device.id, game_ids: gameIds }),
+  });
+  return {
+    trees: body.trees ?? (body.tree !== undefined ? [body.tree] : []),
+    failures: body.failures ?? [],
+  };
+}
+
 export type LegalMove = {
   from: string;
   to: string;

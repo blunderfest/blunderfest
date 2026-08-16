@@ -258,6 +258,49 @@ describe('ImportDialog', () => {
     expect(screen.queryByRole('tab', { name: 'My Lichess studies' })).toBeNull();
   });
 
+  it('imports selected recent games', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    stubFetch({
+      '/api/lichess/games?profile_id=profile-1&max=10': () =>
+        jsonResponse({
+          games: [
+            {
+              id: 'g1',
+              white: 'dr_ny',
+              black: 'someone',
+              result: '1-0',
+              date: 1,
+              speed: 'blitz',
+            },
+            {
+              id: 'g2',
+              white: 'someone',
+              black: 'dr_ny',
+              result: '0-1',
+              date: 2,
+              speed: 'bullet',
+            },
+          ],
+        }),
+      '/api/import/lichess-games': () => jsonResponse({ trees: [tree], failures: [] }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} lichessLinked />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'My games' }));
+
+    const first = await screen.findByRole('checkbox', { name: /dr_ny – someone/ });
+    fireEvent.click(first);
+    fireEvent.click(screen.getByRole('button', { name: 'Import 1 game' }));
+
+    expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    expect(onImported).toHaveBeenCalledTimes(1);
+  });
+
   it('excludes engine annotations by default and variations on uncheck', async () => {
     // 1. e4 {[%eval] comment} with mainline e5 and a variation c5.
     const annotated = {
