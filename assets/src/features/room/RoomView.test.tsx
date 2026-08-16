@@ -319,6 +319,47 @@ describe('RoomView', () => {
     });
   });
 
+  it('re-points the presenter focus at the first game after a multi-game import', async () => {
+    const other = { ...gameTree, headers: { White: 'Carol', Black: 'Dave' } };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ trees: [gameTree, other], failures: [] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        ),
+      ),
+    );
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    // Presenting derives from presence — the owner must be "in the room".
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    await waitFor(() => expect(document.getElementById('empty-import-button')).not.toBeNull());
+    fireEvent.click(document.getElementById('empty-import-button') as HTMLElement);
+    fireEvent.change(await screen.findByLabelText('PGN'), {
+      target: { value: '1. e4 e5 *\n\n[Event "G2"]\n\n1. d4 d5 *\n' },
+    });
+    await screen.findByText('2 games found');
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    // set_game ×2, then select_game back to the first — otherwise the
+    // op-log presenter focus stays on the last imported game.
+    await waitFor(() => expect(channel.pushes.length).toBe(3));
+    const firstId = (channel.pushes[0].payload as { payload: { game_id: string } }).payload.game_id;
+    expect(channel.pushes[2].payload).toEqual({
+      type: 'select_game',
+      payload: { game_id: firstId },
+    });
+  });
+
   it('starts a freshly imported game at the initial position, not the tail', async () => {
     vi.stubGlobal(
       'fetch',

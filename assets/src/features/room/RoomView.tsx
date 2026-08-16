@@ -163,12 +163,18 @@ export default function RoomView({
         sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
       }
       if (firstId !== null) {
+        // The op log leaves the presenter focus on the LAST set_game — so
+        // after a multi-game import the room would watch game N while the
+        // importer looks at game 1, unless the presenter re-points it.
+        if (amPresenter && trees.length > 1) {
+          sendOp({ type: 'select_game', payload: { game_id: firstId } });
+        }
         setActiveGameId(firstId);
         setFreshImportId(firstId);
       }
       setShowImport(false);
     },
-    [sendOp],
+    [sendOp, amPresenter],
   );
 
   function handleNewGame() {
