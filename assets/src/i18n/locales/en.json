@@ -72,7 +72,7 @@
   },
   "import": {
     "title": "Import games",
-    "inputLabel": "PGN or Lichess URLs",
+    "inputLabel": "PGNs or Lichess URLs",
     "errorTitle": "Couldn't import it",
     "partialTitle": "Some games couldn't be parsed and were skipped",
     "reasons": {
