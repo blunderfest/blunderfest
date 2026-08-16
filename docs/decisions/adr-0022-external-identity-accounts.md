@@ -27,8 +27,11 @@ links; magic links or other providers later).
   linked_at}`) and **one secret hash per device** (`secret_hashes`) — a
   recovered identity reaches a new device by *adding* a hash, so old
   devices keep working.
-- **OAuth2 + PKCE, public client** (`study:read game:read` scopes, so the
-  link also powers study/game imports). Flow: SPA `POST
+- **OAuth2 + PKCE, unregistered public client** — lichess accepts any
+  unique client id (shown on the consent screen), no app registration and
+  no secret (see their API spec's Authentication section). Scope:
+  `study:read` (games endpoints are public — there is no `game:read`
+  scope). Flow: SPA `POST
   /api/auth/lichess/start` (bearer when linking — secrets never go into a
   redirect URL) → lichess → `GET /auth/lichess/callback` → token exchange
   + `/api/account` → link, or recover via a **single-use, 5-minute
@@ -45,6 +48,8 @@ links; magic links or other providers later).
 ## Consequences
 
 - Cross-device identity becomes possible without accounts-as-personas.
-- Study/game imports ride the same token (no per-IP rate limits).
+- Study imports ride the same token; game imports stay on the public
+  games endpoints, which the token also authenticates (per-user rate
+  limits instead of per-IP).
 - `LichessAuth` (flow state, exchange codes) is deliberately ephemeral —
   nothing in it should ever want durability.

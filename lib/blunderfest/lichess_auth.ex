@@ -12,7 +12,8 @@ defmodule Blunderfest.LichessAuth do
   @exchange_ttl_ms 5 * 60 * 1000
   @sweep_ms 60 * 1000
 
-  @scope "study:read game:read"
+  # Lichess's games endpoints are public — `study:read` is all we need.
+  @scope "study:read"
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, nil, name: Keyword.get(opts, :name, __MODULE__))

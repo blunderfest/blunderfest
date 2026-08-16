@@ -43,9 +43,13 @@ defmodule Blunderfest.Lichess do
   @authorize_url "https://lichess.org/oauth"
   @token_url "https://lichess.org/api/token"
 
-  @doc "The registered OAuth client id (public client — PKCE, no secret)."
+  @doc """
+  The OAuth client id. Lichess supports unregistered public clients — any
+  unique id works, no app registration or secret; this is shown on the
+  consent screen.
+  """
   def client_id do
-    Application.get_env(:blunderfest, :lichess_client_id, "blunderfest-dev")
+    Application.get_env(:blunderfest, :lichess_client_id, "blunderfest.org")
   end
 
   @doc """

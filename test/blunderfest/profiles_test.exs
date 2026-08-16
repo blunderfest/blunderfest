@@ -55,7 +55,7 @@ defmodule Blunderfest.ProfilesTest do
         type: "lichess",
         username: username,
         token: "tok",
-        scopes: ["study:read", "game:read"],
+        scopes: ["study:read"],
         linked_at: DateTime.utc_now()
       }
     end

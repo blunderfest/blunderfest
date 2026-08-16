@@ -26,7 +26,7 @@ defmodule BlunderfestWeb.AuthControllerTest do
       assert url =~ "https://lichess.org/oauth?"
       assert url =~ "code_challenge_method=S256"
       assert url =~ "state="
-      assert url =~ "scope=study%3Aread+game%3Aread"
+      assert url =~ "scope=study%3Aread"
 
       assert url =~
                "redirect_uri=#{URI.encode_www_form("http://www.example.com/auth/lichess/callback")}"
