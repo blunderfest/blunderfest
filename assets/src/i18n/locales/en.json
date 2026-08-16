@@ -32,7 +32,7 @@
     "analysisPanelTitle": "Engine & move list",
     "analysisPanelBody": "Turn Stockfish on for the eval bar and best-move arrows, choose how many lines to see, and click any move to jump there. Variations branch freely.",
     "vizBoxTitle": "The viz box",
-    "vizBoxBody": "Four ways to see the whole game. Material (who's up what) and Activity (who has the more active pieces) read the game directly — no analysis. The Eval chart and Moments (the biggest swings, as mini boards) appear once you run Analyze game, the server-side analysis.",
+    "vizBoxBody": "Four ways to see the whole game at a glance: the Eval chart (score per move, mistakes dotted), Moments (the biggest swings as mini boards), Material (who's up what) and Activity (who has the more active pieces). Eval and Moments appear after you run Analyze game.",
     "roomPanelTitle": "Room & connection",
     "roomPanelBody": "The code to share, copy and leave — plus where you and the room are hosted and your current lag.",
     "gameListTitle": "The room's games",
