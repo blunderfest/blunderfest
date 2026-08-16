@@ -144,14 +144,32 @@ export type GameTree = {
   node_count: number;
 };
 
-/** Imports a PGN — one or several games (multi-game PGN). */
-export async function importPgn(pgn: string): Promise<{ trees: GameTree[] }> {
-  const body = await request<{ tree?: GameTree; trees?: GameTree[] }>('/api/import/pgn', {
+/** A game that failed to parse in a multi-game import (1-based index). */
+export type ImportFailure = {
+  index: number;
+  detail: { reason: string; san?: string; ply?: number };
+};
+
+/**
+ * Imports a PGN — one or several games (multi-game PGN). Games parse
+ * independently: `failures` lists the ones that didn't make it.
+ */
+export async function importPgn(
+  pgn: string,
+): Promise<{ trees: GameTree[]; failures: ImportFailure[] }> {
+  const body = await request<{
+    tree?: GameTree;
+    trees?: GameTree[];
+    failures?: ImportFailure[];
+  }>('/api/import/pgn', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ pgn }),
   });
-  return { trees: body.trees ?? (body.tree !== undefined ? [body.tree] : []) };
+  return {
+    trees: body.trees ?? (body.tree !== undefined ? [body.tree] : []),
+    failures: body.failures ?? [],
+  };
 }
 
 export async function importLichess(url: string): Promise<{ tree: GameTree }> {

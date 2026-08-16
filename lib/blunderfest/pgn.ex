@@ -21,6 +21,7 @@ defmodule Blunderfest.PGN do
   @max_pgn_bytes 256 * 1024
 
   @type error_detail :: map()
+  @type parse_failure :: %{index: pos_integer(), detail: error_detail()}
 
   @doc """
   Parses a PGN string into a game tree.
@@ -62,24 +63,27 @@ defmodule Blunderfest.PGN do
   end
 
   @doc """
-  Parses a multi-game PGN (several games concatenated) into a list of
-  trees. Single-game input yields a one-element list. Blank-only chunks
-  between games are ignored; the first failing game aborts with its error.
+  Parses a multi-game PGN (several games concatenated). Every game parses
+  independently: good games come back as trees, failing ones as
+  `%{index, detail}` failures (`index` is 1-based over the non-blank
+  chunks) — one oddity (a variant game, a from-position quirk) no longer
+  sinks the whole import. The size cap applies per game, so the total
+  export size is unbounded here (the endpoint's body limit governs it).
   """
-  @spec parse_many(binary()) :: {:ok, [Tree.t()]} | {:error, error_detail()}
+  @spec parse_many(binary()) :: {:ok, [Tree.t()], [parse_failure()]}
   def parse_many(pgn) when is_binary(pgn) do
-    pgn
-    |> split_games()
-    |> Enum.reduce_while({:ok, []}, fn chunk, {:ok, trees} ->
-      case parse(chunk) do
-        {:ok, tree} -> {:cont, {:ok, [tree | trees]}}
-        {:error, detail} -> {:halt, {:error, detail}}
-      end
-    end)
-    |> case do
-      {:ok, trees} -> {:ok, Enum.reverse(trees)}
-      error -> error
-    end
+    {trees, failures} =
+      pgn
+      |> split_games()
+      |> Enum.with_index(1)
+      |> Enum.reduce({[], []}, fn {chunk, index}, {trees, failures} ->
+        case parse(chunk) do
+          {:ok, tree} -> {[tree | trees], failures}
+          {:error, detail} -> {trees, [%{index: index, detail: detail} | failures]}
+        end
+      end)
+
+    {:ok, Enum.reverse(trees), Enum.reverse(failures)}
   end
 
   # Splits concatenated games: a new game starts at a `[`-line at top level

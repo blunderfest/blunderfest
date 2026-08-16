@@ -90,6 +90,29 @@ describe('ImportDialog', () => {
     expect(trees[1].headers).toEqual(other.headers);
   });
 
+  it('reports skipped games of a mixed multi-game PGN but still imports the good ones', async () => {
+    stubFetch({
+      '/api/import/pgn': () =>
+        jsonResponse({
+          trees: [tree],
+          failures: [{ index: 2, detail: { reason: 'invalid_san_format', san: 'garbage' } }],
+        }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} />);
+
+    const mixedPgn = '[Event "G1"]\n\n1. e4 e5 *\n\n[Event "G2"]\n\n1. d4 garbage *\n';
+    fireEvent.change(screen.getByLabelText('PGN'), { target: { value: mixedPgn } });
+
+    const alert = await screen.findByTestId('import-failures');
+    expect(alert).toHaveTextContent("Some games couldn't be parsed and were skipped");
+    expect(alert).toHaveTextContent('Game 2: illegal or unknown move (garbage)');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    expect(onImported).toHaveBeenCalledTimes(1);
+    expect(onImported.mock.calls[0][0]).toHaveLength(1);
+  });
+
   it('parses a Lichess URL via the lichess endpoint', async () => {
     stubFetch({
       '/api/import/lichess': () => jsonResponse({ tree }),

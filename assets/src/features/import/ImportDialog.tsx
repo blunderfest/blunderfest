@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, chip, textarea } from '@/components/ui';
@@ -8,13 +9,13 @@ import {
   type StripOptions,
   stripTree,
 } from '@/features/import/stripTree';
-import { ApiError, type GameTree, importLichess, importPgn } from '@/lib/api';
+import { ApiError, type GameTree, type ImportFailure, importLichess, importPgn } from '@/lib/api';
 import { useScrollLock } from '@/lib/useScrollLock';
 
 type PreviewState =
   | { status: 'idle' }
   | { status: 'parsing' }
-  | { status: 'preview'; trees: GameTree[]; source: 'pgn' | 'lichess' }
+  | { status: 'preview'; trees: GameTree[]; failures: ImportFailure[]; source: 'pgn' | 'lichess' }
   | { status: 'error'; code: string };
 
 const SAMPLE_PGN = `[Event "Friendly sample"]
@@ -43,6 +44,14 @@ function UploadIcon() {
       <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
     </svg>
   );
+}
+
+/** Localized one-line reason for a skipped game; the SAN is appended when known. */
+function failureReasonText(t: TFunction, failure: ImportFailure): string {
+  const reason = t(`import.reasons.${failure.detail.reason}`, {
+    defaultValue: t('import.reasons.unknown'),
+  });
+  return failure.detail.san !== undefined ? `${reason} (${failure.detail.san})` : reason;
 }
 
 /**
@@ -101,7 +110,8 @@ export default function ImportDialog({
         (result) => {
           if (!cancelled) {
             const trees = 'trees' in result ? result.trees : [result.tree];
-            setState({ status: 'preview', trees, source: isUrl ? 'lichess' : 'pgn' });
+            const failures = 'failures' in result ? result.failures : [];
+            setState({ status: 'preview', trees, failures, source: isUrl ? 'lichess' : 'pgn' });
           }
         },
         (error) => {
@@ -118,6 +128,7 @@ export default function ImportDialog({
   }, [input, isUrl]);
 
   const preview = state.status === 'preview' ? state.trees : null;
+  const failures = state.status === 'preview' ? state.failures : [];
 
   // The preview shows the trees *after* stripping — what's imported is
   // exactly what enters the room.
@@ -229,6 +240,31 @@ export default function ImportDialog({
               <div className="flex flex-col">
                 <span className="text-ui font-semibold text-bad-hi">{t('import.errorTitle')}</span>
                 <span className="text-note text-bad-hi/90">{t(`import.errors.${state.code}`)}</span>
+              </div>
+            </div>
+          )}
+
+          {failures.length > 0 && (
+            <div
+              className="flex shrink-0 items-start gap-2 rounded-control border border-gold/40 bg-gold/10 p-2.5"
+              role="alert"
+              data-testid="import-failures"
+            >
+              <span aria-hidden="true" className="text-gold-hi">
+                ⚠
+              </span>
+              <div className="flex flex-col">
+                <span className="text-ui font-semibold text-gold-hi">
+                  {t('import.partialTitle')}
+                </span>
+                {failures.map((failure) => (
+                  <span key={failure.index} className="text-note text-gold-hi/90">
+                    {t('import.failureLine', {
+                      index: failure.index,
+                      reason: failureReasonText(t, failure),
+                    })}
+                  </span>
+                ))}
               </div>
             </div>
           )}

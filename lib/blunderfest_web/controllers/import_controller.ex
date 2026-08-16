@@ -37,21 +37,34 @@ defmodule BlunderfestWeb.ImportController do
 
   defp render_pgn(conn, pgn) do
     case PGN.parse_many(pgn) do
-      {:ok, [tree]} ->
+      {:ok, [tree], []} ->
         json(conn, %{tree: tree_json(tree)})
 
-      {:ok, trees} ->
-        json(conn, %{trees: Enum.map(trees, &tree_json/1)})
-
-      {:error, %{reason: :too_large}} ->
-        conn
-        |> put_status(:request_entity_too_large)
-        |> json(%{errors: %{code: "pgn_too_large"}})
-
-      {:error, detail} ->
+      {:ok, [], []} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> json(%{errors: %{code: "invalid_pgn", detail: detail}})
+        |> json(%{errors: %{code: "invalid_pgn", detail: %{reason: "no_games"}}})
+
+      {:ok, [], [first | _]} ->
+        # Nothing parseable — behave like the old all-or-nothing parse:
+        # single-game imports keep their exact error path.
+        case first.detail do
+          %{reason: :too_large} ->
+            conn
+            |> put_status(:request_entity_too_large)
+            |> json(%{errors: %{code: "pgn_too_large"}})
+
+          detail ->
+            conn
+            |> put_status(:unprocessable_entity)
+            |> json(%{errors: %{code: "invalid_pgn", detail: detail}})
+        end
+
+      {:ok, trees, failures} ->
+        json(conn, %{
+          trees: Enum.map(trees, &tree_json/1),
+          failures: Enum.map(failures, &failure_json/1)
+        })
     end
   end
 
@@ -62,4 +75,6 @@ defmodule BlunderfestWeb.ImportController do
   end
 
   defp tree_json(%Tree{} = tree), do: Tree.to_map(tree)
+
+  defp failure_json(%{index: index, detail: detail}), do: %{index: index, detail: detail}
 end

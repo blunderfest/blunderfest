@@ -280,7 +280,7 @@ defmodule Blunderfest.PGNTest do
 
   describe "multi-game PGN" do
     test "two concatenated games parse into two trees" do
-      assert {:ok, [g1, g2]} =
+      assert {:ok, [g1, g2], []} =
                PGN.parse_many("""
                [Event "G1"]
                [Result "1-0"]
@@ -300,11 +300,11 @@ defmodule Blunderfest.PGNTest do
     end
 
     test "a single game yields a one-element list" do
-      assert {:ok, [_]} = PGN.parse_many("1. e4 e5 2. Nf3 *\n")
+      assert {:ok, [_], []} = PGN.parse_many("1. e4 e5 2. Nf3 *\n")
     end
 
     test "a bracket inside a multiline comment does not start a game" do
-      assert {:ok, [_, _]} =
+      assert {:ok, [_, _], []} =
                PGN.parse_many("""
                1. e4 e5 {a comment
                [still the comment] 2. Nf3 Nc6 }
@@ -315,9 +315,27 @@ defmodule Blunderfest.PGNTest do
                """)
     end
 
-    test "a failing game aborts with its error" do
-      assert {:error, %{reason: :invalid_san_format}} =
+    test "a failing game is reported, the good games still parse" do
+      assert {:ok, [g1], [%{index: 2, detail: %{reason: :invalid_san_format}}]} =
                PGN.parse_many("1. e4 e5 *\n\n[Event \"G2\"]\n\n1. d4 garbage *\n")
+
+      assert g1.result == "*"
+    end
+
+    test "every failure is collected, in order" do
+      assert {:ok, [], [%{index: 1}, %{index: 2}]} =
+               PGN.parse_many("1. e4 garbage *\n\n[Event \"G2\"]\n\n1. d4 nonsense *\n")
+    end
+
+    test "a clean batch reports no failures" do
+      assert {:ok, [_, _], []} =
+               PGN.parse_many("""
+               1. e4 e5 *
+
+               [Event "G2"]
+
+               1. d4 d5 *
+               """)
     end
   end
 end

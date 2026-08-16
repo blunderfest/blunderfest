@@ -64,6 +64,46 @@ defmodule BlunderfestWeb.ImportControllerTest do
       assert %{"errors" => %{"code" => "pgn_too_large"}} = json_response(conn, 413)
     end
 
+    test "imports the good games of a mixed multi-game PGN and reports the failures", %{
+      conn: conn
+    } do
+      pgn = """
+      [Event "Good 1"]
+      [White "Alice"]
+      [Black "Bob"]
+
+      1. e4 e5 2. Nf3 Nc6 1-0
+
+      [Event "Bad"]
+      [White "Carol"]
+      [Black "Dan"]
+
+      1. d4 garbage *
+
+      [Event "Good 2"]
+      [White "Eve"]
+      [Black "Frank"]
+
+      1. c4 e5 0-1
+      """
+
+      conn = post(conn, "/api/import/pgn", %{"pgn" => pgn})
+
+      assert %{"trees" => trees, "failures" => [failure]} = json_response(conn, 200)
+      assert Enum.map(trees, & &1["headers"]["Event"]) == ["Good 1", "Good 2"]
+      assert failure["index"] == 2
+      assert failure["detail"]["reason"] == "invalid_san_format"
+    end
+
+    test "returns 422 when no game in a multi-game PGN parses", %{conn: conn} do
+      pgn = "1. e4 garbage *\n\n[Event \"G2\"]\n\n1. d4 nonsense *\n"
+
+      conn = post(conn, "/api/import/pgn", %{"pgn" => pgn})
+
+      assert %{"errors" => %{"code" => "invalid_pgn", "detail" => %{"reason" => _}}} =
+               json_response(conn, 422)
+    end
+
     test "returns 400 when pgn is missing", %{conn: conn} do
       conn = post(conn, "/api/import/pgn", %{})
 
