@@ -133,25 +133,25 @@ Design stance going forward (user, 2026-08-16): *be flexible in how the UI
 evolves — usability beats the earlier no-shift/no-scrollbar dogma, but do
 it wisely.*
 
-**Next up (user-requested, in order):**
+**Next up (user-requested, in order):** all three landed 2026-08-16, plus
+two mobile fixes reported the same day:
 
-1. **Room panel location display** — the region/lag text sits in the panel
-   header and wraps badly in the narrow rail (see
-   `screenshots/RoomSection.png`). Move it *into the box* (the
-   code/copy/leave row), compact and single-line. `RoomPanel.tsx`.
-2. **Guided tour** — a first-run tour; the app has grown a lot of UI.
-   Decide: hand-rolled spotlight + tooltip (fits the no-library ethos) vs
-   a tiny lib (e.g. driver.js). Persist a seen-flag in localStorage,
-   re-trigger from the help menu, strings in `assets/src/i18n/locales/en.json`.
-3. **Bulk import fails on multi-game lichess exports.** Reproduce first
-   with a real export (`https://lichess.org/api/games/user/<name>?max=5`
-   as PGN). Prime suspect: `PGN.parse_many/1` is all-or-nothing — the
-   first failing game halts the whole batch, and lichess exports can
-   contain unparseable oddities (variants, from-position/Chess960 games).
-   Likely fix: per-game error collection (import what parses, report the
-   failures in the dialog). Also consider stripping lichess `[%clk …]` /
-   `[%eval …]` comments on import, and check `@max_pgn_bytes` (256 KB)
-   against large exports.
+1. **Room panel location display** — DONE: region/lag is one compact
+   truncating line inside the box, under the code/copy/leave row.
+2. **Guided tour** — DONE: hand-rolled spotlight (box-shadow dim +
+   tooltip), `data-tour` landmarks, steps that don't resolve are skipped;
+   seen-flag in localStorage; re-triggers from the new app-bar help menu,
+   which also revived the (previously unreachable) keyboard-shortcuts
+   dialog. Home steps auto-start once; room steps via the menu.
+3. **Bulk import** — DONE: `PGN.parse_many/1` is per-game now
+   (`{:ok, trees, failures}`); the dialog lists skipped games with reasons
+   and imports the rest. Reproduced with a real 5-game lichess export
+   (Chess960/Antichess/Horde fail, standard games import).
+4. **Mobile fixes** — DONE: the analysis wrapper shrink-wrapped to
+   max-content and let the page pan sideways once PV lines rendered (now
+   `w-full`, title wraps); the move list's `scrollIntoView` dragged the
+   page — it scrolls only its own container now; `1-0` no longer wraps at
+   the hyphen in the eval-bar label, title row, or engine badge.
 
 **Session notes for the next session:**
 

@@ -37,7 +37,11 @@ release and served by a catch-all (`SpaController`).
     hashes (ADR-0004), `authenticate/2`, fun-name generation.
   - `pgn.ex`, `game/tree.ex` — PGN parsing to a variation tree. Move
     legality and SAN are computed client-side (chess.js); the server checks
-    op shape, not chess rules.
+    op shape, not chess rules. `PGN.parse_many/1` parses each game
+    independently: `{:ok, trees, failures}` with per-game `%{index, detail}`
+    failures, so one unparseable game (variants, from-position quirks)
+    never sinks a multi-game import; the import endpoint reports the
+    failures alongside the trees.
   - `lichess.ex` — fetches PGNs from Lichess for URL imports.
   - `engine/pool.ex` + `engine/worker.ex` — the batch engine layer
     (ADR-0009): a pool of Stockfish binaries speaking UCI over Ports,
@@ -110,9 +114,15 @@ so clients send nothing and hide the member list.
 - `assets/src/features/room/` — `RoomView` (layout, join/not-found states),
   `useRoomChannel` (join, op/role/presence handling, `sendOp`/`sendRole`,
   10s ping loop → `lagMs`; events from superseded channels are ignored),
-  `RoomPanel` (code/copy/leave + region/lag telemetry in the rail),
-  `MemberList` (follow toggle, presenter handoff), `GameList`,
+  `RoomPanel` (code/copy/leave + a single-line region/lag readout inside
+  the box), `MemberList` (follow toggle, presenter handoff), `GameList`,
   `ActivityFeed`.
+- `assets/src/features/tour/` + `assets/src/app/HelpMenu.tsx` — the guided
+  tour: a hand-rolled spotlight (a ring whose box-shadow dims the page) and
+  tooltip stepping through `data-tour` landmarks; steps that don't resolve
+  are skipped. Auto-starts once on the home screen (`blunderfest.tourSeen`
+  in localStorage, `lib/tour.ts`); the app-bar help menu re-triggers it per
+  screen and houses the keyboard-shortcuts dialog.
 - `assets/src/features/analysis/` — the board: hand-rolled `Board.tsx`
   (keyboard-playable squares, drag, arrows, highlights, roles), `Analysis`
   (navigation, comments, present/follow), `legalMoves.ts` (client-side legal
