@@ -234,6 +234,44 @@ export async function importLichess(url: string): Promise<{ tree: GameTree }> {
   });
 }
 
+/** A lichess study of the linked account (metadata only). */
+export type LichessStudy = {
+  id: string;
+  name: string;
+  created_at: number;
+  updated_at: number;
+};
+
+/** Lists the linked account's lichess studies (ADR-0022). */
+export async function fetchStudies(device: Device): Promise<{ studies: LichessStudy[] }> {
+  return request(`/api/lichess/studies?profile_id=${encodeURIComponent(device.id)}`, {
+    headers: { Authorization: `Bearer ${device.secret}` },
+  });
+}
+
+/** Imports a whole lichess study — every chapter becomes a game. */
+export async function importLichessStudy(
+  device: Device,
+  studyId: string,
+): Promise<{ trees: GameTree[]; failures: ImportFailure[] }> {
+  const body = await request<{
+    tree?: GameTree;
+    trees?: GameTree[];
+    failures?: ImportFailure[];
+  }>('/api/import/lichess-study', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${device.secret}`,
+    },
+    body: JSON.stringify({ profile_id: device.id, study_id: studyId }),
+  });
+  return {
+    trees: body.trees ?? (body.tree !== undefined ? [body.tree] : []),
+    failures: body.failures ?? [],
+  };
+}
+
 export type LegalMove = {
   from: string;
   to: string;

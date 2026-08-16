@@ -35,7 +35,8 @@ defmodule BlunderfestWeb.ImportController do
 
   def lichess(conn, _params), do: invalid_request(conn)
 
-  defp render_pgn(conn, pgn) do
+  @doc false
+  def render_pgn(conn, pgn) do
     case PGN.parse_many(pgn) do
       {:ok, [tree], []} ->
         json(conn, %{tree: tree_json(tree)})

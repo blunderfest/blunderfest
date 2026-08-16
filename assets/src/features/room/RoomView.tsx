@@ -43,12 +43,15 @@ export default function RoomView({
   onLeave,
   selfId = null,
   selfName = null,
+  lichessLinked = false,
   channelFactory,
 }: {
   slug: string;
   onLeave: () => void;
   selfId?: string | null;
   selfName?: string | null;
+  /** Shows the "My Lichess studies" source in the import dialog (ADR-0022). */
+  lichessLinked?: boolean;
   channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
 }) {
   const { t } = useTranslation();
@@ -410,7 +413,11 @@ export default function RoomView({
       </div>
 
       {showImport && (
-        <ImportDialog onImported={handleImported} onClose={() => setShowImport(false)} />
+        <ImportDialog
+          onImported={handleImported}
+          onClose={() => setShowImport(false)}
+          lichessLinked={lichessLinked}
+        />
       )}
     </div>
   );

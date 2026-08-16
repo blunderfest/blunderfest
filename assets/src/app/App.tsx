@@ -235,6 +235,10 @@ export default function App() {
             onLeave={navigateHome}
             selfId={selfId}
             selfName={selfName}
+            lichessLinked={
+              profile.status === 'ready' &&
+              profile.profile.accounts?.some((account) => account.type === 'lichess') === true
+            }
           />
         )}
       </main>

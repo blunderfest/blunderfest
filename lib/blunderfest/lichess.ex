@@ -122,6 +122,54 @@ defmodule Blunderfest.Lichess do
     _ -> :ok
   end
 
+  ## Studies (ADR-0022, `study:read` token)
+
+  @doc """
+  Lists the token owner's studies (public, unlisted and private with
+  `study:read`) as `{id, name, created_at, updated_at}` maps. The endpoint
+  streams ndjson — one metadata object per line.
+  """
+  @spec studies(binary(), binary()) :: {:ok, [map()]} | {:error, :fetch_failed}
+  def studies(token, username) do
+    case Req.get(req_options("/api/study/by/#{username}", auth: {:bearer, token})) do
+      {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) ->
+        studies =
+          body
+          |> String.split("\n", trim: true)
+          |> Enum.map(fn line ->
+            case Jason.decode(line) do
+              {:ok, %{"id" => id, "name" => name, "createdAt" => created, "updatedAt" => updated}} ->
+                %{id: id, name: name, created_at: created, updated_at: updated}
+
+              _ ->
+                nil
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+
+        {:ok, studies}
+
+      _ ->
+        {:error, :fetch_failed}
+    end
+  rescue
+    _ -> {:error, :fetch_failed}
+  end
+
+  @doc "Fetches a study's PGN (every chapter) with the owner's token."
+  @spec study_pgn(binary(), binary()) ::
+          {:ok, binary()} | {:error, :not_found | :fetch_failed}
+  def study_pgn(token, study_id) do
+    case Req.get(req_options("/api/study/#{study_id}.pgn", auth: {:bearer, token})) do
+      {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) -> {:ok, body}
+      {:ok, %Req.Response{status: 404}} -> {:error, :not_found}
+      {:ok, %Req.Response{}} -> {:error, :fetch_failed}
+      {:error, _} -> {:error, :fetch_failed}
+    end
+  rescue
+    _ -> {:error, :fetch_failed}
+  end
+
   defp req_options(url, extra \\ []) do
     [
       url: url,

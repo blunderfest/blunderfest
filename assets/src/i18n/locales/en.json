@@ -82,6 +82,12 @@
   "import": {
     "title": "Import games",
     "inputLabel": "PGNs or Lichess URLs",
+    "sourceLabel": "Import source",
+    "pasteTab": "Paste",
+    "studiesTab": "My Lichess studies",
+    "studiesLabel": "Your Lichess studies",
+    "studiesLoading": "Loading your studies...",
+    "studiesEmpty": "No studies on your Lichess account yet.",
     "errorTitle": "Couldn't import it",
     "partialTitle": "Some games couldn't be parsed and were skipped",
     "reasons": {
@@ -138,6 +144,9 @@
       "invalid_request": "Provide a PGN or a Lichess URL.",
       "invalid_lichess_url": "That does not look like a Lichess game URL.",
       "lichess_game_not_found": "That Lichess game does not exist.",
+      "lichess_study_not_found": "That Lichess study does not exist.",
+      "lichess_not_linked": "No Lichess account is linked to this profile.",
+      "unauthorized": "Your identity couldn't be verified. Try again.",
       "lichess_fetch_failed": "Could not fetch the game from Lichess."
     },
     "previewTitle": "Parsed preview",

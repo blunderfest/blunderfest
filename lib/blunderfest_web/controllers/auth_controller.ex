@@ -9,6 +9,7 @@ defmodule BlunderfestWeb.AuthController do
   use BlunderfestWeb, :controller
 
   alias Blunderfest.{Lichess, LichessAuth, Profiles}
+  alias BlunderfestWeb.Auth
 
   @doc """
   Starts the sign-in flow. One action: the callback binds the account to
@@ -18,7 +19,7 @@ defmodule BlunderfestWeb.AuthController do
   trip means the secret never lands in a redirect URL.
   """
   def lichess_start(conn, _params) do
-    case bearer_profile(conn) do
+    case Auth.bearer_profile(conn) do
       {:ok, profile} ->
         {state, verifier} = LichessAuth.begin_flow(:sign_in, profile.id)
         challenge = Base.url_encode64(:crypto.hash(:sha256, verifier), padding: false)
@@ -72,7 +73,7 @@ defmodule BlunderfestWeb.AuthController do
   revokes the token at lichess (best-effort). Returns the updated profile.
   """
   def unlink(conn, _params) do
-    case bearer_profile(conn) do
+    case Auth.bearer_profile(conn) do
       {:ok, profile} ->
         account = Enum.find(profile.accounts, &(&1.type == "lichess"))
         if account != nil, do: Lichess.revoke_token(account.token)
@@ -121,17 +122,6 @@ defmodule BlunderfestWeb.AuthController do
 
   defp bind_to_current(conn, _flow, _account) do
     redirect(conn, to: "/#/?auth_error=profile_gone")
-  end
-
-  defp bearer_profile(conn) do
-    with ["Bearer " <> secret] <- get_req_header(conn, "authorization"),
-         {:ok, id} <- Map.fetch(conn.params, "profile_id"),
-         true <- Profiles.authenticate(id, secret),
-         {:ok, profile} <- Profiles.get(id) do
-      {:ok, profile}
-    else
-      _ -> :error
-    end
   end
 
   defp callback_url(conn) do

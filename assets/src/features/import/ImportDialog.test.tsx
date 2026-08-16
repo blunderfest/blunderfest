@@ -227,6 +227,37 @@ describe('ImportDialog', () => {
     expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
   });
 
+  it('offers the linked account’s studies as a source and imports one', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    stubFetch({
+      '/api/lichess/studies?profile_id=profile-1': () =>
+        jsonResponse({
+          studies: [
+            { id: 'WTvnkWAL', name: 'Guess the move', created_at: 1, updated_at: 1469965025205 },
+          ],
+        }),
+      '/api/import/lichess-study': () => jsonResponse({ tree }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} lichessLinked />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'My Lichess studies' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Guess the move/ }));
+
+    expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    expect(onImported).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the studies tab when no Lichess account is linked', () => {
+    render(<ImportDialog onImported={vi.fn()} onClose={vi.fn()} />);
+
+    expect(screen.queryByRole('tab', { name: 'My Lichess studies' })).toBeNull();
+  });
+
   it('excludes engine annotations by default and variations on uncheck', async () => {
     // 1. e4 {[%eval] comment} with mainline e5 and a variation c5.
     const annotated = {

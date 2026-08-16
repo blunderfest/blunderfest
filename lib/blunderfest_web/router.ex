@@ -22,6 +22,9 @@ defmodule BlunderfestWeb.Router do
     post "/auth/lichess/start", AuthController, :lichess_start
     post "/auth/exchange", AuthController, :exchange
     post "/auth/unlink", AuthController, :unlink
+
+    get "/lichess/studies", LichessController, :studies
+    post "/import/lichess-study", LichessController, :import_study
   end
 
   scope "/auth", BlunderfestWeb do

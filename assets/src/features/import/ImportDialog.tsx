@@ -10,7 +10,14 @@ import {
   type StripOptions,
   stripTree,
 } from '@/features/import/stripTree';
-import { ApiError, type GameTree } from '@/lib/api';
+import {
+  ApiError,
+  fetchStudies,
+  type GameTree,
+  importLichessStudy,
+  type LichessStudy,
+} from '@/lib/api';
+import { loadDevice } from '@/lib/device';
 import { useScrollLock } from '@/lib/useScrollLock';
 
 type PreviewState =
@@ -22,6 +29,12 @@ type PreviewState =
       skips: ImportSkip[];
       source: 'pgn' | 'lichess' | 'mixed';
     }
+  | { status: 'error'; code: string };
+
+type StudiesState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'loaded'; studies: LichessStudy[] }
   | { status: 'error'; code: string };
 
 const SAMPLE_PGN = `[Event "Friendly sample"]
@@ -73,21 +86,28 @@ function skipLine(t: TFunction, skip: ImportSkip): string {
 }
 
 /**
- * The import dialog: a modal for pasting PGN or a Lichess URL — one box,
- * auto-detected. Input is parsed (debounced) into a preview; nothing enters
- * the room until the user confirms. Esc or a backdrop click closes it.
+ * The import dialog: a modal for pasting PGN/Lichess URLs or, when the
+ * profile is Lichess-linked, picking one of the owner's studies (every
+ * chapter imports). Input is parsed (debounced) into a preview; nothing
+ * enters the room until the user confirms. Esc or a backdrop click closes
+ * it.
  */
 export default function ImportDialog({
   onImported,
   onClose,
+  lichessLinked = false,
 }: {
   onImported: (trees: GameTree[]) => void;
   onClose: () => void;
+  /** Shows the "My Lichess studies" source tab (ADR-0022). */
+  lichessLinked?: boolean;
 }) {
   const { t } = useTranslation();
   useScrollLock();
   const [input, setInput] = useState('');
   const [state, setState] = useState<PreviewState>({ status: 'idle' });
+  const [sourceTab, setSourceTab] = useState<'paste' | 'lichess'>('paste');
+  const [studies, setStudies] = useState<StudiesState>({ status: 'idle' });
   // What the import keeps, not what it strips: checked = included. Engine
   // annotations are the one thing excluded by default.
   const [keep, setKeep] = useState({
@@ -139,6 +159,51 @@ export default function ImportDialog({
       window.clearTimeout(timer);
     };
   }, [input]);
+
+  // The linked account's studies load lazily the first time the tab opens
+  // (a ref guard: flipping to `loading` must not re-run and self-cancel).
+  const studiesRequested = useRef(false);
+  useEffect(() => {
+    if (sourceTab !== 'lichess' || studiesRequested.current) {
+      return;
+    }
+    studiesRequested.current = true;
+    const device = loadDevice();
+    if (device === null) {
+      setStudies({ status: 'error', code: 'unauthorized' });
+      return;
+    }
+    setStudies({ status: 'loading' });
+    fetchStudies(device).then(
+      (result) => setStudies({ status: 'loaded', studies: result.studies }),
+      (error) =>
+        setStudies({
+          status: 'error',
+          code: error instanceof ApiError ? error.code : 'unknown',
+        }),
+    );
+  }, [sourceTab]);
+
+  function handlePickStudy(studyId: string) {
+    const device = loadDevice();
+    if (device === null) {
+      return;
+    }
+    setState({ status: 'parsing' });
+    importLichessStudy(device, studyId).then(
+      (result) => {
+        setState({
+          status: 'preview',
+          trees: result.trees,
+          skips: result.failures.map((failure) => ({ kind: 'pgnGame' as const, ...failure })),
+          source: 'lichess',
+        });
+      },
+      (error) => {
+        setState({ status: 'error', code: error instanceof ApiError ? error.code : 'unknown' });
+      },
+    );
+  }
 
   const preview = state.status === 'preview' ? state.trees : null;
   const skips = state.status === 'preview' ? state.skips : [];
@@ -210,38 +275,100 @@ export default function ImportDialog({
           letting this body scroll.
         */}
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-4">
-          <div className="flex shrink-0 flex-col gap-1">
-            <div className="flex items-baseline justify-between gap-2">
-              <label
-                className="text-micro font-semibold uppercase tracking-[0.08em] text-muted"
-                htmlFor="pgn-input"
-              >
-                {t('import.inputLabel')}
-              </label>
-              <span className="flex items-center gap-2">
-                {state.status === 'parsing' && (
-                  <span className="text-note text-faint">{t('import.parsing')}</span>
-                )}
+          {lichessLinked && (
+            <div
+              className="flex shrink-0 gap-1"
+              role="tablist"
+              aria-label={t('import.sourceLabel')}
+            >
+              {(['paste', 'lichess'] as const).map((tab) => (
                 <button
+                  key={tab}
                   type="button"
-                  className={button({ intent: 'ghost', size: 'xs' })}
-                  onClick={() => setInput(SAMPLE_PGN)}
+                  role="tab"
+                  aria-selected={sourceTab === tab}
+                  className={`rounded-control border px-2.5 py-1 text-note font-semibold transition-colors ${
+                    sourceTab === tab
+                      ? 'border-gold/60 bg-gold/15 text-gold-hi'
+                      : 'border-line text-muted hover:border-line-strong hover:text-ink'
+                  }`}
+                  onClick={() => setSourceTab(tab)}
                 >
-                  {t('import.useSample')}
+                  {t(tab === 'paste' ? 'import.pasteTab' : 'import.studiesTab')}
                 </button>
-              </span>
+              ))}
             </div>
-            <textarea
-              ref={inputRef}
-              id="pgn-input"
-              aria-label={t('import.pgnLabel')}
-              className={`${textarea({ invalid: state.status === 'error' })} h-36 font-mono text-note`}
-              placeholder={t('import.pgnPlaceholder')}
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-            />
-            <p className="m-0 text-note text-faint">{t('import.multiHint')}</p>
-          </div>
+          )}
+
+          {sourceTab === 'paste' ? (
+            <div className="flex shrink-0 flex-col gap-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <label
+                  className="text-micro font-semibold uppercase tracking-[0.08em] text-muted"
+                  htmlFor="pgn-input"
+                >
+                  {t('import.inputLabel')}
+                </label>
+                <span className="flex items-center gap-2">
+                  {state.status === 'parsing' && (
+                    <span className="text-note text-faint">{t('import.parsing')}</span>
+                  )}
+                  <button
+                    type="button"
+                    className={button({ intent: 'ghost', size: 'xs' })}
+                    onClick={() => setInput(SAMPLE_PGN)}
+                  >
+                    {t('import.useSample')}
+                  </button>
+                </span>
+              </div>
+              <textarea
+                ref={inputRef}
+                id="pgn-input"
+                aria-label={t('import.pgnLabel')}
+                className={`${textarea({ invalid: state.status === 'error' })} h-36 font-mono text-note`}
+                placeholder={t('import.pgnPlaceholder')}
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+              />
+              <p className="m-0 text-note text-faint">{t('import.multiHint')}</p>
+            </div>
+          ) : (
+            <div className="flex shrink-0 flex-col gap-1" data-testid="studies-panel">
+              <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
+                {t('import.studiesLabel')}
+              </span>
+              {studies.status === 'loading' && (
+                <p className="m-0 text-ui text-faint">{t('import.studiesLoading')}</p>
+              )}
+              {studies.status === 'error' && (
+                <p className="m-0 text-ui text-bad-hi" role="alert">
+                  {t(`import.errors.${studies.code}`)}
+                </p>
+              )}
+              {studies.status === 'loaded' && studies.studies.length === 0 && (
+                <p className="m-0 text-ui text-faint">{t('import.studiesEmpty')}</p>
+              )}
+              {studies.status === 'loaded' && studies.studies.length > 0 && (
+                <ul className="m-0 flex max-h-44 flex-col gap-0.5 overflow-y-auto">
+                  {studies.studies.map((study) => (
+                    <li key={study.id}>
+                      <button
+                        type="button"
+                        className="flex w-full items-baseline justify-between gap-2 rounded-control px-2 py-1.5 text-left text-ui text-ink transition-colors hover:bg-raised"
+                        onClick={() => handlePickStudy(study.id)}
+                      >
+                        <span className="min-w-0 flex-1 truncate">{study.name}</span>
+                        <span className="shrink-0 text-note text-faint tabular-nums">
+                          {new Date(study.updated_at).toLocaleDateString()}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {state.status === 'error' && (
             <div
