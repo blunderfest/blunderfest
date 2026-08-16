@@ -57,6 +57,7 @@ The feature inventory lives in [`FEATURES.md`](FEATURES.md).
 | `main` active, `main_backup` archive | [ADR-0008](docs/decisions/adr-0008-branch-structure-main-and-backup.md) |
 | Engine: browser WASM + server UCI pool | [ADR-0009](docs/decisions/adr-0009-engine-strategy.md) |
 | Weight-agnostic search index | [ADR-0010](docs/decisions/adr-0010-weight-agnostic-search-index.md) |
+| External identity accounts (Lichess OAuth) | [ADR-0022](docs/decisions/adr-0022-external-identity-accounts.md) |
 
 For how it all fits together (state model, channel protocol, data flow, testing), see
 [`docs/architecture.md`](docs/architecture.md).
@@ -138,11 +139,21 @@ two mobile fixes reported the same day. Later on 2026-08-16: mixed
 multi-source imports (line-wise split: `https://lichess.org` lines →
 Lichess, rest → PGN; bare ids dropped), import copy pluralized, the
 activity feed removed (product call), the multi-import presenter-focus
-fix, and two features: **engine line → variation** (atomic `add_line`
-op, dedupes against existing children) and **NAG glyphs** (display in
-the move list, entry via the annotation popup; `set_nags` op). A
-persistence spike is in flight (user) — search/accounts/durability wait
-on it.
+fix, two features (**engine line → variation** — atomic `add_line` op —
+and **NAG glyphs**), nested variations as indented blocks with a
+line-path breadcrumb, and the zoom-safe tour tooltip. A persistence
+spike is in flight (user) — search/accounts/durability wait on it.
+
+**Lichess OpenID (ADR-0022), phase 1 landed 2026-08-16:** external
+identity accounts — profiles hold linked accounts (lichess username +
+OAuth token, server-side only) and one secret hash per device; OAuth2 +
+PKCE public client (`study:read game:read`); app-bar account menu with
+Link/Recover; single-use exchange code signs in a new device. In-memory
+until the spike makes it durable. **Still needed from the user:**
+register the OAuth app at `lichess.org/account/oauth/app` (redirect
+URIs: prod + localhost callback) and `fly secrets set
+LICHESS_CLIENT_ID=…`. Phase 2 (study import) and 3 (my-games import)
+are next.
 
 1. **Room panel location display** — DONE: region/lag is one compact
    truncating line inside the box, under the code/copy/leave row.

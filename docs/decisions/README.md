@@ -63,3 +63,4 @@ here, or point to the ADR that superseded this one.
 | [0019](adr-0019-echecs-dependency-posture.md) | Keep echecs (contained risk, server-side import parsing only); fork/vendor if it stalls | Accepted (2026-08-11) |
 | [0020](adr-0020-anonymous-game-library.md) | Game library v1 on anonymous profiles, session-scoped (in-memory); re-keys to accounts when storage lands | Accepted (2026-08-11) |
 | [0021](adr-0021-presenter-handoff.md) | The owner can hand presenting to another member; presence-derived fallback amends ADR-0015 | Accepted (2026-08-15) |
+| [0022](adr-0022-external-identity-accounts.md) | External identity accounts (Lichess OAuth): User 1..n Account, link as recovery key not persona, in-memory until persistence lands | Accepted (2026-08-16) |
