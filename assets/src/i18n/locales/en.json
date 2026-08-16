@@ -19,6 +19,12 @@
     "tour": "Take the guided tour",
     "shortcuts": "Keyboard shortcuts"
   },
+  "chat": {
+    "title": "Chat",
+    "empty": "No messages yet — say hi.",
+    "placeholder": "Message the room...",
+    "send": "Send"
+  },
   "tour": {
     "skip": "Skip tour",
     "back": "Back",
@@ -94,6 +100,17 @@
     "gamesEmpty": "No games on your Lichess account yet.",
     "importSelected_one": "Import {{count}} game",
     "importSelected_other": "Import {{count}} games",
+    "chesscomTab": "Chess.com",
+    "chesscomUserLabel": "Chess.com username",
+    "chesscomUserPlaceholder": "e.g. hikaru",
+    "chesscomLoad": "Load games",
+    "chesscomLoading": "Loading...",
+    "chesscomPrevMonth": "Previous month",
+    "chesscomNextMonth": "Next month",
+    "chesscomEmpty": "No games that month.",
+    "chesscomFound_one": "{{count}} game this month",
+    "chesscomFound_other": "{{count}} games this month",
+    "chesscomAttribution": "Game data via Chess.com's public API",
     "errorTitle": "Couldn't import it",
     "partialTitle": "Some games couldn't be parsed and were skipped",
     "reasons": {
@@ -152,6 +169,8 @@
       "lichess_game_not_found": "That Lichess game does not exist.",
       "lichess_study_not_found": "That Lichess study does not exist.",
       "lichess_not_linked": "No Lichess account is linked to this profile.",
+      "chesscom_player_not_found": "No chess.com player by that name.",
+      "chesscom_fetch_failed": "Couldn't reach Chess.com. Try again.",
       "unauthorized": "Your identity couldn't be verified. Try again.",
       "lichess_fetch_failed": "Could not fetch the game from Lichess."
     },

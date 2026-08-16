@@ -315,6 +315,38 @@ export async function importLichessGames(
   };
 }
 
+/** A chess.com game from the monthly archive (public API), PGN inline. */
+export type ChesscomGame = {
+  id: string;
+  white: string;
+  black: string;
+  result: string;
+  date: number;
+  speed: string;
+  pgn: string;
+};
+
+/**
+ * Lists a chess.com player's games for one month — the official public
+ * API only (their terms; see the server module for the full posture).
+ */
+export async function fetchChesscomGames(
+  device: Device,
+  username: string,
+  year: number,
+  month: number,
+): Promise<{ games: ChesscomGame[] }> {
+  const params = new URLSearchParams({
+    profile_id: device.id,
+    username,
+    year: String(year),
+    month: String(month),
+  });
+  return request(`/api/chesscom/games?${params}`, {
+    headers: { Authorization: `Bearer ${device.secret}` },
+  });
+}
+
 export type LegalMove = {
   from: string;
   to: string;

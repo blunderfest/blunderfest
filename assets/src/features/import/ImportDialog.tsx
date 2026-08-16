@@ -12,11 +12,14 @@ import {
 } from '@/features/import/stripTree';
 import {
   ApiError,
+  type ChesscomGame,
+  fetchChesscomGames,
   fetchLichessGames,
   fetchStudies,
   type GameTree,
   importLichessGames,
   importLichessStudy,
+  importPgn,
   type LichessGame,
   type LichessStudy,
 } from '@/lib/api';
@@ -30,7 +33,7 @@ type PreviewState =
       status: 'preview';
       trees: GameTree[];
       skips: ImportSkip[];
-      source: 'pgn' | 'lichess' | 'mixed';
+      source: 'pgn' | 'lichess' | 'mixed' | 'chesscom';
     }
   | { status: 'error'; code: string };
 
@@ -44,6 +47,13 @@ type GamesState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'loaded'; games: LichessGame[] }
+  | { status: 'error'; code: string };
+
+type ChesscomState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'loaded'; games: ChesscomGame[] }
+  | { status: 'empty' }
   | { status: 'error'; code: string };
 
 const SAMPLE_PGN = `[Event "Friendly sample"]
@@ -115,10 +125,23 @@ export default function ImportDialog({
   useScrollLock();
   const [input, setInput] = useState('');
   const [state, setState] = useState<PreviewState>({ status: 'idle' });
-  const [sourceTab, setSourceTab] = useState<'paste' | 'studies' | 'games'>('paste');
+  const [sourceTab, setSourceTab] = useState<'paste' | 'studies' | 'games' | 'chesscom'>('paste');
   const [studies, setStudies] = useState<StudiesState>({ status: 'idle' });
   const [games, setGames] = useState<GamesState>({ status: 'idle' });
   const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set());
+  const [ccUser, setCcUser] = useState(() => {
+    try {
+      return localStorage.getItem('blunderfest.chesscom-user') ?? '';
+    } catch {
+      return '';
+    }
+  });
+  const [ccMonth, setCcMonth] = useState(() => {
+    const today = new Date();
+    return { year: today.getFullYear(), month: today.getMonth() + 1 };
+  });
+  const [ccState, setCcState] = useState<ChesscomState>({ status: 'idle' });
+  const [ccSelected, setCcSelected] = useState<Set<string>>(new Set());
   // What the import keeps, not what it strips: checked = included. Engine
   // annotations are the one thing excluded by default.
   const [keep, setKeep] = useState({
@@ -259,6 +282,66 @@ export default function ImportDialog({
     );
   }
 
+  function loadChesscomGames(username = ccUser, month = ccMonth) {
+    const device = loadDevice();
+    const trimmed = username.trim();
+    if (device === null || trimmed === '') {
+      return;
+    }
+    try {
+      localStorage.setItem('blunderfest.chesscom-user', trimmed);
+    } catch {
+      // private mode — the username just won't persist
+    }
+    setCcState({ status: 'loading' });
+    setCcSelected(new Set());
+    fetchChesscomGames(device, trimmed, month.year, month.month).then(
+      (result) => {
+        setCcState(
+          result.games.length === 0
+            ? { status: 'empty' }
+            : { status: 'loaded', games: result.games },
+        );
+      },
+      (error) => {
+        setCcState({ status: 'error', code: error instanceof ApiError ? error.code : 'unknown' });
+      },
+    );
+  }
+
+  function shiftChesscomMonth(delta: number) {
+    const total = ccMonth.year * 12 + (ccMonth.month - 1) + delta;
+    const next = { year: Math.floor(total / 12), month: (total % 12) + 1 };
+    setCcMonth(next);
+    if (ccUser.trim() !== '' && ccState.status !== 'idle') {
+      loadChesscomGames(ccUser, next);
+    }
+  }
+
+  function handleImportChesscom() {
+    if (ccState.status !== 'loaded' || ccSelected.size === 0) {
+      return;
+    }
+    const pgns = ccState.games
+      .filter((game) => ccSelected.has(game.id))
+      .map((game) => game.pgn)
+      .join('\n\n');
+    setState({ status: 'parsing' });
+    importPgn(pgns).then(
+      (result) => {
+        setState({
+          status: 'preview',
+          trees: result.trees,
+          skips: result.failures.map((failure) => ({ kind: 'pgnGame' as const, ...failure })),
+          source: 'chesscom',
+        });
+      },
+      (error) => {
+        setState({ status: 'error', code: error instanceof ApiError ? error.code : 'unknown' });
+      },
+    );
+  }
+
   const preview = state.status === 'preview' ? state.trees : null;
   const skips = state.status === 'preview' ? state.skips : [];
 
@@ -335,7 +418,7 @@ export default function ImportDialog({
               role="tablist"
               aria-label={t('import.sourceLabel')}
             >
-              {(['paste', 'studies', 'games'] as const).map((tab) => (
+              {(['paste', 'studies', 'games', 'chesscom'] as const).map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -353,7 +436,9 @@ export default function ImportDialog({
                       ? 'import.pasteTab'
                       : tab === 'studies'
                         ? 'import.studiesTab'
-                        : 'import.gamesTab',
+                        : tab === 'games'
+                          ? 'import.gamesTab'
+                          : 'import.chesscomTab',
                   )}
                 </button>
               ))}
@@ -428,7 +513,7 @@ export default function ImportDialog({
                 </ul>
               )}
             </div>
-          ) : (
+          ) : sourceTab === 'games' ? (
             <div className="flex shrink-0 flex-col gap-1" data-testid="games-panel">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
@@ -487,6 +572,123 @@ export default function ImportDialog({
                   ))}
                 </ul>
               )}
+            </div>
+          ) : (
+            <div className="flex shrink-0 flex-col gap-2" data-testid="chesscom-panel">
+              <div className="flex items-end gap-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <label
+                    className="text-micro font-semibold uppercase tracking-[0.08em] text-muted"
+                    htmlFor="chesscom-username"
+                  >
+                    {t('import.chesscomUserLabel')}
+                  </label>
+                  <input
+                    id="chesscom-username"
+                    className="rounded-control border border-line bg-transparent px-2 py-1 text-ui text-ink outline-none placeholder:text-faint focus:border-line-strong"
+                    placeholder={t('import.chesscomUserPlaceholder')}
+                    value={ccUser}
+                    onChange={(event) => setCcUser(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        loadChesscomGames();
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label={t('import.chesscomPrevMonth')}
+                    title={t('import.chesscomPrevMonth')}
+                    className={button({ intent: 'ghost', size: 'icon' })}
+                    onClick={() => shiftChesscomMonth(-1)}
+                  >
+                    ‹
+                  </button>
+                  <span className="min-w-16 text-center text-note text-muted tabular-nums">
+                    {ccMonth.year}-{String(ccMonth.month).padStart(2, '0')}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={t('import.chesscomNextMonth')}
+                    title={t('import.chesscomNextMonth')}
+                    className={button({ intent: 'ghost', size: 'icon' })}
+                    onClick={() => shiftChesscomMonth(1)}
+                  >
+                    ›
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  id="chesscom-load-button"
+                  className={button({ intent: 'secondary', size: 'sm' })}
+                  disabled={ccUser.trim() === '' || ccState.status === 'loading'}
+                  onClick={() => loadChesscomGames()}
+                >
+                  {ccState.status === 'loading'
+                    ? t('import.chesscomLoading')
+                    : t('import.chesscomLoad')}
+                </button>
+              </div>
+
+              {ccState.status === 'empty' && (
+                <p className="m-0 text-ui text-faint">{t('import.chesscomEmpty')}</p>
+              )}
+              {ccState.status === 'error' && (
+                <p className="m-0 text-ui text-bad-hi" role="alert">
+                  {t(`import.errors.${ccState.code}`)}
+                </p>
+              )}
+              {ccState.status === 'loaded' && (
+                <>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-note text-faint tabular-nums">
+                      {t('import.chesscomFound', { count: ccState.games.length })}
+                    </span>
+                    <button
+                      type="button"
+                      id="chesscom-import-button"
+                      className={button({ intent: 'secondary', size: 'xs' })}
+                      disabled={ccSelected.size === 0}
+                      onClick={handleImportChesscom}
+                    >
+                      {t('import.importSelected', { count: ccSelected.size })}
+                    </button>
+                  </div>
+                  <ul className="m-0 flex max-h-44 flex-col gap-0.5 overflow-y-auto">
+                    {ccState.games.map((game) => (
+                      <li key={game.id}>
+                        <label className="flex cursor-pointer items-baseline gap-2 rounded-control px-2 py-1.5 text-ui text-ink transition-colors hover:bg-raised">
+                          <input
+                            type="checkbox"
+                            className="relative top-px"
+                            checked={ccSelected.has(game.id)}
+                            onChange={(event) => {
+                              setCcSelected((current) => {
+                                const next = new Set(current);
+                                if (event.target.checked) {
+                                  next.add(game.id);
+                                } else {
+                                  next.delete(game.id);
+                                }
+                                return next;
+                              });
+                            }}
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            {game.white} – {game.black}
+                          </span>
+                          <span className="shrink-0 text-note text-faint tabular-nums">
+                            {game.result} · {game.speed}
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              <p className="m-0 text-note text-faint">{t('import.chesscomAttribution')}</p>
             </div>
           )}
 
@@ -594,7 +796,9 @@ export default function ImportDialog({
                         ? 'pgn + lichess'
                         : state.status === 'preview' && state.source === 'lichess'
                           ? 'lichess'
-                          : 'pgn'}
+                          : state.status === 'preview' && state.source === 'chesscom'
+                            ? 'chess.com'
+                            : 'pgn'}
                     </span>
                   </div>
                 </div>

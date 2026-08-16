@@ -25,6 +25,7 @@ defmodule BlunderfestWeb.Router do
 
     get "/lichess/studies", LichessController, :studies
     get "/lichess/games", LichessController, :games
+    get "/chesscom/games", ChesscomController, :games
     post "/import/lichess-study", LichessController, :import_study
     post "/import/lichess-games", LichessController, :import_games
   end

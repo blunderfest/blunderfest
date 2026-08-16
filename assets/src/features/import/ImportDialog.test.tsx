@@ -301,6 +301,49 @@ describe('ImportDialog', () => {
     expect(onImported).toHaveBeenCalledTimes(1);
   });
 
+  it('imports selected chess.com games from the monthly archive', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    const now = new Date();
+    const monthParam = `year=${now.getFullYear()}&month=${now.getMonth() + 1}`;
+    stubFetch({
+      [`/api/chesscom/games?profile_id=profile-1&username=hikaru&${monthParam}`]: () =>
+        jsonResponse({
+          games: [
+            {
+              id: 'cc1',
+              white: 'BornForTheEndgame',
+              black: 'Hikaru',
+              result: '0-1',
+              date: 1,
+              speed: 'blitz',
+              pgn: '1. d4 d5 *',
+            },
+          ],
+        }),
+      '/api/import/pgn': () => jsonResponse({ tree }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} lichessLinked />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Chess.com' }));
+    fireEvent.change(screen.getByLabelText('Chess.com username'), {
+      target: { value: 'hikaru' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Load games' }));
+
+    fireEvent.click(await screen.findByRole('checkbox', { name: /BornForTheEndgame – Hikaru/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Import 1 game' }));
+
+    expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
+    expect(screen.getByText("Game data via Chess.com's public API")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    expect(onImported).toHaveBeenCalledTimes(1);
+  });
+
   it('excludes engine annotations by default and variations on uncheck', async () => {
     // 1. e4 {[%eval] comment} with mainline e5 and a variation c5.
     const annotated = {
