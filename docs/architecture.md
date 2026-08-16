@@ -90,9 +90,10 @@ Clients apply echoes strictly in `seq` order; a `seq` gap
 means an echo was lost or reordered, so the client resyncs by rejoining
 (replay is the one application path, ADR-0005). Presence events
 `presence_state` / `presence_diff` carry member names. Ops are type-tagged
-payloads (`move_at_ply`, `comment_at_ply`, `set_game`, `select_game`,
-`set_cursor`, `set_role`, ...) with `seq`, `author`, `ts` — the shared
-vocabulary is mirrored in `assets/src/protocol/ops.ts`. `analyze_game` (push, editors
+payloads (`move_at_ply`, `add_line` (a whole line in one op — engine lines
+become variations atomically), `comment_at_ply`, `set_nags`, `set_game`,
+`select_game`, `set_cursor`, `set_role`, ...) with `seq`, `author`, `ts` —
+the shared vocabulary is mirrored in `assets/src/protocol/ops.ts`. `analyze_game` (push, editors
 only) starts a whole-game engine job; progress arrives as transient
 `analysis_progress` events and the result as a `set_analysis` op replayed
 on join like everything else. Read-only rooms (the demo) are the exception:

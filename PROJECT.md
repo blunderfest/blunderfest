@@ -134,7 +134,15 @@ evolves — usability beats the earlier no-shift/no-scrollbar dogma, but do
 it wisely.*
 
 **Next up (user-requested, in order):** all three landed 2026-08-16, plus
-two mobile fixes reported the same day:
+two mobile fixes reported the same day. Later on 2026-08-16: mixed
+multi-source imports (line-wise split: `https://lichess.org` lines →
+Lichess, rest → PGN; bare ids dropped), import copy pluralized, the
+activity feed removed (product call), the multi-import presenter-focus
+fix, and two features: **engine line → variation** (atomic `add_line`
+op, dedupes against existing children) and **NAG glyphs** (display in
+the move list, entry via the annotation popup; `set_nags` op). A
+persistence spike is in flight (user) — search/accounts/durability wait
+on it.
 
 1. **Room panel location display** — DONE: region/lag is one compact
    truncating line inside the box, under the code/copy/leave row.

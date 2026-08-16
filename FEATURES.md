@@ -17,8 +17,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Free-form position setup ("what if the pawn were on h3?") — edit mode moves any piece anywhere; syncs as a setup node in the tree (ADR-0011)
 - ✅ Drag-and-drop pieces (palette drag + off-board delete in edit mode); click-click also works
 - ✅ Draw arrows/highlights on the board (`set_annotations` op): right-drag / right-click on desktop, long-press on touch/pen, `h`/`a` + `1`-`4` keys; engine hint arrows render as translucent ghosts so they can't be confused with user drawings; `Esc` or the ⌫ button clears a position's drawings
-- 💡 NAG glyphs (`!`, `?`, `!?`) — display and entry
-- 💡 Engine lines panel (MultiPV top-N lines, click to insert as a variation)
+- ✅ NAG glyphs (`!`, `?`, `!?`, `?!`, `!!`, `??`) — shown in the move list (they win over analysis marks), set from the annotation popup (the `c` key)
+- ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted); a line clicks straight into the tree as a variation (`add_line` op, atomic)
 - 💡 Blunder flags on moves (auto `?`/`??` from eval swings) — in ADR-0009's original scope
 - 💡 Opening name/ECO display for the current position
 - 💡 Tablebase (Syzygy) probe for ≤7-piece positions
@@ -32,7 +32,6 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Presence (who's here, names) and roles: owner / collaborator / viewer, server-enforced edit rights, promote/demote
 - ✅ Presenter/follow mode: cursor + game-selection sync, break-away/re-follow; the owner can hand the mic to any member (ADR-0021)
 - ✅ Multiple games per room: import, new blank game, switch
-- ✅ Activity feed (who did what, minus cursor noise)
 - ✅ Room panel in the rail: code + copy, leave, read-only badge, connection telemetry (region + lag probe)
 - ✅ Read-only demo room at `#/r/chess` (annotated Opera Game), seeded on demand — linked from the home page (ADR-0014)
 - ✅ Sidebar tab shell (Analysis now; Explorer + Search get a home when they land)
@@ -51,8 +50,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Opening classification (ECO + name under the players, follows the viewed line incl. variations; lichess book, position-keyed)
 - ✅ Server-side UCI worker pool (ADR-0009): whole-game analysis on demand, per-move evals + quality marks in the move list, results synced to all members as a `set_analysis` op
 - ✅ Viz box (Eval | Moments | Material | Activity tabs): eval chart with blunder dots, cp/win% toggle, real WDL segments (`UCI_ShowWDL`), opening book-exit marker; critical moments as mini boards; material and piece-activity timelines (pure FEN data, no engine)
-- ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted)
-- 💡 Click an engine line to insert it as a variation
+- ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted); click a line to insert it as a variation
 - 💡 Cloud eval cache (share computed evals across users/rooms)
 - 💡 "Learn from this game" report: mistakes, turning points, best-move diffs
 - 💡 3D board (Three.js) — cool but heavy; the cheap version is a 3D-styled piece sprite theme on the 2D board
@@ -66,8 +64,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Per-profile game library (ADR-0020): save a room game, reopen it in a fresh room — session-scoped until the storage decision
 - 💡 Sign-in (magic links) + durable accounts — the claiming half of the library; gated on the ADR-0001 storage decision
 - 💡 Chess.com game URL import
-- ✅ Bulk PGN import (multi-game files, per-game preview) — known issue: multi-game *lichess* exports fail, fix pending (see PROJECT.md handoff)
-- 💡 Guided tour of the app for first-time users
+- ✅ Bulk import: multi-game PGNs (per-game failures reported, good games import), multiple Lichess URLs, and PGN+URL mixtures — the import box splits line-wise; single-game-URL import unchanged
+- ✅ Guided tour of the room UI (help-menu entry; hand-rolled spotlight)
 - 💡 FEN share links / position-only URLs
 - 💡 Folders/tags for games; repertoire storage
 - 💡 Board-as-image export (PNG of a position)
