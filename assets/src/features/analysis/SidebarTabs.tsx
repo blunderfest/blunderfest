@@ -5,6 +5,8 @@ export type SidebarTab = {
   id: string;
   label: string;
   content: ReactNode;
+  /** One-line explanation of what the tab shows, rendered under the content. */
+  caption?: string;
 };
 
 /**
@@ -44,6 +46,13 @@ export default function SidebarTabs({ tabs }: { tabs: SidebarTab[] }) {
       </div>
       <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2">
         {current.content}
+        {current.caption !== undefined && (
+          // Fixed height (two text-note lines): the box stays the same size
+          // no matter which tab is active.
+          <p className="m-0 h-9 shrink-0 overflow-hidden px-3 pb-1 text-note text-faint">
+            {current.caption}
+          </p>
+        )}
       </div>
     </div>
   );

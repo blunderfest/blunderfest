@@ -32,8 +32,11 @@ export default function BoardControls({
 
   return (
     // Capped at the board width so label changes (e.g. the follow toggle)
-    // wrap inside the row instead of stretching the whole layout.
-    <div className="flex w-[min(90vw,34rem)] flex-wrap items-center justify-center gap-2">
+    // wrap inside the row instead of stretching the whole layout. The cap
+    // is a max, not the width: a vw-fixed width becomes the flex/grid
+    // min-content contribution and would force the md track wider than it
+    // is.
+    <div className="flex w-full max-w-[min(90vw,34rem)] flex-wrap items-center justify-center gap-2">
       <button
         type="button"
         id="analysis-flip-button"

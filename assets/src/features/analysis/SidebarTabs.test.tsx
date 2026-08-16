@@ -25,4 +25,19 @@ describe('SidebarTabs', () => {
     expect(screen.queryByText('content-a')).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Explorer' })).toHaveAttribute('aria-selected', 'true');
   });
+
+  it('renders the active tab’s caption when it has one', () => {
+    render(
+      <SidebarTabs
+        tabs={[
+          { id: 'a', label: 'Eval', content: <p>content-a</p>, caption: 'What the eval shows' },
+          { id: 'b', label: 'Material', content: <p>content-b</p> },
+        ]}
+      />,
+    );
+    expect(screen.getByText('What the eval shows')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Material' }));
+    expect(screen.queryByText('What the eval shows')).not.toBeInTheDocument();
+  });
 });

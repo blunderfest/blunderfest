@@ -471,6 +471,7 @@ export default function Analysis({
     vizTabs.push({
       id: 'eval',
       label: t('analysis.evalTab'),
+      caption: t('analysis.evalCaption'),
       content: (
         <div className="p-2">
           {analysis !== null && analysis.length > 1 ? (
@@ -493,6 +494,7 @@ export default function Analysis({
     vizTabs.push({
       id: 'moments',
       label: t('analysis.momentsTab'),
+      caption: t('analysis.momentsCaption'),
       content: (
         // Same outer height as the chart tabs (p-2 + h-44): no shift on switch.
         <div className="p-2">
@@ -516,6 +518,7 @@ export default function Analysis({
     vizTabs.push({
       id: 'material',
       label: t('analysis.materialTab'),
+      caption: t('analysis.materialCaption'),
       content: (
         <div className="p-2">
           <MaterialFlow
@@ -530,6 +533,7 @@ export default function Analysis({
     vizTabs.push({
       id: 'activity',
       label: t('analysis.activityTab'),
+      caption: t('analysis.activityCaption'),
       content: (
         <div className="p-2">
           <ActivityFlow
@@ -552,7 +556,7 @@ export default function Analysis({
         whole page pans sideways.
       */}
       <div className="flex w-full flex-col items-center gap-4 xl:flex-row xl:items-start xl:gap-6">
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex max-w-full flex-col items-center gap-4">
           <div className="flex w-full items-baseline justify-between gap-4">
             <h2 className="m-0 min-w-0 text-display font-bold tracking-[-0.02em]">
               {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
@@ -577,10 +581,12 @@ export default function Analysis({
           {/*
             The board column is always centered. The eval bar hangs off its
             left edge, out of flow, so toggling the engine (or the edit
-            palette) never shifts the board. Phones have no margin to hang
-            into, so below 672px the column gets a compensating left margin
-            instead — the board's width formula already reserves exactly
-            that slot (100vw - page padding - 2.5rem - gap).
+            palette) never shifts the board. The ml-13 margin reserves that
+            slot whenever the bar is shown: centering alone would let it
+            cross the content's left edge (off-screen on phones, over the
+            rail at md) — the board's width formula reserves exactly this
+            slot (100vw - page padding - 2.5rem - gap, minus the rail at
+            md).
 
             The edit palette sits on each side's home edge (black pieces on
             black's side, white on white's — swapped when flipped), like
@@ -588,7 +594,7 @@ export default function Analysis({
           */}
           <div
             className={`relative flex flex-col items-stretch gap-2 ${
-              !editor.editing && engineOn ? 'ml-13 min-[672px]:ml-0' : ''
+              !editor.editing && engineOn ? 'ml-13' : ''
             }`}
             data-tour="board"
           >
@@ -660,7 +666,7 @@ export default function Analysis({
           </div>
           {editor.editing && (
             <div
-              className="flex w-[min(90vw,34rem)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
+              className="flex w-full max-w-[min(90vw,34rem)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
               data-testid="edit-toolbar"
             >
               <p className="m-0 text-ui text-muted">{t('analysis.editModeHint')}</p>
@@ -727,7 +733,7 @@ export default function Analysis({
           )}
           {current.comment !== null && (
             <div
-              className="w-[min(90vw,34rem)] rounded-control border border-line bg-panel p-3 text-body text-ink"
+              className="w-full max-w-[min(90vw,34rem)] rounded-control border border-line bg-panel p-3 text-body text-ink"
               data-testid="comment-bubble"
             >
               {current.comment}
@@ -931,7 +937,7 @@ function PaletteStrip({
               color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
               piece: t(`analysis.pieces.${kind}`),
             })}
-            className={`grid h-[min(calc((100vw-4.75rem)/8),4.25rem)] w-[min(calc((100vw-4.75rem)/8),4.25rem)] place-items-center rounded-control leading-none transition-colors ${
+            className={`grid h-[min(calc((100vw-4.75rem)/8),4.25rem)] w-[min(calc((100vw-4.75rem)/8),4.25rem)] place-items-center rounded-control leading-none transition-colors md:h-[min(calc((100vw-20.25rem)/8),4.25rem)] md:w-[min(calc((100vw-20.25rem)/8),4.25rem)] ${
               active ? 'bg-gold/25 ring-1 ring-gold/60' : 'hover:bg-black/10'
             }`}
             onPointerDown={(event) => editor.handlePalettePointerDown({ color, kind }, event)}

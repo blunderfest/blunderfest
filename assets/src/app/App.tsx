@@ -4,10 +4,9 @@ import HelpMenu from '@/app/HelpMenu';
 import Logo from '@/components/Logo';
 import Home from '@/features/home/Home';
 import RoomView from '@/features/room/RoomView';
-import { homeSteps, roomSteps } from '@/features/tour/steps';
+import { roomSteps } from '@/features/tour/steps';
 import Tour from '@/features/tour/Tour';
 import { getTheme, setTheme, type Theme } from '@/lib/theme';
-import { hasSeenTour, markTourSeen } from '@/lib/tour';
 import { useProfile } from '@/lib/useProfile';
 
 export type BackendStatus = 'checking' | 'ok' | 'down';
@@ -83,14 +82,10 @@ export default function App() {
         ? t('profile.error')
         : t('profile.loading');
 
-  // Guided tour. First run: auto-start on the home screen (deep-linked room
-  // visitors came for someone else's session — the help menu offers the tour
-  // there instead). Lazy initial state: the auto-start is a mount-time
-  // decision. The nonce forces a remount on every manual re-trigger so the
-  // steps re-resolve against the current DOM.
-  const [tour, setTour] = useState<{ screen: Route['screen']; nonce: number } | null>(() =>
-    readHashRoute().screen === 'home' && !hasSeenTour() ? { screen: 'home', nonce: 0 } : null,
-  );
+  // Guided tour — room-only (the landing page doesn't need one), started
+  // from the help menu. The nonce forces a remount on every re-trigger so
+  // the steps re-resolve against the current DOM.
+  const [tour, setTour] = useState<{ screen: Route['screen']; nonce: number } | null>(null);
 
   // The tour's steps anchor to screen-specific UI; a route change ends it.
   const tourRoute = useRef(route);
@@ -106,7 +101,6 @@ export default function App() {
   }
 
   function closeTour() {
-    markTourSeen();
     setTour(null);
   }
 
@@ -147,7 +141,7 @@ export default function App() {
           </a>
         </div>
         <div className="flex items-center gap-3">
-          <HelpMenu onStartTour={startTour} />
+          <HelpMenu onStartTour={startTour} showTour={route.screen === 'room'} />
           <button
             type="button"
             id="theme-toggle"
@@ -239,12 +233,8 @@ export default function App() {
           />
         )}
       </main>
-      {tour !== null && (
-        <Tour
-          key={tour.nonce}
-          steps={tour.screen === 'home' ? homeSteps : roomSteps}
-          onClose={closeTour}
-        />
+      {tour !== null && tour.screen === 'room' && (
+        <Tour key={tour.nonce} steps={roomSteps} onClose={closeTour} />
       )}
     </div>
   );

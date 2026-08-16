@@ -120,9 +120,8 @@ so clients send nothing and hide the member list.
 - `assets/src/features/tour/` + `assets/src/app/HelpMenu.tsx` — the guided
   tour: a hand-rolled spotlight (a ring whose box-shadow dims the page) and
   tooltip stepping through `data-tour` landmarks; steps that don't resolve
-  are skipped. Auto-starts once on the home screen (`blunderfest.tourSeen`
-  in localStorage, `lib/tour.ts`); the app-bar help menu re-triggers it per
-  screen and houses the keyboard-shortcuts dialog.
+  are skipped. Room-only (the landing page doesn't need one), started from
+  the app-bar help menu, which also houses the keyboard-shortcuts dialog.
 - `assets/src/features/analysis/` — the board: hand-rolled `Board.tsx`
   (keyboard-playable squares, drag, arrows, highlights, roles), `Analysis`
   (navigation, comments, present/follow), `legalMoves.ts` (client-side legal

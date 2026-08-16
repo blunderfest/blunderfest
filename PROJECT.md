@@ -139,19 +139,24 @@ two mobile fixes reported the same day:
 1. **Room panel location display** — DONE: region/lag is one compact
    truncating line inside the box, under the code/copy/leave row.
 2. **Guided tour** — DONE: hand-rolled spotlight (box-shadow dim +
-   tooltip), `data-tour` landmarks, steps that don't resolve are skipped;
-   seen-flag in localStorage; re-triggers from the new app-bar help menu,
-   which also revived the (previously unreachable) keyboard-shortcuts
-   dialog. Home steps auto-start once; room steps via the menu.
+   tooltip), `data-tour` landmarks, steps that don't resolve are skipped.
+   Room-only, from the app-bar help menu (user review: the landing page
+   needs none, no auto-start), which also revived the (previously
+   unreachable) keyboard-shortcuts dialog.
 3. **Bulk import** — DONE: `PGN.parse_many/1` is per-game now
    (`{:ok, trees, failures}`); the dialog lists skipped games with reasons
    and imports the rest. Reproduced with a real 5-game lichess export
    (Chess960/Antichess/Horde fail, standard games import).
 4. **Mobile fixes** — DONE: the analysis wrapper shrink-wrapped to
    max-content and let the page pan sideways once PV lines rendered (now
-   `w-full`, title wraps); the move list's `scrollIntoView` dragged the
-   page — it scrolls only its own container now; `1-0` no longer wraps at
-   the hyphen in the eval-bar label, title row, or engine badge.
+   `w-full`/`max-w-full` down the chain; vw-fixed widths are min-content
+   landmines — cap with max-w instead); the move list's `scrollIntoView`
+   dragged the page — it scrolls only its own container now; `1-0` no
+   longer wraps at the hyphen in the eval-bar label, title row, or engine
+   badge. The eval bar also bled over the rail at md (768–900px): the
+   board width formula ignored the rail — it subtracts it at md now, and
+   the slot margin applies whenever the bar hangs out of flow. Viz box
+   tabs carry one-line captions explaining each visualization.
 
 **Session notes for the next session:**
 

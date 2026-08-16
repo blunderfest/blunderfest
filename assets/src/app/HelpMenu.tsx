@@ -8,9 +8,16 @@ const menuItem =
 /**
  * The app-bar help menu: re-trigger the guided tour, open the keyboard
  * shortcuts. App-level by design — it is available on every screen, which
- * is also what the tour's last step points at.
+ * is also what the tour's last step points at. The tour entry is offered
+ * in rooms only; the landing page doesn't need one.
  */
-export default function HelpMenu({ onStartTour }: { onStartTour: () => void }) {
+export default function HelpMenu({
+  onStartTour,
+  showTour,
+}: {
+  onStartTour: () => void;
+  showTour: boolean;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -65,17 +72,19 @@ export default function HelpMenu({ onStartTour }: { onStartTour: () => void }) {
             aria-label={t('help.menu')}
             className="absolute top-full right-0 z-50 mt-1 w-56 rounded-control border border-line-strong bg-overlay p-1 shadow-[0_24px_48px_-16px_rgba(0,0,0,0.8)]"
           >
-            <button
-              type="button"
-              role="menuitem"
-              className={menuItem}
-              onClick={() => {
-                setOpen(false);
-                onStartTour();
-              }}
-            >
-              {t('help.tour')}
-            </button>
+            {showTour && (
+              <button
+                type="button"
+                role="menuitem"
+                className={menuItem}
+                onClick={() => {
+                  setOpen(false);
+                  onStartTour();
+                }}
+              >
+                {t('help.tour')}
+              </button>
+            )}
             <button
               type="button"
               role="menuitem"

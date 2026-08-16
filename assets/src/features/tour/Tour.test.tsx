@@ -4,9 +4,9 @@ import type { TourStepDef } from '@/features/tour/steps';
 import Tour from '@/features/tour/Tour';
 
 const steps: TourStepDef[] = [
-  { target: null, titleKey: 'tour.welcomeTitle', bodyKey: 'tour.welcomeBody' },
-  { target: '#tour-fixture', titleKey: 'tour.homeCreateTitle', bodyKey: 'tour.homeCreateBody' },
-  { target: '#tour-missing', titleKey: 'tour.homeJoinTitle', bodyKey: 'tour.homeJoinBody' },
+  { target: null, titleKey: 'tour.boardTitle', bodyKey: 'tour.boardBody' },
+  { target: '#tour-fixture', titleKey: 'tour.vizBoxTitle', bodyKey: 'tour.vizBoxBody' },
+  { target: '#tour-missing', titleKey: 'tour.gameListTitle', bodyKey: 'tour.gameListBody' },
 ];
 
 function renderTour(onClose = vi.fn(), defs: TourStepDef[] = steps) {
@@ -30,12 +30,12 @@ describe('Tour', () => {
 
     // The missing-target step is dropped: 3 defined, 2 shown.
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Welcome to Blunderfest')).toBeInTheDocument();
+    expect(screen.getByText('The shared board')).toBeInTheDocument();
     expect(screen.getByText(progressText('1 of 2'))).toBeInTheDocument();
-    expect(screen.queryByText('Join with a code')).not.toBeInTheDocument();
+    expect(screen.queryByText("The room's games")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByText('Start a study')).toBeInTheDocument();
+    expect(screen.getByText('The viz box')).toBeInTheDocument();
     expect(screen.getByText(progressText('2 of 2'))).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
@@ -46,7 +46,7 @@ describe('Tour', () => {
     renderTour();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(screen.getByText('Welcome to Blunderfest')).toBeInTheDocument();
+    expect(screen.getByText('The shared board')).toBeInTheDocument();
   });
 
   it('closes on Skip and on Escape', () => {
@@ -63,14 +63,14 @@ describe('Tour', () => {
   it('advances with the arrow keys', () => {
     renderTour();
     fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(screen.getByText('Start a study')).toBeInTheDocument();
+    expect(screen.getByText('The viz box')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'ArrowLeft' });
-    expect(screen.getByText('Welcome to Blunderfest')).toBeInTheDocument();
+    expect(screen.getByText('The shared board')).toBeInTheDocument();
   });
 
   it('renders nothing when no step resolves', () => {
     const { container } = renderTour(vi.fn(), [
-      { target: '#tour-absent', titleKey: 'tour.homeJoinTitle', bodyKey: 'tour.homeJoinBody' },
+      { target: '#tour-absent', titleKey: 'tour.gameListTitle', bodyKey: 'tour.gameListBody' },
     ]);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(container.querySelector('.fixed.inset-0')).toBeNull();
