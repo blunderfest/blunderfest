@@ -810,10 +810,10 @@ into an overflow menu.
 | Feature                | Docked where                                     |
 | ---------------------- | ------------------------------------------------ |
 | **Engine lines**       | Under the Moves panel in the right sidebar. Insertable as variations. Collapses to a single 28px header when empty. |
-| **Opening / ECO / Masters reference** | Shares the right sidebar stack with Engine lines. Single-header collapse when empty. |
+| **Opening / ECO / Masters reference** | The adaptive **Reference** sidebar tab (ADR-0024): corpus continuation rows, hidden when empty. |
 | **Whole-game eval curve + blunder report** | Horizontal band below the board, between the engine readout and the nav controls. |
 | **Game library**       | `/library` route, linked from the header of every screen. |
-| **Position search**    | Marquee feature — accessed from the library, results in the room's left rail. |
+| **Position search**    | Marquee feature — its own `#/search` destination (ADR-0024); results open into rooms as a game or variation. |
 | **Text chat**          | Bottom of the left rail, below Activity (shares the "stream" behaviour). |
 | **Move voting / polls**| Below Activity in the left rail, same stream-like rendering. |
 | **PGN export**         | Button in the Game info panel header ("Export PGN"). |
@@ -998,9 +998,9 @@ Adopted after review of `design/analysis1.html` / `analysis2.html`:
 - **Edit mode**: a translucent piece palette column beside the board (white
   pieces over black pieces + an eraser), Clear/Reset/Done actions, and an
   "engine paused" banner replacing the readout while editing.
-- **Sidebar tabs**: panels beyond the move list (future Explorer, Search)
-  dock as tabs in the right sidebar. The tab strip renders only when more
-  than one tab exists — no placeholder tabs.
+- **Sidebar tabs**: panels beyond the move list (the Reference tab,
+  ADR-0024) dock as tabs in the right sidebar. The tab strip renders only
+  when more than one tab exists — no placeholder tabs.
 
 Not adopted: the mockups' top-nav chrome, Material Symbols font icons, and
 Geist/JetBrains Mono (we stay with Open Sans + system mono + unicode glyphs).

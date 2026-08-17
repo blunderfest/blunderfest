@@ -65,3 +65,5 @@ here, or point to the ADR that superseded this one.
 | [0021](adr-0021-presenter-handoff.md) | The owner can hand presenting to another member; presence-derived fallback amends ADR-0015 | Accepted (2026-08-15) |
 | [0022](adr-0022-external-identity-accounts.md) | External identity accounts (Lichess OAuth): User 1..n Account, link as recovery key not persona, in-memory until persistence lands | Accepted (2026-08-16) |
 | [0023](adr-0023-chat-permissions-and-moderation.md) | Chat needs edit rights (viewers read along); the owner moderates via `delete_chat` ops | Accepted (2026-08-17) |
+| [0024](adr-0024-reference-tab-and-search-destination.md) | Feature docking: per-position reference in an adaptive Reference tab; whole-game views in the viz box; search is a `#/search` destination | Accepted (2026-08-17) |
+| [0025](adr-0025-room-first-surface-model.md) | Room-first: the library backs rooms but never becomes the home; ChessBase's IA yes, interaction model no | Accepted (2026-08-17) |

@@ -20,7 +20,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Draw arrows/highlights on the board (`set_annotations` op): right-drag / right-click on desktop, long-press on touch/pen, `h`/`a` + `1`-`4` keys; engine hint arrows render as translucent ghosts so they can't be confused with user drawings; `Esc` or the ⌫ button clears a position's drawings
 - ✅ NAG glyphs (`!`, `?`, `!?`, `?!`, `!!`, `??`) — shown in the move list (they win over analysis marks), set from the annotation popup (the `c` key)
 - 💡 Blunder flags *while dragging* a move (live eval of the hovered move) — post-analysis quality marks ship in the move list already
-- 💡 Tablebase (Syzygy) probe for ≤7-piece positions
+- 💡 Tablebase (Syzygy) probe for ≤7-piece positions — deferred (ADR-0024); docks in the Reference tab when built, source TBD (a corpus can't provide it)
 - 💡 Keyboard move input (type SAN/uci) — complements the square grid for keyboard/AT users
 - 💡 Board themes / piece sets
 
@@ -71,10 +71,11 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 
 ## Search (marquee — ADR-0010)
 
-- 🚧 Position search: exact *and* similar (shift/substitute/add/remove/color flip), user-configurable weights, weight-agnostic index
+- 🚧 Position search: exact *and* similar (shift/substitute/add/remove/color flip), user-configurable weights, weight-agnostic index — its own `#/search` destination, results open into rooms as a game or variation (ADR-0024)
 - 🚧 Result labels decomposed from the winning transformation ("pawn h3→h2", "colors reversed")
 - 🚧 Bulk corpus import (e.g. Millionbase) — a search feature is meaningless on a tiny corpus
-- 💡 Master-game reference panel (what was played in this position historically)
+- 🚧 Reference tab (ADR-0024): per-position continuation rows from the corpus (opening book + top-X tree), local browsing, insert-as-variation; visible to everyone, hidden when the corpus knows nothing
+- 💡 Reference game lists (who played this position, best-rated games) — extends the Reference tab
 - 💡 Search by player/event/opening across the corpus
 
 ## Identity

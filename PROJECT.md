@@ -59,6 +59,8 @@ The feature inventory lives in [`FEATURES.md`](FEATURES.md).
 | Weight-agnostic search index | [ADR-0010](docs/decisions/adr-0010-weight-agnostic-search-index.md) |
 | External identity accounts (Lichess OAuth) | [ADR-0022](docs/decisions/adr-0022-external-identity-accounts.md) |
 | Chat needs edit rights; owner deletes via op | [ADR-0023](docs/decisions/adr-0023-chat-permissions-and-moderation.md) |
+| Reference tab for per-position data; search is a `#/search` destination | [ADR-0024](docs/decisions/adr-0024-reference-tab-and-search-destination.md) |
+| Room-first; library supports, never the home | [ADR-0025](docs/decisions/adr-0025-room-first-surface-model.md) |
 
 For how it all fits together (state model, channel protocol, data flow, testing), see
 [`docs/architecture.md`](docs/architecture.md).
@@ -133,6 +135,19 @@ sidebar's cap and ChatPanel is `shrink-0` (the squeeze lands on the
 scrollable panels). And all five viz tabs are always present: Material and
 Activity show a text placeholder until the game has moves (previously they
 popped into existence on the first move). 502 frontend tests green.
+
+**Layout direction decided (ADR-0024/0025), docs-only session.** The
+growth question ("the screen has been growing since the start"; opening
+book/tree, endgame table and extensive search are coming) was brainstormed
+and settled: per-position reference docks in a new adaptive **Reference
+tab**, whole-game views own the viz box exclusively, and search is a
+**`#/search` destination** whose results enter rooms as a game or
+variation. Endgame table deferred (a corpus can't provide tablebase
+truth). The ChessBase alternative (database-first workspace home,
+docked-pane room) was evaluated and rejected: room-first stays even with
+a durable library ("a user lands in a room, backed by their library"),
+and even ChessBase's own web apps dropped the MDI/ribbon model. All of it
+is spike-gated — the corpus API unblocks Reference + search.
 
 ### Session handoff (2026-08-16)
 
