@@ -156,16 +156,31 @@ export type SetPositionOp = OpBase & {
 
 /**
  * A whole-game engine analysis (ADR-0009): appended by the server when a
- * job completes — one op carries every mainline eval. `score` is from
+ * job completes — one op carries every evaluated position. `score` is from
  * white's perspective; null when the engine couldn't evaluate that ply.
  * Terminal positions carry `result` instead of a number (a mated side has
  * no eval — "mate 0" would flip to the wrong winner).
+ *
+ * `node_id` is the deterministic tree id of the evaluated node; present
+ * since analyses went node-keyed (variation lines), absent in legacy
+ * mainline-only logs. Multiple `set_analysis` ops for a game merge per
+ * node (re-runs override; a line analysis adds its nodes).
  */
 export type AnalysisEval = {
   ply: number;
   score: { cp?: number; mate?: number; result?: string } | null;
   best_move: string | null;
+  /** The evaluated node (present in node-keyed analyses; absent in legacy logs). */
+  node_id?: number;
 };
+
+/**
+ * A position submitted for server-side analysis (`analyze_game`):
+ * the mainline for whole-game (re-)analysis, an off-mainline segment for
+ * "Analyze line". `node_id` rides through to the eval entries — the merge
+ * key on clients (legacy jobs leave it out).
+ */
+export type AnalysisPosition = { ply: number; fen: string; node_id?: number };
 
 export type SetAnalysisOp = OpBase & {
   type: 'set_analysis';

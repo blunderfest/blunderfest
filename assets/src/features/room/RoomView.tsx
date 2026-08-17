@@ -243,26 +243,14 @@ export default function RoomView({
     sendRole(memberId, role);
   }
 
-  /** Whole-game analysis (ADR-0009): the mainline positions go to the engine pool. */
-  function handleAnalyze() {
+  /**
+   * Server-side analysis (ADR-0009): positions arrive computed from
+   * Analysis — the mainline for whole-game (re-)analysis, an off-mainline
+   * segment for "Analyze line". Forwarded to the engine pool as-is.
+   */
+  function handleAnalyze(positions: { ply: number; fen: string; node_id?: number }[]) {
     if (effectiveGameId === null) {
       return;
-    }
-    const currentTree = games[effectiveGameId];
-    if (currentTree === undefined) {
-      return;
-    }
-    const positions: { ply: number; fen: string }[] = [];
-    let node = currentTree.root;
-    while (true) {
-      if (node.fen !== null) {
-        positions.push({ ply: node.ply, fen: node.fen });
-      }
-      const next = node.children[0];
-      if (next === undefined) {
-        break;
-      }
-      node = next;
     }
     sendAnalyze(effectiveGameId, positions);
   }

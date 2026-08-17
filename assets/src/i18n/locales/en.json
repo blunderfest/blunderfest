@@ -362,6 +362,8 @@
     "savedToLibrary": "Saved ✓",
     "saveLibraryError": "Couldn't save",
     "analyzeGame": "Analyze game",
+    "analyzeLine": "Analyze line",
+    "reanalyze": "Re-analyze",
     "analyzing": "Analyzing {{done}}/{{total}}…",
     "analysis": "Engine analysis complete",
     "notFoundTitle": "Room not found",

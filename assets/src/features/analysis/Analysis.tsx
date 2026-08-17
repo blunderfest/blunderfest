@@ -40,6 +40,7 @@ import type { GameNode, GameTree, LegalMove } from '@/lib/api';
 import type {
   AddLineOp,
   AnalysisEval,
+  AnalysisPosition,
   CommentAtPlyOp,
   MoveAtPlyOp,
   SetNagsOp,
@@ -94,7 +95,7 @@ export default function Analysis({
   annotations?: Record<number, BoardAnnotations>;
   onAnnotations?: (set: BoardAnnotations, nodeId: number) => void;
   /** Request a whole-game engine analysis (editors; omitted otherwise). */
-  onAnalyze?: () => void;
+  onAnalyze?: (positions: AnalysisPosition[]) => void;
   /** Live progress of a running job, when this game is being analyzed. */
   analyzing?: { done: number; total: number } | null;
   /** Mainline evals from the latest completed analysis (ADR-0009). */
@@ -210,6 +211,11 @@ export default function Analysis({
       entry = byId.get(entry.parent.id);
     }
     nodes.reverse();
+    // No mainline ancestor found — the node isn't in the map (a pending
+    // move before its echo): there's no line to describe yet.
+    if (branchId === null) {
+      return null;
+    }
     return { nodes, branchId };
   }, [current, byId, mainlineIds]);
 
@@ -432,19 +438,44 @@ export default function Analysis({
 
   const rows = useMemo(() => buildRows(tree), [tree]);
 
-  /** Mainline evals by ply, for the move list. */
-  const evalsByPly = useMemo(
-    () => Object.fromEntries((analysis ?? []).map((evaluation) => [evaluation.ply, evaluation])),
-    [analysis],
+  /**
+   * Whole-game views consume only the mainline's evals: a merged analysis
+   * can carry variation nodes (node-keyed line analyses), and sharing a
+   * ply with a mainline move must never leak one into the chart. Legacy
+   * (node-id-less) evals are mainline by definition.
+   */
+  const mainlineEvals = useMemo(
+    () =>
+      (analysis ?? []).filter(
+        (evaluation) => evaluation.node_id === undefined || mainlineIds.has(evaluation.node_id),
+      ),
+    [analysis, mainlineIds],
   );
+
+  /** Mainline evals by ply, for the move list and the chart. */
+  const evalsByPly = useMemo(
+    () => Object.fromEntries(mainlineEvals.map((evaluation) => [evaluation.ply, evaluation])),
+    [mainlineEvals],
+  );
+
+  /** Node-keyed evals (analyses since node-keying) — variation marks. */
+  const evalsByNodeId = useMemo(() => {
+    const map = new Map<number, AnalysisEval>();
+    for (const evaluation of analysis ?? []) {
+      if (evaluation.node_id !== undefined) {
+        map.set(evaluation.node_id, evaluation);
+      }
+    }
+    return map;
+  }, [analysis]);
 
   /** The engine's best move before each move, for "best was …" readouts. */
   const bestMoves = useMemo(
     () =>
       tree === null || analysis === null
         ? new Map<number, string>()
-        : bestMoveSans(tree.root, analysis),
-    [tree, analysis],
+        : bestMoveSans(tree.root, mainlineEvals),
+    [tree, analysis, mainlineEvals],
   );
 
   /** Mainline node ids by ply, for the game-flow chart's click-to-jump. */
@@ -575,7 +606,7 @@ export default function Analysis({
           type="button"
           id="analyze-game-button"
           className={button({ intent: 'quiet', size: 'sm' })}
-          onClick={onAnalyze}
+          onClick={() => onAnalyze(mainlinePositions(tree))}
           disabled={analyzing !== null}
         >
           {analyzing !== null
@@ -588,7 +619,37 @@ export default function Analysis({
         <p className="m-0 text-note text-faint">{t('analysis.noAnalysisYet')}</p>
       </div>
     );
-  const hasAnalysis = analysis !== null && analysis.length > 1;
+  const hasAnalysis = mainlineEvals.length > 1;
+
+  /**
+   * The analyze action in the engine box: "Analyze line" for a viewed
+   * variation (its segment not fully analyzed), "Re-analyze" when the
+   * mainline outgrew the analysis (moves played after the job). The
+   * initial "Analyze game" lives in the viz-box placeholder.
+   */
+  const analysisMaxPly = mainlineEvals.reduce((max, e) => Math.max(max, e.ply), -1);
+  // The actual mainline tip (not the declared count) — imports can lie.
+  const mainlineTipPly = mainlineIdByPly.size - 1;
+  // Any analysis counts for staleness (a single root eval too), even when
+  // it's too small for the chart (hasAnalysis needs two points).
+  const analysisStale = mainlineEvals.length > 0 && mainlineTipPly > analysisMaxPly;
+  const lineAnalyzePositions = linePath !== null ? variationPositions(linePath) : [];
+  const lineFullyAnalyzed =
+    lineAnalyzePositions.length > 0 &&
+    lineAnalyzePositions.every((p) => p.node_id !== undefined && evalsByNodeId.has(p.node_id));
+  const analyzeAction =
+    onAnalyze === undefined || !canEdit
+      ? null
+      : lineAnalyzePositions.length > 0
+        ? lineFullyAnalyzed
+          ? null
+          : {
+              label: t('room.analyzeLine'),
+              positions: lineAnalyzePositions,
+            }
+        : analysisStale
+          ? { label: t('room.reanalyze'), positions: mainlinePositions(tree) }
+          : null;
 
   if (hasAnalysis || onAnalyze !== undefined) {
     vizTabs.push({
@@ -596,9 +657,9 @@ export default function Analysis({
       label: t('analysis.evalTab'),
       content: (
         <div className="p-2">
-          {analysis !== null && analysis.length > 1 ? (
+          {hasAnalysis ? (
             <GameFlow
-              evals={analysis}
+              evals={mainlineEvals}
               currentPly={current.ply}
               flipped={flipped}
               openingExitPly={bookExitPly}
@@ -620,10 +681,10 @@ export default function Analysis({
         // Same outer height as the chart tabs (p-2 + h-44): no shift on switch.
         <div className="p-2">
           <div className="h-44 overflow-y-auto">
-            {analysis !== null && analysis.length > 1 ? (
+            {hasAnalysis ? (
               <CriticalMoments
                 tree={tree}
-                evals={analysis}
+                evals={mainlineEvals}
                 flipped={flipped}
                 onSelectPly={handleFlowSelect}
               />
@@ -643,10 +704,10 @@ export default function Analysis({
         // Same outer height as the chart tabs (p-2 + h-44): no shift on switch.
         <div className="p-2">
           <div className="h-44 overflow-y-auto">
-            {analysis !== null && analysis.length > 1 ? (
+            {hasAnalysis ? (
               <GameReport
                 tree={tree}
-                evals={analysis}
+                evals={mainlineEvals}
                 opening={mainlineOpening}
                 onSelectPly={handleFlowSelect}
               />
@@ -991,6 +1052,15 @@ export default function Analysis({
                           ? handleInsertLine
                           : undefined
                       }
+                      analyze={
+                        analyzeAction !== null && onAnalyze !== undefined
+                          ? {
+                              label: analyzeAction.label,
+                              progress: analyzing,
+                              onClick: () => onAnalyze(analyzeAction.positions),
+                            }
+                          : null
+                      }
                     />
                     {linePath !== null && linePathText !== null && (
                       // Off-mainline bearings: the path from the branch
@@ -1016,6 +1086,8 @@ export default function Analysis({
                       currentId={current.id}
                       onSelect={navigate}
                       evalsByPly={evalsByPly}
+                      evalsByNodeId={evalsByNodeId}
+                      parentOf={(id) => byId.get(id)?.parent ?? null}
                       bookExitPly={bookExitPly}
                       bestMoves={bestMoves}
                     />
@@ -1098,6 +1170,44 @@ export default function Analysis({
 }
 
 /** The last node of the mainline (deepest first-child chain). */
+/**
+ * The mainline positions (with node ids) for a whole-game (re-)analysis:
+ * every position from the root to the mainline tip.
+ */
+function mainlinePositions(tree: GameTree): AnalysisPosition[] {
+  const positions: AnalysisPosition[] = [];
+  let node: GameNode = tree.root;
+  while (true) {
+    if (node.fen !== null) {
+      positions.push({ ply: node.ply, fen: node.fen, node_id: node.id });
+    }
+    const next = node.children[0];
+    if (next === undefined) {
+      break;
+    }
+    node = next;
+  }
+  return positions;
+}
+
+/**
+ * The viewed variation's positions for "Analyze line": the off-mainline
+ * segment from the branch point (exclusive) down the viewed line to its
+ * tip. The branch's own eval comes from the mainline analysis (when it
+ * exists), so marks line up across the junction.
+ */
+function variationPositions(linePath: { nodes: GameNode[] }): AnalysisPosition[] {
+  const segment: GameNode[] = [...linePath.nodes];
+  let tip = segment[segment.length - 1];
+  while (tip.children[0] !== undefined) {
+    tip = tip.children[0];
+    segment.push(tip);
+  }
+  return segment
+    .filter((node) => node.fen !== null)
+    .map((node) => ({ ply: node.ply, fen: node.fen as string, node_id: node.id }));
+}
+
 function lastChildOf(node: GameNode): GameNode {
   return node.children[0] ? lastChildOf(node.children[0]) : node;
 }

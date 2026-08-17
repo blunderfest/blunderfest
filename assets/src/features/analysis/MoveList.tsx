@@ -150,6 +150,8 @@ function VariationLine({
   activeOptionId,
   onFocusMove,
   onSelect,
+  evalFor,
+  beforeFor,
   depth = 0,
 }: {
   root: GameNode;
@@ -157,6 +159,9 @@ function VariationLine({
   activeOptionId: number | null;
   onFocusMove: (id: number) => void;
   onSelect: (id: number) => void;
+  /** Node-keyed eval resolvers (line analyses), from MoveList. */
+  evalFor: (node: GameNode, line: 'main' | 'variation') => AnalysisEval | undefined;
+  beforeFor: (node: GameNode, line: 'main' | 'variation') => AnalysisEval | undefined;
   /** 0 = a first-level variation row; 1+ nests inside another variation. */
   depth?: number;
 }) {
@@ -205,6 +210,8 @@ function VariationLine({
               tabIndex={node.id === activeOptionId ? 0 : -1}
               onSelect={onSelect}
               onFocusMove={onFocusMove}
+              evaluation={evalFor(node, 'variation')}
+              before={beforeFor(node, 'variation')}
             />
             {node.comment !== null && (
               <span className="text-note italic text-muted">{node.comment}</span>
@@ -217,6 +224,8 @@ function VariationLine({
                 activeOptionId={activeOptionId}
                 onFocusMove={onFocusMove}
                 onSelect={onSelect}
+                evalFor={evalFor}
+                beforeFor={beforeFor}
                 depth={depth + 1}
               />
             ))}
@@ -232,6 +241,8 @@ export default function MoveList({
   currentId,
   onSelect,
   evalsByPly,
+  evalsByNodeId,
+  parentOf,
   bookExitPly = null,
   bestMoves,
 }: {
@@ -240,11 +251,34 @@ export default function MoveList({
   onSelect: (id: number) => void;
   /** Mainline evals by ply, when a whole-game analysis exists (ADR-0009). */
   evalsByPly?: Record<number, AnalysisEval>;
+  /** Node-keyed evals (line analyses included) — how variations get marks. */
+  evalsByNodeId?: Map<number, AnalysisEval>;
+  /** A node's parent (the mark's "before" position), from the node map. */
+  parentOf?: (id: number) => GameNode | null;
   /** The mainline ply where the game leaves the opening book. */
   bookExitPly?: number | null;
   /** The engine's best alternative per ply, when an analysis exists. */
   bestMoves?: Map<number, string>;
 }) {
+  /**
+   * Eval lookup: node-keyed first (line analyses), with the legacy ply
+   * fallback for the mainline only — a variation sharing a ply with a
+   * mainline move must never inherit its eval.
+   */
+  function evalFor(node: GameNode, line: 'main' | 'variation'): AnalysisEval | undefined {
+    return evalsByNodeId?.get(node.id) ?? (line === 'main' ? evalsByPly?.[node.ply] : undefined);
+  }
+
+  /** The eval of the node's parent (the mark's "before"). */
+  function beforeFor(node: GameNode, line: 'main' | 'variation'): AnalysisEval | undefined {
+    const parent = parentOf?.(node.id) ?? null;
+    if (parent !== null) {
+      return (
+        evalsByNodeId?.get(parent.id) ?? (line === 'main' ? evalsByPly?.[node.ply - 1] : undefined)
+      );
+    }
+    return line === 'main' ? evalsByPly?.[node.ply - 1] : undefined;
+  }
   const { t } = useTranslation();
   const listRef = useRef<HTMLDivElement | null>(null);
   const [listFocusId, setListFocusId] = useState<number | null>(null);
@@ -332,8 +366,8 @@ export default function MoveList({
                 tabIndex={row.white.id === activeOptionId ? 0 : -1}
                 onSelect={onSelect}
                 onFocusMove={setListFocusId}
-                evaluation={evalsByPly?.[row.white.ply]}
-                before={evalsByPly?.[row.white.ply - 1]}
+                evaluation={evalFor(row.white, 'main')}
+                before={beforeFor(row.white, 'main')}
                 bookExit={bookExitPly === row.white.ply}
                 bestMove={bestMoves?.get(row.white.ply)}
               />
@@ -351,8 +385,8 @@ export default function MoveList({
                   tabIndex={row.black.id === activeOptionId ? 0 : -1}
                   onSelect={onSelect}
                   onFocusMove={setListFocusId}
-                  evaluation={evalsByPly?.[row.black.ply]}
-                  before={evalsByPly?.[row.black.ply - 1]}
+                  evaluation={evalFor(row.black, 'main')}
+                  before={beforeFor(row.black, 'main')}
                   bookExit={bookExitPly === row.black.ply}
                   bestMove={bestMoves?.get(row.black.ply)}
                 />
@@ -371,6 +405,8 @@ export default function MoveList({
               activeOptionId={activeOptionId}
               onFocusMove={setListFocusId}
               onSelect={onSelect}
+              evalFor={evalFor}
+              beforeFor={beforeFor}
             />
           ),
         )}

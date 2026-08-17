@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import Switch from '@/components/Switch';
-import { statusDot } from '@/components/ui';
+import { button, statusDot } from '@/components/ui';
 import EngineReadout from '@/features/analysis/EngineReadout';
 import type { EngineState } from '@/features/analysis/useEngine';
 
@@ -21,6 +21,7 @@ export default function EngineBox({
   onToggleArrows,
   onLinesCount,
   onInsertLine,
+  analyze = null,
 }: {
   fen: string;
   state: EngineState;
@@ -34,6 +35,16 @@ export default function EngineBox({
   onLinesCount: (count: number) => void;
   /** When set (editors only), a line can be clicked to insert it as a variation. */
   onInsertLine?: (pv: string[]) => void;
+  /**
+   * The server-side whole-game/line analysis action (ADR-0009): "Analyze
+   * line" on a variation, "Re-analyze" when the mainline outgrew the job.
+   * Independent of the in-browser engine toggle — the pool is server-side.
+   */
+  analyze?: {
+    label: string;
+    onClick: () => void;
+    progress?: { done: number; total: number } | null;
+  } | null;
 }) {
   const { t } = useTranslation();
 
@@ -101,6 +112,24 @@ export default function EngineBox({
         ) : (
           <EngineReadout fen={fen} state={state} onInsertLine={onInsertLine} />
         ))}
+      {analyze !== null && (
+        <div className="border-t border-line p-2">
+          <button
+            type="button"
+            data-testid="analyze-action-button"
+            className={button({ intent: 'quiet', size: 'sm', block: true })}
+            disabled={analyze.progress != null}
+            onClick={analyze.onClick}
+          >
+            {analyze.progress != null
+              ? t('room.analyzing', {
+                  done: analyze.progress.done,
+                  total: analyze.progress.total,
+                })
+              : analyze.label}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

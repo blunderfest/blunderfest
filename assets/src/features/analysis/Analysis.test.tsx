@@ -741,6 +741,99 @@ describe('game flow chart', () => {
   });
 });
 
+describe('server analysis actions', () => {
+  it('offers Analyze line on a variation and sends the segment with node ids', () => {
+    const onAnalyze = vi.fn();
+    render(<Analysis tree={tree} canEdit onAnalyze={onAnalyze} analysis={null} />);
+
+    // Into the c5 variation (node 3, branching off e4).
+    fireEvent.click(screen.getByTestId('analysis-move-3'));
+
+    const action = screen.getByTestId('analyze-action-button');
+    expect(action).toHaveTextContent('Analyze line');
+    fireEvent.click(action);
+
+    expect(onAnalyze).toHaveBeenCalledWith([
+      {
+        ply: 2,
+        fen: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2',
+        node_id: 3,
+      },
+    ]);
+  });
+
+  it('hides Analyze line once the viewed line is fully analyzed', () => {
+    render(
+      <Analysis
+        tree={tree}
+        canEdit
+        onAnalyze={vi.fn()}
+        analysis={[{ ply: 2, score: { cp: -30 }, best_move: null, node_id: 3 }]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('analysis-move-3'));
+
+    expect(screen.queryByTestId('analyze-action-button')).not.toBeInTheDocument();
+  });
+
+  it('offers Re-analyze when the mainline outgrew the analysis', () => {
+    const onAnalyze = vi.fn();
+    render(
+      <Analysis
+        tree={tree}
+        canEdit
+        onAnalyze={onAnalyze}
+        analysis={[
+          { ply: 0, score: { cp: 20 }, best_move: null },
+          { ply: 1, score: { cp: 30 }, best_move: null },
+        ]}
+      />,
+    );
+
+    const action = screen.getByTestId('analyze-action-button');
+    expect(action).toHaveTextContent('Re-analyze');
+    fireEvent.click(action);
+
+    expect(onAnalyze).toHaveBeenCalledWith([
+      { ply: 0, fen: START_FEN, node_id: 0 },
+      {
+        ply: 1,
+        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+        node_id: 1,
+      },
+      {
+        ply: 2,
+        fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
+        node_id: 2,
+      },
+      {
+        ply: 3,
+        fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2',
+        node_id: 4,
+      },
+    ]);
+  });
+
+  it('offers no action with a fresh analysis on the mainline', () => {
+    render(
+      <Analysis
+        tree={tree}
+        canEdit
+        onAnalyze={vi.fn()}
+        analysis={[
+          { ply: 0, score: { cp: 20 }, best_move: null, node_id: 0 },
+          { ply: 1, score: { cp: 20 }, best_move: null, node_id: 1 },
+          { ply: 2, score: { cp: 20 }, best_move: null, node_id: 2 },
+          { ply: 3, score: { cp: 20 }, best_move: null, node_id: 4 },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByTestId('analyze-action-button')).not.toBeInTheDocument();
+  });
+});
+
 describe('engine box', () => {
   beforeEach(() => {
     localStorage.clear();

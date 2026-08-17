@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { GameNode, GameTree } from '@/lib/api';
 import type {
   AddLineOp,
+  AnalysisEval,
   CommentAtPlyOp,
   MemberRole,
   MoveAtPlyOp,
@@ -619,6 +620,79 @@ describe('room slice', () => {
       state = roomReducer(state, applyOp(addLine(3, 99, [lineMove()])));
 
       expect(state.games['game-1'].node_count).toBe(3);
+    });
+  });
+
+  describe('set_analysis merging', () => {
+    function analysisOp(seq: number, evals: AnalysisEval[], gameId = 'game-1'): Op {
+      return {
+        seq,
+        author: 'Blunderfest',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'set_analysis',
+        payload: { game_id: gameId, depth: 12, evals },
+      };
+    }
+
+    it('a line analysis merges into the game instead of clobbering the mainline', () => {
+      let state = roomReducer(
+        undefined,
+        applyOp(
+          analysisOp(1, [
+            { ply: 0, score: { cp: 20 }, best_move: null },
+            { ply: 1, score: { cp: 30 }, best_move: null },
+          ]),
+        ),
+      );
+      state = roomReducer(
+        state,
+        applyOp(analysisOp(2, [{ ply: 2, score: { cp: -100 }, best_move: null, node_id: 42 }])),
+      );
+
+      expect(state.analysis['game-1'].evals).toHaveLength(3);
+    });
+
+    it('a re-run overrides its own positions but keeps other nodes', () => {
+      let state = roomReducer(
+        undefined,
+        applyOp(
+          analysisOp(1, [
+            { ply: 0, score: { cp: 20 }, best_move: null },
+            { ply: 1, score: { cp: 30 }, best_move: null },
+          ]),
+        ),
+      );
+      state = roomReducer(
+        state,
+        applyOp(analysisOp(2, [{ ply: 2, score: { cp: -100 }, best_move: null, node_id: 42 }])),
+      );
+      // The mainline re-run: same ply keys, fresh scores.
+      state = roomReducer(
+        state,
+        applyOp(
+          analysisOp(3, [
+            { ply: 0, score: { cp: 50 }, best_move: null },
+            { ply: 1, score: { cp: 60 }, best_move: null },
+          ]),
+        ),
+      );
+
+      const evals = state.analysis['game-1'].evals;
+      expect(evals).toHaveLength(3);
+      expect(evals.find((e) => e.ply === 0)?.score).toEqual({ cp: 50 });
+      expect(evals.find((e) => e.node_id === 42)?.score).toEqual({ cp: -100 });
+    });
+
+    it('replay merges in op order', () => {
+      const state = roomReducer(
+        undefined,
+        replayOps([
+          analysisOp(1, [{ ply: 0, score: { cp: 20 }, best_move: null }]),
+          analysisOp(2, [{ ply: 1, score: { cp: -80 }, best_move: null, node_id: 7 }]),
+        ]),
+      );
+
+      expect(state.analysis['game-1'].evals).toHaveLength(2);
     });
   });
 

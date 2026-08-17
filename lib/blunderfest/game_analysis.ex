@@ -15,7 +15,11 @@ defmodule Blunderfest.GameAnalysis do
 
   @depth 12
 
-  @doc "Starts a job for `positions` ([{ply, fen}] mainline order); `:ok` or `{:error, :busy}`."
+  @doc """
+  Starts a job for `positions` (`[{ply, fen, node_id | nil}]` in line
+  order); `:ok` or `{:error, :busy}`. `node_id` (the client's deterministic
+  tree id) rides through to the eval entries — absent for legacy callers.
+  """
   def start(slug, game_id, positions) do
     case Registry.lookup(Blunderfest.AnalysisJobs, slug) do
       [] ->
@@ -34,7 +38,7 @@ defmodule Blunderfest.GameAnalysis do
     evals =
       positions
       |> Enum.with_index(1)
-      |> Enum.map(fn {{ply, fen}, done} ->
+      |> Enum.map(fn {{ply, fen, node_id}, done} ->
         {score, best_move} =
           case terminal_score(fen) do
             nil ->
@@ -53,7 +57,7 @@ defmodule Blunderfest.GameAnalysis do
           "total" => total
         })
 
-        %{"ply" => ply, "score" => score, "best_move" => best_move}
+        eval_entry(ply, score, best_move, node_id)
       end)
 
     op = %{
@@ -66,6 +70,13 @@ defmodule Blunderfest.GameAnalysis do
       {:ok, stamped} -> Endpoint.broadcast("room:" <> slug, "new_op", stamped)
       {:error, _} -> :ok
     end
+  end
+
+  # The eval entry: node_id rides along when the caller supplied one (a
+  # variation line); legacy mainline jobs leave it out.
+  defp eval_entry(ply, score, best_move, node_id) do
+    entry = %{"ply" => ply, "score" => score, "best_move" => best_move}
+    if node_id == nil, do: entry, else: Map.put(entry, "node_id", node_id)
   end
 
   # Terminal positions never reach the engine: a mated side comes back as

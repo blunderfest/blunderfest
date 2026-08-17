@@ -451,11 +451,57 @@ defmodule BlunderfestWeb.RoomChannelTest do
       assert_reply ref, :error, %{reason: :forbidden}
     end
 
+    test "node_ids ride through to the evals (variation lines)", %{} do
+      {:ok, _reply, socket} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+
+      ref =
+        push(socket, "analyze_game", %{
+          "game_id" => "game-1",
+          "positions" => [
+            %{
+              "ply" => 2,
+              "fen" => "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+              "node_id" => 42
+            }
+          ]
+        })
+
+      assert_reply ref, :ok
+
+      assert_broadcast "new_op", %{
+        "type" => "set_analysis",
+        "payload" => %{"evals" => evals}
+      }
+
+      assert [
+               %{
+                 "ply" => 2,
+                 "node_id" => 42,
+                 "score" => %{"cp" => 42},
+                 "best_move" => "e2e4"
+               }
+             ] = evals
+    end
+
     test "rejects malformed positions", %{} do
       {:ok, _reply, socket} = join_room("room:abcde", %{"profile_id" => "profile-1"})
 
       ref =
         push(socket, "analyze_game", %{"game_id" => "game-1", "positions" => [%{"ply" => -1}]})
+
+      assert_reply ref, :error, %{reason: :invalid_request}
+
+      ref =
+        push(socket, "analyze_game", %{
+          "game_id" => "game-1",
+          "positions" => [
+            %{
+              "ply" => 2,
+              "fen" => "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+              "node_id" => "oops"
+            }
+          ]
+        })
 
       assert_reply ref, :error, %{reason: :invalid_request}
     end

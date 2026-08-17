@@ -47,7 +47,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Browser Stockfish (lite single-threaded WASM) — instant eval + hint, zero server cost
 - ✅ Floating eval badge at the bar's split point; result display on terminal positions
 - ✅ Opening classification (ECO + name under the players, follows the viewed line incl. variations; lichess book, position-keyed)
-- ✅ Server-side UCI worker pool (ADR-0009): whole-game analysis on demand, per-move evals + quality marks in the move list, results synced to all members as a `set_analysis` op
+- ✅ Server-side UCI worker pool (ADR-0009): whole-game analysis on demand, per-move evals + quality marks in the move list, results synced to all members as a `set_analysis` op; **Re-analyze** when the mainline outgrows the job, and **Analyze line** for the viewed variation — node-keyed evals merge per node, variation rows get their own marks
 - ✅ Viz box (Eval | Moments | Material | Activity tabs): eval chart with blunder dots, cp/win% toggle, real WDL segments (`UCI_ShowWDL`), opening book-exit marker; critical moments as mini boards; material and piece-activity timelines (pure FEN data, no engine)
 - ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted); click a line to insert it as a variation (`add_line` op, atomic)
 - 💡 Cloud eval cache (share computed evals across users/rooms)

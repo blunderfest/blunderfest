@@ -158,6 +158,43 @@ describe('MoveList best-move hint', () => {
   });
 });
 
+describe('MoveList variation marks', () => {
+  it('marks variation moves from node-keyed evals, never from the mainline ply', () => {
+    // Mainline analyzed (clean); the c5 variation blunders for black
+    // (branch e4 +20 → c5 +380 — black gave white 360cp).
+    const parents = new Map<number, GameNode>([
+      [2, node(1, 1, 'e4')],
+      [3, node(1, 1, 'e4')],
+    ]);
+    render(
+      <MoveList
+        rows={buildRows(makeTree(false))}
+        currentId={null}
+        onSelect={vi.fn()}
+        evalsByPly={{
+          0: { ply: 0, score: { cp: 20 }, best_move: null },
+          1: { ply: 1, score: { cp: 20 }, best_move: null },
+          2: { ply: 2, score: { cp: 20 }, best_move: null },
+        }}
+        evalsByNodeId={
+          new Map([
+            [1, { ply: 1, score: { cp: 20 }, best_move: null, node_id: 1 }],
+            [3, { ply: 2, score: { cp: 380 }, best_move: null, node_id: 3 }],
+          ])
+        }
+        parentOf={(id) => parents.get(id) ?? null}
+      />,
+    );
+
+    // c5 (variation, node 3): the ?? from its own line's eval.
+    expect(moveText(3)).toContain('??');
+    // e5 (mainline, node 2) is clean — and must never inherit the mark.
+    expect(moveText(2)).not.toContain('??');
+    // The variation row also shows the eval itself.
+    expect(moveText(3)).toContain('+3.8');
+  });
+});
+
 describe('MoveList variation nesting', () => {
   it('renders every variation level as its own bordered block, no inline parens', () => {
     render(<MoveList rows={buildRows(makeTree(true))} currentId={null} onSelect={vi.fn()} />);

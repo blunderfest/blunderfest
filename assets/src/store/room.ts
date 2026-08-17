@@ -85,6 +85,32 @@ const initialState: RoomState = {
 /** Chat history cap per room session (newest kept). */
 const MAX_CHAT_MESSAGES = 200;
 
+/** The merge key for an eval: its node id when known, else its ply (legacy mainline logs). */
+function analysisKey(evaluation: AnalysisEval): string {
+  return evaluation.node_id !== undefined ? `n:${evaluation.node_id}` : `p:${evaluation.ply}`;
+}
+
+/**
+ * Merges a `set_analysis` op into the game's evals: entries override per
+ * node (a re-run replaces its positions) while other nodes keep theirs (a
+ * variation-line analysis doesn't clobber the mainline's). Insertion order
+ * is preserved, so mainline entries stay in ply order for the chart.
+ */
+function mergeAnalysis(
+  existing: { depth: number; evals: AnalysisEval[] } | undefined,
+  incoming: AnalysisEval[],
+  depth: number,
+): { depth: number; evals: AnalysisEval[] } {
+  const merged = new Map<string, AnalysisEval>();
+  for (const evaluation of existing?.evals ?? []) {
+    merged.set(analysisKey(evaluation), evaluation);
+  }
+  for (const evaluation of incoming) {
+    merged.set(analysisKey(evaluation), evaluation);
+  }
+  return { depth, evals: [...merged.values()] };
+}
+
 /**
  * The mainline node at the given ply (the root is ply 0), or null when the
  * mainline is shorter than the ply.
@@ -622,10 +648,11 @@ const roomSlice = createSlice({
           );
         }
         if (op.type === 'set_analysis') {
-          state.analysis[op.payload.game_id] = {
-            depth: op.payload.depth,
-            evals: op.payload.evals,
-          };
+          state.analysis[op.payload.game_id] = mergeAnalysis(
+            state.analysis[op.payload.game_id],
+            op.payload.evals,
+            op.payload.depth,
+          );
           if (state.analysisProgress?.gameId === op.payload.game_id) {
             state.analysisProgress = null;
           }
@@ -679,10 +706,11 @@ const roomSlice = createSlice({
         .map((op) => ({ seq: op.seq, author: op.author, text: op.payload.text, ts: op.ts }));
       for (const op of state.ops) {
         if (op.type === 'set_analysis') {
-          state.analysis[op.payload.game_id] = {
-            depth: op.payload.depth,
-            evals: op.payload.evals,
-          };
+          state.analysis[op.payload.game_id] = mergeAnalysis(
+            state.analysis[op.payload.game_id],
+            op.payload.evals,
+            op.payload.depth,
+          );
         }
         if (op.type === 'set_game') {
           state.games[gameIdOf(op)] = op.payload.tree;

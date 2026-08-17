@@ -56,9 +56,12 @@ release and served by a catch-all (`SpaController`).
   - `engine/pool.ex` + `engine/worker.ex` — the batch engine layer
     (ADR-0009): a pool of Stockfish binaries speaking UCI over Ports,
     queued with backpressure and crash replacement.
-  - `game_analysis.ex` — whole-game analysis jobs (one per room, registered
-    in `AnalysisJobs`): progress broadcasts, then the evals land as a
-    `set_analysis` op in the room's log.
+  - `game_analysis.ex` — whole-game and variation-line analysis jobs (one
+    per room, registered in `AnalysisJobs`): progress broadcasts, then the
+    evals land as a `set_analysis` op in the room's log. Positions carry
+    the client's deterministic node ids, so evals are node-keyed and
+    multiple ops merge per node (a re-run overrides; a line analysis adds
+    its variation without clobbering the mainline's).
   - `secrets.ex` — hashing helpers.
 - `lib/blunderfest_web/` — HTTP and channel surface:
   - `router.ex` — `/api` scope: `healthz`, `profiles`, `rooms`, `import/pgn`,

@@ -166,10 +166,12 @@ defmodule BlunderfestWeb.RoomChannel do
     end
   end
 
-  # [{ply, fen}] for the analysis job: bounded, shaped.
+  # [{ply, fen, node_id | nil}] for the analysis job: bounded, shaped.
+  # node_id lets the client ask for a variation line (ids are the client's
+  # deterministic tree ids); it rides through to the evals.
   defp validate_positions(positions) when is_list(positions) and length(positions) <= 200 do
     if Enum.all?(positions, &valid_position?/1) do
-      {:ok, Enum.map(positions, fn %{"ply" => ply, "fen" => fen} -> {ply, fen} end)}
+      {:ok, Enum.map(positions, fn p -> {p["ply"], p["fen"], p["node_id"]} end)}
     else
       {:error, :invalid_request}
     end
@@ -177,8 +179,10 @@ defmodule BlunderfestWeb.RoomChannel do
 
   defp validate_positions(_), do: {:error, :invalid_request}
 
-  defp valid_position?(%{"ply" => ply, "fen" => fen}) do
-    is_integer(ply) and ply >= 0 and is_binary(fen) and byte_size(fen) <= 128
+  defp valid_position?(%{"ply" => ply, "fen" => fen} = position) do
+    is_integer(ply) and ply >= 0 and is_binary(fen) and byte_size(fen) <= 128 and
+      (not Map.has_key?(position, "node_id") or
+         (is_integer(position["node_id"]) and position["node_id"] >= 0))
   end
 
   defp valid_position?(_), do: false

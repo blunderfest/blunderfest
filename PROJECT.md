@@ -164,6 +164,20 @@ gain corpus statistics; the tab itself doesn't change. Dev-ops note: `mix phx.se
 spawns Vite itself via the endpoint watcher — a manually started Vite on
 5173 crashes it ("port in use"); just run `mix phx.server`.
 
+**Analysis gaps closed (user-raised):** variations can now be analyzed
+("Analyze line" in the engine box, evaluating the viewed line's segment
+branch→tip) and a mainline that outgrew its analysis offers "Re-analyze".
+The mechanism: `analyze_game` positions carry the clients' deterministic
+node ids, so evals are node-keyed and `set_analysis` ops **merge per
+node** (a re-run overrides its positions; a line analysis adds its
+variation without clobbering the mainline's). Variation rows show marks
+from their own line (the branch's eval bridges the junction); chart/
+moments/report stay mainline-scoped by filtering to mainline node ids.
+Two bugs found by browser verification: `linePath` returned a non-null
+path with empty nodes for pending moves (crash in variationPositions —
+now null), and a 1-position analysis never triggered staleness (the
+chart's ≥2-point rule leaked into it).
+
 ### Session handoff (2026-08-16)
 
 Since 2026-08-13 the analysis UI went through a big usability-driven,
