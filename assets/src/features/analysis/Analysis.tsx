@@ -29,6 +29,7 @@ import {
   type OpeningBook,
   openingExitPly,
 } from '@/features/analysis/openings';
+import ReferencePanel from '@/features/analysis/ReferencePanel';
 import SidebarTabs, { type SidebarTab } from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useBoardKeyboard } from '@/features/analysis/useBoardKeyboard';
@@ -330,15 +331,14 @@ export default function Analysis({
   }
 
   /**
-   * Inserts an engine line as a variation under the viewed node. No
-   * optimistic update and no navigation: the echo adds the line, and the
-   * user stays where they were analyzing.
+   * Inserts a line (engine PV or browsed book line) as a variation under
+   * the viewed node. No optimistic update and no navigation: the echo adds
+   * the line, and the user stays where they were analyzing.
    */
-  function handleInsertLine(pv: string[]) {
+  function insertLineMoves(moves: LegalMove[]) {
     if (!canEdit || editor.editing || current === null || onAddLine === undefined) {
       return;
     }
-    const moves = uciLineToMoves(current.fen ?? '', pv);
     if (moves.length === 0) {
       return;
     }
@@ -353,6 +353,13 @@ export default function Analysis({
         status: move.status,
       })),
     });
+  }
+
+  function handleInsertLine(pv: string[]) {
+    if (current === null) {
+      return;
+    }
+    insertLineMoves(uciLineToMoves(current.fen ?? '', pv));
   }
 
   function handleSetPosition() {
@@ -1007,6 +1014,25 @@ export default function Analysis({
                 id: 'game',
                 label: t('room.gameInfo'),
                 content: <GameInfo tree={tree} />,
+              },
+              {
+                id: 'reference',
+                label: t('analysis.referenceTab'),
+                content: (
+                  <section
+                    className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+                  >
+                    <ReferencePanel
+                      book={book}
+                      fen={current?.fen ?? null}
+                      onInsertLine={
+                        canEdit && !editor.editing && onAddLine !== undefined
+                          ? insertLineMoves
+                          : undefined
+                      }
+                    />
+                  </section>
+                ),
               },
             ]}
           />

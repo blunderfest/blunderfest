@@ -27,8 +27,11 @@ an ambient panel.
   position — spike-gated on the durable corpus. Browsing descends
   *locally* (no ops — exploring openings must not spam the shared log);
   "insert as variation" commits via `add_line`, the same gesture engine
-  lines use. Visible to all roles and the demo room (read-only data);
-  hidden when there is no data for the position.
+  lines use. Visible to all roles and the demo room (read-only data).
+  Amended at implementation (2026-08-17): the tab is **always present with
+  a text placeholder** when a position has no reference data, not hidden —
+  consistent with the viz tabs (Material/Activity) decided the same day;
+  tabs that vanish mid-navigation are jumpy.
 - **Whole-game views → the viz box, exclusively** (Eval | Moments | Report
   | Material | Activity). If that family ever outgrows the strip:
   consolidate the pure-FEN timelines into one toggleable view, or move the

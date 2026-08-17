@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { buildNodeMap } from '@/features/analysis/nodeMap';
-import { classifyOpening, type OpeningBook, openingExitPly } from '@/features/analysis/openings';
+import {
+  classifyOpening,
+  continuationsFor,
+  type OpeningBook,
+  openingExitPly,
+} from '@/features/analysis/openings';
 import type { GameNode, GameTree } from '@/lib/api';
 
 function node(partial: Partial<GameNode> & { id: number }): GameNode {
@@ -163,5 +168,31 @@ describe('openingExitPly', () => {
       children: [node({ id: 1, ply: 1, fen: fen('after-e4-e5') })],
     });
     expect(openingExitPly(book, theory)).toBeNull();
+  });
+});
+
+describe('continuationsFor', () => {
+  // Real FENs — continuations are computed with chess.js legality.
+  const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  const realBook: OpeningBook = {
+    'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq': 'B00|King Pawn',
+    'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq': 'A40|Queen Pawn',
+  };
+
+  it('returns the named continuations of a position, sorted by SAN', () => {
+    const rows = continuationsFor(realBook, START);
+    expect(rows.map((row) => row.san)).toEqual(['d4', 'e4']);
+    expect(rows.find((row) => row.san === 'e4')).toMatchObject({ eco: 'B00', name: 'King Pawn' });
+  });
+
+  it('carries the full LegalMove so lines insert without recomputation', () => {
+    const e4 = continuationsFor(realBook, START).find((row) => row.san === 'e4');
+    expect(e4).toMatchObject({ from: 'e2', to: 'e4', promotion: null });
+    expect(e4?.fen).toContain('4P3');
+  });
+
+  it('is empty off-book and for null positions', () => {
+    expect(continuationsFor(realBook, '8/8/8/8/8/8/4K3/4k3 w - - 0 1')).toEqual([]);
+    expect(continuationsFor(realBook, null)).toEqual([]);
   });
 });

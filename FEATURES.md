@@ -74,7 +74,8 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - 🚧 Position search: exact *and* similar (shift/substitute/add/remove/color flip), user-configurable weights, weight-agnostic index — its own `#/search` destination, results open into rooms as a game or variation (ADR-0024)
 - 🚧 Result labels decomposed from the winning transformation ("pawn h3→h2", "colors reversed")
 - 🚧 Bulk corpus import (e.g. Millionbase) — a search feature is meaningless on a tiny corpus
-- 🚧 Reference tab (ADR-0024): per-position continuation rows from the corpus (opening book + top-X tree), local browsing, insert-as-variation; visible to everyone, hidden when the corpus knows nothing
+- ✅ Reference tab (ADR-0024): per-position continuation rows, local descent (no ops), insert-as-variation for editors, placeholder when off-book — v0 runs on the static opening book (named continuations, no statistics)
+- 🚧 Reference tab corpus upgrade: games · W/D/B% statistics per continuation (spike-gated)
 - 💡 Reference game lists (who played this position, best-rated games) — extends the Reference tab
 - 💡 Search by player/event/opening across the corpus
 

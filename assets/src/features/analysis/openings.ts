@@ -1,5 +1,6 @@
+import { legalMovesFor } from '@/features/analysis/legalMoves';
 import type { Entry } from '@/features/analysis/nodeMap';
-import type { GameNode } from '@/lib/api';
+import type { GameNode, LegalMove } from '@/lib/api';
 
 /**
  * Opening classification, client-side (like the WASM engine): a static
@@ -42,6 +43,43 @@ function positionKey(fen: string | null): string | null {
         .join(' ');
 }
 
+/** The book entry for an exact position (no ancestor fallback). */
+function lookup(book: OpeningBook, fen: string | null): Opening | null {
+  const key = positionKey(fen);
+  const hit = key === null ? undefined : book[key];
+  if (hit === undefined) {
+    return null;
+  }
+  const sep = hit.indexOf('|');
+  return { eco: hit.slice(0, sep), name: hit.slice(sep + 1) };
+}
+
+/**
+ * A legal move whose resulting position is named in the book: the move
+ * plus its opening name/ECO. The full `LegalMove` rides along so a browsed
+ * line can be inserted as a variation without recomputation.
+ */
+export type BookContinuation = LegalMove & Opening;
+
+/**
+ * The named book continuations from a position, sorted by SAN. Static and
+ * corpus-free (ADR-0024): no statistics — those arrive with the corpus and
+ * extend this row shape.
+ */
+export function continuationsFor(book: OpeningBook, fen: string | null): BookContinuation[] {
+  if (fen === null) {
+    return [];
+  }
+  const continuations: BookContinuation[] = [];
+  for (const move of legalMovesFor(fen)) {
+    const hit = lookup(book, move.fen);
+    if (hit !== null) {
+      continuations.push({ ...move, ...hit });
+    }
+  }
+  return continuations.sort((a, b) => a.san.localeCompare(b.san));
+}
+
 /**
  * The opening of the viewed line: the deepest book position on the path
  * from the root to `node` — so the name refines going deeper and sticks
@@ -56,13 +94,9 @@ export function classifyOpening(
 ): Opening | null {
   let current = node;
   while (current !== null) {
-    const key = positionKey(current.fen);
-    if (key !== null) {
-      const hit = book[key];
-      if (hit !== undefined) {
-        const sep = hit.indexOf('|');
-        return { eco: hit.slice(0, sep), name: hit.slice(sep + 1) };
-      }
+    const hit = lookup(book, current.fen);
+    if (hit !== null) {
+      return hit;
     }
     current = byId.get(current.id)?.parent ?? null;
   }

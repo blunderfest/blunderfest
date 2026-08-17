@@ -164,6 +164,11 @@ so clients send nothing and hide the member list.
   to `ECO|Name`, so transpositions match and the en-passant-field convention
   can't break lookups. The name is the deepest book position on the *viewed*
   line, so it refines going deeper, sticks off-book, and follows variations.
+  The same book backs the **Reference tab** (`ReferencePanel.tsx`,
+  ADR-0024): `continuationsFor` lists the named book moves of the cursor
+  position; browsing descends locally (no ops), editors insert the browsed
+  path as a variation (`add_line`). Corpus statistics upgrade the rows
+  post-spike.
 - `assets/src/components/ui.ts` — `tv()`-based component variants (Tailwind
   v4, dark theme); `<.icon>`-style icons are heroicons via the `.icon` /
   `Icon` components. The visual language (tokens, states, motion) is specced

@@ -149,6 +149,18 @@ a durable library ("a user lands in a room, backed by their library"),
 and even ChessBase's own web apps dropped the MDI/ribbon model. All of it
 is spike-gated — the corpus API unblocks Reference + search.
 
+**Reference tab v0 shipped (corpus-free).** The ADR-0024 tab exists and
+works without the spike: `continuationsFor` (openings.ts) computes the
+named book continuations of the cursor position from the static
+`openings.json` (3,809 positions); the panel descends locally (no ops),
+re-anchors when the cursor moves, and editors insert the browsed path via
+`add_line` — the engine-line gesture. ADR-0024 was amended at
+implementation: the tab shows a text placeholder when off-book instead of
+hiding (consistent with the viz tabs). Post-spike, the rows gain corpus
+statistics; the tab itself doesn't change. Dev-ops note: `mix phx.server`
+spawns Vite itself via the endpoint watcher — a manually started Vite on
+5173 crashes it ("port in use"); just run `mix phx.server`.
+
 ### Session handoff (2026-08-16)
 
 Since 2026-08-13 the analysis UI went through a big usability-driven,
