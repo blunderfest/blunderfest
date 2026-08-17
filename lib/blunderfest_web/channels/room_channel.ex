@@ -10,8 +10,8 @@ defmodule BlunderfestWeb.RoomChannel do
     and appended atomically by the room process (`Rooms.submit_op/3`), stamped
     with `seq`/`ts`/`author`, and broadcast back to *everyone*, including the
     sender — the echoed op is the single application path on clients, so no
-    local double-apply. Edit ops (moves, comments, arrows, game imports) are
-    rejected for viewers.
+    local double-apply. Edit ops (moves, comments, arrows, game imports) and
+    chat are rejected for viewers (ADR-0023); `delete_chat` is owner-only.
   - **`set_role` pushes** let the room owner promote/demote other members;
     the new role is broadcast to everyone as `role_update`.
 

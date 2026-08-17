@@ -239,6 +239,68 @@ defmodule Blunderfest.RoomsTest do
              )
   end
 
+  test "chat needs edit rights; delete_chat is owner-only and must name a chat op", %{
+    store: store
+  } do
+    Rooms.create("room-a", "profile-1", store)
+    Rooms.claim("room-a", "profile-2", store)
+    Rooms.claim("room-a", "profile-3", store)
+    {:ok, _} = Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
+
+    # Owner and collaborator chat; the viewer doesn't.
+    assert {:ok, _} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-1",
+               %{"type" => "chat", "payload" => %{"text" => "hi"}},
+               store
+             )
+
+    assert {:ok, _} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-2",
+               %{"type" => "chat", "payload" => %{"text" => "yo"}},
+               store
+             )
+
+    assert {:error, :forbidden} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-3",
+               %{"type" => "chat", "payload" => %{"text" => "me too"}},
+               store
+             )
+
+    # The owner deletes message 1; a collaborator can't, and the seq must be
+    # an actual chat op (2 is, 99 doesn't exist).
+    assert {:error, :forbidden} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-2",
+               %{"type" => "delete_chat", "payload" => %{"seq" => 1}},
+               store
+             )
+
+    assert {:error, :invalid_op} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-1",
+               %{"type" => "delete_chat", "payload" => %{"seq" => 99}},
+               store
+             )
+
+    assert {:ok, _} =
+             Rooms.submit_op(
+               "room-a",
+               "profile-1",
+               %{"type" => "delete_chat", "payload" => %{"seq" => 1}},
+               store
+             )
+
+    assert Enum.map(Rooms.ops("room-a", store), & &1["type"]) == ["chat", "chat", "delete_chat"]
+  end
+
   test "join_snapshot claims membership and returns the room state in one call", %{store: store} do
     Rooms.create("room-a", "anonymous", store)
     Rooms.append("room-a", %{"type" => "set_cursor", "payload" => %{"node_id" => 1}}, store)

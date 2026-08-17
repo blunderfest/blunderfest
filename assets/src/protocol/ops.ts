@@ -126,13 +126,23 @@ export type SetNagsOp = OpBase & {
 /**
  * A room chat message. Chat rides the op log like everything else
  * (ADR-0005): replay on join gives history for free, seq ordering is the
- * shared truth, and no second sync channel exists. Not an edit op — any
- * joined member can chat, viewers included; read-only rooms reject it
- * like all ops.
+ * shared truth, and no second sync channel exists. Not an edit op, but
+ * posting needs edit rights — owners and collaborators chat, viewers
+ * read along (ADR-0023). Read-only rooms reject it like all ops.
  */
 export type ChatOp = OpBase & {
   type: 'chat';
   payload: { text: string };
+};
+
+/**
+ * Chat moderation (ADR-0023): the owner deletes a message by its op seq.
+ * The original chat op stays in the log — deletion is a filter every
+ * client applies on top, so replay hides the message too.
+ */
+export type DeleteChatOp = OpBase & {
+  type: 'delete_chat';
+  payload: { seq: number };
 };
 
 /**
@@ -174,7 +184,8 @@ export type Op =
   | SetNagsOp
   | SetPositionOp
   | SetAnalysisOp
-  | ChatOp;
+  | ChatOp
+  | DeleteChatOp;
 
 export type PresenceMember = {
   id: string;

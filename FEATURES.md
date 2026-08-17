@@ -19,9 +19,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Drag-and-drop pieces (palette drag + off-board delete in edit mode); click-click also works
 - ✅ Draw arrows/highlights on the board (`set_annotations` op): right-drag / right-click on desktop, long-press on touch/pen, `h`/`a` + `1`-`4` keys; engine hint arrows render as translucent ghosts so they can't be confused with user drawings; `Esc` or the ⌫ button clears a position's drawings
 - ✅ NAG glyphs (`!`, `?`, `!?`, `?!`, `!!`, `??`) — shown in the move list (they win over analysis marks), set from the annotation popup (the `c` key)
-- ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted); a line clicks straight into the tree as a variation (`add_line` op, atomic)
-- 💡 Blunder flags on moves (auto `?`/`??` from eval swings) — in ADR-0009's original scope
-- 💡 Opening name/ECO display for the current position
+- 💡 Blunder flags *while dragging* a move (live eval of the hovered move) — post-analysis quality marks ship in the move list already
 - 💡 Tablebase (Syzygy) probe for ≤7-piece positions
 - 💡 Keyboard move input (type SAN/uci) — complements the square grid for keyboard/AT users
 - 💡 Board themes / piece sets
@@ -31,12 +29,12 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Rooms with 5-char unambiguous codes; explicit creation (`POST /api/rooms`); deep links `#/r/<code>`
 - ✅ Real-time sync via op log (replay on join, single echo path)
 - ✅ Presence (who's here, names) and roles: owner / collaborator / viewer, server-enforced edit rights, promote/demote
-- ✅ Room chat: messages ride the op log (history replays on join), any member can write, viewers included
+- ✅ Room chat: messages ride the op log (history replays on join); owners/collaborators write, viewers read along, and the owner can delete messages (ADR-0023)
 - ✅ Presenter/follow mode: cursor + game-selection sync, break-away/re-follow; the owner can hand the mic to any member (ADR-0021)
 - ✅ Multiple games per room: import, new blank game, switch
 - ✅ Room panel in the rail: code + copy, leave, read-only badge, connection telemetry (region + lag probe)
 - ✅ Read-only demo room at `#/r/chess` (annotated Opera Game), seeded on demand — linked from the home page (ADR-0014)
-- ✅ Sidebar tab shell (Analysis now; Explorer + Search get a home when they land)
+- ✅ Sidebar tab shell (Moves + Game info now; Search gets a home when it lands)
 - 💡 Private rooms with owner-approved joins (the `:pending` approval seam already exists — ADR-0006)
 - 💡 Per-member cursor/arrow colors (see who points where)
 - 💡 Share links with preset roles (view-only link vs editor link)
@@ -51,7 +49,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Opening classification (ECO + name under the players, follows the viewed line incl. variations; lichess book, position-keyed)
 - ✅ Server-side UCI worker pool (ADR-0009): whole-game analysis on demand, per-move evals + quality marks in the move list, results synced to all members as a `set_analysis` op
 - ✅ Viz box (Eval | Moments | Material | Activity tabs): eval chart with blunder dots, cp/win% toggle, real WDL segments (`UCI_ShowWDL`), opening book-exit marker; critical moments as mini boards; material and piece-activity timelines (pure FEN data, no engine)
-- ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted); click a line to insert it as a variation
+- ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted); click a line to insert it as a variation (`add_line` op, atomic)
 - 💡 Cloud eval cache (share computed evals across users/rooms)
 - 💡 "Learn from this game" report: mistakes, turning points, best-move diffs
 - 💡 3D board (Three.js) — cool but heavy; the cheap version is a 3D-styled piece sprite theme on the 2D board
@@ -99,6 +97,6 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 
 - ✅ Single-artifact Phoenix release serving API + sockets + SPA; Fly.io scale-to-zero
 - ✅ No-cache shell so deploys take effect on refresh
-- 🚧 REVIEW.md items: secrets out of `fly.toml`, server-side op validation, room/op caps, re-enable CI
-- 💡 Persistent storage when a feature needs durability (game library, corpus) — requires revisiting ADR-0001 explicitly
-- 💡 Rate limiting on room/profile creation
+- ✅ Secrets in `fly secrets` (never the repo), server-side op validation (`Blunderfest.Ops`), room/op caps, room-creation rate limit per client IP (ADR-0017); no CI — checks run locally (`mix precommit`, pnpm)
+- 💡 Persistent storage when a feature needs durability (game library, corpus) — spike in flight; requires revisiting ADR-0001 explicitly
+- 💡 Rate limiting on profile creation (room creation is already covered)

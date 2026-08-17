@@ -420,7 +420,8 @@ describe('RoomView', () => {
   });
 
   it('shows chat messages from the channel and sends chat ops', async () => {
-    renderRoom();
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
     await screen.findByTestId('member-list');
 
     act(() =>
@@ -443,6 +444,62 @@ describe('RoomView', () => {
     expect(channel.pushes).toEqual([
       { event: 'op', payload: { type: 'chat', payload: { text: 'yes!' } } },
     ]);
+  });
+
+  it('hides the chat input for viewers — they read along (ADR-0023)', async () => {
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-2');
+    await screen.findByTestId('member-list');
+
+    act(() =>
+      channel.emit('new_op', {
+        seq: 1,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'chat',
+        payload: { text: 'anyone here?' },
+      } as Op),
+    );
+
+    expect(await screen.findByText('anyone here?')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Message the room...')).not.toBeInTheDocument();
+    expect(screen.getByText('Only the owner and collaborators can chat.')).toBeInTheDocument();
+  });
+
+  it('lets the owner delete a chat message; the echo removes it', async () => {
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    await screen.findByTestId('member-list');
+
+    act(() =>
+      channel.emit('new_op', {
+        seq: 1,
+        author: 'profile-2',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'chat',
+        payload: { text: 'inappropriate' },
+      } as Op),
+    );
+
+    fireEvent.click(await screen.findByTestId('chat-delete-1'));
+
+    expect(channel.pushes).toEqual([
+      { event: 'op', payload: { type: 'delete_chat', payload: { seq: 1 } } },
+    ]);
+
+    // The echo is the only application path (ADR-0005): the message is
+    // removed when the delete op comes back from the server.
+    act(() =>
+      channel.emit('new_op', {
+        seq: 2,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:01Z',
+        type: 'delete_chat',
+        payload: { seq: 1 },
+      } as Op),
+    );
+
+    expect(screen.queryByText('inappropriate')).not.toBeInTheDocument();
   });
 
   it('reopens the import form to add another game', async () => {

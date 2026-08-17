@@ -656,6 +656,42 @@ describe('room slice', () => {
       expect(state.chatMessages).toHaveLength(200);
       expect(state.chatMessages[state.chatMessages.length - 1].text).toBe('latest');
     });
+
+    function deleteChatOp(seq: number, targetSeq: number): Op {
+      return {
+        seq,
+        author: 'author-1',
+        ts: '2026-01-01T00:00:01Z',
+        type: 'delete_chat',
+        payload: { seq: targetSeq },
+      };
+    }
+
+    it('removes a message when its delete_chat op arrives (ADR-0023)', () => {
+      let state = roomReducer(undefined, applyOp(chatOp(1, 'first')));
+      state = roomReducer(state, applyOp(chatOp(2, 'inappropriate')));
+      state = roomReducer(state, applyOp(deleteChatOp(3, 2)));
+
+      expect(state.chatMessages.map((m) => m.text)).toEqual(['first']);
+      // The ops themselves stay in the log — deletion is a view filter.
+      expect(state.ops.map((op) => op.type)).toEqual(['chat', 'chat', 'delete_chat']);
+    });
+
+    it('hides deleted messages on replay', () => {
+      const state = roomReducer(
+        undefined,
+        replayOps([chatOp(1, 'first'), chatOp(2, 'inappropriate'), deleteChatOp(3, 2)]),
+      );
+
+      expect(state.chatMessages.map((m) => m.text)).toEqual(['first']);
+    });
+
+    it('ignores a delete_chat naming an unknown or already-dropped seq', () => {
+      let state = roomReducer(undefined, applyOp(chatOp(1, 'first')));
+      state = roomReducer(state, applyOp(deleteChatOp(2, 99)));
+
+      expect(state.chatMessages.map((m) => m.text)).toEqual(['first']);
+    });
   });
 
   describe('set_nags transforms', () => {

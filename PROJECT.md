@@ -58,6 +58,7 @@ The feature inventory lives in [`FEATURES.md`](FEATURES.md).
 | Engine: browser WASM + server UCI pool | [ADR-0009](docs/decisions/adr-0009-engine-strategy.md) |
 | Weight-agnostic search index | [ADR-0010](docs/decisions/adr-0010-weight-agnostic-search-index.md) |
 | External identity accounts (Lichess OAuth) | [ADR-0022](docs/decisions/adr-0022-external-identity-accounts.md) |
+| Chat needs edit rights; owner deletes via op | [ADR-0023](docs/decisions/adr-0023-chat-permissions-and-moderation.md) |
 
 For how it all fits together (state model, channel protocol, data flow, testing), see
 [`docs/architecture.md`](docs/architecture.md).
@@ -101,6 +102,21 @@ buckets are rich for repeated structures but degenerate to same-game
 siblings for cold positions; following-move plan patterns exist but need
 move-order-insensitive comparison. Report:
 [`docs/technical-spike-02-similarity-and-relevance-report.md`](docs/technical-spike-02-similarity-and-relevance-report.md).
+
+### Session handoff (2026-08-17)
+
+**Chat permissions tightened (ADR-0023), shipped.** Viewers can no longer
+post to room chat — owners and collaborators only (enforced in
+`Room.submit_op` alongside the edit-op check; anonymous members can hold no
+role, so they're excluded too). The owner can delete any message: a
+`delete_chat` op naming the message's seq rides the op log like everything
+else, and every client filters deleted seqs out of the visible history (the
+original chat op stays in the log — append-only, ADR-0005). The UI: viewers
+get a one-line "read along" hint instead of the input; the owner gets a ×
+per message. 241 backend + 489 frontend tests green. The persistence spike
+remains the user's and in flight — durable accounts / cross-device library
+still wait on it. Next candidates: FEATURES.md text polish, or whatever the
+spike unblocks.
 
 ### Session handoff (2026-08-16)
 
@@ -222,7 +238,7 @@ half wait on it.
    setup analysis as extra games) and the per-profile game library
    (session-scoped, ADR-0020). The durable, account-bound half of claiming
    waits on the storage decision.
-7. **Server engine pool** — UCI workers, whole-game reports, eval charts (ADR-0009).
+7. **Server engine pool** — DONE. UCI workers, whole-game reports, eval charts (ADR-0009).
 8. **Search** — position extraction job, weighted similarity metric + decomposition,
    golden-fixture tests, bulk corpus import, configurable search UI (ADR-0010).
 

@@ -50,7 +50,7 @@ here, or point to the ADR that superseded this one.
 | [0006](adr-0006-explicit-room-creation-and-join-gating.md) | Rooms are created explicitly via `POST /api/rooms`; joins never create rooms | Accepted (2026-08-06) |
 | [0007](adr-0007-room-code-format.md) | Room codes are 5 chars from an unambiguous alphabet, validated on both ends | Accepted (2026-08-06) |
 | [0008](adr-0008-branch-structure-main-and-backup.md) | `main` is the active branch; `main_backup` archives the old history | Accepted (2026-08-06) |
-| [0009](adr-0009-engine-strategy.md) | Engine strategy: Stockfish WASM in the browser, server-side UCI worker pool for batch analysis | Accepted (2026-08-04); interactive layer implemented (2026-08-06), batch pool pending |
+| [0009](adr-0009-engine-strategy.md) | Engine strategy: Stockfish WASM in the browser, server-side UCI worker pool for batch analysis | Accepted (2026-08-04); interactive layer implemented (2026-08-06), batch pool implemented (2026-08-12) |
 | [0010](adr-0010-weight-agnostic-search-index.md) | Search indexes weight-agnostic piece maps so user-configurable weights never require reindexing | Accepted — implementation pending |
 | [0011](adr-0011-free-form-position-setup.md) | Free-form position editing via a `set_position` op replayed as a tree setup node | Accepted (2026-08-07) |
 | [0012](adr-0012-per-room-processes.md) | One process per room, registered by slug and started on demand | Accepted (2026-08-10); registry/supervisor half superseded by ADR-0013 |
@@ -64,3 +64,4 @@ here, or point to the ADR that superseded this one.
 | [0020](adr-0020-anonymous-game-library.md) | Game library v1 on anonymous profiles, session-scoped (in-memory); re-keys to accounts when storage lands | Accepted (2026-08-11) |
 | [0021](adr-0021-presenter-handoff.md) | The owner can hand presenting to another member; presence-derived fallback amends ADR-0015 | Accepted (2026-08-15) |
 | [0022](adr-0022-external-identity-accounts.md) | External identity accounts (Lichess OAuth): User 1..n Account, link as recovery key not persona, in-memory until persistence lands | Accepted (2026-08-16) |
+| [0023](adr-0023-chat-permissions-and-moderation.md) | Chat needs edit rights (viewers read along); the owner moderates via `delete_chat` ops | Accepted (2026-08-17) |

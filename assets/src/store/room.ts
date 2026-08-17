@@ -614,6 +614,13 @@ const roomSlice = createSlice({
             state.chatMessages.splice(0, state.chatMessages.length - MAX_CHAT_MESSAGES);
           }
         }
+        if (op.type === 'delete_chat') {
+          // Owner moderation (ADR-0023): the chat op stays in the log; the
+          // message is filtered out of the visible list.
+          state.chatMessages = state.chatMessages.filter(
+            (message) => message.seq !== op.payload.seq,
+          );
+        }
         if (op.type === 'set_analysis') {
           state.analysis[op.payload.game_id] = {
             depth: op.payload.depth,
@@ -659,8 +666,15 @@ const roomSlice = createSlice({
       state.annotations = {};
       state.analysis = {};
       state.analysisProgress = null;
+      // Deleted chat (ADR-0023) stays in the log but is filtered from view.
+      const deletedChat = new Set(
+        state.ops
+          .filter((op): op is Extract<Op, { type: 'delete_chat' }> => op.type === 'delete_chat')
+          .map((op) => op.payload.seq),
+      );
       state.chatMessages = state.ops
         .filter((op): op is Extract<Op, { type: 'chat' }> => op.type === 'chat')
+        .filter((op) => !deletedChat.has(op.seq))
         .slice(-MAX_CHAT_MESSAGES)
         .map((op) => ({ seq: op.seq, author: op.author, text: op.payload.text, ts: op.ts }));
       for (const op of state.ops) {

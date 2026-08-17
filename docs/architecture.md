@@ -106,10 +106,13 @@ means an echo was lost or reordered, so the client resyncs by rejoining
 payloads (`move_at_ply`, `add_line` (a whole line in one op — engine lines
 become variations atomically), `comment_at_ply`, `set_nags`, `set_game`,
 `select_game`, `set_cursor`, `set_role`, `chat` (room chat — replay is the
-history; not an edit op, so any joined member can send), ...) with `seq`,
+history), `delete_chat` (owner moderation; the chat op stays in the log,
+clients filter it from view), ...) with `seq`,
 `author`, `ts` —
-the shared vocabulary is mirrored in `assets/src/protocol/ops.ts`. `analyze_game` (push, editors
-only) starts a whole-game engine job; progress arrives as transient
+the shared vocabulary is mirrored in `assets/src/protocol/ops.ts`. Chat ops
+(`chat`, and the owner-only `delete_chat` moderation op — ADR-0023) need edit
+rights: owners and collaborators post, viewers read along. `analyze_game` (push,
+editors only) starts a whole-game engine job; progress arrives as transient
 `analysis_progress` events and the result as a `set_analysis` op replayed
 on join like everything else. Read-only rooms (the demo) are the exception:
 no presence is tracked and every `op` push is rejected with `:read_only`,

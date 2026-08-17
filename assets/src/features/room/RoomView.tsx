@@ -151,6 +151,14 @@ export default function RoomView({
     [sendOp],
   );
 
+  /** Chat moderation (ADR-0023): the owner deletes a message by its op seq. */
+  const handleChatDelete = useCallback(
+    (seq: number) => {
+      sendOp({ type: 'delete_chat', payload: { seq } });
+    },
+    [sendOp],
+  );
+
   const handleSetNags = useCallback(
     (payload: Omit<SetNagsOp['payload'], 'game_id'>) => {
       if (effectiveGameId !== null) {
@@ -335,7 +343,14 @@ export default function RoomView({
               onSetPresenter={sendPresenter}
             />
           )}
-          {!readOnly && <ChatPanel onSend={handleChatSend} />}
+          {!readOnly && (
+            <ChatPanel
+              onSend={handleChatSend}
+              onDelete={handleChatDelete}
+              canChat={canEdit}
+              canModerate={myRole === 'owner'}
+            />
+          )}
         </aside>
 
         <section className="order-first flex flex-col items-center gap-4 md:order-none">

@@ -132,6 +132,9 @@ defmodule Blunderfest.Ops do
 
   defp check_type("chat", payload), do: string_field(payload, "text", @max_chat_bytes)
 
+  # Chat moderation (ADR-0023): the owner deletes a message by its op seq.
+  defp check_type("delete_chat", payload), do: int_field(payload, "seq")
+
   defp check_type(_type, _payload), do: {:error, :invalid_op}
 
   @doc "Whether `tree` (JSON-shaped) is a structurally valid, safely bounded game tree."

@@ -77,17 +77,83 @@ defmodule BlunderfestWeb.RoomChannelTest do
     assert %{"seq" => 1, "author" => "profile-1"} = hd(reply.ops)
   end
 
-  test "any member can chat — the message appends and broadcasts", %{} do
-    {:ok, _reply, socket} = join_room("room:abcde", %{"profile_id" => "viewer-1"})
+  test "the owner and collaborators can chat", %{} do
+    {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+    join_room("room:abcde", %{"profile_id" => "profile-2"})
+    push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
 
-    ref = push(socket, "op", %{"type" => "chat", "payload" => %{"text" => "hello room"}})
+    {:ok, _reply, collaborator} =
+      socket(BlunderfestWeb.UserSocket, "user3", %{})
+      |> subscribe_and_join(BlunderfestWeb.RoomChannel, "room:abcde", %{
+        "profile_id" => "profile-2"
+      })
+
+    ref = push(owner, "op", %{"type" => "chat", "payload" => %{"text" => "hello room"}})
     assert_reply ref, :ok
 
     assert_broadcast "new_op", %{
       "type" => "chat",
-      "author" => "viewer-1",
+      "author" => "profile-1",
       "payload" => %{"text" => "hello room"}
     }
+
+    ref = push(collaborator, "op", %{"type" => "chat", "payload" => %{"text" => "hi!"}})
+    assert_reply ref, :ok
+    assert_broadcast "new_op", %{"type" => "chat", "author" => "profile-2"}
+  end
+
+  test "viewers cannot chat (ADR-0023)", %{} do
+    join_room("room:abcde", %{"profile_id" => "profile-1"})
+    {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})
+
+    ref = push(viewer, "op", %{"type" => "chat", "payload" => %{"text" => "hello room"}})
+    assert_reply ref, :error, %{reason: :forbidden}
+    refute_receive {:broadcast, _, _, _}
+    assert Rooms.ops("abcde") == []
+  end
+
+  test "the owner can delete a chat message; the deletion broadcasts", %{} do
+    {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+
+    ref = push(owner, "op", %{"type" => "chat", "payload" => %{"text" => "oops"}})
+    assert_reply ref, :ok
+    assert_broadcast "new_op", %{"type" => "chat", "seq" => 1}
+
+    ref = push(owner, "op", %{"type" => "delete_chat", "payload" => %{"seq" => 1}})
+    assert_reply ref, :ok
+    assert_broadcast "new_op", %{"type" => "delete_chat", "payload" => %{"seq" => 1}}
+  end
+
+  test "non-owners cannot delete chat messages", %{} do
+    {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+    join_room("room:abcde", %{"profile_id" => "profile-2"})
+    push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
+
+    {:ok, _reply, collaborator} =
+      socket(BlunderfestWeb.UserSocket, "user3", %{})
+      |> subscribe_and_join(BlunderfestWeb.RoomChannel, "room:abcde", %{
+        "profile_id" => "profile-2"
+      })
+
+    ref = push(owner, "op", %{"type" => "chat", "payload" => %{"text" => "mine"}})
+    assert_reply ref, :ok
+
+    ref = push(collaborator, "op", %{"type" => "delete_chat", "payload" => %{"seq" => 1}})
+    assert_reply ref, :error, %{reason: :forbidden}
+  end
+
+  test "delete_chat must name the seq of an actual chat op", %{} do
+    {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+
+    ref = push(owner, "op", %{"type" => "set_cursor", "payload" => %{"node_id" => 3}})
+    assert_reply ref, :ok
+
+    # Seq 1 is a cursor op, not a chat message; seq 99 doesn't exist.
+    ref = push(owner, "op", %{"type" => "delete_chat", "payload" => %{"seq" => 1}})
+    assert_reply ref, :error, %{reason: :invalid_op}
+
+    ref = push(owner, "op", %{"type" => "delete_chat", "payload" => %{"seq" => 99}})
+    assert_reply ref, :error, %{reason: :invalid_op}
   end
 
   test "authors without a profile fall back to anonymous", %{} do

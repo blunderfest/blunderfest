@@ -76,18 +76,15 @@ defmodule Blunderfest.Room do
   end
 
   def handle_call({:submit_op, profile_id, op}, _from, room) do
-    cond do
-      room.read_only ->
-        {:reply, {:error, :read_only}, room}
-
-      Ops.edit_op?(op) and not can_edit?(room, profile_id) ->
-        {:reply, {:error, :forbidden}, room}
-
-      true ->
+    case check_op(room, profile_id, op) do
+      :ok ->
         case append_op(room, op) do
           {:ok, op, room} -> {:reply, {:ok, op}, room}
           {:error, reason} -> {:reply, {:error, reason}, room}
         end
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, room}
     end
   end
 
@@ -139,7 +136,7 @@ defmodule Blunderfest.Room do
         {:reply, {:error, :forbidden}, room}
 
       member_id == "anonymous" or
-        (member_id != nil and not Map.has_key?(room.roles, member_id)) ->
+          (member_id != nil and not Map.has_key?(room.roles, member_id)) ->
         {:reply, {:error, :invalid_member}, room}
 
       true ->
@@ -167,6 +164,41 @@ defmodule Blunderfest.Room do
 
   defp can_edit?(room, profile_id) do
     Map.get(room.roles, profile_id, :viewer) in [:owner, :collaborator]
+  end
+
+  # Permission check for a client op, run in the room process so check and
+  # append are atomic. Edit ops need edit rights; chat (ADR-0023) needs them
+  # too — viewers watch, they don't post; `delete_chat` is the owner's
+  # moderation tool and must name the seq of an actual chat op.
+  defp check_op(room, profile_id, op) do
+    cond do
+      room.read_only ->
+        {:error, :read_only}
+
+      Ops.edit_op?(op) and not can_edit?(room, profile_id) ->
+        {:error, :forbidden}
+
+      op["type"] == "chat" and not can_edit?(room, profile_id) ->
+        {:error, :forbidden}
+
+      op["type"] == "delete_chat" ->
+        check_delete_chat(room, profile_id, op)
+
+      true ->
+        :ok
+    end
+  end
+
+  defp check_delete_chat(room, profile_id, op) do
+    cond do
+      room.owner != profile_id -> {:error, :forbidden}
+      chat_seq?(room, op["payload"]["seq"]) -> :ok
+      true -> {:error, :invalid_op}
+    end
+  end
+
+  defp chat_seq?(room, seq) do
+    Enum.any?(room.ops, fn op -> op["type"] == "chat" and op["seq"] == seq end)
   end
 
   defp append_op(room, op) do

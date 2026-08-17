@@ -21,9 +21,11 @@
   },
   "chat": {
     "title": "Chat",
-    "empty": "No messages yet — say hi.",
+    "empty": "No messages yet.",
     "placeholder": "Message the room...",
-    "send": "Send"
+    "send": "Send",
+    "readOnly": "Only the owner and collaborators can chat.",
+    "delete": "Delete message"
   },
   "tour": {
     "skip": "Skip tour",

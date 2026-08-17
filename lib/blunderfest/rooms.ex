@@ -20,7 +20,9 @@ defmodule Blunderfest.Rooms do
   map of `profile_id => :owner | :collaborator | :viewer`. Only the owner can
   promote or demote other members to/from collaborator; everyone else is a viewer
   by default. Edit ops (`move_at_ply`, `set_game`, comments, arrows, ...) are
-  reserved for owners and collaborators.
+  reserved for owners and collaborators — and so is chat (ADR-0023): viewers
+  read along but don't post. The owner alone can delete a chat message
+  (`delete_chat` op naming the message's seq).
 
   Rooms created with `read_only: true` (the demo room, ADR-0014) record no
   members at all: nobody owns them and `can_edit?/3` is false for everyone.
