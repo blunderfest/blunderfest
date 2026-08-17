@@ -144,19 +144,26 @@ and **NAG glyphs**), nested variations as indented blocks with a
 line-path breadcrumb, and the zoom-safe tour tooltip. A persistence
 spike is in flight (user) — search/accounts/durability wait on it.
 
-**Lichess OpenID (ADR-0022), phase 1 landed 2026-08-16:** external
-identity accounts — profiles hold linked accounts (lichess username +
-OAuth token, server-side only) and one secret hash per device; OAuth2 +
-PKCE unregistered public client (`study:read`; games endpoints are
-public — no `game:read` scope exists, corrected after hitting
-"invalid scope" live); app-bar account menu with Link/Recover;
-single-use exchange code signs in a new device. In-memory until the
-spike makes it durable. **Canonical URL is `https://blunderfest.org`** —
-`blunderfest.fly.dev` is the raw Fly domain and doesn't work properly
-(CORS etc.). Nothing to register: lichess supports unregistered public
-PKCE clients (any unique client id, `LICHESS_CLIENT_ID` env override,
-default `blunderfest.org`). Phase 2 (study import) and 3 (my-games
-import) are next.
+**Lichess OpenID (ADR-0022) — all three phases landed 2026-08-16,** with
+the model the user designed: one "Sign in with Lichess" action — the
+callback binds new accounts to the current profile and adopts the known
+profile when bound (names follow the binding across browsers; fun names
+are temporary by design), "Sign out" detaches and clears the mapping.
+Scope is `study:read` only (games endpoints are public — there is no
+`game:read` scope; learned live). Lichess needs no app registration
+(unregistered public PKCE clients; client id is any unique string).
+The lichess knight mark is inlined from lila (AGPLv3, compatible with
+our GPLv3; attribution in the cburnett NOTICE.txt). Import dialog tabs:
+Paste | My Lichess studies (every chapter imports) | My games
+(multi-select recent games) | **Chess.com** — username-driven monthly
+archive browsing with multi-select, strictly via the official public API
+(their robots.txt/User Agreement forbid callback/service endpoints and
+scraping; checked before building). **Room chat** rides the op log
+(`chat` op; replay = history; any member can write). **Canonical URL is
+`https://blunderfest.org`** — `blunderfest.fly.dev` is the raw Fly
+domain and doesn't work properly (CORS etc.). A persistence spike is in
+flight (user) — account durability and the game library's cross-device
+half wait on it.
 
 1. **Room panel location display** — DONE: region/lag is one compact
    truncating line inside the box, under the code/copy/leave row.
