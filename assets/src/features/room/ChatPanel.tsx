@@ -52,7 +52,7 @@ export default function ChatPanel({
   }
 
   return (
-    <section className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col`}>
+    <section className={`${panel({ layout: 'none', pad: 'none' })} flex shrink-0 flex-col`}>
       <div className={panelHeader()}>
         <h2 className="m-0">{t('chat.title')}</h2>
         <span className="text-faint tabular-nums">{messages.length}</span>

@@ -118,6 +118,22 @@ remains the user's and in flight — durable accounts / cross-device library
 still wait on it. Next candidates: FEATURES.md text polish, or whatever the
 spike unblocks.
 
+**Later the same day:** the "learn from this game" report landed — a fifth
+viz-box tab (Eval | Moments | Report | Material | Activity) with per-side
+accuracy (lichess's per-move win-share-loss curve, a documented
+approximation: no volatility weighting, no book exclusion), ??/?/?!
+counts, a result + mainline-opening header, and every marked move with its
+eval swing and the engine's best alternative, click to jump. Marks reuse
+`moveMark` exactly, so report, move list and chart never disagree.
+`winShare` moved from GameFlow to uci.ts. Two UI fixes rode along: the
+room rail was capped at board height while the analysis sidebar gets board
++13rem — the squeeze gave Members a scrollbar with 2 members and pushed the
+chat input over its panel's bottom border; the rail now matches the
+sidebar's cap and ChatPanel is `shrink-0` (the squeeze lands on the
+scrollable panels). And all five viz tabs are always present: Material and
+Activity show a text placeholder until the game has moves (previously they
+popped into existence on the first move). 502 frontend tests green.
+
 ### Session handoff (2026-08-16)
 
 Since 2026-08-13 the analysis UI went through a big usability-driven,

@@ -112,6 +112,21 @@ export function whiteShare(white: WhiteEval | null): number {
 }
 
 /**
+ * Win probability as a share (50 = level), lichess's logistic: a pawn is
+ * ~57%, two pawns ~64%, and beyond +5 the curve flattens — where big cp
+ * swings stop mattering to humans.
+ */
+export function winShare(white: WhiteEval): number {
+  if (white.type === 'result') {
+    return white.result === '1-0' ? 99 : white.result === '0-1' ? 1 : 50;
+  }
+  if (white.type === 'mate') {
+    return white.moves > 0 ? 99 : 1;
+  }
+  return 100 / (1 + Math.exp(-0.00368208 * white.cp));
+}
+
+/**
  * Converts a UCI principal variation (`e2e4 e7e5 …`) into SAN moves for
  * display. Stops at the first move that does not apply cleanly.
  */

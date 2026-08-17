@@ -315,11 +315,16 @@ export default function RoomView({
     <div className="flex flex-1 flex-col items-stretch gap-3 p-3">
       <div className="relative grid flex-1 grid-cols-1 gap-3 md:grid-cols-[236px_1fr]">
         {/*
-          On wide screens the rail is pinned to the board's height: Games
-          caps at a share of it, Members sizes to content — each scrolls
-          inside its own panel, so the page never grows a body scrollbar.
+          On wide screens the rail is pinned to the analysis sidebar's
+          height (board + nav/controls, the same +13rem the sidebar uses):
+          Games caps at a share of it, Members sizes to content — each
+          scrolls inside its own panel, so the page never grows a body
+          scrollbar. The page is already that tall via the main column, so
+          the taller rail spends dead space below it rather than growing
+          the page. Chat never shrinks (shrink-0): a squeezed input row
+          overflows its panel's bottom border.
         */}
-        <aside className="flex flex-col gap-3 xl:h-[min(90vw,34rem)]">
+        <aside className="flex flex-col gap-3 xl:h-[calc(min(90vw,34rem)+13rem)]">
           <RoomPanel slug={slug} onLeave={onLeave} />
           <GameList
             games={games}

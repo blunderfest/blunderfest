@@ -16,6 +16,7 @@ import { bestMoveSans } from '@/features/analysis/evalMarks';
 import GameActions from '@/features/analysis/GameActions';
 import GameFlow from '@/features/analysis/GameFlow';
 import GameInfo from '@/features/analysis/GameInfo';
+import GameReport from '@/features/analysis/GameReport';
 import { legalMovesFor, uciLineToMoves } from '@/features/analysis/legalMoves';
 import MaterialFlow from '@/features/analysis/MaterialFlow';
 import MoveList from '@/features/analysis/MoveList';
@@ -231,6 +232,18 @@ export default function Analysis({
     () => (book === null || tree === null ? null : openingExitPly(book, tree.root)),
     [book, tree],
   );
+
+  /** The game's opening (the mainline's), for the Report header. */
+  const mainlineOpening = useMemo(() => {
+    if (book === null || tree === null) {
+      return null;
+    }
+    let tip = tree.root;
+    while (tip.children[0] !== undefined) {
+      tip = tip.children[0];
+    }
+    return classifyOpening(book, byId, tip);
+  }, [book, tree, byId]);
 
   const canPlay = canEdit && current !== null && current.status === 'active';
 
@@ -603,36 +616,73 @@ export default function Analysis({
       ),
     });
   }
-  if (tree.mainline_ply_count > 0) {
+  if (hasAnalysis || onAnalyze !== undefined) {
     vizTabs.push({
-      id: 'material',
-      label: t('analysis.materialTab'),
+      id: 'report',
+      label: t('analysis.reportTab'),
       content: (
+        // Same outer height as the chart tabs (p-2 + h-44): no shift on switch.
         <div className="p-2">
+          <div className="h-44 overflow-y-auto">
+            {analysis !== null && analysis.length > 1 ? (
+              <GameReport
+                tree={tree}
+                evals={analysis}
+                opening={mainlineOpening}
+                onSelectPly={handleFlowSelect}
+              />
+            ) : (
+              <div className="grid h-full place-items-center">{analyzePlaceholder}</div>
+            )}
+          </div>
+        </div>
+      ),
+    });
+  }
+  // Material and activity are pure-FEN views — always present as tabs, with
+  // a text placeholder until the game has moves (unlike the analysis tabs,
+  // which carry the Analyze action as their placeholder).
+  const noMovesPlaceholder = (copy: string) => (
+    <div className="grid h-44 place-items-center">
+      <p className="m-0 text-note text-faint">{copy}</p>
+    </div>
+  );
+  vizTabs.push({
+    id: 'material',
+    label: t('analysis.materialTab'),
+    content: (
+      <div className="p-2">
+        {tree.mainline_ply_count > 0 ? (
           <MaterialFlow
             tree={tree}
             currentPly={current.ply}
             flipped={flipped}
             onSelectPly={handleFlowSelect}
           />
-        </div>
-      ),
-    });
-    vizTabs.push({
-      id: 'activity',
-      label: t('analysis.activityTab'),
-      content: (
-        <div className="p-2">
+        ) : (
+          noMovesPlaceholder(t('analysis.materialEmpty'))
+        )}
+      </div>
+    ),
+  });
+  vizTabs.push({
+    id: 'activity',
+    label: t('analysis.activityTab'),
+    content: (
+      <div className="p-2">
+        {tree.mainline_ply_count > 0 ? (
           <ActivityFlow
             tree={tree}
             currentPly={current.ply}
             flipped={flipped}
             onSelectPly={handleFlowSelect}
           />
-        </div>
-      ),
-    });
-  }
+        ) : (
+          noMovesPlaceholder(t('analysis.activityEmpty'))
+        )}
+      </div>
+    ),
+  });
 
   return (
     <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-3 md:gap-6">

@@ -51,7 +51,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Viz box (Eval | Moments | Material | Activity tabs): eval chart with blunder dots, cp/win% toggle, real WDL segments (`UCI_ShowWDL`), opening book-exit marker; critical moments as mini boards; material and piece-activity timelines (pure FEN data, no engine)
 - ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted); click a line to insert it as a variation (`add_line` op, atomic)
 - 💡 Cloud eval cache (share computed evals across users/rooms)
-- 💡 "Learn from this game" report: mistakes, turning points, best-move diffs
+- ✅ "Learn from this game" report (viz-box Report tab): per-side accuracy (lichess's per-move win-share-loss curve), blunder/mistake/inaccuracy counts, every marked move with the eval swing + the engine's best alternative, result + opening header
 - 💡 3D board (Three.js) — cool but heavy; the cheap version is a 3D-styled piece sprite theme on the 2D board
 
 ## Games & library

@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import BookExitIcon from '@/features/analysis/BookExitIcon';
 import { evalText, type MoveMark, moveMark } from '@/features/analysis/evalMarks';
-import { type WhiteEval, whiteShare } from '@/features/analysis/uci';
+import { type WhiteEval, whiteShare, winShare } from '@/features/analysis/uci';
 import type { AnalysisEval } from '@/protocol/ops';
 
 /** Chart geometry: a 100×40 viewBox stretched to full width. */
@@ -45,21 +45,6 @@ export function plyLabel(ply: number, startLabel: string): string {
     return startLabel;
   }
   return ply % 2 === 1 ? `${(ply + 1) / 2}.` : `${ply / 2}…`;
-}
-
-/**
- * Win probability as a share (50 = level), lichess's logistic: a pawn is
- * ~57%, two pawns ~64%, and beyond +5 the curve flattens — where big cp
- * swings stop mattering to humans.
- */
-export function winShare(white: WhiteEval): number {
-  if (white.type === 'result') {
-    return white.result === '1-0' ? 99 : white.result === '0-1' ? 1 : 50;
-  }
-  if (white.type === 'mate') {
-    return white.moves > 0 ? 99 : 1;
-  }
-  return 100 / (1 + Math.exp(-0.00368208 * white.cp));
 }
 
 /**
