@@ -24,14 +24,24 @@ an ambient panel.
 - **Per-position reference → a new adaptive "Reference" sidebar tab**
   (Moves | Game info | Reference). Content follows the position: corpus
   continuation rows (move · games · W/D/B%) when the corpus knows the
-  position — spike-gated on the durable corpus. Browsing descends
-  *locally* (no ops — exploring openings must not spam the shared log);
-  "insert as variation" commits via `add_line`, the same gesture engine
-  lines use. Visible to all roles and the demo room (read-only data).
-  Amended at implementation (2026-08-17): the tab is **always present with
-  a text placeholder** when a position has no reference data, not hidden —
-  consistent with the viz tabs (Material/Activity) decided the same day;
-  tabs that vanish mid-navigation are jumpy.
+  position — spike-gated on the durable corpus. Visible to all roles and
+  the demo room (read-only data). Amended at implementation (2026-08-17):
+  the tab is **always present with a text placeholder** when a position
+  has no reference data, not hidden — consistent with the viz tabs
+  (Material/Activity) decided the same day; tabs that vanish
+  mid-navigation are jumpy.
+- **Rows play the move (revised same-day after v0 shipped).** The original
+  text had browsing descend *locally* with an "insert as variation"
+  commit. In practice: hovering a row previews the move as a translucent
+  ghost arrow on the board (the engine-hint visual — local, never
+  broadcast), and **clicking a row plays the move as a real broadcast
+  op**. Broadcast won because the collaborative case is the point (a
+  presenter walking the book must be visible to the room), the tree is
+  the canvas (no takeback exists anywhere — board play is equally
+  permanent), and it deleted the whole local-descent/insert machinery:
+  the panel's re-anchor-on-cursor-move performs the descent for free.
+  Viewers preview only. Engine lines keep their bulk PV insert — a
+  different gesture (a whole line in one op).
 - **Whole-game views → the viz box, exclusively** (Eval | Moments | Report
   | Material | Activity). If that family ever outgrows the strip:
   consolidate the pure-FEN timelines into one toggleable view, or move the

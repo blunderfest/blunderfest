@@ -8,14 +8,23 @@ const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const AFTER_D4 = 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1';
 
 const book: OpeningBook = {
-  // 1. e4 and 1. d4 from the start, 1... e5 after 1. e4.
+  // 1. e4 and 1. d4 from the start.
   'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq': 'B00|King Pawn',
   'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq': 'A40|Queen Pawn',
-  'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq': 'C20|Open Game',
 };
 
-function renderPanel(fen: string | null = START, onInsertLine?: (moves: LegalMove[]) => void) {
-  return render(<ReferencePanel book={book} fen={fen} onInsertLine={onInsertLine} />);
+function renderPanel({
+  fen = START,
+  onPlayMove,
+  onHoverMove = vi.fn(),
+}: {
+  fen?: string | null;
+  onPlayMove?: (move: LegalMove) => void;
+  onHoverMove?: (move: LegalMove | null) => void;
+} = {}) {
+  return render(
+    <ReferencePanel book={book} fen={fen} onPlayMove={onPlayMove} onHoverMove={onHoverMove} />,
+  );
 }
 
 describe('ReferencePanel', () => {
@@ -28,68 +37,45 @@ describe('ReferencePanel', () => {
     expect(screen.getByText('A40 · Queen Pawn')).toBeInTheDocument();
   });
 
-  it('descends locally on click — no ops, breadcrumb walks back', () => {
-    renderPanel();
+  it('previews the hovered move as a ghost arrow (local only)', () => {
+    const onHoverMove = vi.fn();
+    renderPanel({ onHoverMove });
+
+    fireEvent.mouseEnter(screen.getByText('e4'));
+    expect(onHoverMove).toHaveBeenCalledWith(expect.objectContaining({ from: 'e2', to: 'e4' }));
+
+    fireEvent.mouseLeave(screen.getByText('e4'));
+    expect(onHoverMove).toHaveBeenLastCalledWith(null);
+  });
+
+  it('plays the move on click (editors)', () => {
+    const onPlayMove = vi.fn<(move: LegalMove) => void>();
+    renderPanel({ onPlayMove });
 
     fireEvent.click(screen.getByText('e4'));
 
-    // One ply down: e5 is the continuation, the breadcrumb shows the path.
-    expect(screen.getByText('e5')).toBeInTheDocument();
-    expect(screen.getByText('C20 · Open Game')).toBeInTheDocument();
-    expect(screen.getByTestId('reference-back')).toHaveTextContent('e4');
-
-    fireEvent.click(screen.getByTestId('reference-back'));
-
-    expect(screen.getByText('B00 · King Pawn')).toBeInTheDocument();
-    expect(screen.queryByTestId('reference-back')).not.toBeInTheDocument();
-  });
-
-  it('re-anchors to the board cursor when it moves', () => {
-    const { rerender } = render(
-      <ReferencePanel book={book} fen={START} onInsertLine={undefined} />,
+    expect(onPlayMove).toHaveBeenCalledWith(
+      expect.objectContaining({ san: 'e4', from: 'e2', to: 'e4', promotion: null }),
     );
-    fireEvent.click(screen.getByText('e4'));
-    expect(screen.getByTestId('reference-back')).toBeInTheDocument();
-
-    rerender(<ReferencePanel book={book} fen={AFTER_D4} onInsertLine={undefined} />);
-
-    // The descent reset; the new position has no book continuations.
-    expect(screen.queryByTestId('reference-back')).not.toBeInTheDocument();
-    expect(screen.getByText('No named continuations from this position.')).toBeInTheDocument();
   });
 
-  it('inserts the browsed path as a variation (editors)', () => {
-    const onInsertLine = vi.fn<(moves: LegalMove[]) => void>();
-    renderPanel(START, onInsertLine);
+  it('viewers preview but cannot play', () => {
+    const onHoverMove = vi.fn();
+    renderPanel({ onPlayMove: undefined, onHoverMove });
 
-    // Nothing to insert before descending.
-    expect(screen.queryByTestId('reference-insert-button')).not.toBeInTheDocument();
+    const e4 = screen.getByText('e4').closest('button');
+    expect(e4).toBeDisabled();
 
-    fireEvent.click(screen.getByText('e4'));
-    fireEvent.click(screen.getByText('e5'));
-    fireEvent.click(screen.getByTestId('reference-insert-button'));
-
-    expect(onInsertLine).toHaveBeenCalledTimes(1);
-    const moves = onInsertLine.mock.calls[0][0];
-    expect(moves.map((m) => m.san)).toEqual(['e4', 'e5']);
-    expect(moves[1].fen).toContain('4p3');
-  });
-
-  it('offers no insert to viewers', () => {
-    renderPanel(START, undefined);
-
-    fireEvent.click(screen.getByText('e4'));
-
-    expect(screen.queryByTestId('reference-insert-button')).not.toBeInTheDocument();
+    // The ghost preview still works — it rides the li, not the button.
+    fireEvent.mouseEnter(screen.getByText('e4'));
+    expect(onHoverMove).toHaveBeenCalledWith(expect.objectContaining({ san: 'e4' }));
   });
 
   it('shows the placeholder off-book and for a null position', () => {
-    renderPanel(AFTER_D4);
+    renderPanel({ fen: AFTER_D4 });
     expect(screen.getByText('No named continuations from this position.')).toBeInTheDocument();
 
-    render(<ReferencePanel book={book} fen={null} onInsertLine={undefined} />);
-    expect(
-      screen.getAllByText('No named continuations from this position.').length,
-    ).toBeGreaterThan(1);
+    renderPanel({ fen: null });
+    expect(screen.getAllByText('No named continuations from this position.')).toHaveLength(2);
   });
 });

@@ -104,6 +104,8 @@ export default function Analysis({
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
+  /** The Reference row under the pointer — its move previews as a ghost arrow. */
+  const [referenceGhost, setReferenceGhost] = useState<LegalMove | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
   const [drawColor, setDrawColor] = useState<string>(DRAW_COLORS[0]);
@@ -549,7 +551,17 @@ export default function Analysis({
       ? [{ ...engineState.bestMove, hint: true }]
       : [];
 
-  const boardArrows = [...hintArrows, ...nodeAnnotations.arrows];
+  // The hovered Reference row previews its move as a ghost arrow (the
+  // engine-hint visual: translucent, never confusable with drawn
+  // annotations). Local only — nothing is broadcast until the click. An
+  // identical engine hint already covers it (and keeps the keys unique).
+  const referenceGhostArrows =
+    referenceGhost !== null &&
+    !hintArrows.some((a) => a.from === referenceGhost.from && a.to === referenceGhost.to)
+      ? [{ from: referenceGhost.from, to: referenceGhost.to, hint: true }]
+      : [];
+
+  const boardArrows = [...hintArrows, ...referenceGhostArrows, ...nodeAnnotations.arrows];
 
   // The visualization box: the eval chart with its quality strip, the
   // critical moments, and the material timeline. The analyze button holds
@@ -1025,11 +1037,8 @@ export default function Analysis({
                     <ReferencePanel
                       book={book}
                       fen={current?.fen ?? null}
-                      onInsertLine={
-                        canEdit && !editor.editing && onAddLine !== undefined
-                          ? insertLineMoves
-                          : undefined
-                      }
+                      onPlayMove={canPlay && !editor.editing ? playMove : undefined}
+                      onHoverMove={setReferenceGhost}
                     />
                   </section>
                 ),

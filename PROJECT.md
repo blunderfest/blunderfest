@@ -156,8 +156,11 @@ named book continuations of the cursor position from the static
 re-anchors when the cursor moves, and editors insert the browsed path via
 `add_line` — the engine-line gesture. ADR-0024 was amended at
 implementation: the tab shows a text placeholder when off-book instead of
-hiding (consistent with the viz tabs). Post-spike, the rows gain corpus
-statistics; the tab itself doesn't change. Dev-ops note: `mix phx.server`
+hiding (consistent with the viz tabs). **Revised the same day:** rows now
+*play* the move (real broadcast op — the panel's re-anchor makes the
+descent free) and preview it as a ghost arrow on hover; the local descent
++ insert machinery was deleted. Viewers preview only. Post-spike, the rows
+gain corpus statistics; the tab itself doesn't change. Dev-ops note: `mix phx.server`
 spawns Vite itself via the endpoint watcher — a manually started Vite on
 5173 crashes it ("port in use"); just run `mix phx.server`.
 

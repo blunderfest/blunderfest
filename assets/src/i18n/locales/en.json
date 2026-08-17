@@ -254,7 +254,6 @@
     "insertLine": "Insert this line as a variation",
     "referenceTab": "Reference",
     "referenceEmpty": "No named continuations from this position.",
-    "referenceBack": "Back to the board position",
     "nagGroup": "Move quality",
     "nagLabel": "Mark as {{glyph}}",
     "backToMainline": "Back to the mainline",

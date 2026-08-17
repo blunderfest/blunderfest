@@ -665,7 +665,7 @@ export default function Board({
             // user-drawn annotations — even when the colors match.
             if (arrow.hint === true) {
               return (
-                <g key={`${arrow.from}-${arrow.to}-${arrow.color}`} opacity={0.55}>
+                <g key={`${arrow.from}-${arrow.to}-${arrow.color}-hint`} opacity={0.55}>
                   <line
                     x1={shape.line.x1}
                     y1={shape.line.y1}
