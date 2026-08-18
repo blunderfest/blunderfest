@@ -433,6 +433,31 @@ describe('Board pointer interactions', () => {
     expect(onDragMove).toHaveBeenCalledWith('e2', null);
   });
 
+  it('reports the hovered square while dragging, and null when the drag ends', () => {
+    const onDragHover = vi.fn();
+    const { grid } = renderInteractive({ onDragHover });
+
+    pointer(grid, 'pointerdown', { button: 0, clientX: 450, clientY: 650 });
+    pointer(grid, 'pointermove', { clientX: 455, clientY: 560 });
+    expect(onDragHover).toHaveBeenLastCalledWith('e2', 'e3');
+    pointer(grid, 'pointermove', { clientX: 455, clientY: 460 });
+    expect(onDragHover).toHaveBeenLastCalledWith('e2', 'e4');
+    // The same square doesn't fire twice.
+    const calls = onDragHover.mock.calls.length;
+    pointer(grid, 'pointermove', { clientX: 456, clientY: 462 });
+    expect(onDragHover.mock.calls.length).toBe(calls);
+
+    pointer(grid, 'pointerup', { button: 0, clientX: 450, clientY: 450 });
+    expect(onDragHover).toHaveBeenLastCalledWith('e2', null);
+  });
+
+  it('renders the drag flag on the target square', () => {
+    render(<Board position={parseFen(START)} dragMark={{ square: 'e4', mark: '??' }} />);
+
+    expect(screen.getByTestId('drag-mark-e4')).toHaveTextContent('??');
+    expect(screen.queryByTestId('drag-mark-e3')).not.toBeInTheDocument();
+  });
+
   it('does not start a drag without a piece move threshold', () => {
     const onDragMove = vi.fn();
     const onSquareClick = vi.fn();

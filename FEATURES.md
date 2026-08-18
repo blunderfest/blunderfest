@@ -19,7 +19,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Drag-and-drop pieces (palette drag + off-board delete in edit mode); click-click also works
 - ✅ Draw arrows/highlights on the board (`set_annotations` op): right-drag / right-click on desktop, long-press on touch/pen, `h`/`a` + `1`-`4` keys; engine hint arrows render as translucent ghosts so they can't be confused with user drawings; `Esc` or the ⌫ button clears a position's drawings
 - ✅ NAG glyphs (`!`, `?`, `!?`, `?!`, `!!`, `??`) — shown in the move list (they win over analysis marks), set from the annotation popup (the `c` key)
-- 💡 Blunder flags *while dragging* a move (live eval of the hovered move) — post-analysis quality marks ship in the move list already
+- ✅ Blunder flags *while dragging* (the milestone-4 engine scope): a dedicated second engine instance live-evals the dragged candidate, the ??/?/?! badge rides the move list's own thresholds
 - 💡 Tablebase (Syzygy) probe for ≤7-piece positions — deferred (ADR-0024); docks in the Reference tab when built, source TBD (a corpus can't provide it)
 - 💡 Keyboard move input (type SAN/uci) — complements the square grid for keyboard/AT users
 - 💡 Board themes / piece sets

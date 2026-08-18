@@ -178,6 +178,18 @@ path with empty nodes for pending moves (crash in variationPositions —
 now null), and a 1-position analysis never triggered staleness (the
 chart's ≥2-point rule leaked into it).
 
+**Blunder flags while dragging shipped** — the last open item from
+milestone 4's engine scope. `useDragFlag` runs a *dedicated second*
+engine instance (the main analysis keeps its worker): hover a drag
+target, get a 100ms search on the candidate, and the loss against the
+main analysis' baseline becomes a ??/?/?! badge on the hovered square —
+`markForLoss` is the shared threshold helper now, so flags, move-list
+marks, chart dots and the report can never disagree. Editors only,
+nothing broadcast (the engine is per-viewer); the flag needs a ready
+baseline (no guesses while the engine thinks). `Board` gained
+`onDragHover` (drop-end/cancel reports null) and the `dragMark` badge.
+Milestone 4's engine scope is now fully closed.
+
 ### Session handoff (2026-08-16)
 
 Since 2026-08-13 the analysis UI went through a big usability-driven,
@@ -290,8 +302,8 @@ half wait on it.
 3. **Import** — DONE. PGN paste and Lichess URL import → variation tree, shared
    in rooms. (In-memory storage; "DB" only when a DB exists.)
 4. **Solo board** — DONE. Hand-rolled board, navigation, arrows, highlights,
-   comments, Stockfish WASM eval bar + best-move hints (ADR-0009). Remaining
-   from the engine scope: blunder flags while dragging.
+   comments, Stockfish WASM eval bar + best-move hints (ADR-0009), blunder
+   flags while dragging.
 5. **Rooms** — DONE. Channel per slug, op-log sync (ADR-0005), presence, roles,
    cursors, multiple games. Remaining: profile game library.
 6. **Save/export** — DONE. Annotated PGN export (client-side serializer,

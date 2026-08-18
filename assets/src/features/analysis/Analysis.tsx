@@ -34,6 +34,7 @@ import SidebarTabs, { type SidebarTab } from '@/features/analysis/SidebarTabs';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useBoardKeyboard } from '@/features/analysis/useBoardKeyboard';
 import { useCursor } from '@/features/analysis/useCursor';
+import { useDragFlag } from '@/features/analysis/useDragFlag';
 import { useEngine } from '@/features/analysis/useEngine';
 import { usePositionEditor } from '@/features/analysis/usePositionEditor';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
@@ -277,6 +278,20 @@ export default function Analysis({
     }
     return legalMovesFor(current.fen ?? '');
   }, [canPlay, current]);
+
+  /**
+   * Blunder flags while dragging: a dedicated second engine instance
+   * evaluates the dragged candidate; the flag rides the same thresholds
+   * as the move list. Needs the main analysis' baseline, so it waits for
+   * a ready status.
+   */
+  const { flag: dragFlag, onDragHover: handleDragHover } = useDragFlag({
+    enabled: engineOn && canPlay && !editor.editing,
+    currentFen: current?.fen ?? null,
+    currentEval: engineState.status === 'ready' ? engineState.eval : null,
+    legalMoves,
+    engine,
+  });
 
   /**
    * Reset the square selection whenever the position changes. Uses the
@@ -851,6 +866,8 @@ export default function Analysis({
                     : undefined
               }
               onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
+              onDragHover={handleDragHover}
+              dragMark={dragFlag}
               onDrawArrow={canEdit && !editor.editing ? handleDrawArrow : undefined}
               onToggleHighlight={canEdit && !editor.editing ? handleToggleHighlight : undefined}
               drawColor={drawColor}

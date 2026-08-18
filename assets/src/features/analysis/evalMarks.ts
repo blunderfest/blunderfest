@@ -1,4 +1,4 @@
-import { pvToSan } from '@/features/analysis/uci';
+import { pvToSan, type WhiteEval } from '@/features/analysis/uci';
 import type { GameNode } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
 
@@ -25,6 +25,34 @@ export function toCentipawns(score: AnalysisEval['score']): number | null {
   return null;
 }
 
+/** The live-engine counterpart of toCentipawns: a WhiteEval in centipawns. */
+export function whiteEvalToCp(white: WhiteEval): number {
+  if (white.type === 'result') {
+    return white.result === '1-0' ? 10_000 : white.result === '0-1' ? -10_000 : 0;
+  }
+  if (white.type === 'mate') {
+    return white.moves > 0 ? 10_000 : -10_000;
+  }
+  return white.cp;
+}
+
+/**
+ * The shared mark thresholds (75/150/300 cp), so drag flags, move-list
+ * marks, chart dots and the report never disagree.
+ */
+export function markForLoss(lossCp: number): MoveMark | null {
+  if (lossCp >= 300) {
+    return '??';
+  }
+  if (lossCp >= 150) {
+    return '?';
+  }
+  if (lossCp >= 75) {
+    return '?!';
+  }
+  return null;
+}
+
 export function moveMark(
   before: AnalysisEval['score'],
   after: AnalysisEval['score'],
@@ -36,16 +64,7 @@ export function moveMark(
     return null;
   }
   const loss = moverIsWhite ? beforeCp - afterCp : afterCp - beforeCp;
-  if (loss >= 300) {
-    return '??';
-  }
-  if (loss >= 150) {
-    return '?';
-  }
-  if (loss >= 75) {
-    return '?!';
-  }
-  return null;
+  return markForLoss(loss);
 }
 
 /** "+0.4", "-1.2", "M3", "1-0" — white's perspective. */

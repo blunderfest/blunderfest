@@ -70,11 +70,13 @@ export default function Board({
   drawColor = '#3b82f6',
   onSquareClick,
   onDragMove,
+  onDragHover,
   onDrawArrow,
   onToggleHighlight,
   onDrawColorChange,
   paintBrush,
   onPaintSquare,
+  dragMark = null,
 }: {
   position: Position;
   lastMove?: { from: string; to: string } | null;
@@ -91,6 +93,8 @@ export default function Board({
   checkSquare?: string | null;
   onSquareClick?: (square: string) => void;
   onDragMove?: (from: string, to: string | null) => void;
+  /** Fires as a drag crosses squares (to === null off-board / on drop-end). */
+  onDragHover?: (from: string, to: string | null) => void;
   onDrawArrow?: (from: string, to: string, color: string) => void;
   onToggleHighlight?: (square: string, color: string) => void;
   drawColor?: string;
@@ -103,6 +107,8 @@ export default function Board({
    */
   paintBrush?: Piece | 'erase' | null;
   onPaintSquare?: (square: string) => void;
+  /** The live blunder flag for the dragged candidate move, on its target. */
+  dragMark?: { square: string; mark: '??' | '?' | '?!' } | null;
 }) {
   const [focusIndex, setFocusIndex] = useState<number>(() =>
     lastMove?.to ? squareIndex(lastMove.to) : squareIndex('e4'),
@@ -115,6 +121,8 @@ export default function Board({
     startY: number;
     dragging: boolean;
   } | null>(null);
+  /** The square the current drag last hovered (so hover fires on change only). */
+  const lastDragHoverRef = useRef<string | null>(null);
   const [ghost, setGhost] = useState<{ piece: Piece; left: number; top: number } | null>(null);
   // The square a live drag started from: its piece hides until the drop so
   // it feels carried, not copied.
@@ -452,6 +460,11 @@ export default function Board({
             top: event.clientY - rect.top,
           });
         }
+        const hoverSquare = pointToSquare(event);
+        if (hoverSquare !== lastDragHoverRef.current) {
+          lastDragHoverRef.current = hoverSquare;
+          onDragHover?.(drag.from, hoverSquare);
+        }
       }
     }
   }
@@ -464,9 +477,11 @@ export default function Board({
     if (drag !== null) {
       dragRef.current = null;
       setDragSource(null);
+      lastDragHoverRef.current = null;
       if (drag.dragging) {
         setGhost(null);
         const to = pointToSquare(event);
+        onDragHover?.(drag.from, null);
         onDragMove?.(drag.from, to);
       }
     }
@@ -476,9 +491,14 @@ export default function Board({
     cancelLongPress();
     paintingRef.current = false;
     lastPaintedRef.current = null;
+    const drag = dragRef.current;
     dragRef.current = null;
     setDragSource(null);
     setGhost(null);
+    lastDragHoverRef.current = null;
+    if (drag?.dragging) {
+      onDragHover?.(drag.from, null);
+    }
   }
 
   const indices = flipped ? [...Array(64).keys()].reverse() : [...Array(64).keys()];
@@ -593,6 +613,21 @@ export default function Board({
                   className="pointer-events-none absolute h-[28%] w-[28%] rounded-full bg-[rgba(20,22,27,0.3)]"
                 />
               ))}
+            {dragMark !== null && dragMark.square === name && (
+              <span
+                data-testid={`drag-mark-${name}`}
+                aria-hidden="true"
+                className={`pointer-events-none absolute top-0.5 right-0.5 z-10 rounded-chip px-1 text-micro font-bold ${
+                  dragMark.mark === '??'
+                    ? 'bg-bad text-white'
+                    : dragMark.mark === '?'
+                      ? 'bg-gold text-[#20180a]'
+                      : 'bg-overlay text-muted'
+                }`}
+              >
+                {dragMark.mark}
+              </span>
+            )}
           </>
         );
 
