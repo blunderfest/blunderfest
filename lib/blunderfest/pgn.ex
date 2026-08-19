@@ -105,7 +105,7 @@ defmodule Blunderfest.PGN do
         end
       end)
 
-    (if current == [], do: chunks, else: [Enum.reverse(current) | chunks])
+    if(current == [], do: chunks, else: [Enum.reverse(current) | chunks])
     |> Enum.reverse()
     |> Enum.map(&Enum.join(&1, "\n"))
     |> Enum.reject(&(String.trim(&1) == ""))
