@@ -93,17 +93,55 @@ Findings + recommendation:
 [`docs/technical-spike-01-position-retrieval-report.md`](docs/technical-spike-01-position-retrieval-report.md).
 The durable-storage decision it feeds is deliberately unmade.
 
-**Spike 02 (similarity & relevance) is awaiting human evaluation** —
-candidate generation is built and measured in `spike/position_retrieval/lib/sim/`
+**Spike 02 (similarity & relevance)** — candidate generation is built and
+measured in `spike/position_retrieval/lib/sim/`
 (12 reference positions × 7 retrieval strategies → 144 judgment units,
 per-dimension annotations, self-contained eval sheet at
 `spike/position_retrieval/data/sim-eval-sheet-100000.html` + judgments TSV
-+ `mix spike.sim.tally` loop). Corpus evidence so far: exact retrieval is
++ `mix spike.sim.tally` loop; the 0–3 TSV itself is still blank — only the
+owner's qualitative observations exist). Corpus evidence so far: exact retrieval is
 a shallow-position luxury (97.9% of distinct keys occur once); pawn-skeleton
 buckets are rich for repeated structures but degenerate to same-game
 siblings for cold positions; following-move plan patterns exist but need
 move-order-insensitive comparison. Report:
 [`docs/technical-spike-02-similarity-and-relevance-report.md`](docs/technical-spike-02-similarity-and-relevance-report.md).
+
+**Spike 02b (from similarity to relevance) is done** — the owner's
+qualitative evaluation (brief §3) was grounded in concrete judgment units
+(the B1–B4 observations map to reference F1's tempo-twin candidates) and
+turned into a testable model: similarity / informational value / query
+relevance are separate annotations, never a fused score. Three corpus probes
+over the existing 100k artifacts proved the key dimensions derivable:
+same-placement/other-stm "tempo twins" (7,970 placements, 3.1% of plies),
+move-order route diffs (divergence ply + tempo attribution), and
+continuation clustering (A2's exact matches split into Marshall-vs-Closed
+families, 43× O-O / 28× d6). Next experiments proposed: continuation-cluster
+annotation + tempo-twin retrieval (strategy H), then a focused ~30-unit
+re-judgment — not a relevance algorithm. Report:
+[`docs/technical-spike-02b-relevance-analysis-report.md`](docs/technical-spike-02b-relevance-analysis-report.md).
+
+### Session handoff (2026-08-19)
+
+**Spike 02b (relevance model) done, docs-only session.** Executed
+`docs/technical-spike-02b-relevance-analysis.md`: grounded the owner's
+qualitative observations in the actual judgment units (B1–B4 = reference
+F1's tempo-twin candidates; F1-F4's h3-vs-castling and the A1-vs-B1-E1
+phase clash confirmed from the candidates JSON), then ran three one-off
+corpus probes over the existing 100k artifacts (no new extraction, app
+untouched, scripts kept out of the repo): (1) same-placement/other-stm
+"tempo twins" — 7,970 placements / 3.1% of plies, F1's own placement has
+28× w + 2× b; (2) move-order route diffs — F1 vs its twin diverge at ply 7
+(e4 vs e3), tempo mechanically attributable; (3) continuation clustering —
+A2's 71 exact matches split into the Marshall/Closed decision menu (next
+move O-O 43× vs d6 28×; multisets merge transpositions, correctly keep
+plan variants apart). Deliverable — the 02b report (above) with
+detectability per dimension, failure modes (incl. new tempo-blindness),
+four small falsifiable experiments (E1 continuation clusters, E2 tempo-twin
+retrieval, E3 consequence proxy, E4 focused ~30-unit re-judgment) and the
+recommendation: build E1+E2, never a fused relevance score. The judgments
+TSV remains blank by design — the formal 0–3 scoring waits for the focused
+sheet. Nothing committed (spike docs are owner WIP per the conventions
+below).
 
 ### Session handoff (2026-08-17)
 

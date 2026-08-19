@@ -16,6 +16,8 @@ directory holds the durable record of how and why the system is built.
 | `technical-spike-01-position-retrieval-report.md` | Spike 01 results: position key design (EP convention), benchmarks (PG/SQLite/DuckDB/ETS/flatfile) at 100k/1M/10M games, recommendation. Code in `spike/position_retrieval/`. |
 | `technical-spike-02-similarity-and-relevance.md` | Spike 02 brief: which similarity/context dimensions produce useful historical candidates (experiment, not spec). |
 | `technical-spike-02-similarity-and-relevance-report.md` | Spike 02 results: feature dimensions, seven retrieval strategies, candidate pools/performance at 100k games, evaluation sheet loop. Code in `spike/position_retrieval/lib/sim/`. |
+| `technical-spike-02b-relevance-analysis.md` | Spike 02b brief: what a future search engine needs to rank historical games by *usefulness* (qualitative-evaluation follow-up to Spike 02). |
+| `technical-spike-02b-relevance-analysis-report.md` | Spike 02b results: the qualitative observations grounded in judgment units, the similarity / informational-value / query-relevance split, corpus probes (tempo twins, route diffs, continuation clusters), detectability per dimension, next experiments. |
 
 ## How to use the ADRs
 
