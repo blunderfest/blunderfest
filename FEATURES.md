@@ -100,5 +100,5 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Single-artifact Phoenix release serving API + sockets + SPA; Fly.io scale-to-zero
 - ✅ No-cache shell so deploys take effect on refresh
 - ✅ Secrets in `fly secrets` (never the repo), server-side op validation (`Blunderfest.Ops`), room/op caps, room-creation rate limit per client IP (ADR-0017); no CI — checks run locally (`mix precommit`, pnpm)
-- 💡 Persistent storage when a feature needs durability (game library, corpus) — spike in flight; requires revisiting ADR-0001 explicitly
+- 💡 Persistent storage when a feature needs durability (game library, corpus) — decided in Spike 03 (Postgres for app data + canonical corpus, derived index behind a `Corpus` boundary); reintroducing Ecto amends ADR-0001 and awaits the implementation milestone
 - 💡 Rate limiting on profile creation (room creation is already covered)

@@ -120,6 +120,46 @@ annotation + tempo-twin retrieval (strategy H), then a focused ~30-unit
 re-judgment — not a relevance algorithm. Report:
 [`docs/technical-spike-02b-relevance-analysis-report.md`](docs/technical-spike-02b-relevance-analysis-report.md).
 
+**Spike 03 (persistence architecture) is done** — one PostgreSQL
+(Fly Postgres, Ecto) for **application data** (profiles, accounts,
+library) and the **canonical corpus** (games as validated PGN, sha256
+-deduped); position occurrences are *derived/indexed* data, rebuildable
+by extraction behind a `Blunderfest.Corpus` module boundary (no corpus
+SQL in app code); rooms/ops/presence stay in-memory (ADR-0005
+unchanged). SQLite is the designated corpus-side fallback (Spike 01
+numbers), the packed binary index the designated successor for
+occurrences if the corpus outgrows PG. Notable findings: the current
+in-memory Profiles/Library have a latent two-region split-brain
+(`ams`+`ord` hold divergent state — durable storage fixes a real bug,
+not just durability); positions are *not* first-class entities (the
+key is virtual identity, the occurrence row is the stored fact).
+Next step: make profiles durable first (smallest entity set, unblocks
+the library's cross-device half, exercises the whole Ecto/Fly-Postgres
+path before the big corpus data touches it). Report:
+[`docs/technical-spike-03-persistence-report.md`](docs/technical-spike-03-persistence-report.md).
+
+### Session handoff (2026-08-20)
+
+**Spike 03 (persistence) done, docs-only session.** Executed
+`docs/technical-spike-03-persistence.md`: a synthesis over Spike 01's
+store benchmarks, Spikes 02/02b's search requirements,
+`storage-options.md`, and the current code. Deliverable — the 03
+report (above): data model (profiles/accounts/library + corpus_games;
+occurrences derived), canonical-vs-derived-vs-indexed classification,
+ten access patterns with measured numbers, PG evaluation with
+alternatives rejected on stated grounds (SQLite kept as fallback),
+one-server-two-schemas architecture diagram, the `Corpus` boundary
+(one module tree + "app code never writes corpus SQL"), idempotent
+sha256 import with per-batch transactions and dump-as-checkpoint
+resume, truncate-and-rebuild index strategy (app schema + PGNs are
+the backup set; occurrences excluded), six open questions, and the
+next step (durable profiles, with a new ADR superseding ADR-0001 for
+application data). Also committed: the owner's pending Spike 02b docs
+(report/brief/lessons + PROJECT/docs index updates) and a `pgn.ex`
+style fix. 242 backend tests green. Nothing else in the app touched —
+the Ecto/Postgres introduction is the *next* session's milestone, and
+needs the user's explicit go (it amends ADR-0001).
+
 ### Session handoff (2026-08-19)
 
 **Spike 02b (relevance model) done, docs-only session.** Executed
@@ -153,10 +193,9 @@ role, so they're excluded too). The owner can delete any message: a
 else, and every client filters deleted seqs out of the visible history (the
 original chat op stays in the log — append-only, ADR-0005). The UI: viewers
 get a one-line "read along" hint instead of the input; the owner gets a ×
-per message. 241 backend + 489 frontend tests green. The persistence spike
-remains the user's and in flight — durable accounts / cross-device library
-still wait on it. Next candidates: FEATURES.md text polish, or whatever the
-spike unblocks.
+per message. 241 backend + 489 frontend tests green. The persistence
+spike is done (Spike 03, 2026-08-20) — durable accounts / cross-device
+library are now unblocked, waiting only on implementation.
 
 **Later the same day:** the "learn from this game" report landed — a fifth
 viz-box tab (Eval | Moments | Report | Material | Activity) with per-side
@@ -287,9 +326,9 @@ archive browsing with multi-select, strictly via the official public API
 scraping; checked before building). **Room chat** rides the op log
 (`chat` op; replay = history; any member can write). **Canonical URL is
 `https://blunderfest.org`** — `blunderfest.fly.dev` is the raw Fly
-domain and doesn't work properly (CORS etc.). A persistence spike is in
-flight (user) — account durability and the game library's cross-device
-half wait on it.
+domain and doesn't work properly (CORS etc.). The persistence spike
+(Spike 03) is done — see the 2026-08-20 handoff; account durability
+and the game library's cross-device half wait only on implementation.
 
 1. **Room panel location display** — DONE: region/lag is one compact
    truncating line inside the box, under the code/copy/leave row.

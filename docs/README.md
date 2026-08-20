@@ -18,6 +18,9 @@ directory holds the durable record of how and why the system is built.
 | `technical-spike-02-similarity-and-relevance-report.md` | Spike 02 results: feature dimensions, seven retrieval strategies, candidate pools/performance at 100k games, evaluation sheet loop. Code in `spike/position_retrieval/lib/sim/`. |
 | `technical-spike-02b-relevance-analysis.md` | Spike 02b brief: what a future search engine needs to rank historical games by *usefulness* (qualitative-evaluation follow-up to Spike 02). |
 | `technical-spike-02b-relevance-analysis-report.md` | Spike 02b results: the qualitative observations grounded in judgment units, the similarity / informational-value / query-relevance split, corpus probes (tempo twins, route diffs, continuation clusters), detectability per dimension, next experiments. |
+| `technical-spike-02b-relevance-lessons-learned.md` | Spike 02 lessons learned (owner's synthesis): similarity finds candidates but differences + continuations carry the value; relevance is query-dependent; no fused score. |
+| `technical-spike-03-persistence.md` | Spike 03 brief: determine the persistence architecture — data classes, canonical vs derived, access patterns, store candidates, import/rebuild strategy. |
+| `technical-spike-03-persistence-report.md` | Spike 03 results: one Postgres for app data + canonical corpus (PGN), derived/rebuildable occurrence index behind a `Corpus` boundary, rooms stay in-memory; import/rebuild strategy; ADR-0001 amendment proposed. |
 
 ## How to use the ADRs
 
