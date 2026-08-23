@@ -23,6 +23,8 @@ directory holds the durable record of how and why the system is built.
 | `technical-spike-03-persistence-report.md` | Spike 03 results: one Postgres for app data + canonical corpus (PGN), derived/rebuildable occurrence index behind a `Corpus` boundary, rooms stay in-memory; import/rebuild strategy; ADR-0001 amendment proposed. |
 | `technical-spike-04-historical-continuation-and-plan-patterns.md` | Spike 04 brief: can following-move context distinguish "similar position" from "similar chess idea" (B1–B4/F1-F4 as test cases). |
 | `technical-spike-04-historical-continuation-and-plan-patterns-report.md` | Spike 04 results: yes, conditionally — continuation clustering reproduces decision menus (A2 Marshall/Closed, F1 kingside trio), typed differences label all six qualitative units; tempo twins and single-linkage chaining documented as failures. Code in `spike/position_retrieval/lib/sim/continuation*.ex`, `difference.ex`. |
+| `technical-spike-05-contextual-historical-evidence-re-judgment-experiment.md` | Spike 05 brief: does contextual evidence (typed differences, continuation, families, per-side, move order) improve human re-judgment of the known candidates — no relevance score. |
+| `technical-spike-05-contextual-historical-evidence-re-judgment-experiment-report.md` | Spike 05 results: yes — 4 of 13 judgments changed (both directions) for structural reasons; route/move-order comparison + typed differences carry, families need counts and a same-game guard; singleton self-membership and bare labels documented as failures. Code in `spike/position_retrieval/lib/sim/rejudge*.ex`. |
 
 ## How to use the ADRs
 

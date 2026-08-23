@@ -142,6 +142,28 @@ re-judgment sheet (02b's E4) with these annotations on every card.
 Report:
 [`docs/technical-spike-04-historical-continuation-and-plan-patterns-report.md`](docs/technical-spike-04-historical-continuation-and-plan-patterns-report.md).
 
+**Spike 05 (contextual-evidence re-judgment) is done** — the E4
+re-judgment experiment, built as `Spike.Sim.Rejudge` +
+`mix spike.sim.rejudge` in the spike sub-project (7 new tests, 73 green;
+`data/sim-rejudge-100000.json` + a self-contained A/B sheet
+`data/sim-rejudge-sheet-100000.html`: 13 units × original-vs-contextual
+presentation, with typed differences, w4/6/8 continuations, decision-menu
+family membership, per-side splits, route diffs and historical context on
+every card; cluster signatures cross-validated against Spike 04's
+artifact). Answer to the central question: **yes** — 4 of 13 judgments
+changed, in both directions, all for structural reasons (A2 up: the other
+menu branch; A3 down: singleton one-off; B3 up/reframed: a named side
+branch, not "wrong question"; F4 up: h3-deviation mechanically shown to
+return to the main family). The load-bearing signals: route/move-order
+diffs ("white also played `e3`") + typed differences as one unit, family
+membership *with counts and the reference-game marker*, per-side splits
+for tempo twins. Documented failures: singleton self-membership (B2/B3/B4
+"join" a family containing only their own game) and bare labels without
+the route (F3). Spike 06 recommended: plan-skeleton tokenization tested
+only against the one documented gap (tempo-flipped continuations can't
+join their plan family — B1). Report:
+[`docs/technical-spike-05-contextual-historical-evidence-re-judgment-experiment-report.md`](docs/technical-spike-05-contextual-historical-evidence-re-judgment-experiment-report.md).
+
 **Spike 03 (persistence architecture) is done** — one PostgreSQL
 (Fly Postgres, Ecto) for **application data** (profiles, accounts,
 library) and the **canonical corpus** (games as validated PGN, sha256
@@ -159,6 +181,36 @@ Next step: make profiles durable first (smallest entity set, unblocks
 the library's cross-device half, exercises the whole Ecto/Fly-Postgres
 path before the big corpus data touches it). Report:
 [`docs/technical-spike-03-persistence-report.md`](docs/technical-spike-03-persistence-report.md).
+
+### Session handoff (2026-08-23, second session)
+
+**Spike 05 (contextual-evidence re-judgment) done, spike-only session.**
+Executed `docs/technical-spike-05-contextual-historical-evidence-re-judgment-experiment.md`:
+two new modules in the spike sub-project (`Spike.Sim.Rejudge` — the
+13-unit card builder: typed differences, w4/6/8 continuation windows vs
+the reference's own, decision-menu family membership (single-linkage over
+the exact occurrences at Spike 04's validated settings), per-side
+continuation splits, route/move-order diffs with per-side extra-moves
+tempo attribution, occurrence counts; `Spike.Sim.RejudgeSheet` — the
+self-contained A/B HTML sheet showing every unit in its original Spike 02
+presentation next to the contextual one, with the brief's §6 questions
+attached), the `mix spike.sim.rejudge` task, 7 new tests (73 green), one
+full run at the 100k tier writing `data/sim-rejudge-100000.json` +
+`data/sim-rejudge-sheet-100000.html` (<1 s of computation after the
+shared ~3 min index load). Menus reproduced Spike 04's published cluster
+signatures exactly (F1 13/8/2/1×5 multiset@0.5/w4, A2 36/19/4/4/3/2/2/1
+LCS@0.6/w4). The agent acted as evaluator (non-blind; the six grounded
+units' baselines are the owner's documented 02b readings, the seven new
+units got a genuine two-pass A/B) — the sheet is the instrument for an
+owner re-run. Deliverable — the 05 report (linked above): setup, the
+before/after table (4 changed / 9 unchanged), changed and unchanged
+judgments with reasons, the five useful signals and four unhelpful ones
+(singleton self-membership is the new one — future UI needs a "family
+contains only this game" flag), search-engine implications (evidence,
+never a fused score), and the tightly-scoped Spike 06 recommendation
+(plan-skeleton tokenization vs the tempo-flip family-joining gap only).
+Nothing in the app touched; the spike sub-project code stays untracked
+(gitignored `spike/`), brief + report committed.
 
 ### Session handoff (2026-08-23)
 
