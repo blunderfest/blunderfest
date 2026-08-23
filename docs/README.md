@@ -21,6 +21,8 @@ directory holds the durable record of how and why the system is built.
 | `technical-spike-02b-relevance-lessons-learned.md` | Spike 02 lessons learned (owner's synthesis): similarity finds candidates but differences + continuations carry the value; relevance is query-dependent; no fused score. |
 | `technical-spike-03-persistence.md` | Spike 03 brief: determine the persistence architecture — data classes, canonical vs derived, access patterns, store candidates, import/rebuild strategy. |
 | `technical-spike-03-persistence-report.md` | Spike 03 results: one Postgres for app data + canonical corpus (PGN), derived/rebuildable occurrence index behind a `Corpus` boundary, rooms stay in-memory; import/rebuild strategy; ADR-0001 amendment proposed. |
+| `technical-spike-04-historical-continuation-and-plan-patterns.md` | Spike 04 brief: can following-move context distinguish "similar position" from "similar chess idea" (B1–B4/F1-F4 as test cases). |
+| `technical-spike-04-historical-continuation-and-plan-patterns-report.md` | Spike 04 results: yes, conditionally — continuation clustering reproduces decision menus (A2 Marshall/Closed, F1 kingside trio), typed differences label all six qualitative units; tempo twins and single-linkage chaining documented as failures. Code in `spike/position_retrieval/lib/sim/continuation*.ex`, `difference.ex`. |
 
 ## How to use the ADRs
 

@@ -120,6 +120,28 @@ annotation + tempo-twin retrieval (strategy H), then a focused ~30-unit
 re-judgment — not a relevance algorithm. Report:
 [`docs/technical-spike-02b-relevance-analysis-report.md`](docs/technical-spike-02b-relevance-analysis-report.md).
 
+**Spike 04 (historical continuation & plan patterns) is done** —
+following-move context as a first-class retrieval dimension, measured in
+`spike/position_retrieval/lib/sim/continuation*.ex` + `difference.ex`
+(29 new tests; `mix spike.sim.continuations` writes
+`data/sim-continuation-100000.json`). Answer to the central question:
+**yes, conditionally** — continuation content separates same-plan from
+different-plan candidates where position similarity is silent (F1's exact
+matches split 0.35/0.25 vs 0.00/0.00; the E-strategy cross-structure
+candidates all sink 8–14 ranks), and threshold clustering reproduces both
+known decision menus cross-game clean (A2's Marshall/Closed at LCS@0.6;
+F1's kingside `Ne1 Ne8 {Be3,Nd3,f3} f5` trio merged at multiset@0.5, with
+the queenside `b4` family as the next cluster). Two qualifications:
+tempo twins defeat content-level similarity (B1 ranks right but scores
+low — the typed-difference label carries it), and single linkage chains
+at low thresholds/long windows (F1's two plans blob together at
+side@0.4/w6). All six qualitative units (F1-B1…B4, F1-F4, A2-B4) get the
+right typed difference with the right squares. Recommendation:
+annotations + clustering, never a fused score; next is the focused
+re-judgment sheet (02b's E4) with these annotations on every card.
+Report:
+[`docs/technical-spike-04-historical-continuation-and-plan-patterns-report.md`](docs/technical-spike-04-historical-continuation-and-plan-patterns-report.md).
+
 **Spike 03 (persistence architecture) is done** — one PostgreSQL
 (Fly Postgres, Ecto) for **application data** (profiles, accounts,
 library) and the **canonical corpus** (games as validated PGN, sha256
@@ -137,6 +159,30 @@ Next step: make profiles durable first (smallest entity set, unblocks
 the library's cross-device half, exercises the whole Ecto/Fly-Postgres
 path before the big corpus data touches it). Report:
 [`docs/technical-spike-03-persistence-report.md`](docs/technical-spike-03-persistence-report.md).
+
+### Session handoff (2026-08-23)
+
+**Spike 04 (continuation & plan patterns) done, spike-only session.**
+Executed `docs/technical-spike-04-historical-continuation-and-plan-patterns.md`:
+three new modules in the spike sub-project (`Spike.Sim.Continuation` —
+five continuation representations + LCS/multiset-Jaccard/per-color
+similarity; `Spike.Sim.Difference` — the typed differences: tempo_twin,
+near_twin, piece_setup, king_position, material, structure +
+same_plan/timing_shift/plan_divergence; `Spike.Sim.ContinuationLab` —
+the four-experiment driver behind `mix spike.sim.continuations`), 29 new
+tests (66 green), one full run at the 100k tier writing
+`data/sim-continuation-100000.json` (11 s of experiments after the shared
+~3 min index load). Deliverable — the 04 report (linked above): setup,
+the census/cluster/diff/ordering results with concrete sequences, the
+position-only vs position+continuation comparison, the six-unit
+qualitative validation, five failure cases (incl. single-linkage chaining
+and a latent `Spike.Corpus` EOF bug that silently drops a final game
+without a trailing blank line — deliberately **not** fixed: it would
+desync fresh extractions from the published TSVs), complexity, and the
+recommendation (continuation as annotation + clustering, E4 re-judgment
+sheet next, plan-skeleton tokenization as the one representation upgrade
+worth testing). Nothing in the app touched; the spike sub-project code
+stays untracked (gitignored `spike/`), brief + report committed.
 
 ### Session handoff (2026-08-20)
 
