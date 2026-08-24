@@ -32,6 +32,10 @@ defmodule Blunderfest.Application do
       # Evicts idle, empty rooms so the room cap can't be exhausted by
       # abandoned ones. After Presence: it reads it.
       BlunderfestWeb.RoomSweeper,
+      # The corpus boundary (ADR-0026): owns the Postgrex pool and delegates
+      # all historical-evidence queries. Starts unconfigured (and inert)
+      # when no db: config exists, e.g. dev without DATABASE_URL.
+      Blunderfest.Corpus,
       BlunderfestWeb.Endpoint
     ]
 

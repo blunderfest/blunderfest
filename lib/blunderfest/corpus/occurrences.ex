@@ -1,0 +1,359 @@
+defmodule Blunderfest.Corpus.Occurrences do
+  @moduledoc """
+  The occurrence layer of the `Blunderfest.Corpus` boundary (ADR-0026):
+  PostgreSQL-backed, Postgrex directly, no Ecto.
+
+  Holds the derived corpus data the pipeline queries:
+
+      corpus_positions     canonical key → pawn_hash, first occurrence
+      corpus_occurrences   canonical key → every (gid, ply) occurrence
+      corpus_games         gid → game metadata (12 columns)
+      corpus_moves         gid → mainline SAN list
+
+  Everything here is derived from canonical PGNs and is dropped and rebuilt
+  by `rebuild/3` from the `Blunderfest.Corpus.Extraction` artifacts
+  (`keys-`, `games-`, `moves-N.tsv`) — the PGN → moves → positions → indexes
+  invariant. Tables are UNLOGGED (crash recovery is irrelevant for
+  rebuildable data).
+
+  Functions take a `conn` (a Postgrex connection or pool, `Postgrex.query!/4`
+  accepts both) so the ownership of the pool stays with the facade and tests
+  can run against their own database.
+  """
+
+  @tables ~w(corpus_positions corpus_occurrences corpus_games corpus_moves)
+
+  @type conn :: pid()
+
+  @doc """
+  Drops and rebuilds all corpus tables from the extraction artifacts.
+  Idempotent; safe to run any number of times.
+
+  Returns `%{positions: n, occurrences: n, games: n, moves: n}` row counts.
+  """
+  @spec rebuild(conn(), Path.t(), non_neg_integer()) :: map()
+  def rebuild(conn, data_dir, tier) do
+    drop_tables(conn)
+    create_tables(conn)
+
+    copy_positions(conn, Path.join(data_dir, "keys-#{tier}.tsv"))
+    copy_occurrences(conn, Path.join(data_dir, "keys-#{tier}.tsv"))
+    copy_games(conn, Path.join(data_dir, "games-#{tier}.tsv"))
+    copy_moves(conn, Path.join(data_dir, "moves-#{tier}.tsv"))
+
+    build_indexes(conn)
+    analyze(conn)
+
+    counts(conn)
+  end
+
+  @doc "Row counts of the four corpus tables."
+  @spec counts(conn()) :: %{
+          positions: non_neg_integer(),
+          occurrences: non_neg_integer(),
+          games: non_neg_integer(),
+          moves: non_neg_integer()
+        }
+  def counts(conn) do
+    Map.new(@tables, fn table ->
+      %{rows: [[n]]} = Postgrex.query!(conn, "SELECT count(*) FROM #{table}", [])
+      {table_key(table), n}
+    end)
+  end
+
+  @doc "Every occurrence of a canonical key as `[{gid, ply}]`, in game/ply order."
+  @spec occurrences(conn(), String.t()) :: [{pos_integer(), pos_integer()}]
+  def occurrences(conn, key) do
+    %{rows: rows} =
+      Postgrex.query!(
+        conn,
+        "SELECT gid, ply FROM corpus_occurrences WHERE key = $1 ORDER BY gid, ply",
+        [key]
+      )
+
+    Enum.map(rows, fn [gid, ply] -> {gid, ply} end)
+  end
+
+  @doc """
+  The position row for a canonical key (`%{pawn_hash, first_gid, first_ply}`)
+  or nil when the corpus has never seen the position.
+  """
+  @spec position(conn(), String.t()) :: map() | nil
+  def position(conn, key) do
+    %{rows: rows} =
+      Postgrex.query!(
+        conn,
+        "SELECT pawn_hash, first_gid, first_ply FROM corpus_positions WHERE key = $1",
+        [key]
+      )
+
+    case rows do
+      [[pawn_hash, gid, ply]] ->
+        %{key: key, pawn_hash: pawn_hash, first_gid: gid, first_ply: ply}
+
+      [] ->
+        nil
+    end
+  end
+
+  @doc "Distinct canonical keys sharing a pawn-skeleton hash (the structural bucket)."
+  @spec pawn_bucket(conn(), non_neg_integer()) :: [String.t()]
+  def pawn_bucket(conn, pawn_hash) do
+    %{rows: rows} =
+      Postgrex.query!(
+        conn,
+        "SELECT key FROM corpus_positions WHERE pawn_hash = $1 ORDER BY key",
+        [pawn_hash]
+      )
+
+    Enum.map(rows, fn [key] -> key end)
+  end
+
+  @doc "Game metadata for a gid, or nil."
+  @spec game(conn(), pos_integer()) :: map() | nil
+  def game(conn, gid) do
+    %{rows: rows} =
+      Postgrex.query!(
+        conn,
+        """
+        SELECT white, black, result, date, eco, opening,
+               white_elo, black_elo, event, time_control, site
+        FROM corpus_games WHERE gid = $1
+        """,
+        [gid]
+      )
+
+    case rows do
+      [[white, black, result, date, eco, opening, welo, belo, event, tc, site]] ->
+        %{
+          gid: gid,
+          white: white,
+          black: black,
+          result: result,
+          date: date,
+          eco: eco,
+          opening: opening,
+          white_elo: welo,
+          black_elo: belo,
+          event: event,
+          time_control: tc,
+          site: site
+        }
+
+      [] ->
+        nil
+    end
+  end
+
+  @doc "Mainline SAN list of a game (empty when unknown)."
+  @spec moves(conn(), pos_integer()) :: [String.t()]
+  def moves(conn, gid) do
+    %{rows: rows} = Postgrex.query!(conn, "SELECT sans FROM corpus_moves WHERE gid = $1", [gid])
+
+    case rows do
+      [[sans]] -> String.split(sans, " ", trim: true)
+      [] -> []
+    end
+  end
+
+  ## Schema
+
+  defp table_key("corpus_positions"), do: :positions
+  defp table_key("corpus_occurrences"), do: :occurrences
+  defp table_key("corpus_games"), do: :games
+  defp table_key("corpus_moves"), do: :moves
+
+  defp drop_tables(conn) do
+    for table <- @tables ++ ["corpus_positions_stage"] do
+      Postgrex.query!(conn, "DROP TABLE IF EXISTS #{table}", [])
+    end
+  end
+
+  defp create_tables(conn) do
+    statements = [
+      """
+      CREATE UNLOGGED TABLE corpus_positions (
+        key text PRIMARY KEY,
+        pawn_hash bigint NOT NULL,
+        first_gid integer NOT NULL,
+        first_ply smallint NOT NULL
+      )
+      """,
+      """
+      CREATE UNLOGGED TABLE corpus_occurrences (
+        key text NOT NULL,
+        gid integer NOT NULL,
+        ply smallint NOT NULL
+      )
+      """,
+      """
+      CREATE UNLOGGED TABLE corpus_games (
+        gid integer PRIMARY KEY,
+        white text NOT NULL,
+        black text NOT NULL,
+        result text NOT NULL,
+        date text NOT NULL,
+        eco text NOT NULL,
+        opening text NOT NULL,
+        white_elo integer,
+        black_elo integer,
+        event text NOT NULL,
+        time_control text NOT NULL,
+        site text NOT NULL
+      )
+      """,
+      """
+      CREATE UNLOGGED TABLE corpus_moves (
+        gid integer PRIMARY KEY,
+        sans text NOT NULL
+      )
+      """
+    ]
+
+    Enum.each(statements, &Postgrex.query!(conn, &1, []))
+  end
+
+  defp build_indexes(conn) do
+    Postgrex.query!(conn, "CREATE INDEX ON corpus_positions (pawn_hash)", [])
+    Postgrex.query!(conn, "CREATE INDEX ON corpus_occurrences (key)", [])
+  end
+
+  defp analyze(conn) do
+    Enum.each(@tables, &Postgrex.query!(conn, "ANALYZE #{&1}", []))
+  end
+
+  ## Loading (COPY FROM STDIN, spike 03's proven bulk-load shape)
+
+  defp copy_positions(conn, keys_path) do
+    Postgrex.query!(
+      conn,
+      """
+      CREATE UNLOGGED TABLE corpus_positions_stage (
+        key text NOT NULL,
+        pawn_hash bigint NOT NULL,
+        first_gid integer NOT NULL,
+        first_ply smallint NOT NULL
+      )
+      """,
+      []
+    )
+
+    with_copy(conn, "corpus_positions_stage", fn copy ->
+      keys_path
+      |> stream_lines()
+      |> Stream.map(fn {key, gid, ply} ->
+        pawn_hash = key |> pawn_hash() |> Integer.to_string()
+        Enum.join([key, pawn_hash, gid, ply], "\t") <> "\n"
+      end)
+      |> Enum.into(copy)
+    end)
+
+    # One row per distinct key: the true first occurrence is the minimum
+    # (gid, ply). `keys-N.tsv` row order is irrelevant here.
+    Postgrex.query!(
+      conn,
+      """
+      INSERT INTO corpus_positions (key, pawn_hash, first_gid, first_ply)
+      SELECT DISTINCT ON (key) key, pawn_hash, first_gid, first_ply
+      FROM corpus_positions_stage
+      ORDER BY key, first_gid, first_ply
+      """,
+      [],
+      timeout: :infinity
+    )
+
+    Postgrex.query!(conn, "DROP TABLE corpus_positions_stage", [])
+  end
+
+  defp copy_occurrences(conn, keys_path) do
+    with_copy(conn, "corpus_occurrences", fn copy ->
+      keys_path
+      |> stream_lines()
+      |> Stream.map(fn {key, gid, ply} -> Enum.join([key, gid, ply], "\t") <> "\n" end)
+      |> Enum.into(copy)
+    end)
+  end
+
+  defp copy_games(conn, games_path) do
+    with_copy(conn, "corpus_games", fn copy ->
+      games_path
+      |> File.stream!(:line)
+      |> Stream.map(&utf8/1)
+      |> Stream.map(&games_row/1)
+      |> Enum.into(copy)
+    end)
+  end
+
+  defp copy_moves(conn, moves_path) do
+    with_copy(conn, "corpus_moves", fn copy ->
+      moves_path
+      |> File.stream!(:line)
+      |> Stream.map(&utf8/1)
+      |> Enum.into(copy)
+    end)
+  end
+
+  defp with_copy(conn, table, fun) do
+    Postgrex.transaction(
+      conn,
+      fn tx ->
+        copy = Postgrex.stream(tx, "COPY #{table} FROM STDIN", [])
+        fun.(copy)
+      end,
+      timeout: :infinity
+    )
+  end
+
+  defp stream_lines(path) do
+    path
+    |> File.stream!(:line)
+    |> Stream.map(fn line ->
+      case line |> String.trim_trailing("\n") |> String.split("\t") do
+        [key, gid, ply] -> {key, gid, ply}
+      end
+    end)
+  end
+
+  # `keys-N.tsv` is in corpus order, so the first row of a key is its first
+  # occurrence; the btree on key makes the dedup sort-free.
+  #
+  # The pawn-skeleton hash is truncated to 63 bits: `bigint` is signed
+  # 64-bit and cannot hold the full 128-bit BLAKE2b. 63 bits is ample for a
+  # *bucket* index (a rare collision merely merges two skeleton buckets, it
+  # cannot produce a wrong candidate), and the position key itself stays
+  # 128-bit.
+  defp pawn_hash(key) do
+    key
+    |> Blunderfest.Corpus.PositionKey.pawn_key()
+    |> Blunderfest.Corpus.PositionKey.to_hash128()
+    |> binary_part(0, 8)
+    |> :binary.decode_unsigned()
+    |> Bitwise.band(0x7FFFFFFFFFFFFFFF)
+  end
+
+  # "?" means "unknown" in the extraction artifacts; for the integer Elo
+  # columns it becomes `\N` (COPY's NULL marker). Other columns keep the "?"
+  # marker as text.
+  defp games_row(line) do
+    case String.split(line, "\t", trim: false) do
+      [gid, w, b, r, d, eco, open, welo, belo, ev, tc, site] ->
+        Enum.join(
+          [gid, w, b, r, d, eco, open, elo(welo), elo(belo), ev, tc, site],
+          "\t"
+        )
+
+      _ ->
+        line
+    end
+  end
+
+  defp elo("?"), do: "\\N"
+  defp elo(v), do: v
+
+  # Some corpus player names carry non-UTF-8 bytes (latin-1); PostgreSQL
+  # rejects them for UTF-8 databases. Tolerate at load: fall back to a
+  # latin-1 interpretation when a line isn't valid UTF-8.
+  defp utf8(s) do
+    if String.valid?(s), do: s, else: :unicode.characters_to_binary(s, :latin1, :utf8)
+  end
+end
