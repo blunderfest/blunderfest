@@ -1,6 +1,7 @@
 # Historical Evidence — First Vertical Slice
 
-**Status:** Implementation preparation
+**Status:** Implemented (2026-08-25) — see `docs/historical-evidence-api.md`,
+ADR-0026/0027, and the backend/frontend regression suites for the result.
 **Purpose:** Define the first production-oriented vertical slice after Technical Spikes 02–06.
 
 ---
