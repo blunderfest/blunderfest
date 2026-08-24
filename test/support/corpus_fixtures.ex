@@ -22,7 +22,10 @@ defmodule Blunderfest.Corpus.TestFixtures do
       (`r1bqk2r/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1 b kq -`).
       Two gids Closed (…d6 c3 O-O d4 Bg4), two gids Marshall (…O-O c3 d5).
     * **Same-game** (gid 12) — the F1 tabiya occurs at ply 16 and again at
-      ply 20 (Ne1 Ne8 Nf3 Ng8 shuffle) in the same game.
+      ply 20 (Ne1 Ne8 Nf3 Nf6 shuffle) in the same game.
+    * **Same-game structural** (gid 13) — a shuffle game whose structural
+      near-twin position (white Ne1, black Ne8) occurs twice (plies 18 and
+      22) and in no other game: the §13 `same_game_only` candidate.
   """
 
   @doc """
@@ -211,6 +214,22 @@ defmodule Blunderfest.Corpus.TestFixtures do
 
     1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5 7. O-O Nc6
     8. d5 Ne7 9. Ne1 Ne8 10. Nf3 Nf6 11. Bd2 g5 12. Rc1 Kh8 1-0
+
+    [Event "Fixture"]
+    [Site "https://lichess.org/fix13"]
+    [White "A"]
+    [Black "B"]
+    [Result "1-0"]
+    [UTCDate "2017.05.04"]
+    [ECO "E97"]
+    [Opening "King's Indian"]
+    [WhiteElo "1950"]
+    [BlackElo "1900"]
+    [TimeControl "600+0"]
+
+    1. d4 Nf6 2. c4 g6 3. Nc3 Bg7 4. e4 d6 5. Nf3 O-O 6. Be2 e5 7. O-O Nc6
+    8. d5 Ne7 9. Rb1 Ne8 10. Ra1 Nf6 11. Rb1 Ne8 12. Ra1 Nf6 13. Bd2 g5
+    14. Rc1 Kh8 1-0
     """
   end
 
@@ -230,6 +249,13 @@ defmodule Blunderfest.Corpus.TestFixtures do
   def a2_key, do: "r1bqk2r/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1 b kq -"
 
   @doc """
+  The same-game structural near-twin (white Rb1, black Nf6): reached only
+  by gid 13's shuffle, twice (plies 17 and 21).
+  """
+  def same_game_key,
+    do: "r1bq1rk1/ppp1npbp/3p1np1/3Pp3/2P1P3/2N2N2/PP2BPPP/1RBQ1RK1 b - -"
+
+  @doc """
   Expected occurrence layout per case key, as `%{key => [{gid, ply}]}`.
   Derived from the fixture's routes; the fixture test asserts the corpus
   actually produces exactly this.
@@ -244,17 +270,21 @@ defmodule Blunderfest.Corpus.TestFixtures do
         {6, 16},
         {7, 16},
         {12, 16},
-        {12, 20}
+        {12, 20},
+        {13, 16},
+        {13, 20},
+        {13, 24}
       ],
       b1_key() => [{5, 17}],
       b3_key() => [{6, 17}],
       b4_key() => [{7, 17}],
+      same_game_key() => [{13, 17}, {13, 21}],
       a2_key() => [{8, 13}, {9, 13}, {10, 13}, {11, 13}]
     }
   end
 
   @doc "Case ids of the F1 exact-occurrence games in fixture order."
-  def tabiya_gids, do: [1, 2, 3, 4, 6, 7, 12]
+  def tabiya_gids, do: [1, 2, 3, 4, 6, 7, 12, 13]
 
   @doc "Case ids of the A2 exact-occurrence games in fixture order."
   def a2_gids, do: [8, 9, 10, 11]

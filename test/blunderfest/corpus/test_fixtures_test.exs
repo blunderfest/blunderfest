@@ -24,11 +24,11 @@ defmodule Blunderfest.Corpus.TestFixturesTest do
     corpus: corpus
   } do
     out = Path.join(dir, "extracted")
-    %{stats: stats} = Extraction.run(corpus, games: 12, out_dir: out)
-    assert stats.games == 12
+    %{stats: stats} = Extraction.run(corpus, games: 13, out_dir: out)
+    assert stats.games == 13
     assert stats.games_failed == 0
 
-    Occurrences.rebuild(conn, out, 12)
+    Occurrences.rebuild(conn, out, 13)
 
     for {key, expected} <- TestFixtures.expected_occurrences() do
       assert Occurrences.occurrences(conn, key) == expected, "occurrence mismatch for #{key}"
@@ -37,8 +37,8 @@ defmodule Blunderfest.Corpus.TestFixturesTest do
 
   test "game rows carry the fixture metadata", %{conn: conn, dir: dir, corpus: corpus} do
     out = Path.join(dir, "extracted2")
-    Extraction.run(corpus, games: 12, out_dir: out)
-    Occurrences.rebuild(conn, out, 12)
+    Extraction.run(corpus, games: 13, out_dir: out)
+    Occurrences.rebuild(conn, out, 13)
 
     game = Occurrences.game(conn, 1)
     assert game.white == "A"

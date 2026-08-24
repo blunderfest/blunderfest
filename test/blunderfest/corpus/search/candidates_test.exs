@@ -19,8 +19,8 @@ defmodule Blunderfest.Corpus.Search.CandidatesTest do
     File.write!(corpus, TestFixtures.pgn())
 
     out = Path.join(dir, "extracted")
-    %{stats: stats} = Extraction.run(corpus, games: 12, out_dir: out)
-    Blunderfest.Corpus.rebuild(out, 12)
+    %{stats: stats} = Extraction.run(corpus, games: 13, out_dir: out)
+    Blunderfest.Corpus.rebuild(out, 13)
 
     %{stats: stats}
   end
@@ -35,7 +35,7 @@ defmodule Blunderfest.Corpus.Search.CandidatesTest do
 
     assert Enum.all?(result.exact, &(&1.strategy == :exact))
     assert Enum.all?(result.exact, &(&1.key == TestFixtures.tabiya_key()))
-    assert hd(result.exact).why =~ "8 occurrences total"
+    assert hd(result.exact).why =~ "11 occurrences total"
   end
 
   test "structural candidates include the B1/B3/B4 tempo and sideline keys" do
