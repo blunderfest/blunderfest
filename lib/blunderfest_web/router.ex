@@ -9,6 +9,7 @@ defmodule BlunderfestWeb.Router do
     pipe_through :api
 
     get "/healthz", HealthController, :check
+    post "/historical-evidence", HistoricalEvidenceController, :analyze
     post "/profiles", ProfileController, :create
     get "/profiles/:id", ProfileController, :show
     post "/rooms", RoomController, :create
