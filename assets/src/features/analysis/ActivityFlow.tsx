@@ -136,7 +136,7 @@ export default function ActivityFlow({
         >
           <path
             d={areaPath(chartPoints, flipped)}
-            className="fill-[#f4f6fb]"
+            className="fill-[#6ea8fe]"
             data-testid="activity-flow-area"
           />
           <line

@@ -1051,14 +1051,14 @@ describe('position setup (what-if editing)', () => {
       screen.getByRole('button', { name: 'White king' }),
       new MouseEvent('pointerdown', { button: 0, bubbles: true }),
     );
-    // The drag paints the square as it is entered; release only ends it.
+    // The piece lands on release — nothing paints while the drag passes over.
     fireEvent(window, new MouseEvent('pointermove', { clientX: 50, clientY: 450 }));
     fireEvent(window, new MouseEvent('pointerup', { clientX: 50, clientY: 450 }));
 
     expect(pieceAt('square-a4')).toBe('wk');
   });
 
-  it('sweep-paints several squares in one drag from the palette', () => {
+  it('places a palette drag only where it is released (no sweep off the board)', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
@@ -1079,13 +1079,15 @@ describe('position setup (what-if editing)', () => {
       screen.getByRole('button', { name: 'Black rook' }),
       new MouseEvent('pointerdown', { button: 0, bubbles: true }),
     );
+    // Drag across a4 → b4 → c4: only the release square gets the piece —
+    // sweep-painting is reserved for gestures that start on the board.
     fireEvent(window, new MouseEvent('pointermove', { clientX: 50, clientY: 450 }));
     fireEvent(window, new MouseEvent('pointermove', { clientX: 150, clientY: 450 }));
     fireEvent(window, new MouseEvent('pointermove', { clientX: 250, clientY: 450 }));
     fireEvent(window, new MouseEvent('pointerup', { clientX: 250, clientY: 450 }));
 
-    expect(pieceAt('square-a4')).toBe('br');
-    expect(pieceAt('square-b4')).toBe('br');
+    expect(pieceAt('square-a4')).toBeNull();
+    expect(pieceAt('square-b4')).toBeNull();
     expect(pieceAt('square-c4')).toBe('br');
   });
 

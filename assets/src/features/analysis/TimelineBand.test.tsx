@@ -59,7 +59,11 @@ const evals: AnalysisEval[] = [
   { ply: 2, score: { cp: -30 }, best_move: null },
 ];
 
-const analyzePlaceholder = <button type="button">Analyze game</button>;
+const analyzeAction = {
+  label: 'Analyze game',
+  progress: null,
+  onClick: vi.fn(),
+};
 
 function renderBand(overrides: Partial<Parameters<typeof TimelineBand>[0]> = {}) {
   return render(
@@ -69,7 +73,7 @@ function renderBand(overrides: Partial<Parameters<typeof TimelineBand>[0]> = {})
       currentPly={2}
       spanPly={3}
       hasAnalysis
-      analyzePlaceholder={analyzePlaceholder}
+      analyzeAction={null}
       onSelectPly={vi.fn()}
       {...overrides}
     />,
@@ -109,13 +113,45 @@ describe('TimelineBand', () => {
     expect(screen.getByTestId('material-flow-marker')).toHaveAttribute('x1', '50');
   });
 
-  it('holds the eval layer with the analyze placeholder before an analysis', () => {
-    renderBand({ hasAnalysis: false });
+  it('holds the analyze action in the header, eval layer explains itself', () => {
+    renderBand({ hasAnalysis: false, analyzeAction });
 
+    // The button rides the header — no layer has to be on to reach it.
+    const headerButton = screen.getByRole('button', { name: 'Analyze game' });
+    fireEvent.click(headerButton);
+    expect(analyzeAction.onClick).toHaveBeenCalledTimes(1);
+    // The eval layer itself is a note, not a button.
     expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Analyze game' })).toBeInTheDocument();
+    expect(screen.getByTestId('timeline-layer-eval')).toHaveTextContent('No analysis yet');
     // The pure-FEN layer still charts.
     expect(screen.getByTestId('material-flow')).toBeInTheDocument();
+  });
+
+  it('hides the header action once an analysis exists (even with the eval layer off)', () => {
+    renderBand({ hasAnalysis: true });
+
+    expect(screen.queryByRole('button', { name: 'Analyze game' })).not.toBeInTheDocument();
+
+    // With every layer off, the header still renders (chips + no button).
+    fireEvent.click(layerToggle('eval'));
+    fireEvent.click(layerToggle('material'));
+    expect(screen.getByTestId('timeline-band-empty')).toBeInTheDocument();
+  });
+
+  it('captions every visible layer with its label', () => {
+    renderBand();
+
+    expect(screen.getByTestId('timeline-layer-eval')).toHaveTextContent('Eval');
+    expect(screen.getByTestId('timeline-layer-material')).toHaveTextContent('Material');
+  });
+
+  it('explains the clocks bar colors with a side legend', () => {
+    renderBand();
+
+    fireEvent.click(layerToggle('clocks'));
+    const layer = screen.getByTestId('timeline-layer-clocks');
+    expect(layer).toHaveTextContent('White');
+    expect(layer).toHaveTextContent('Black');
   });
 
   it('toggles a layer off and on, persisting the choice', () => {

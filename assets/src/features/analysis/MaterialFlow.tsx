@@ -240,7 +240,7 @@ export default function MaterialFlow({
         >
           <path
             d={areaPath(chartPoints, flipped)}
-            className="fill-[#f4f6fb]"
+            className="fill-[#b6bdcc]"
             data-testid="material-flow-area"
           />
           <line

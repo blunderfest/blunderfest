@@ -1,6 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { panel } from '@/components/ui';
+import { button, panel } from '@/components/ui';
 import ActivityFlow from '@/features/analysis/ActivityFlow';
 import ClocksFlow from '@/features/analysis/ClocksFlow';
 import GameFlow from '@/features/analysis/GameFlow';
@@ -9,10 +9,19 @@ import type { GameTree } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
 
 const STORAGE_KEY = 'blunderfest.timelineLayers';
-/** Eval carries the quality strip and analyze action; material pairs with it. */
+/** Eval pairs with material; the others join on demand. */
 const DEFAULT_LAYERS = ['eval', 'material'];
 /** The timeline band's layer height: compact — the layers stack (ADR-0024). */
 const LAYER_HEIGHT = 'h-36';
+
+/** Each layer's identifying hue — its chip dot, caption dot and chart fill. */
+const LAYER_DOTS = {
+  eval: 'bg-[#f4f6fb]',
+  material: 'bg-[#b6bdcc]',
+  activity: 'bg-[#6ea8fe]',
+  // Half white, half silver: the clocks layer charts both sides.
+  clocks: 'bg-[linear-gradient(90deg,#f4f6fb_50%,#b6bdcc_50%)]',
+} as const;
 
 function readVisibleLayers(): string[] {
   try {
@@ -31,12 +40,14 @@ function readVisibleLayers(): string[] {
 
 /**
  * The whole-game timeline band (ADR-0024, as amended): the game-story
- * charts — eval, material, activity — stacked as layers on one shared
- * move axis (visualization ideas §16), full width under the board.
- * Every layer uses the same span and the same scrub-to-ply gesture, so
- * the gold current-position marker walks the layers together. Toggles
- * persist in localStorage; new whole-game timelines join as layers
- * here, never as sidebar tabs.
+ * charts — eval, material, activity, clocks — stacked as layers on one
+ * shared move axis (visualization ideas §16), full width under the board.
+ * Every layer is captioned and hue-coded (its dot matches its chart fill),
+ * uses the same span and the same scrub-to-ply gesture, so the gold
+ * current-position marker walks the layers together. Layer toggles are
+ * legend chips (dot + label) persisting in localStorage; new whole-game
+ * timelines join as layers here, never as sidebar tabs. The analyze action
+ * lives in the band header — always reachable, whatever layers are on.
  */
 export default function TimelineBand({
   tree,
@@ -49,7 +60,7 @@ export default function TimelineBand({
   bestMoves,
   spanPly,
   hasAnalysis,
-  analyzePlaceholder,
+  analyzeAction,
   onSelectPly,
 }: {
   tree: GameTree;
@@ -62,8 +73,12 @@ export default function TimelineBand({
   bestMoves?: Map<number, string>;
   spanPly: number;
   hasAnalysis: boolean;
-  /** What the eval layer shows before any analysis ran (the analyze action). */
-  analyzePlaceholder: ReactNode;
+  /** The whole-game analyze action, shown in the header until a job ran. */
+  analyzeAction: {
+    label: string;
+    progress: { done: number; total: number } | null;
+    onClick: () => void;
+  } | null;
   onSelectPly: (ply: number) => void;
 }) {
   const { t } = useTranslation();
@@ -85,10 +100,31 @@ export default function TimelineBand({
     </div>
   );
 
-  const layers = [
+  /** The clocks layer's side legend: whose bar is which color. */
+  const clocksLegend = (
+    <span className="flex items-center gap-2 text-micro font-semibold text-faint">
+      <span className="flex items-center gap-1">
+        <span className="h-2 w-2 rounded-[2px] bg-[#f4f6fb]" aria-hidden="true" />
+        {t('analysis.white')}
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="h-2 w-2 rounded-[2px] bg-[#b6bdcc]" aria-hidden="true" />
+        {t('analysis.black')}
+      </span>
+    </span>
+  );
+
+  const layers: {
+    id: string;
+    label: string;
+    dot: string;
+    legend?: ReactNode;
+    content: ReactNode;
+  }[] = [
     {
       id: 'eval',
       label: t('analysis.evalTab'),
+      dot: LAYER_DOTS.eval,
       content: hasAnalysis ? (
         <GameFlow
           evals={evals}
@@ -103,12 +139,16 @@ export default function TimelineBand({
           onSelectPly={onSelectPly}
         />
       ) : (
-        analyzePlaceholder
+        // The action lives in the header; the layer just explains itself.
+        <div className="grid h-36 place-items-center">
+          <p className="m-0 text-note text-faint">{t('analysis.noAnalysisYet')}</p>
+        </div>
       ),
     },
     {
       id: 'material',
       label: t('analysis.materialTab'),
+      dot: LAYER_DOTS.material,
       content:
         tree.mainline_ply_count > 0 ? (
           <MaterialFlow
@@ -126,6 +166,7 @@ export default function TimelineBand({
     {
       id: 'activity',
       label: t('analysis.activityTab'),
+      dot: LAYER_DOTS.activity,
       content:
         tree.mainline_ply_count > 0 ? (
           <ActivityFlow
@@ -143,6 +184,8 @@ export default function TimelineBand({
     {
       id: 'clocks',
       label: t('analysis.clocksTab'),
+      dot: LAYER_DOTS.clocks,
+      legend: clocksLegend,
       content: (
         <ClocksFlow
           tree={tree}
@@ -163,31 +206,68 @@ export default function TimelineBand({
       data-tour="timeline-band"
       data-testid="timeline-band"
     >
-      <fieldset className="m-0 min-w-0 border-0 border-b border-line px-2 py-1">
-        <legend className="sr-only">{t('analysis.timelineLayers')}</legend>
-        <div className="flex flex-wrap items-center gap-1">
-          {layers.map((layer) => (
-            <button
-              key={layer.id}
-              type="button"
-              className={`rounded-chip border px-1.5 py-0.5 font-semibold text-[10px] transition-colors ${
-                visible.includes(layer.id)
-                  ? 'border-line-strong bg-raised text-ink'
-                  : 'border-line text-muted hover:text-ink'
-              }`}
-              aria-pressed={visible.includes(layer.id)}
-              data-testid="timeline-layer-toggle"
-              data-layer={layer.id}
-              onClick={() => toggleLayer(layer.id)}
-            >
-              {layer.label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 border-b border-line px-2 py-1">
+        <fieldset className="m-0 min-w-0 border-0 p-0">
+          <legend className="sr-only">{t('analysis.timelineLayers')}</legend>
+          <div className="flex flex-wrap items-center gap-1">
+            {layers.map((layer) => (
+              <button
+                key={layer.id}
+                type="button"
+                className={`inline-flex items-center gap-1 rounded-chip border px-1.5 py-0.5 font-semibold text-[10px] transition-colors ${
+                  visible.includes(layer.id)
+                    ? 'border-line-strong bg-raised text-ink'
+                    : 'border-line text-muted hover:text-ink'
+                }`}
+                aria-pressed={visible.includes(layer.id)}
+                data-testid="timeline-layer-toggle"
+                data-layer={layer.id}
+                onClick={() => toggleLayer(layer.id)}
+              >
+                {/* The dot is the legend: the layer's chart hue, on or off. */}
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-[2px] ${layer.dot}`}
+                  aria-hidden="true"
+                />
+                {layer.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        {analyzeAction !== null && (
+          <button
+            type="button"
+            id="analyze-game-button"
+            className={button({ intent: 'quiet', size: 'xs' })}
+            disabled={analyzeAction.progress !== null}
+            onClick={analyzeAction.onClick}
+          >
+            {analyzeAction.progress !== null
+              ? t('room.analyzing', {
+                  done: analyzeAction.progress.done,
+                  total: analyzeAction.progress.total,
+                })
+              : analyzeAction.label}
+          </button>
+        )}
+      </div>
       <div className="flex flex-col gap-2 p-2">
         {visibleLayers.map((layer) => (
           <div key={layer.id} data-testid={`timeline-layer-${layer.id}`}>
+            {/*
+              The persistent caption: a chart is never anonymous, however
+              deep it sits in the stack — the dot repeats its chip hue.
+            */}
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="flex min-w-0 items-center gap-1.5 text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-[2px] ${layer.dot}`}
+                  aria-hidden="true"
+                />
+                {layer.label}
+              </span>
+              {layer.legend}
+            </div>
             {layer.content}
           </div>
         ))}

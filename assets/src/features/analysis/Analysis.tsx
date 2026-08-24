@@ -614,45 +614,33 @@ export default function Analysis({
   const boardArrows = [...hintArrows, ...referenceGhostArrows, ...nodeAnnotations.arrows];
 
   // The visualization box: the list-like views (Moments, Report) — the
-  // whole-game timeline charts (Eval, Material, Activity) live in the
-  // timeline band under the board (ADR-0024, as amended). Both tabs are
-  // always present; until an analysis runs they show a plain note (the
-  // analyze action lives in the band's eval layer).
+  // whole-game timeline charts (Eval, Material, Activity, Clocks) live in
+  // the timeline band under the board (ADR-0024, as amended). Both tabs
+  // are always present; until an analysis runs they show a plain note.
   const vizTabs: SidebarTab[] = [];
   const noAnalysisNote = (
     <div className="grid h-full place-items-center">
       <p className="m-0 text-note text-faint">{t('analysis.noAnalysisYet')}</p>
     </div>
   );
-  const analyzePlaceholder = (heightClass = 'h-44') =>
-    onAnalyze !== undefined ? (
-      <div
-        className={`grid ${heightClass} place-items-center rounded-control border border-line border-dashed`}
-      >
-        <button
-          type="button"
-          id="analyze-game-button"
-          className={button({ intent: 'quiet', size: 'sm' })}
-          onClick={() => onAnalyze(mainlinePositions(tree))}
-          disabled={analyzing !== null}
-        >
-          {analyzing !== null
-            ? t('room.analyzing', { done: analyzing.done, total: analyzing.total })
-            : t('room.analyzeGame')}
-        </button>
-      </div>
-    ) : (
-      <div className={`grid ${heightClass} place-items-center`}>
-        <p className="m-0 text-note text-faint">{t('analysis.noAnalysisYet')}</p>
-      </div>
-    );
   const hasAnalysis = mainlineEvals.length > 1;
+  // The initial whole-game analyze action sits in the timeline band's
+  // header — always reachable, whatever layers are toggled on (a chip
+  // must never gate the only path to an analysis).
+  const bandAnalyzeAction =
+    !hasAnalysis && onAnalyze !== undefined
+      ? {
+          label: t('room.analyzeGame'),
+          progress: analyzing,
+          onClick: () => onAnalyze(mainlinePositions(tree)),
+        }
+      : null;
 
   /**
    * The analyze action in the engine box: "Analyze line" for a viewed
    * variation (its segment not fully analyzed), "Re-analyze" when the
    * mainline outgrew the analysis (moves played after the job). The
-   * initial "Analyze game" lives in the viz-box placeholder.
+   * initial "Analyze game" lives in the timeline band header.
    */
   const analysisMaxPly = mainlineEvals.reduce((max, e) => Math.max(max, e.ply), -1);
   // The actual mainline tip (not the declared count) — imports can lie.
@@ -1121,7 +1109,7 @@ export default function Analysis({
             bestMoves={bestMoves}
             spanPly={mainlineTipPly}
             hasAnalysis={hasAnalysis}
-            analyzePlaceholder={analyzePlaceholder('h-36')}
+            analyzeAction={bandAnalyzeAction}
             onSelectPly={handleFlowSelect}
           />
         </div>
