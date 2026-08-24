@@ -1,3 +1,4 @@
+import type { HistoricalEvidenceResult } from '@/features/historicalEvidence/types';
 import { clearDevice, loadDevice, saveDevice } from '@/lib/device';
 
 export type LinkedAccount = {
@@ -423,4 +424,24 @@ export function emptyGameTree(): GameTree {
       children: [],
     },
   };
+}
+
+/**
+ * The historical-evidence vertical slice: analyze a position against the
+ * corpus. `route` is the SAN list leading to the position in the current
+ * game (optional — a bare FEN is a valid target).
+ */
+export async function analyzeHistoricalEvidence(
+  fen: string,
+  opts?: { route?: string[]; refPly?: number },
+): Promise<HistoricalEvidenceResult> {
+  return request('/api/historical-evidence', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fen,
+      route: opts?.route,
+      ref_ply: opts?.refPly,
+    }),
+  });
 }

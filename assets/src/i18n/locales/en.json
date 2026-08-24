@@ -383,5 +383,33 @@
     "notFoundTitle": "Room not found",
     "notFound": "No room answers to this code. Codes are 5 characters and never contain i, l, o, 0 or 1 — it may have been mistyped, or the room expired.",
     "backHome": "Back to home"
+  },
+  "evidence": {
+    "analyze": "Historical evidence",
+    "analyzeHint": "What has been played from this position, and how did games reach it?",
+    "run": "Analyze",
+    "empty": "Nothing yet. Run the analysis for this position.",
+    "noCandidates": "No historical examples found for this position yet.",
+    "error": "The analysis failed — please try again.",
+    "invalidFen": "That position can't be analyzed.",
+    "position": "Position",
+    "route": "Route",
+    "routeShared": "Shared for",
+    "routeDivergence": "Diverges",
+    "routePlyGap": "Reached",
+    "continuation": "Continuation",
+    "contMoves": "Played",
+    "familyWhite": "White family",
+    "familyBlack": "Black family",
+    "historical": "Historical evidence",
+    "occurrences": "Occurrences",
+    "games": "Independent games",
+    "sameGame": "Same game",
+    "sameGameOnly": "repeated in one game",
+    "examples": "{{count}} examples",
+    "menu": "Continuation menu",
+    "menuNone": "No continuations recorded for this position yet.",
+    "candidates": "Historical examples",
+    "tab": "History"
   }
 }

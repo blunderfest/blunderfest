@@ -37,6 +37,7 @@ import { useCursor } from '@/features/analysis/useCursor';
 import { useDragFlag } from '@/features/analysis/useDragFlag';
 import { useEngine } from '@/features/analysis/useEngine';
 import { usePositionEditor } from '@/features/analysis/usePositionEditor';
+import HistoricalEvidencePanel from '@/features/historicalEvidence/HistoricalEvidencePanel';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
 import type {
   AddLineOp,
@@ -236,6 +237,32 @@ export default function Analysis({
     });
     return `${linePath.nodes.length > 3 ? '… ' : ''}${parts.join(' ')}`;
   }, [linePath, t]);
+
+  /**
+   * The SAN path from the game start to the cursor position (for the
+   * historical-evidence route). Null when the path crosses a setup node or
+   * the cursor is at the root — the analysis then runs on a bare FEN.
+   */
+  const routeToCurrent = useMemo(() => {
+    if (current === null || current.ply === 0) {
+      return null;
+    }
+    const sans: string[] = [];
+    let node: GameNode = current;
+    while (true) {
+      const entry = byId.get(node.id);
+      const parent = entry?.parent ?? null;
+      if (parent === null) {
+        break;
+      }
+      if (node.san === null) {
+        return null;
+      }
+      sans.unshift(node.san);
+      node = parent;
+    }
+    return sans;
+  }, [current, byId]);
 
   /** The mainline ply where the game leaves the opening book (chart marker). */
   const bookExitPly = useMemo(
@@ -1069,6 +1096,21 @@ export default function Analysis({
                         fen={current?.fen ?? null}
                         onPlayMove={canPlay && !editor.editing ? playMove : undefined}
                         onHoverMove={setReferenceGhost}
+                      />
+                    </section>
+                  ),
+                },
+                {
+                  id: 'history',
+                  label: t('evidence.tab'),
+                  content: (
+                    <section
+                      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+                    >
+                      <HistoricalEvidencePanel
+                        fen={current?.fen ?? null}
+                        route={routeToCurrent}
+                        refPly={current?.ply ?? null}
                       />
                     </section>
                   ),
