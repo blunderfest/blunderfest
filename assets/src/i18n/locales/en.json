@@ -260,6 +260,8 @@
     "wdl": "White win · draw · black win",
     "engineLines": "Engine lines",
     "bookExit": "leaves the book",
+    "endgameBegins": "endgame begins",
+    "exchange": "exchange",
     "commentPlaceholder": "Add a comment...",
     "saveComment": "Save comment",
     "shortcutNav": "previous/next move",

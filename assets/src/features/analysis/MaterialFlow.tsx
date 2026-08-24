@@ -19,6 +19,20 @@ const VALUES: Record<PieceKind, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
 type Capture = { by: Piece; victim: Piece };
 type MaterialPoint = { ply: number; balance: number; capture: Capture | null };
 
+/** A mainline capture, for other charts (the eval graph marks them too). */
+export type CapturePoint = { ply: number; by: Piece; victim: Piece };
+
+/** The mainline's captures alone, in ply order. */
+export function capturesOf(root: GameNode): CapturePoint[] {
+  const captures: CapturePoint[] = [];
+  for (const point of materialTimeline(root)) {
+    if (point.capture !== null) {
+      captures.push({ ply: point.ply, ...point.capture });
+    }
+  }
+  return captures;
+}
+
 function balanceOf(position: (Piece | null)[]): number {
   let balance = 0;
   for (const piece of position) {

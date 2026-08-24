@@ -210,4 +210,87 @@ describe('GameFlow', () => {
     fireEvent(chart, new MouseEvent('pointermove', { bubbles: true, clientX: 100 }));
     expect(screen.getByTestId('game-flow-tooltip')).toHaveTextContent('1… -1.5 leaves the book');
   });
+
+  it('shades the opening band up to the book exit', () => {
+    render(<GameFlow evals={evals} currentPly={0} openingExitPly={2} onSelectPly={vi.fn()} />);
+
+    const rect = screen.getByTestId('game-flow-phase-opening');
+    expect(rect).toHaveAttribute('width', '50');
+  });
+
+  it('shades the endgame band and marks where it begins', () => {
+    render(<GameFlow evals={evals} currentPly={0} endgameStartPly={3} onSelectPly={vi.fn()} />);
+    const chart = screen.getByTestId('game-flow');
+    mockChartRect(chart);
+
+    expect(screen.getByTestId('game-flow-phase-endgame')).toHaveAttribute('x', '75');
+    expect(screen.getByTestId('game-flow-endgame')).toBeInTheDocument();
+    // 150px of 200px → ply 3 of 4: the boundary is named in the readout.
+    fireEvent(chart, new MouseEvent('pointermove', { bubbles: true, clientX: 150 }));
+    expect(screen.getByTestId('game-flow-tooltip')).toHaveTextContent('2. ? -3.0 endgame begins');
+  });
+
+  it('shades the whole chart for a game that starts as an endgame', () => {
+    render(<GameFlow evals={evals} currentPly={0} endgameStartPly={0} onSelectPly={vi.fn()} />);
+
+    expect(screen.getByTestId('game-flow-phase-endgame')).toHaveAttribute('x', '0');
+    // No boundary marker: everything from move one is the endgame.
+    expect(screen.queryByTestId('game-flow-endgame')).not.toBeInTheDocument();
+  });
+
+  it('marks captures with the victim at its ply, heavy victims larger', () => {
+    const captures = [
+      {
+        ply: 1,
+        by: { color: 'w' as const, kind: 'p' as const },
+        victim: { color: 'b' as const, kind: 'p' as const },
+      },
+      {
+        ply: 2,
+        by: { color: 'b' as const, kind: 'n' as const },
+        victim: { color: 'w' as const, kind: 'q' as const },
+      },
+      {
+        ply: 9,
+        by: { color: 'w' as const, kind: 'r' as const },
+        victim: { color: 'b' as const, kind: 'r' as const },
+      },
+    ];
+    render(<GameFlow evals={evals} currentPly={0} captures={captures} onSelectPly={vi.fn()} />);
+
+    const markers = screen.getAllByTestId('game-flow-capture');
+    // The ply-9 capture is beyond the chart's span — not rendered.
+    expect(markers).toHaveLength(2);
+    expect(markers.map((m) => m.getAttribute('data-victim'))).toEqual(['p', 'q']);
+    expect(markers[0].className).toContain('h-2.5');
+    expect(markers[1].className).toContain('h-3');
+  });
+
+  it('rings exchange captures and names them in the hover readout', () => {
+    const captures = [
+      {
+        ply: 2,
+        by: { color: 'w' as const, kind: 'n' as const },
+        victim: { color: 'b' as const, kind: 'q' as const },
+      },
+      {
+        ply: 3,
+        by: { color: 'b' as const, kind: 'q' as const },
+        victim: { color: 'w' as const, kind: 'n' as const },
+      },
+    ];
+    render(<GameFlow evals={evals} currentPly={0} captures={captures} onSelectPly={vi.fn()} />);
+    const chart = screen.getByTestId('game-flow');
+    mockChartRect(chart);
+
+    const markers = screen.getAllByTestId('game-flow-capture');
+    expect(markers.every((m) => m.getAttribute('data-exchange') === 'true')).toBe(true);
+
+    // 100px of 200px → ply 2 of 4: the readout shows the capture and "exchange".
+    fireEvent(chart, new MouseEvent('pointermove', { bubbles: true, clientX: 100 }));
+    const readout = screen.getByTestId('game-flow-capture-readout');
+    expect(readout.querySelectorAll('img')).toHaveLength(2);
+    expect(readout).toHaveTextContent('×');
+    expect(screen.getByTestId('game-flow-tooltip')).toHaveTextContent('exchange');
+  });
 });

@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { pieceSrc } from '@/components/board';
 import BookExitIcon from '@/features/analysis/BookExitIcon';
 import { evalText, type MoveMark, moveMark } from '@/features/analysis/evalMarks';
+import type { CapturePoint } from '@/features/analysis/MaterialFlow';
 import { type WhiteEval, whiteShare, winShare } from '@/features/analysis/uci';
 import type { AnalysisEval } from '@/protocol/ops';
 
@@ -59,6 +61,8 @@ export default function GameFlow({
   currentPly,
   flipped = false,
   openingExitPly = null,
+  endgameStartPly = null,
+  captures = [],
   bestMoves,
   onSelectPly,
 }: {
@@ -68,6 +72,10 @@ export default function GameFlow({
   flipped?: boolean;
   /** The ply where the line leaves the opening book (dashed marker). */
   openingExitPly?: number | null;
+  /** Where the endgame began (phase shading; gamePhases.ts). */
+  endgameStartPly?: number | null;
+  /** The mainline's captures (victim images at the top edge; MaterialFlow). */
+  captures?: CapturePoint[];
   /** The engine's best alternative per ply — shown for marked moves. */
   bestMoves?: Map<number, string>;
   onSelectPly: (ply: number) => void;
@@ -101,6 +109,19 @@ export default function GameFlow({
   const evalByPly = useMemo(
     () => new Map(evals.map((evaluation) => [evaluation.ply, evaluation.score])),
     [evals],
+  );
+
+  /**
+   * Captures within the chart's span, with the exchange set: a capture
+   * answered by a recapture on the very next ply (those get a ring).
+   */
+  const captureByPly = useMemo(
+    () => new Map(captures.map((capture) => [capture.ply, capture])),
+    [captures],
+  );
+  const capturePlies = useMemo(
+    () => new Set([...captureByPly.keys()].filter((ply) => ply > 0 && ply <= maxPly)),
+    [captureByPly, maxPly],
   );
 
   /** The hover readout: the eval in the active scale ("+1.3" or "63%"). */
@@ -170,6 +191,19 @@ export default function GameFlow({
 
   const markerX = (Math.min(Math.max(currentPly, 0), maxPly) / maxPly) * WIDTH;
 
+  const isExchange = (ply: number) => capturePlies.has(ply + 1) || capturePlies.has(ply - 1);
+
+  // Phase shading: the opening band runs to the book exit, the endgame
+  // band from where the endgame began (gamePhases.ts) to the tip.
+  const openingWidth =
+    openingExitPly !== null && openingExitPly > 0 && openingExitPly <= maxPly
+      ? (openingExitPly / maxPly) * WIDTH
+      : null;
+  const endgameX =
+    endgameStartPly !== null && endgameStartPly <= maxPly
+      ? (endgameStartPly / maxPly) * WIDTH
+      : null;
+
   function plyAt(event: React.PointerEvent<HTMLDivElement>): number | null {
     const rect = event.currentTarget.getBoundingClientRect();
     if (rect.width === 0) {
@@ -237,6 +271,26 @@ export default function GameFlow({
           aria-hidden="true"
           className="block h-full w-full rounded-control border border-line bg-[#1a1d24]"
         >
+          {openingWidth !== null && (
+            <rect
+              x={0}
+              y={0}
+              width={openingWidth}
+              height={HEIGHT}
+              className="fill-info/10"
+              data-testid="game-flow-phase-opening"
+            />
+          )}
+          {endgameX !== null && endgameX < WIDTH && (
+            <rect
+              x={endgameX}
+              y={0}
+              width={WIDTH - endgameX}
+              height={HEIGHT}
+              className="fill-white/5"
+              data-testid="game-flow-phase-endgame"
+            />
+          )}
           {segments.map((segment) =>
             segment.length > 1 ? (
               <path
@@ -288,6 +342,39 @@ export default function GameFlow({
             <BookExitIcon className="absolute -top-0.5 -left-[5px] h-2.5 w-2.5 text-info" />
           </div>
         )}
+        {endgameStartPly !== null && endgameStartPly > 0 && endgameStartPly <= maxPly && (
+          <div
+            className="pointer-events-none absolute top-0 bottom-0 w-px border-l border-dashed border-white/30"
+            style={{ left: `${(endgameStartPly / maxPly) * 100}%` }}
+            data-testid="game-flow-endgame"
+          />
+        )}
+        {/*
+          Captures at the top edge: the victim's image at the ply it fell
+          (MaterialFlow's visual language), heavy victims slightly larger.
+          Exchange captures — answered by a recapture next ply — wear a ring.
+        */}
+        {[...capturePlies].map((ply) => {
+          const capture = captureByPly.get(ply);
+          if (capture === undefined) {
+            return null;
+          }
+          const heavy = capture.victim.kind === 'q' || capture.victim.kind === 'r';
+          return (
+            <img
+              key={ply}
+              src={pieceSrc(capture.victim)}
+              alt=""
+              className={`pointer-events-none absolute top-0 -translate-x-1/2 ${
+                heavy ? 'h-3 w-3' : 'h-2.5 w-2.5'
+              } ${isExchange(ply) ? 'rounded-[2px] ring-1 ring-white/50' : ''}`}
+              style={{ left: `${(ply / maxPly) * 100}%` }}
+              data-testid="game-flow-capture"
+              data-victim={capture.victim.kind}
+              data-exchange={isExchange(ply) ? 'true' : undefined}
+            />
+          );
+        })}
         {marks.map(({ ply, mark, xPct, yPct }) => (
           <div
             key={ply}
@@ -309,15 +396,34 @@ export default function GameFlow({
               const mark = marks.find((m) => m.ply === hoverPly)?.mark ?? null;
               const best =
                 mark !== null && bestMoves !== undefined ? bestMoves.get(hoverPly) : undefined;
-              return [
+              const capture = captureByPly.get(hoverPly);
+              const texts = [
                 plyLabel(hoverPly, t('analysis.startPosition')),
                 mark,
                 readoutFor(hoverPly),
                 hoverPly === openingExitPly ? t('analysis.bookExit') : null,
+                hoverPly === endgameStartPly && endgameStartPly > 0
+                  ? t('analysis.endgameBegins')
+                  : null,
                 best !== undefined ? t('analysis.bestMove', { move: best }) : null,
               ]
                 .filter(Boolean)
                 .join(' ');
+              return (
+                <>
+                  {texts}
+                  {capture !== undefined && (
+                    <span
+                      className="ml-1 inline-flex items-center gap-0.5"
+                      data-testid="game-flow-capture-readout"
+                    >
+                      <img src={pieceSrc(capture.by)} alt="" className="h-3 w-3" />×
+                      <img src={pieceSrc(capture.victim)} alt="" className="h-3 w-3" />
+                      {isExchange(hoverPly) ? ` ${t('analysis.exchange')}` : null}
+                    </span>
+                  )}
+                </>
+              );
             })()}
           </div>
         )}

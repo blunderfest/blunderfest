@@ -17,8 +17,9 @@ import GameActions from '@/features/analysis/GameActions';
 import GameFlow from '@/features/analysis/GameFlow';
 import GameInfo from '@/features/analysis/GameInfo';
 import GameReport from '@/features/analysis/GameReport';
+import { endgameStart } from '@/features/analysis/gamePhases';
 import { legalMovesFor, uciLineToMoves } from '@/features/analysis/legalMoves';
-import MaterialFlow from '@/features/analysis/MaterialFlow';
+import MaterialFlow, { capturesOf } from '@/features/analysis/MaterialFlow';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import NavControls from '@/features/analysis/NavControls';
@@ -242,6 +243,10 @@ export default function Analysis({
     () => (book === null || tree === null ? null : openingExitPly(book, tree.root)),
     [book, tree],
   );
+
+  /** Phase shading and capture markers for the eval chart. */
+  const endgamePly = useMemo(() => (tree === null ? null : endgameStart(tree.root)), [tree]);
+  const captures = useMemo(() => (tree === null ? [] : capturesOf(tree.root)), [tree]);
 
   /** The game's opening (the mainline's), for the Report header. */
   const mainlineOpening = useMemo(() => {
@@ -678,6 +683,8 @@ export default function Analysis({
               currentPly={current.ply}
               flipped={flipped}
               openingExitPly={bookExitPly}
+              endgameStartPly={endgamePly}
+              captures={captures}
               bestMoves={bestMoves}
               onSelectPly={handleFlowSelect}
             />
