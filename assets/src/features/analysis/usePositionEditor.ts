@@ -32,8 +32,6 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
     x: number;
     y: number;
   } | null>(null);
-  /** The last square a palette drag painted (sweeps don't repeat it). */
-  const lastPlacedRef = useRef<string | null>(null);
   const paletteListeners = useRef<{
     move: (e: PointerEvent) => void;
     up: (e: PointerEvent) => void;
@@ -135,9 +133,11 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
 
   /**
    * Dragging a piece out of the palette: the brush is set on pointerdown,
-   * and releasing over a board square places the piece there. A plain click
-   * still toggles the brush (the release lands on the palette, not the
-   * board, so nothing is placed).
+   * the ghost follows the pointer, and releasing over a board square
+   * places the piece there — once, at the release point. (Sweep-painting
+   * several squares belongs to gestures that start on the board.) A plain
+   * click still toggles the brush (the release lands on the palette, not
+   * the board, so nothing is placed).
    */
   /** Set when a palette press already handled selection (the click must not re-toggle). */
   const palettePressedRef = useRef(false);
@@ -154,7 +154,7 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
   /**
    * Palette presses select/deselect immediately (chess-UI feel). A drag
    * starts only once the pointer moves a few pixels — a tap never flashes
-   * a ghost — and dragging onto the board paints on every entered square.
+   * a ghost — and the piece lands where the pointer is released.
    */
   function handlePalettePointerDown(piece: Piece, event: React.PointerEvent) {
     if (event.button !== 0) {
@@ -183,17 +183,20 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
       }
       if (dragging) {
         setPaletteGhost({ piece, x: move.clientX, y: move.clientY });
-        // Sweep-paint: dragging over the board paints every entered square.
+      }
+    };
+    const onUp = (up: PointerEvent) => {
+      // Place once, where the drag ends — off-board releases drop nothing.
+      if (dragging) {
         const board = document.querySelector('[data-board-grid]');
         if (board !== null) {
           const target = squareFromPoint(
             board.getBoundingClientRect(),
-            move.clientX,
-            move.clientY,
+            up.clientX,
+            up.clientY,
             flipped,
           );
-          if (target !== null && target !== lastPlacedRef.current) {
-            lastPlacedRef.current = target;
+          if (target !== null) {
             setEditPos((previous) => {
               const next = [...previous];
               next[squareIndex(target)] = piece;
@@ -202,10 +205,7 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
           }
         }
       }
-    };
-    const onUp = () => {
       cleanup();
-      lastPlacedRef.current = null;
     };
     // A canceled pointer (the browser took the gesture to scroll the page)
     // must drop the ghost and listeners, never place the piece.
