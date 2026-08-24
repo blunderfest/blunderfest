@@ -22,8 +22,9 @@ export function thinkTimeLabel(seconds: number): string {
 /**
  * The time-management layer of the timeline band: how long each mainline
  * move took, as bars from the bottom (taller = longer think) on the shared
- * move axis. Hovering shows the move and its think time; click or drag
- * jumps to a ply. Needs clock data (`[%clk]` extracted at import) plus a
+ * move axis. White's bars are near-white, black's silver (the layer
+ * legend), and the hover readout names the side. Click or drag jumps to a
+ * ply. Needs clock data (`[%clk]` extracted at import) plus a
  * `TimeControl` header — see `moveTimes.ts`.
  */
 export default function ClocksFlow({
@@ -134,7 +135,9 @@ export default function ClocksFlow({
         >
           {times.map((time) => {
             const h = barHeight(time.seconds);
-            // One bar per move, ~1 ply wide with a hair of daylight.
+            // One bar per move, ~1 ply wide with a hair of daylight. The
+            // mover's color: near-white for white, silver for black (the
+            // layer legend explains the pair).
             const w = Math.max(0.3, WIDTH / maxPly / 2);
             const x = (time.ply / maxPly) * WIDTH - w / 2;
             return (
@@ -144,9 +147,16 @@ export default function ClocksFlow({
                 y={HEIGHT - h}
                 width={w}
                 height={h}
-                className={time.ply === currentPly ? 'fill-gold-hi' : 'fill-[#f4f6fb] opacity-80'}
+                className={
+                  time.ply === currentPly
+                    ? 'fill-gold-hi'
+                    : time.mover === 'w'
+                      ? 'fill-[#f4f6fb]'
+                      : 'fill-[#b6bdcc]'
+                }
                 data-testid="clocks-flow-bar"
                 data-ply={time.ply}
+                data-side={time.mover}
               />
             );
           })}
@@ -168,7 +178,9 @@ export default function ClocksFlow({
             data-testid="clocks-flow-tooltip"
           >
             {plyLabel(hoverPly, t('analysis.startPosition'))}{' '}
-            {t('analysis.thinkTime', { time: thinkTimeLabel(hoverTime.seconds) })}
+            {t(hoverTime.mover === 'w' ? 'analysis.thinkTimeWhite' : 'analysis.thinkTimeBlack', {
+              time: thinkTimeLabel(hoverTime.seconds),
+            })}
           </div>
         )}
       </div>

@@ -56,53 +56,68 @@ describe('timeControl', () => {
 });
 
 describe('moveTimes', () => {
-  it('measures the first move against the initial clock, later ones against the previous clock', () => {
+  it('measures each side against its own clock, both firsts against the initial', () => {
+    // w: 300→295 (5s), b: 300→290 (10s), w: 295→271 (24s).
     const tree = clockedTree([295, 290, 271], { TimeControl: '300' });
 
-    // Ply 1: 300 − 295 = 5s. Ply 2: 295 − 290 = 5s. Ply 3: 290 − 271 = 19s.
     expect(moveTimes(tree)).toEqual([
-      { ply: 1, seconds: 5 },
-      { ply: 2, seconds: 5 },
-      { ply: 3, seconds: 19 },
+      { ply: 1, mover: 'w', seconds: 5 },
+      { ply: 2, mover: 'b', seconds: 10 },
+      { ply: 3, mover: 'w', seconds: 24 },
     ]);
   });
 
-  it('adds the increment to every move', () => {
+  it('adds the increment to every move, firsts included', () => {
+    // w: 300−298+3=5, b: 300−296+3=7.
     const tree = clockedTree([298, 296], { TimeControl: '300+3' });
 
-    // Ply 1: 300 − 298 + 3 = 5. Ply 2: 298 − 296 + 3 = 5.
     expect(moveTimes(tree)).toEqual([
-      { ply: 1, seconds: 5 },
-      { ply: 2, seconds: 5 },
+      { ply: 1, mover: 'w', seconds: 5 },
+      { ply: 2, mover: 'b', seconds: 7 },
     ]);
   });
 
-  it('skips the first move without a TimeControl header but keeps the rest', () => {
-    const tree = clockedTree([295, 290, 271]);
+  it('charts black ahead on the clock (the old cross-side math went negative)', () => {
+    // Black ends every exchange with more time than white had: cross-side
+    // subtraction would drop the black bars entirely.
+    const tree = clockedTree([290, 298, 285, 296], { TimeControl: '300' });
 
     expect(moveTimes(tree)).toEqual([
-      { ply: 2, seconds: 5 },
-      { ply: 3, seconds: 19 },
+      { ply: 1, mover: 'w', seconds: 10 },
+      { ply: 2, mover: 'b', seconds: 2 },
+      { ply: 3, mover: 'w', seconds: 5 },
+      { ply: 4, mover: 'b', seconds: 2 },
     ]);
+  });
+
+  it('skips a side first move without a TimeControl header, keeps later clock pairs', () => {
+    // No initial clock: both first moves are unmeasurable; ply 3 is white's
+    // second move against his own first clock (295 − 271 = 24).
+    const tree = clockedTree([295, 290, 271]);
+
+    expect(moveTimes(tree)).toEqual([{ ply: 3, mover: 'w', seconds: 24 }]);
   });
 
   it('returns nothing for a game without clock data', () => {
     expect(moveTimes(clockedTree([null, null], { TimeControl: '300' }))).toEqual([]);
   });
 
-  it('stops the chain at an unclocked move (no bogus "before")', () => {
+  it('an unclocked move breaks only its own side\u2019s chain', () => {
+    // Black's ply 2 is unclocked: white's times survive, black's ply 4 has
+    // no "before" and is skipped.
     const tree = clockedTree([295, null, 260, 250], { TimeControl: '300' });
 
-    // Ply 3 has no "before" (ply 2 unclocked); ply 4 measures against ply 3.
     expect(moveTimes(tree)).toEqual([
-      { ply: 1, seconds: 5 },
-      { ply: 4, seconds: 10 },
+      { ply: 1, mover: 'w', seconds: 5 },
+      { ply: 3, mover: 'w', seconds: 35 },
     ]);
   });
 
   it('drops impossible negative times (clock anomalies)', () => {
+    // White's ply-1 clock (301) exceeds the initial (300): dropped; black's
+    // first (before = 300) is exact.
     const tree = clockedTree([301, 290], { TimeControl: '300' });
 
-    expect(moveTimes(tree)).toEqual([{ ply: 2, seconds: 11 }]);
+    expect(moveTimes(tree)).toEqual([{ ply: 2, mover: 'b', seconds: 10 }]);
   });
 });

@@ -56,11 +56,23 @@ describe('thinkTimeLabel', () => {
 });
 
 describe('ClocksFlow', () => {
-  it('renders one bar per clocked move', () => {
+  it('renders one bar per clocked move, alternating sides by color', () => {
     render(<ClocksFlow tree={clockedTree([295, 290, 271])} currentPly={0} onSelectPly={vi.fn()} />);
 
     const bars = screen.getAllByTestId('clocks-flow-bar');
     expect(bars.map((bar) => bar.getAttribute('data-ply'))).toEqual(['1', '2', '3']);
+    // Odd plies are white's (near-white), even plies black's (silver).
+    expect(bars.map((bar) => bar.getAttribute('data-side'))).toEqual(['w', 'b', 'w']);
+    expect(bars[0].getAttribute('class')).toContain('fill-[#f4f6fb]');
+    expect(bars[1].getAttribute('class')).toContain('fill-[#b6bdcc]');
+  });
+
+  it('gives the current ply\u2019s bar the gold highlight instead of its side color', () => {
+    render(<ClocksFlow tree={clockedTree([295, 290, 271])} currentPly={2} onSelectPly={vi.fn()} />);
+
+    const bar = screen.getAllByTestId('clocks-flow-bar')[1];
+    expect(bar.getAttribute('class')).toContain('fill-gold-hi');
+    expect(bar.getAttribute('class')).not.toContain('fill-[#b6bdcc]');
   });
 
   it('shows the placeholder for a game without clock data', () => {
@@ -112,9 +124,10 @@ describe('ClocksFlow', () => {
       toJSON: () => ({}),
     } as DOMRect);
 
-    // 100px of 200px → ply 2 of 3: 295 − 290 + 3 increment = 8 seconds.
+    // 100px of 200px → ply 2 of 3: black's first, against the initial
+    // clock — 300 − 290 + 3 increment = 13 seconds.
     fireEvent(chart, new MouseEvent('pointermove', { bubbles: true, clientX: 100 }));
-    expect(screen.getByTestId('clocks-flow-tooltip')).toHaveTextContent('1… thought 8s');
+    expect(screen.getByTestId('clocks-flow-tooltip')).toHaveTextContent('1… Black thought 13s');
   });
 
   it('aligns on the shared span, not the last clocked ply', () => {

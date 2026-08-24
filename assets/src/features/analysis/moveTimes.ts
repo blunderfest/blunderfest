@@ -1,6 +1,6 @@
 import type { GameNode, GameTree } from '@/lib/api';
 
-export type MoveTime = { ply: number; seconds: number };
+export type MoveTime = { ply: number; mover: 'w' | 'b'; seconds: number };
 
 /**
  * The initial clock and increment from the `TimeControl` header
@@ -25,39 +25,44 @@ export function timeControl(headers: Record<string, string>): {
 }
 
 /**
- * How long each mainline move took (visualization ideas #10): the mover's
- * clock drop across the move plus the increment, from the `[%clk]` values
- * the server parser extracts into `node.clock`. The first move measures
- * against the initial clock from `TimeControl`; without the header (or
- * without clock data at all) those points are simply absent — a game needs
- * both a clocked source and, for ply 1, a sane TimeControl to chart every
- * move.
+ * How long each mainline move took (visualization ideas #10). White and
+ * black keep separate clocks: a move's think time is the *mover's own*
+ * clock drop plus the increment (`before − after + inc`, the Lichess
+ * convention). A side's first move measures against the initial clock
+ * from `TimeControl`; without the header those points are absent. An
+ * unclocked move breaks only that side's chain — the next clocked move
+ * of the same side has no "before", the opponent's times stay exact.
  */
 export function moveTimes(tree: GameTree): MoveTime[] {
   const control = timeControl(tree.headers);
 
   const times: MoveTime[] = [];
+  /** The last seen clock per side; null once the side's chain is broken. */
+  const lastClock: { w: number | null; b: number | null } = { w: null, b: null };
+  /** Whether a side has played a (clocked or unclocked) mainline move yet. */
+  const seen: { w: boolean; b: boolean } = { w: false, b: false };
   let node: GameNode | null = tree.root;
-  let previous: number | null = null;
 
   while (node !== null) {
-    if (node.ply > 0 && node.clock !== null && node.clock !== undefined) {
-      const before = node.ply === 1 ? (control?.initial ?? null) : previous;
-      if (before !== null) {
-        // The increment lands after every move, the first included
-        // (Lichess/Chess.com convention: clock_after = clock_before −
-        // spent + increment).
-        const increment = control?.increment ?? 0;
-        const seconds = before - node.clock + increment;
-        if (seconds >= 0) {
-          times.push({ ply: node.ply, seconds });
+    if (node.ply > 0) {
+      const mover: 'w' | 'b' = node.ply % 2 === 1 ? 'w' : 'b';
+      const clock = node.clock;
+      if (clock !== null && clock !== undefined) {
+        // A side's first move starts from the initial clock; after that,
+        // its own previous clock. A broken chain (an unclocked move in
+        // between) leaves no "before" — the point is unmeasurable.
+        const before = seen[mover] ? lastClock[mover] : (control?.initial ?? null);
+        if (before !== null) {
+          const seconds = before - clock + (control?.increment ?? 0);
+          if (seconds >= 0) {
+            times.push({ ply: node.ply, mover, seconds });
+          }
         }
+        lastClock[mover] = clock;
+      } else {
+        lastClock[mover] = null;
       }
-      previous = node.clock;
-    } else {
-      // A move without clock data breaks the chain: the next clocked move
-      // has no "before" to measure against.
-      previous = null;
+      seen[mover] = true;
     }
     node = node.children[0] ?? null;
   }
