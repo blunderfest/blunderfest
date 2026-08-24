@@ -63,8 +63,34 @@ release and served by a catch-all (`SpaController`).
     multiple ops merge per node (a re-run overrides; a line analysis adds
     its variation without clobbering the mainline's).
   - `secrets.ex` — hashing helpers.
+  - `historical_evidence.ex` — the historical-evidence service (ADR-0027):
+    FEN in, a serializable evidence DTO out — the stable API between the UI
+    and the corpus boundary. Facts only: no relevance score, no
+    interpretation.
+- `lib/blunderfest/corpus/` — the corpus boundary (ADR-0026, ADR-0027);
+  application code never sees its internals:
+  - `corpus.ex` — the facade GenServer: owns the Postgrex pool and
+    delegates every query; starts unconfigured (inert) when no `db:`
+    config exists, e.g. dev without `DATABASE_URL`.
+  - `position_key.ex` — canonical position identity (Spike 01): the
+    capturable-only en-passant convention, 128-bit BLAKE2b hashes.
+  - `replay.ex` + `extraction.ex` — lean mainline replay and the streaming
+    PGN → occ/games/moves/keys artifact pipeline (mix `corpus.extract`).
+  - `occurrences.ex` — the PG store: COPY-loaded, UNLOGGED, rebuildable
+    (mix `corpus.load`); positions carry the 63-bit pawn bucket hash.
+  - `analysis/` — pure analysis modules: `Features` (bitboard dimensions),
+    `Differences` (typed differences + the §8 dims report), `Route`
+    (Spike 05 route comparison), `Continuation` (windows, representations,
+    similarities), `Families` (Spike 04 single-linkage menus),
+    `Skeleton` (Spike 06 per-side membership layer), `Counts`
+    (occurrences vs games, same-game/singleton flags).
+  - `search/candidates.ex` — exact + pawn-skeleton retrieval, capped and
+    independently observable.
+  - `search/pipeline.ex` — the vertical-slice orchestrator: per-candidate
+    evidence with per-stage timings.
 - `lib/blunderfest_web/` — HTTP and channel surface:
-  - `router.ex` — `/api` scope: `healthz`, `profiles`, `rooms`, `import/pgn`,
+  - `router.ex` — `/api` scope: `healthz`, `historical-evidence`,
+    `profiles`, `rooms`, `import/pgn`,
     `import/lichess`, `import/lichess-study`, `import/lichess-games`,
     `lichess/studies`, `lichess/games`, `chesscom/games`,
     `auth/lichess/start`, `auth/exchange`, `auth/unlink`; `/auth` scope:
@@ -91,9 +117,10 @@ also expire: the `RoomSweeper` stops rooms that have been idle **and**
 unwatched for an hour (ADR-0016), so the room cap refills itself.
 
 The one persistence exception is the corpus (ADR-0026): a Fly Postgres
-cluster (`blunderfest-db`, `ams`, non-HA) holds canonical PGNs behind the
-`Blunderfest.Corpus` boundary, accessed via Postgrex (no Ecto); occurrence
-indexes are derived and rebuilt on boot. `DATABASE_URL` is a deployed
+cluster (`blunderfest-db`, `ams`, non-HA) holds the occurrence data behind
+the `Blunderfest.Corpus` boundary, accessed via Postgrex (no Ecto).
+Everything after the canonical PGNs is derived and rebuildable
+(`mix corpus.extract` + `mix corpus.load`). `DATABASE_URL` is a deployed
 secret parsed in `config/runtime.exs`.
 
 ### Channel protocol
@@ -192,6 +219,11 @@ so clients send nothing and hide the member list.
   clicking it plays the move as a real broadcast op — the panel's
   re-anchor on cursor move makes the descent free. Corpus statistics
   upgrade the rows post-spike.
+- `assets/src/features/historicalEvidence/` — the vertical slice's UI: the
+  **History** sidebar tab runs `POST /api/historical-evidence` for the
+  board cursor (with the game's own move order as the route) and renders
+  evidence cards — position dims, route divergence, per-side family
+  membership, occurrence/independent-game counts, flags. Facts only (ADR-0027).
 - `assets/src/components/ui.ts` — `tv()`-based component variants (Tailwind
   v4, dark theme); `<.icon>`-style icons are heroicons via the `.icon` /
   `Icon` components. The visual language (tokens, states, motion) is specced

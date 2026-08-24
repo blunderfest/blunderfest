@@ -169,18 +169,18 @@ defmodule Blunderfest.HistoricalEvidence do
       status: membership.status,
       member_of: membership.member_of,
       sim: membership.sim,
-      family_occurrences: membership.family_occurrences,
-      family_games: membership.family_games
+      family_occurrences: Map.get(membership, :family_occurrences),
+      family_games: Map.get(membership, :family_games)
     }
   end
 
   defp side_dto(side) do
     %{
       status: side.status,
-      family_id: side.family_id,
-      sim: side.sim,
-      family_occurrences: side.family_occurrences,
-      family_games: side.family_games
+      family_id: Map.get(side, :family_id),
+      sim: Map.get(side, :sim),
+      family_occurrences: Map.get(side, :family_occurrences),
+      family_games: Map.get(side, :family_games)
     }
   end
 end

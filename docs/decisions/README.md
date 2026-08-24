@@ -68,3 +68,4 @@ here, or point to the ADR that superseded this one.
 | [0024](adr-0024-reference-tab-and-search-destination.md) | Feature docking: per-position reference in an adaptive Reference tab; whole-game views in the viz box; search is a `#/search` destination | Accepted (2026-08-17) |
 | [0025](adr-0025-room-first-surface-model.md) | Room-first: the library backs rooms but never becomes the home; ChessBase's IA yes, interaction model no | Accepted (2026-08-17) |
 | [0026](adr-0026-postgres-corpus-behind-boundary-no-ecto.md) | PostgreSQL for the corpus, behind Blunderfest.Corpus via Postgrex — no Ecto; app data stays in-memory | Accepted (2026-08-25) |
+| [0027](adr-0027-historical-evidence-pipeline.md) | Historical-evidence pipeline: evidence over scores, PG as the v0 index, skeleton as membership layer | Accepted (2026-08-25) |
