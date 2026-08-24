@@ -121,6 +121,8 @@ defmodule BlunderfestWeb.ImportControllerTest do
     test "fetches the game and returns the parsed tree", %{conn: conn} do
       Req.Test.stub(Blunderfest.Lichess, fn conn ->
         assert conn.request_path == "/game/export/abc123"
+        # Clock comments ride the export (the move-time timeline reads them).
+        assert conn.query_params["clocks"] == "true"
         Req.Test.text(conn, @valid_pgn)
       end)
 

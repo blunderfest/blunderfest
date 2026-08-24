@@ -88,6 +88,33 @@ describe('gameToPgn', () => {
     );
   });
 
+  it('exports clocks as [%clk] commands, alone or beside a comment', () => {
+    const root = node({
+      id: 0,
+      ply: 0,
+      san: null,
+      from: null,
+      to: null,
+      children: [
+        node({
+          id: 1,
+          ply: 1,
+          san: 'e4',
+          clock: 298,
+          comment: 'Sharp.',
+          children: [node({ id: 2, ply: 2, san: 'e5', from: 'e7', to: 'e5', clock: 296 })],
+        }),
+      ],
+    });
+
+    expect(gameToPgn(tree({ TimeControl: '300+3' }, root))).toBe(
+      '[Result "1-0"]\n' +
+        '[TimeControl "300+3"]\n' +
+        '\n' +
+        '1. e4 {[%clk 0:04:58] Sharp.} 1... e5 {[%clk 0:04:56]} 1-0\n',
+    );
+  });
+
   it('writes NAGs and escapes braces in comments', () => {
     const root = node({
       id: 0,

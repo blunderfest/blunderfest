@@ -158,9 +158,14 @@ so clients send nothing and hide the member list.
   layers on one shared move axis (`spanPly` = mainline tip; layer choice
   is a localStorage preference) — `GameFlow` (eval + quality strip, phase
   shading and capture marks via `gamePhases.ts`/`MaterialFlow.capturesOf`),
-  `MaterialFlow`, `ActivityFlow`, with the analyze action holding the eval
-  layer until a job runs; the sidebar viz box keeps the list views
-  (`CriticalMoments`, `GameReport`).
+  `MaterialFlow`, `ActivityFlow`, and `ClocksFlow` (thinking time per move
+  from `node.clock` — the parser extracts `[%clk …]` comments into a
+  first-class field at import, so clock data never pollutes comments; the
+  Lichess game export requests `clocks=true`, and `moveTimes.ts` derives
+  per-move think time from the clock drops plus the `TimeControl`
+  increment). The analyze action holds the eval layer until a job runs;
+  the sidebar viz box keeps the list views (`CriticalMoments`,
+  `GameReport`).
 - `assets/src/features/analysis/engine.ts` + `useEngine.ts` + `uci.ts` +
   `EvalBar.tsx` — in-browser Stockfish 18 Lite (WASM, single-threaded, in a
   classic Web Worker via the `#<wasm-url>,worker` hash convention; ADR-0009).

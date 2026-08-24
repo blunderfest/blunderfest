@@ -2,6 +2,7 @@ import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { panel } from '@/components/ui';
 import ActivityFlow from '@/features/analysis/ActivityFlow';
+import ClocksFlow from '@/features/analysis/ClocksFlow';
 import GameFlow from '@/features/analysis/GameFlow';
 import MaterialFlow, { type CapturePoint } from '@/features/analysis/MaterialFlow';
 import type { GameTree } from '@/lib/api';
@@ -138,6 +139,19 @@ export default function TimelineBand({
         ) : (
           noMoves(t('analysis.activityEmpty'))
         ),
+    },
+    {
+      id: 'clocks',
+      label: t('analysis.clocksTab'),
+      content: (
+        <ClocksFlow
+          tree={tree}
+          currentPly={currentPly}
+          spanPly={spanPly}
+          heightClass={LAYER_HEIGHT}
+          onSelectPly={onSelectPly}
+        />
+      ),
     },
   ];
 

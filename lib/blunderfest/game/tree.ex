@@ -6,6 +6,10 @@ defmodule Blunderfest.Game.Node do
   child is the mainline, further children are variations. `from`/`to` are
   algebraic squares (e.g. "e2", "g8"); `promotion` is a piece letter
   ("Q"/"R"/"B"/"N") or `nil`. `fen` is the position after the move.
+
+  `clock` is the mover's remaining clock after the move, in seconds
+  (extracted at parse time from `[%clk …]` comments — Lichess/Chess.com
+  exports carry them; the move-time timeline is built from it client-side).
   """
 
   defstruct [
@@ -16,6 +20,7 @@ defmodule Blunderfest.Game.Node do
     :to,
     :promotion,
     :comment,
+    :clock,
     :nags,
     :status,
     :fen,
@@ -30,6 +35,7 @@ defmodule Blunderfest.Game.Node do
           to: String.t() | nil,
           promotion: String.t() | nil,
           comment: String.t() | nil,
+          clock: number() | nil,
           nags: [non_neg_integer()],
           status: atom(),
           fen: String.t() | nil,
@@ -92,6 +98,7 @@ defmodule Blunderfest.Game.Tree do
       to: node.to,
       promotion: node.promotion,
       comment: node.comment,
+      clock: node.clock,
       nags: node.nags,
       status: node.status,
       fen: node.fen,

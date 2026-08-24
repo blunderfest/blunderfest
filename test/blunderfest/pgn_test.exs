@@ -148,10 +148,43 @@ defmodule Blunderfest.PGNTest do
       assert nf3.comment == " percent comment"
     end
 
-    test "lichess clock comments are kept as comments" do
-      tree = parse!("1. e4 { [%clk 0:05:00] } e5 { [%clk 0:05:00] } *\n")
+    test "lichess clock comments extract into node.clock, not the comment" do
+      tree = parse!("1. e4 { [%clk 0:05:00] } e5 { [%clk 0:04:56] } *\n")
       e4 = mainline(tree) |> Enum.find(&(&1.san == "e4"))
-      assert e4.comment == " [%clk 0:05:00] "
+      assert e4.clock == 300
+      assert e4.comment == nil
+      e5 = mainline(tree) |> Enum.find(&(&1.san == "e5"))
+      assert e5.clock == 296
+      assert e5.comment == nil
+    end
+
+    test "clock extraction keeps the human text around the marker" do
+      tree = parse!("1. e4 {[%clk 0:04:58] Sharp!} e5 {[%clk 0:04:55]} *\n")
+      e4 = mainline(tree) |> Enum.find(&(&1.san == "e4"))
+      assert e4.clock == 298
+      assert e4.comment == "Sharp!"
+    end
+
+    test "fractional clock seconds survive extraction" do
+      tree = parse!("1. e4 {[%clk 0:00:07.64]} e5 {[%clk 1:02:03]} *\n")
+      e4 = mainline(tree) |> Enum.find(&(&1.san == "e4"))
+      assert e4.clock == 7.64
+      e5 = mainline(tree) |> Enum.find(&(&1.san == "e5"))
+      assert e5.clock == 3723
+    end
+
+    test "a clock comment before its move token extracts too" do
+      tree = parse!("1. {[%clk 0:05:12]} e4 e5 *\n")
+      e4 = mainline(tree) |> Enum.find(&(&1.san == "e4"))
+      assert e4.clock == 312
+      assert e4.comment == nil
+    end
+
+    test "comments without clock markers are untouched" do
+      tree = parse!("1. e4 {[%eval 0.3] plain text} e5 *\n")
+      e4 = mainline(tree) |> Enum.find(&(&1.san == "e4"))
+      assert e4.clock == nil
+      assert e4.comment == "[%eval 0.3] plain text"
     end
   end
 

@@ -172,7 +172,8 @@ defmodule Blunderfest.Ops do
          when is_integer(id) and is_integer(ply) and is_list(children) <- node,
          :ok <-
            nullable_strings(node, ["san", "from", "to", "promotion", "comment", "status", "fen"]),
-         :ok <- optional_list(node, "nags") do
+         :ok <- optional_list(node, "nags"),
+         :ok <- optional_number(node, "clock") do
       Enum.reduce_while(children, {:ok, count + 1}, fn child, {:ok, acc} ->
         case walk_tree(child, depth + 1, acc) do
           {:ok, acc} -> {:cont, {:ok, acc}}
@@ -212,6 +213,15 @@ defmodule Blunderfest.Ops do
     case Map.get(map, key) do
       nil -> :ok
       value when is_list(value) -> :ok
+      _ -> :error
+    end
+  end
+
+  # The parse-time `[%clk]` extraction can leave fractional seconds.
+  defp optional_number(map, key) do
+    case Map.get(map, key) do
+      nil -> :ok
+      value when is_number(value) and value >= 0 -> :ok
       _ -> :error
     end
   end

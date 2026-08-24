@@ -132,10 +132,29 @@ function emitNodeText(out: Emitter, node: GameNode, setupGames: GameNode[]): voi
   for (const nag of node.nags) {
     out.tokens.push(`$${nag}`);
   }
-  if (node.comment !== null) {
-    out.tokens.push(`{${escapeComment(node.comment)}}`);
+  // The parse-time clock extraction reversed: remaining clock rides the
+  // move again as a `[%clk …]` command, so exports re-import losslessly.
+  const clockMarker =
+    node.clock !== null && node.clock !== undefined ? `[%clk ${clockLabel(node.clock)}]` : '';
+  const body =
+    node.comment !== null
+      ? clockMarker === ''
+        ? escapeComment(node.comment)
+        : `${clockMarker} ${escapeComment(node.comment)}`
+      : clockMarker;
+  if (body !== '') {
+    out.tokens.push(`{${body}}`);
     out.needsNumber = true;
   }
+}
+
+/** `298` → `0:04:58` — the PGN clock format (whole seconds; fractions drop). */
+function clockLabel(seconds: number): string {
+  const whole = Math.floor(seconds);
+  const h = Math.floor(whole / 3600);
+  const m = Math.floor((whole % 3600) / 60);
+  const s = whole % 60;
+  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 /** The result of a setup subtree: the outcome at the tip of its mainline, or `*`. */

@@ -221,6 +221,7 @@ defmodule BlunderfestWeb.LichessControllerTest do
       Req.Test.stub(Blunderfest.Lichess, fn conn ->
         case conn.request_path do
           "/game/export/good12345" ->
+            assert conn.query_params["clocks"] == "true"
             Req.Test.text(conn, "1. e4 e5 2. Nf3 Nc6 1-0\n")
 
           "/game/export/gone99999" ->

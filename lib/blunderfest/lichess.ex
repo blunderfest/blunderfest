@@ -26,12 +26,17 @@ defmodule Blunderfest.Lichess do
 
   def game_id(_), do: {:error, :invalid_url}
 
+  @doc """
+  Fetches a game PGN from Lichess. `clocks: true` keeps the players'
+  remaining clock on every move (`[%clk …]` comments) — the move-time
+  timeline (visualization ideas #10) is built from them client-side.
+  """
   @spec export_pgn(binary(), binary() | nil) ::
           {:ok, binary()} | {:error, :not_found | :fetch_failed}
   def export_pgn(game_id, token \\ nil) do
     auth = if token != nil, do: [auth: {:bearer, token}], else: []
 
-    case Req.get(req_options("/game/export/#{game_id}", auth)) do
+    case Req.get(req_options("/game/export/#{game_id}", [params: [clocks: true]] ++ auth)) do
       {:ok, %Req.Response{status: 200, body: body}} when is_binary(body) -> {:ok, body}
       {:ok, %Req.Response{status: 404}} -> {:error, :not_found}
       {:ok, %Req.Response{}} -> {:error, :fetch_failed}

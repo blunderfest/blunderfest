@@ -223,6 +223,30 @@ defmodule Blunderfest.OpsTest do
       assert :ok = Ops.validate(set_game_op(root))
     end
 
+    test "accepts the optional clock field (integer or fractional seconds)" do
+      fractional = tree_node(%{"id" => 2, "ply" => 2, "san" => "e5", "clock" => 7.64})
+
+      child =
+        tree_node(%{
+          "id" => 1,
+          "ply" => 1,
+          "san" => "e4",
+          "clock" => 296,
+          "children" => [fractional]
+        })
+
+      root = tree_node(%{"children" => [child]})
+
+      assert :ok = Ops.validate(set_game_op(root))
+    end
+
+    test "rejects a clock that isn't a non-negative number" do
+      assert {:error, :invalid_op} =
+               Ops.validate(set_game_op(tree_node(%{"clock" => "3:00"})))
+
+      assert {:error, :invalid_op} = Ops.validate(set_game_op(tree_node(%{"clock" => -1})))
+    end
+
     test "rejects a root without a children list" do
       assert {:error, :invalid_op} = Ops.validate(set_game_op(%{"id" => 0, "ply" => 0}))
     end

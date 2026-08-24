@@ -183,6 +183,8 @@ export type GameNode = {
   to: string | null;
   promotion: string | null;
   comment: string | null;
+  /** The mover's remaining clock after this move, in seconds (from [%clk] at parse time). */
+  clock?: number | null;
   nags: number[];
   status: string;
   fen: string | null;

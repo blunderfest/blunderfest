@@ -389,6 +389,7 @@ defmodule Blunderfest.PGN do
           }
 
           {rest1, node} = attach_post_tokens(rest, node)
+          node = extract_clock(node)
 
           # Nested parses can fail (a bad SAN deeper in the game or in a
           # variation): propagate the error instead of crashing the match.
@@ -622,6 +623,60 @@ defmodule Blunderfest.PGN do
 
   defp merge_comment(nil, c), do: c
   defp merge_comment(existing, c), do: existing <> "\n" <> c
+
+  ## Clock extraction
+
+  @clock_marker ~r/\[%clk\s+([0-9]+(?::[0-5]?[0-9]){1,2}(?:\.[0-9]+)?)\]/
+
+  @doc """
+  Pulls the `[%clk H:MM:SS]` command out of a node's comment into
+  `node.clock` (seconds). The marker is machine data, not comment text —
+  extracting it keeps every clocked move from wearing the "has a note"
+  glyph and keeps comment edits from destroying clock data. What remains
+  of the comment survives; a comment that held only the marker drops to
+  `nil`.
+  """
+  @spec extract_clock(Node.t()) :: Node.t()
+  def extract_clock(%Node{comment: nil} = node), do: node
+
+  def extract_clock(%Node{} = node) do
+    case Regex.run(@clock_marker, node.comment) do
+      [marker, value] ->
+        node = %{node | clock: clock_seconds(value)}
+
+        comment =
+          node.comment
+          |> String.replace(marker, "")
+          |> String.replace(~r/^[ \t\n]+|[ \t\n]+$/, "")
+
+        %{node | comment: if(comment == "", do: nil, else: comment)}
+
+      nil ->
+        node
+    end
+  end
+
+  defp clock_seconds(value) do
+    fraction =
+      case String.split(value, ".", parts: 2) do
+        [_, frac] -> String.to_float("0." <> frac)
+        [_] -> 0.0
+      end
+
+    whole =
+      value
+      |> String.split(".")
+      |> List.first()
+      |> String.split(":")
+      |> Enum.reverse()
+      |> Enum.with_index()
+      |> Enum.reduce(0.0, fn {part, i}, acc ->
+        acc + String.to_integer(part) * :math.pow(60, i)
+      end)
+
+    seconds = whole + fraction
+    if fraction == 0.0, do: round(seconds), else: seconds
+  end
 
   defp assign_ids(root) do
     {node, _state} = assign_ids(root, %{next: 1})
