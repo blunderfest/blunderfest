@@ -164,6 +164,32 @@ only against the one documented gap (tempo-flipped continuations can't
 join their plan family — B1). Report:
 [`docs/technical-spike-05-contextual-historical-evidence-re-judgment-experiment-report.md`](docs/technical-spike-05-contextual-historical-evidence-re-judgment-experiment-report.md).
 
+**Spike 06 (plan skeletons & move-order robustness) is done** — the
+Spike 05 gap closed, tested in `spike/position_retrieval/lib/sim/
+skeleton.ex` + `skeleton_lab.ex` (16 new tests, 89 green;
+`mix spike.sim.skeletons` writes `data/sim-skeleton-100000.json`, 414 ms
+of experiments after the shared index load). Answer: **yes, as a per-side
+membership layer, not as a clustering representation.** The plan skeleton
+(per-color multiset of action tokens — `N→e1`, `Pf→f5`, `O-O`) with
+per-color scoring makes **B1 join the kingside family on black's side at
+similarity 1.0** (its `{N→e8, Pf→f5, Ph→h6}` exactly equals the `g4 h6`
+variant member's black actions; at window 6), and produces sharper
+readings elsewhere (B4/F2 as white-queenside + black-kingside hybrids;
+A2-B4 = Marshall on black exactly, white's unspent Re1 the non-joining
+side). But skeleton *clustering* over-merges — F1's plans blob at 0.5
+(exact menu reproduction at 0.6), A2's Marshall/Closed chain at every
+threshold (the distinction rides on one pawn token of one side) — so
+Spike 04's validated metrics keep building the families and the skeleton
+scores membership into them. Negative tests hold (B3/F3/E4 join nothing;
+Be3/Nd3/f3 variants stay distinct action sets); singleton
+self-membership persists (flag needed); family membership shown without
+the positional tier would re-create the confident-garbage failure
+(E1-E3). Report:
+[`docs/technical-spike-06-plan-skeletons-and-move-order-robustness-report.md`](docs/technical-spike-06-plan-skeletons-and-move-order-robustness-report.md).
+Next: the first vertical slice (one FEN → candidates → diffs → route →
+families with per-side membership → card), architecture in the report
+§9.
+
 **Spike 03 (persistence architecture) is done** — one PostgreSQL
 (Fly Postgres, Ecto) for **application data** (profiles, accounts,
 library) and the **canonical corpus** (games as validated PGN, sha256
@@ -181,6 +207,102 @@ Next step: make profiles durable first (smallest entity set, unblocks
 the library's cross-device half, exercises the whole Ecto/Fly-Postgres
 path before the big corpus data touches it). Report:
 [`docs/technical-spike-03-persistence-report.md`](docs/technical-spike-03-persistence-report.md).
+
+### Session handoff (2026-08-24, third session — visualization milestones A/B/C)
+
+**`docs/visualization_ideas.md` partially implemented, three commits**
+(band usability round below).
+Feasibility was inventoried first: ideas 1–5, 11 are partially/fully
+done already; the growth home was decided per ADR-0024's named escape
+hatch (a third desktop column was considered and rejected — reasoning
+in the ADR amendment). Shipped:
+
+- **Eval-chart enrichment** (`gamePhases.ts`): opening/endgame phase
+  shading (endgame = no queens, or both sides ≤ 13 pawns of non-pawn
+  material, stable to the tip), dashed endgame boundary named in the
+  hover readout, capture markers at the chart's top edge (victim image
+  at its ply, Q/R larger, exchange captures ringed and labelled;
+  `capturesOf` in MaterialFlow).
+- **The timeline band** (`TimelineBand.tsx`): the whole-game charts
+  (Eval | Material | Activity | Clocks) moved out of the sidebar viz
+  box into stacked, toggleable layers on one shared move axis under
+  the board (full row width at xl, directly under the board below —
+  `display:contents` row + order utilities). New `spanPly` +
+  `heightClass` props on the three charts; layer visibility persists
+  in `localStorage` (`blunderfest.timelineLayers`); ADR-0024 amended.
+  The viz box keeps the list views (Moments | Report), always present.
+  Browser-verified: band spans the row exactly at 1500px, mobile
+  order board→band→sidebar, scrub navigates, no horizontal overflow.
+- **Move-time data + Clocks layer**: Lichess exports fetched with
+  `clocks=true` (both import paths funnel through `export_pgn`), the
+  parser extracts `[%clk]` into a first-class `node.clock` field
+  (ops validation accepts the optional number; PGN export round-trips
+  it), `moveTimes.ts` derives think time (clock drops + TimeControl
+  increment), `ClocksFlow` charts log-scaled bars as a band layer.
+  Clocked moves no longer wear the "has a note" glyph.
+
+558 frontend + 248 backend tests green (`mix precommit`, `pnpm lint`/
+`typecheck`/vitest). Deferred next: pawn-structure/king-safety/
+center-control as drop-in band layers, board overlays (heatmaps,
+trajectories) via Board props + BoardControls toggles, motif
+detection, Report radar, true best-vs-played delta (engine protocol),
+corpus-gated opening stats. Note: `mix phx.server` serves the stale
+`priv/static` build on :4000 — verify UI against the Vite dev server
+on :5173 (API proxied).
+
+**Later the same session — usability round after owner review (four
+more commits, 564 tests green).** (1) Games-panel Import/New buttons
+moved into the panel header as icon buttons (the game header's
+export/bookmark pattern) — the old bottom row wrapped at the rail
+width. (2) **Black think-times bug**: moveTimes compared each move
+to the previous node's clock — the *opponent's*; black's time went
+negative (bar silently dropped) whenever black was ahead on the
+clock. Per-side chains now (first move of a side vs the initial
+TimeControl clock, later vs its own previous clock); bars are
+side-colored (white near-white, black silver) with the side named in
+the tooltip and a W/B legend on the layer caption. (3) Timeline-band
+legibility: persistent caption per layer (hue dot + label), per-chart
+hues (eval near-white, material silver, activity blue — de-twinned),
+chips wear the same dots, and the whole-game **Analyze action moved
+to the band header** — it used to live in the eval layer's
+placeholder, so toggling that chip off removed the only path to an
+analysis (Moments/Report dead ends). (4) Position-editor palette
+drags place **once, on release** (sweep-painting stays a
+board-pressed gesture) — dragging from the palette used to paint
+every square the ghost crossed.
+
+### Session handoff (2026-08-24, second session — continued after an engine switch)
+
+**Spike 06 (plan skeletons & move-order robustness) done, spike-only
+session.** Executed `docs/technical-spike-06-plan-skeletons-and-move-order-robustness.md`:
+two new modules in the spike sub-project (`Spike.Sim.Skeleton` — the
+action tokenizer (`N→e1`, `Pf→f5`, `O-O`) plus three color-aligned
+representations (`:skeleton` per-color action multisets, `:skeleton_seq`
+per-color ordered, `:skeleton_phase` half-window buckets) with per-color
+similarity scores; `Spike.Sim.SkeletonLab` — the experiment driver:
+representation census, decision-menu clustering sweeps against Spike 04's
+validated baselines, per-side family membership for the 13 Spike 05 units
++ the F1-E negatives, and family→variation tables), the
+`mix spike.sim.skeletons` task, 16 new tests (89 green), one full run at
+the 100k tier writing `data/sim-skeleton-100000.json` (414 ms after the
+shared ~3 min index load; a second run after a memory-kill succeeded).
+The falsifiable test passed: B1 joins F1's kingside family **on black's
+side at 1.0** (exact action-set match vs the `Ne1 Ne8 f3 f5 g4 h6`
+member, window 6 — window 4 still misses, `…f5` not yet played), and the
+separations survived (trio variants distinct; Marshall/Closed apart in
+the membership view; B3/F3/E4 join nothing). Documented failures:
+skeleton *clustering* chains (F1 blob at 0.5 despite exact reproduction
+at 0.6; A2 never separates — the Marshall/Closed distinction rides on
+one pawn token of one side, and the mean per-color Jaccard rewards the
+other side's full match), singleton self-membership persists, and
+family membership without the positional tier re-creates the
+confident-garbage failure (E1-E3). Recommendation: skeleton as per-side
+membership/annotation layer on Spike 04 families; keep validated metrics
+for clustering; drop `:skeleton_phase`; vertical slice next (report §9).
+Member-level verification via two one-off probes (`tmp/skeleton_probe.exs`,
+`tmp/a2_probe.exs`, untracked). Nothing in the app touched; the spike
+sub-project code stays untracked (gitignored `spike/`), brief + report
+committed.
 
 ### Session handoff (2026-08-23, second session)
 
