@@ -174,7 +174,7 @@ defmodule Blunderfest.Corpus.Analysis.SkeletonTest do
     test "B1: black joins family A on its own side, white joins nothing" do
       menu = Families.build(f1_entries(), Families.default())
 
-      m = Skeleton.membership(menu, ~w(Ne8 Bg5 h6 Be3 f5 Qc1), :b, :w)
+      m = Skeleton.membership(menu, ~w(Ne8 Bg5 h6 Be3 f5 Qc1), :b, :w, 6)
 
       assert m.black.status == :member
       assert m.black.sim >= 0.5
@@ -185,7 +185,7 @@ defmodule Blunderfest.Corpus.Analysis.SkeletonTest do
     test "B4: black joins family B exactly, white only partially" do
       menu = Families.build(f1_entries(), Families.default())
 
-      m = Skeleton.membership(menu, ~w(a5 a3 Nd7 Rb1 f5 f3), :b, :w)
+      m = Skeleton.membership(menu, ~w(a5 a3 Nd7 Rb1 f5 f3), :b, :w, 6)
 
       assert m.black.status == :member
       assert m.black.sim == 1.0
@@ -195,7 +195,7 @@ defmodule Blunderfest.Corpus.Analysis.SkeletonTest do
     test "B3 joins no multi-game family on either side" do
       menu = Families.build(f1_entries(), Families.default())
 
-      m = Skeleton.membership(menu, ~w(c5 dxc6 bxc6 b4 Be6 a4), :b, :w)
+      m = Skeleton.membership(menu, ~w(c5 dxc6 bxc6 b4 Be6 a4), :b, :w, 6)
 
       # Spike 06's reading: B3's sides land only on 1-game families (own
       # singletons at threshold) — never on the recurring families.

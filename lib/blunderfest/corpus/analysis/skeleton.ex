@@ -139,14 +139,16 @@ defmodule Blunderfest.Corpus.Analysis.Skeleton do
 
   `ref_stm` is the menu position's side to move, `cand_stm` the
   candidate's — the tempo flip stays correctly attributed per color.
+  `window` truncates the candidate window like the menu's own windows.
   Returns `%{white: side_result, black: side_result}` where a side result
   is `%{status: :member | :none, family_id, sim, family_occurrences,
   family_games}` — `family_id`/`sim` of the nearest family even when not
   joining, so "no family" stays visible.
   """
-  @spec membership([map()], [Continuation.san()], :w | :b, :w | :b, float()) :: map()
-  def membership(menu, cand_window, cand_stm, ref_stm, threshold \\ 0.5) do
-    cand = represent(cand_window, :skeleton, cand_stm)
+  @spec membership([map()], [Continuation.san()], :w | :b, :w | :b, pos_integer(), float()) ::
+          map()
+  def membership(menu, cand_window, cand_stm, ref_stm, window, threshold \\ 0.5) do
+    cand = cand_window |> Enum.take(window) |> represent(:skeleton, cand_stm)
 
     for side <- [:white, :black] do
       color = if side == :white, do: :w, else: :b
