@@ -81,14 +81,20 @@ release and served by a catch-all (`SpaController`).
 
 ### State lifecycle
 
-No database (ADR-0001). `Rooms` and `Profiles` start empty on boot and are
-rebuilt by use; a scale-to-zero instance loses nothing critical. The Fly
-machines form one Erlang cluster (DNSCluster + `DNS_CLUSTER_QUERY`), so a
-room process running in `ams` is reachable from `ord` and vice versa. The
-demo room follows the same rule: nothing seeds it at boot — the first join
-to its reserved code re-seeds it (ADR-0014). Rooms also expire: the
-`RoomSweeper` stops rooms that have been idle **and** unwatched for an
-hour (ADR-0016), so the room cap refills itself.
+No database for application data (ADR-0001). `Rooms` and `Profiles` start
+empty on boot and are rebuilt by use; a scale-to-zero instance loses nothing
+critical. The Fly machines form one Erlang cluster (DNSCluster +
+`DNS_CLUSTER_QUERY`), so a room process running in `ams` is reachable from
+`ord` and vice versa. The demo room follows the same rule: nothing seeds it
+at boot — the first join to its reserved code re-seeds it (ADR-0014). Rooms
+also expire: the `RoomSweeper` stops rooms that have been idle **and**
+unwatched for an hour (ADR-0016), so the room cap refills itself.
+
+The one persistence exception is the corpus (ADR-0026): a Fly Postgres
+cluster (`blunderfest-db`, `ams`, non-HA) holds canonical PGNs behind the
+`Blunderfest.Corpus` boundary, accessed via Postgrex (no Ecto); occurrence
+indexes are derived and rebuilt on boot. `DATABASE_URL` is a deployed
+secret parsed in `config/runtime.exs`.
 
 ### Channel protocol
 

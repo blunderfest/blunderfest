@@ -42,7 +42,7 @@ here, or point to the ADR that superseded this one.
 
 | ADR | Decision | Status |
 |---|---|---|
-| [0001](adr-0001-no-database-in-memory-state.md) | No database — in-memory state rebuilt on boot | Accepted (2026-08-04) |
+| [0001](adr-0001-no-database-in-memory-state.md) | No database — in-memory state rebuilt on boot | Accepted (2026-08-04); corpus-scope superseded by ADR-0026 |
 | [0002](adr-0002-backend-serves-api-and-spa-no-ui.md) | Backend serves a JSON API + channel sockets and a bundled SPA; no server-rendered UI | Accepted (2026-08-04) |
 | [0003](adr-0003-structured-error-codes-client-owns-copy.md) | The API returns structured error codes; the client owns all copy | Accepted (2026-08-04) |
 | [0004](adr-0004-anonymous-first-profiles.md) | Anonymous-first profiles with device secrets, no stored PII | Accepted (2026-08-04) |
@@ -67,3 +67,4 @@ here, or point to the ADR that superseded this one.
 | [0023](adr-0023-chat-permissions-and-moderation.md) | Chat needs edit rights (viewers read along); the owner moderates via `delete_chat` ops | Accepted (2026-08-17) |
 | [0024](adr-0024-reference-tab-and-search-destination.md) | Feature docking: per-position reference in an adaptive Reference tab; whole-game views in the viz box; search is a `#/search` destination | Accepted (2026-08-17) |
 | [0025](adr-0025-room-first-surface-model.md) | Room-first: the library backs rooms but never becomes the home; ChessBase's IA yes, interaction model no | Accepted (2026-08-17) |
+| [0026](adr-0026-postgres-corpus-behind-boundary-no-ecto.md) | PostgreSQL for the corpus, behind Blunderfest.Corpus via Postgrex — no Ecto; app data stays in-memory | Accepted (2026-08-25) |

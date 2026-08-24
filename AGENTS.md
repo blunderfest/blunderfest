@@ -105,8 +105,9 @@ custom classes must fully style the input
 <!-- phoenix:ecto-start -->
 ## Persistence Guidelines
 
-- Ecto/Postgres were removed for now; state lives in-memory (agents/ETS). Do **not** reintroduce Ecto, `mix ecto.*` tasks, or a `Repo` without explicit approval from the user.
-- Until then, recompute/rebuild state on boot and keep processes small so a scaled-to-zero instance loses nothing critical.
+- Application state (rooms, profiles, accounts, library) lives in-memory (agents/ETS) per ADR-0001. Do **not** reintroduce Ecto, `mix ecto.*` tasks, or a `Repo` — that remains unapproved.
+- The **corpus** is the one Postgres exception (ADR-0026): a Fly Postgres cluster behind the `Blunderfest.Corpus` boundary, accessed via `Postgrex` directly — no Ecto. `DATABASE_URL` is parsed in `config/runtime.exs`; canonical PGNs are durable, everything else (occurrences, indexes) is derived and rebuildable. Application code must not write against the corpus schema; keep the boundary replaceable.
+- Keep processes small and rebuild state on boot so a scaled-to-zero instance loses nothing critical.
 <!-- phoenix:ecto-end -->
 
 <!-- phoenix:html-start -->

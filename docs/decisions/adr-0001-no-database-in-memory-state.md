@@ -1,6 +1,6 @@
 # ADR-0001: No database — in-memory state rebuilt on boot
 
-Status: Accepted (2026-08-04)
+Status: Accepted (2026-08-04); corpus-scope superseded by ADR-0026
 
 ## Context
 

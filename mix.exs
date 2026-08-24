@@ -46,6 +46,7 @@ defmodule Blunderfest.MixProject do
       {:horde, "~> 0.9"},
       {:bandit, "~> 1.5"},
       {:echecs, "~> 0.1.4"},
+      {:postgrex, "~> 0.22"},
       {:req, "~> 0.5"}
     ]
   end

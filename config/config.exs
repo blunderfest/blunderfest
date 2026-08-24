@@ -10,6 +10,12 @@ import Config
 config :blunderfest,
   generators: [timestamp_type: :utc_datetime]
 
+# Corpus artifacts (ADR-0026): where extraction writes and corpus.load
+# reads. Derived data, gitignored, rebuildable from the canonical PGN.
+config :blunderfest, Blunderfest.Corpus,
+  data_dir: "data/corpus",
+  tier: 100_000
+
 # Configure the endpoint
 config :blunderfest, BlunderfestWeb.Endpoint,
   url: [host: "localhost"],

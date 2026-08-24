@@ -43,7 +43,7 @@ end
 if config_env() == :prod do
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
-  # want to use a different value for prod and you most likely don't want
+  # want to use a different value for prod and most likely you don't want
   # to check this value into version control, so we use an environment
   # variable instead.
   secret_key_base =
@@ -52,6 +52,15 @@ if config_env() == :prod do
       environment variable SECRET_KEY_BASE is missing.
       You can generate one by calling: mix phx.gen.secret
       """
+
+  # The corpus Postgres (ADR-0026) is provisioned as a Fly Postgres cluster
+  # attached to the app; `flyctl postgres attach` sets DATABASE_URL. Fail
+  # fast at boot rather than discover the missing secret on first search.
+  System.get_env("DATABASE_URL") ||
+    raise """
+    environment variable DATABASE_URL is missing.
+    Attach the Fly Postgres cluster: flyctl postgres attach blunderfest-db --app blunderfest
+    """
 
   host = System.get_env("PHX_HOST") || "example.com"
 
@@ -99,4 +108,41 @@ if config_env() == :prod do
   #       force_ssl: [hsts: true]
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
+end
+
+# Corpus Postgres connection (ADR-0026). The corpus store lives behind the
+# `Blunderfest.Corpus` boundary and connects via Postgrex directly — no Ecto,
+# no Repo. DATABASE_URL is set by `flyctl postgres attach` in prod; locally
+# set it to reach any Postgres (Fly proxy or docker). Absent in dev/test, the
+# corpus is simply not configured.
+if url = System.get_env("DATABASE_URL") do
+  split_userinfo = fn
+    nil ->
+      {nil, nil}
+
+    userinfo ->
+      case String.split(userinfo, ":", parts: 2) do
+        [user] -> {URI.decode(user), nil}
+        [user, pass] -> {URI.decode(user), URI.decode(pass)}
+      end
+  end
+
+  uri = URI.parse(url)
+  {username, password} = split_userinfo.(uri.userinfo)
+
+  ssl =
+    case URI.decode_query(uri.query || "") do
+      %{"sslmode" => "require"} -> true
+      _ -> false
+    end
+
+  config :blunderfest, Blunderfest.Corpus,
+    db: [
+      hostname: uri.host,
+      port: uri.port || 5432,
+      database: uri.path |> String.trim_leading("/") |> URI.decode(),
+      username: username,
+      password: password,
+      ssl: ssl
+    ]
 end

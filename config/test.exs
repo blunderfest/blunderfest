@@ -25,3 +25,16 @@ config :blunderfest, chesscom_req_options: [plug: {Req.Test, Blunderfest.Chessco
 # The engine pool runs the canned UCI fixture, not a real Stockfish
 config :blunderfest, Blunderfest.Engine.Pool,
   binary: Path.expand("../test/support/fake_uci_engine.sh", __DIR__)
+
+# Corpus tests run against the local docker Postgres (docs/operations.md).
+# Export DATABASE_URL to point elsewhere (e.g. a Fly proxy); the value is
+# then picked up by config/runtime.exs and overrides this default.
+config :blunderfest, Blunderfest.Corpus,
+  db: [
+    hostname: "localhost",
+    port: 5433,
+    database: "blunderfest_test",
+    username: "blunderfest",
+    password: "blunderfest",
+    ssl: false
+  ]

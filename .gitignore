@@ -22,6 +22,9 @@ erl_crash.dump
 # Temporary files, for example, from tests.
 /tmp/
 
+# Derived corpus artifacts (rebuildable from PGN; ADR-0026)
+/data/
+
 # Ignore package tarball (built via "mix hex.build").
 blunderfest-*.tar
 
