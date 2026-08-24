@@ -316,20 +316,7 @@ defmodule Blunderfest.Corpus.Occurrences do
 
   # `keys-N.tsv` is in corpus order, so the first row of a key is its first
   # occurrence; the btree on key makes the dedup sort-free.
-  #
-  # The pawn-skeleton hash is truncated to 63 bits: `bigint` is signed
-  # 64-bit and cannot hold the full 128-bit BLAKE2b. 63 bits is ample for a
-  # *bucket* index (a rare collision merely merges two skeleton buckets, it
-  # cannot produce a wrong candidate), and the position key itself stays
-  # 128-bit.
-  defp pawn_hash(key) do
-    key
-    |> Blunderfest.Corpus.PositionKey.pawn_key()
-    |> Blunderfest.Corpus.PositionKey.to_hash128()
-    |> binary_part(0, 8)
-    |> :binary.decode_unsigned()
-    |> Bitwise.band(0x7FFFFFFFFFFFFFFF)
-  end
+  defp pawn_hash(key), do: Blunderfest.Corpus.Analysis.Features.pawn_hash(key)
 
   # "?" means "unknown" in the extraction artifacts; for the integer Elo
   # columns it becomes `\N` (COPY's NULL marker). Other columns keep the "?"

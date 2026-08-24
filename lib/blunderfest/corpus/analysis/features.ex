@@ -124,10 +124,24 @@ defmodule Blunderfest.Corpus.Analysis.Features do
   def fen(%__MODULE__{key: key}), do: key <> " 0 1"
   def fen(key) when is_binary(key), do: key <> " 0 1"
 
-  @doc "BLAKE2b-128 (as an unsigned integer) of the pawn skeleton."
-  @spec pawn_hash(t()) :: non_neg_integer()
-  def pawn_hash(%__MODULE__{key: key}) do
-    key |> PositionKey.pawn_key() |> PositionKey.to_hash128() |> :binary.decode_unsigned()
+  @doc """
+  Pawn-skeleton bucket hash: BLAKE2b-128 of the pawn skeleton, truncated to
+  63 bits. The truncation is a storage reality — the corpus stores the hash
+  in a signed `bigint` column, and a *bucket* index needs far less than 128
+  bits anyway: a rare collision merely merges two skeleton buckets, it
+  cannot produce a wrong candidate. The position key itself stays 128-bit.
+  Accepts a `t` or a canonical key string.
+  """
+  @spec pawn_hash(t() | String.t()) :: non_neg_integer()
+  def pawn_hash(%__MODULE__{key: key}), do: pawn_hash(key)
+
+  def pawn_hash(key) when is_binary(key) do
+    key
+    |> PositionKey.pawn_key()
+    |> PositionKey.to_hash128()
+    |> binary_part(0, 8)
+    |> :binary.decode_unsigned()
+    |> Bitwise.band(0x7FFFFFFFFFFFFFFF)
   end
 
   @doc "Pawn skeleton string (`PositionKey.pawn_key/1` applied to this key)."
