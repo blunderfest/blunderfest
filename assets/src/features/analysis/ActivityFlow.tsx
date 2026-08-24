@@ -29,11 +29,17 @@ export default function ActivityFlow({
   tree,
   currentPly,
   flipped = false,
+  spanPly,
+  heightClass = 'h-44',
   onSelectPly,
 }: {
   tree: GameTree;
   currentPly: number;
   flipped?: boolean;
+  /** The x-axis domain: the last ply shown. Defaults to the mainline tip; the timeline band passes its own so layers align. */
+  spanPly?: number;
+  /** The chart's height (the timeline band stacks layers compactly). */
+  heightClass?: string;
   onSelectPly: (ply: number) => void;
 }) {
   const { t } = useTranslation();
@@ -42,7 +48,8 @@ export default function ActivityFlow({
   const [coarse] = useState(() => window.matchMedia('(pointer: coarse)').matches);
 
   const points = useMemo(() => activityTimeline(tree.root), [tree]);
-  const maxPly = points.length > 0 ? points[points.length - 1].ply : 0;
+  // The x-axis domain: the mainline tip, or the shared span (band).
+  const maxPly = spanPly ?? (points.length > 0 ? points[points.length - 1].ply : 0);
   const pointByPly = useMemo(() => new Map(points.map((p) => [p.ply, p])), [points]);
 
   if (maxPly === 0) {
@@ -90,7 +97,7 @@ export default function ActivityFlow({
 
   return (
     <div
-      className="flex h-44 cursor-crosshair touch-none flex-col select-none"
+      className={`flex ${heightClass} cursor-crosshair touch-none flex-col select-none`}
       role="img"
       aria-label={t('analysis.activityFlow')}
       data-testid="activity-flow"

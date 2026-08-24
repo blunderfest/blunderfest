@@ -152,7 +152,15 @@ so clients send nothing and hide the member list.
   moves + resulting fen/status via chess.js — no server round trip),
   `moveList.ts`/`MoveList.tsx`
   (variation tree), `nodeMap.ts` (ply ↔ node index), `BoardControls`,
-  `GameInfo`, `NodeComment`.
+  `GameInfo`, `NodeComment`. Whole-game visualization (ADR-0024, as
+  amended 2026-08-24) splits by kind: `TimelineBand.tsx` is the full-width
+  band under the board where the game-story charts stack as toggleable
+  layers on one shared move axis (`spanPly` = mainline tip; layer choice
+  is a localStorage preference) — `GameFlow` (eval + quality strip, phase
+  shading and capture marks via `gamePhases.ts`/`MaterialFlow.capturesOf`),
+  `MaterialFlow`, `ActivityFlow`, with the analyze action holding the eval
+  layer until a job runs; the sidebar viz box keeps the list views
+  (`CriticalMoments`, `GameReport`).
 - `assets/src/features/analysis/engine.ts` + `useEngine.ts` + `uci.ts` +
   `EvalBar.tsx` — in-browser Stockfish 18 Lite (WASM, single-threaded, in a
   classic Web Worker via the `#<wasm-url>,worker` hash convention; ADR-0009).

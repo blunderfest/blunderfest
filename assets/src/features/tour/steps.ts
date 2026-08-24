@@ -21,6 +21,11 @@ export const roomSteps: TourStepDef[] = [
   },
   { target: '[data-tour="viz-box"]', titleKey: 'tour.vizBoxTitle', bodyKey: 'tour.vizBoxBody' },
   {
+    target: '[data-tour="timeline-band"]',
+    titleKey: 'tour.timelineBandTitle',
+    bodyKey: 'tour.timelineBandBody',
+  },
+  {
     target: '[data-tour="room-panel"]',
     titleKey: 'tour.roomPanelTitle',
     bodyKey: 'tour.roomPanelBody',

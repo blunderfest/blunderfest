@@ -42,11 +42,24 @@ an ambient panel.
   the panel's re-anchor-on-cursor-move performs the descent for free.
   Viewers preview only. Engine lines keep their bulk PV insert — a
   different gesture (a whole line in one op).
-- **Whole-game views → the viz box, exclusively** (Eval | Moments | Report
-  | Material | Activity). If that family ever outgrows the strip:
-  consolidate the pure-FEN timelines into one toggleable view, or move the
-  box to the full-width band under the board (the design doc's original
-  slot). Not now.
+- **Whole-game views → the timeline band under the board (amended
+  2026-08-24).** Originally these owned the viz box exclusively (Eval |
+  Moments | Report | Material | Activity), with "consolidate or move to
+  the full-width band under the board" as the named escape hatch once the
+  strip outgrew five tabs. That hatch is now the layout: the growing
+  whole-game family (driven by `docs/visualization_ideas.md` §16 — one
+  synchronized timeline beats independent charts) lives as **stacked,
+  toggleable layers in a full-width band** below the board+sidebar row at
+  xl (directly under the board below xl), all sharing one move axis
+  (`spanPly` = the mainline tip) and the scrub-to-ply gesture — Eval,
+  Material, Activity first, with clock-time and further timelines joining
+  as layers, never as sidebar tabs. The viz box keeps the **list-like**
+  views: Moments | Report (always present, placeholders until an
+  analysis). A third desktop column for these was considered and
+  rejected: timelines are wide-and-short (wrong aspect ratio for a
+  ~300px column), the band is pre-specced by the design system, a 2xl-only
+  column would hide the feature from most laptops, and per-position
+  content already has its docks (Reference tab, board overlays).
 - **Search → a destination route (`#/search`)**, solo, full width: FEN
   input, "search this position" deep link carrying the current FEN out of
   the room (with return-to-room), ADR-0010 weight controls, results with
@@ -61,12 +74,16 @@ an ambient panel.
 
 ## Consequences
 
-- The viz box is bounded: five tabs, and the next features have somewhere
-  else to go. Crowding stops being the default failure mode.
+- The viz box is bounded — and since the 2026-08-24 amendment, bounded to
+  the list views (Moments | Report). Whole-game timelines dock as band
+  layers; crowding stops being the default failure mode.
 - Reference browsing and committing are separate gestures everywhere
   (engine lines, opening tree) — one vocabulary to learn.
 - Everything user-visible here is spike-gated (corpus API); the layout
   decision itself costs nothing and prevents wrong docking later.
 - Search-as-destination forgoes collaborative in-room search; if that
-  turns out to be the marquee interaction, a room mode can grow out of the
-  Reference tab without undoing this ADR.
+  turns out to be the marquee interaction, a room mode can grow out of
+  the Reference tab without undoing this ADR.
+- The band's layers align by sharing one x-axis and one scrub target;
+  layer visibility is a per-viewer localStorage preference (like the eval
+  cp/win% scale), never a broadcast op.

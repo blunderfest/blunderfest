@@ -703,16 +703,22 @@ describe('game flow chart', () => {
     expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
   });
 
-  it('shows the material tab even without an analysis (no engine needed)', () => {
+  it('shows the material layer even without an analysis (no engine needed)', () => {
     renderAnalysis();
 
-    expect(screen.getByRole('tab', { name: 'Material' })).toBeInTheDocument();
+    // Material is a default-visible timeline band layer, not a tab.
+    expect(screen.getByTestId('timeline-band')).toBeInTheDocument();
+    expect(screen.getByTestId('material-flow')).toBeInTheDocument();
   });
 
-  it('shows the activity tab even without an analysis (no engine needed)', () => {
+  it('shows the activity layer on its band toggle, without an analysis', () => {
     renderAnalysis();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
+    const activityToggle = screen
+      .getAllByTestId('timeline-layer-toggle')
+      .find((button) => button.dataset.layer === 'activity');
+    expect(activityToggle).toBeDefined();
+    fireEvent.click(activityToggle as HTMLElement);
     expect(screen.getByTestId('activity-flow')).toBeInTheDocument();
   });
 
@@ -731,7 +737,7 @@ describe('game flow chart', () => {
     expect(screen.getByRole('button', { name: 'Save to library' })).toBeInTheDocument();
   });
 
-  it('holds the chart slot with the analyze button until an analysis exists', () => {
+  it('holds the eval layer with the analyze button until an analysis exists', () => {
     const onAnalyze = vi.fn();
     render(<Analysis tree={tree} onAnalyze={onAnalyze} />);
 

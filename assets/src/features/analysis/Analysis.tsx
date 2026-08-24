@@ -5,7 +5,6 @@ import ArrowIcon from '@/components/ArrowIcon';
 import Board from '@/components/Board';
 import { DRAW_COLORS, kingInCheckSquare, parseFen, pieceSrc } from '@/components/board';
 import { button, panel } from '@/components/ui';
-import ActivityFlow from '@/features/analysis/ActivityFlow';
 import BoardControls from '@/features/analysis/BoardControls';
 import CommentPopup from '@/features/analysis/CommentPopup';
 import CriticalMoments from '@/features/analysis/CriticalMoments';
@@ -14,12 +13,11 @@ import EvalBar from '@/features/analysis/EvalBar';
 import type { ChessEngine } from '@/features/analysis/engine';
 import { bestMoveSans } from '@/features/analysis/evalMarks';
 import GameActions from '@/features/analysis/GameActions';
-import GameFlow from '@/features/analysis/GameFlow';
 import GameInfo from '@/features/analysis/GameInfo';
 import GameReport from '@/features/analysis/GameReport';
 import { endgameStart } from '@/features/analysis/gamePhases';
 import { legalMovesFor, uciLineToMoves } from '@/features/analysis/legalMoves';
-import MaterialFlow, { capturesOf } from '@/features/analysis/MaterialFlow';
+import { capturesOf } from '@/features/analysis/MaterialFlow';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
 import NavControls from '@/features/analysis/NavControls';
@@ -32,6 +30,7 @@ import {
 } from '@/features/analysis/openings';
 import ReferencePanel from '@/features/analysis/ReferencePanel';
 import SidebarTabs, { type SidebarTab } from '@/features/analysis/SidebarTabs';
+import TimelineBand from '@/features/analysis/TimelineBand';
 import type { WhiteEval } from '@/features/analysis/uci';
 import { useBoardKeyboard } from '@/features/analysis/useBoardKeyboard';
 import { useCursor } from '@/features/analysis/useCursor';
@@ -614,14 +613,22 @@ export default function Analysis({
 
   const boardArrows = [...hintArrows, ...referenceGhostArrows, ...nodeAnnotations.arrows];
 
-  // The visualization box: the eval chart with its quality strip, the
-  // critical moments, and the material timeline. The analyze button holds
-  // the place of both analysis-driven tabs until a job runs — Moments
-  // stays visible either way, like the other tabs.
+  // The visualization box: the list-like views (Moments, Report) — the
+  // whole-game timeline charts (Eval, Material, Activity) live in the
+  // timeline band under the board (ADR-0024, as amended). Both tabs are
+  // always present; until an analysis runs they show a plain note (the
+  // analyze action lives in the band's eval layer).
   const vizTabs: SidebarTab[] = [];
-  const analyzePlaceholder =
+  const noAnalysisNote = (
+    <div className="grid h-full place-items-center">
+      <p className="m-0 text-note text-faint">{t('analysis.noAnalysisYet')}</p>
+    </div>
+  );
+  const analyzePlaceholder = (heightClass = 'h-44') =>
     onAnalyze !== undefined ? (
-      <div className="grid h-44 place-items-center rounded-control border border-line border-dashed">
+      <div
+        className={`grid ${heightClass} place-items-center rounded-control border border-line border-dashed`}
+      >
         <button
           type="button"
           id="analyze-game-button"
@@ -635,7 +642,7 @@ export default function Analysis({
         </button>
       </div>
     ) : (
-      <div className="grid h-44 place-items-center">
+      <div className={`grid ${heightClass} place-items-center`}>
         <p className="m-0 text-note text-faint">{t('analysis.noAnalysisYet')}</p>
       </div>
     );
@@ -671,117 +678,45 @@ export default function Analysis({
           ? { label: t('room.reanalyze'), positions: mainlinePositions(tree) }
           : null;
 
-  if (hasAnalysis || onAnalyze !== undefined) {
-    vizTabs.push({
-      id: 'eval',
-      label: t('analysis.evalTab'),
-      content: (
-        <div className="p-2">
+  vizTabs.push({
+    id: 'moments',
+    label: t('analysis.momentsTab'),
+    content: (
+      // Same outer height as the report tab (p-2 + h-44): no shift on switch.
+      <div className="p-2">
+        <div className="h-44 overflow-y-auto">
           {hasAnalysis ? (
-            <GameFlow
+            <CriticalMoments
+              tree={tree}
               evals={mainlineEvals}
-              currentPly={current.ply}
               flipped={flipped}
-              openingExitPly={bookExitPly}
-              endgameStartPly={endgamePly}
-              captures={captures}
-              bestMoves={bestMoves}
               onSelectPly={handleFlowSelect}
             />
           ) : (
-            analyzePlaceholder
+            noAnalysisNote
           )}
         </div>
-      ),
-    });
-  }
-  if (hasAnalysis || onAnalyze !== undefined) {
-    vizTabs.push({
-      id: 'moments',
-      label: t('analysis.momentsTab'),
-      content: (
-        // Same outer height as the chart tabs (p-2 + h-44): no shift on switch.
-        <div className="p-2">
-          <div className="h-44 overflow-y-auto">
-            {hasAnalysis ? (
-              <CriticalMoments
-                tree={tree}
-                evals={mainlineEvals}
-                flipped={flipped}
-                onSelectPly={handleFlowSelect}
-              />
-            ) : (
-              <div className="grid h-full place-items-center">{analyzePlaceholder}</div>
-            )}
-          </div>
-        </div>
-      ),
-    });
-  }
-  if (hasAnalysis || onAnalyze !== undefined) {
-    vizTabs.push({
-      id: 'report',
-      label: t('analysis.reportTab'),
-      content: (
-        // Same outer height as the chart tabs (p-2 + h-44): no shift on switch.
-        <div className="p-2">
-          <div className="h-44 overflow-y-auto">
-            {hasAnalysis ? (
-              <GameReport
-                tree={tree}
-                evals={mainlineEvals}
-                opening={mainlineOpening}
-                onSelectPly={handleFlowSelect}
-              />
-            ) : (
-              <div className="grid h-full place-items-center">{analyzePlaceholder}</div>
-            )}
-          </div>
-        </div>
-      ),
-    });
-  }
-  // Material and activity are pure-FEN views — always present as tabs, with
-  // a text placeholder until the game has moves (unlike the analysis tabs,
-  // which carry the Analyze action as their placeholder).
-  const noMovesPlaceholder = (copy: string) => (
-    <div className="grid h-44 place-items-center">
-      <p className="m-0 text-note text-faint">{copy}</p>
-    </div>
-  );
-  vizTabs.push({
-    id: 'material',
-    label: t('analysis.materialTab'),
-    content: (
-      <div className="p-2">
-        {tree.mainline_ply_count > 0 ? (
-          <MaterialFlow
-            tree={tree}
-            currentPly={current.ply}
-            flipped={flipped}
-            onSelectPly={handleFlowSelect}
-          />
-        ) : (
-          noMovesPlaceholder(t('analysis.materialEmpty'))
-        )}
       </div>
     ),
   });
   vizTabs.push({
-    id: 'activity',
-    label: t('analysis.activityTab'),
+    id: 'report',
+    label: t('analysis.reportTab'),
     content: (
+      // Same outer height as the moments tab (p-2 + h-44): no shift on switch.
       <div className="p-2">
-        {tree.mainline_ply_count > 0 ? (
-          <ActivityFlow
-            tree={tree}
-            currentPly={current.ply}
-            flipped={flipped}
-            onSelectPly={handleFlowSelect}
-          />
-        ) : (
-          noMovesPlaceholder(t('analysis.activityEmpty'))
-        )}
+        <div className="h-44 overflow-y-auto">
+          {hasAnalysis ? (
+            <GameReport
+              tree={tree}
+              evals={mainlineEvals}
+              opening={mainlineOpening}
+              onSelectPly={handleFlowSelect}
+            />
+          ) : (
+            noAnalysisNote
+          )}
+        </div>
       </div>
     ),
   });
@@ -794,30 +729,39 @@ export default function Analysis({
         one-line game title), balloons past the viewport on phones, and the
         whole page pans sideways.
       */}
-      <div className="flex w-full flex-col items-center gap-4 xl:flex-row xl:items-start xl:gap-6">
-        <div className="flex max-w-full flex-col items-center gap-4">
-          <div className="flex w-full items-baseline justify-between gap-4">
-            <h2 className="m-0 min-w-0 text-display font-bold tracking-[-0.02em]">
-              {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
-            </h2>
-            <div className="flex shrink-0 items-center gap-2">
-              <p className="m-0 whitespace-nowrap text-muted">{tree.result}</p>
-              <GameActions tree={tree} />
+      {/*
+        The board/sidebar row is display:contents below xl, so the board
+        cell and the sidebar become direct children of this column and
+        the timeline band slots between them (board → band → sidebar).
+        At xl the row re-forms (board and sidebar side by side) and the
+        band drops below it — the w-fit wrapper makes the band exactly
+        as wide as the row above it, both centered as one block.
+      */}
+      <div className="flex w-full max-w-full flex-col items-center gap-3 md:gap-6 xl:w-fit">
+        <div className="contents xl:flex xl:flex-row xl:items-start xl:gap-6">
+          <div className="order-1 flex max-w-full flex-col items-center gap-4">
+            <div className="flex w-full items-baseline justify-between gap-4">
+              <h2 className="m-0 min-w-0 text-display font-bold tracking-[-0.02em]">
+                {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
+              </h2>
+              <div className="flex shrink-0 items-center gap-2">
+                <p className="m-0 whitespace-nowrap text-muted">{tree.result}</p>
+                <GameActions tree={tree} />
+              </div>
             </div>
-          </div>
-          {/*
+            {/*
             Fixed-height slot: the board must never shift when the name
             appears or changes — empty at the start position.
           */}
-          <p
-            data-testid="opening-name"
-            aria-hidden={opening === null}
-            className="m-0 -mt-2 h-[1.125rem] w-full text-note font-semibold text-gold-hi"
-          >
-            {opening === null ? '' : `${opening.eco} · ${opening.name}`}
-          </p>
+            <p
+              data-testid="opening-name"
+              aria-hidden={opening === null}
+              className="m-0 -mt-2 h-[1.125rem] w-full text-note font-semibold text-gold-hi"
+            >
+              {opening === null ? '' : `${opening.eco} · ${opening.name}`}
+            </p>
 
-          {/*
+            {/*
             The board column is always centered. The eval bar hangs off its
             left edge, out of flow, so toggling the engine (or the edit
             palette) never shifts the board. The ml-13 margin reserves that
@@ -831,331 +775,356 @@ export default function Analysis({
             black's side, white on white's — swapped when flipped), like
             lichess's editor. No scroll strip.
           */}
-          <div
-            className={`relative flex flex-col items-stretch gap-2 ${
-              !editor.editing && engineOn ? 'ml-13' : ''
-            }`}
-            data-tour="board"
-          >
-            {!editor.editing && engineOn && (
-              <div
-                className="absolute top-0 right-full bottom-0 mr-3 flex w-10 flex-col justify-center"
-                data-testid="board-left-slot"
-              >
-                <EvalBar
-                  eval={engineState.eval}
-                  thinking={engineState.status === 'thinking'}
-                  unavailable={engineState.status === 'error'}
-                  flipped={flipped}
-                  label={evalBarLabel}
-                />
-              </div>
-            )}
-            {editor.editing && (
-              <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} side="top" />
-            )}
-            <Board
-              position={editor.editing ? editor.editPos : parseFen(current.fen ?? '')}
-              lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
-              flipped={flipped}
-              label={boardLabel}
-              interactive={editor.editing || canPlay || canEdit}
-              selected={editor.editing ? editor.editSelected : selected}
-              legalTargets={editor.editing ? [] : legalTargets}
-              arrows={editor.editing ? [] : boardArrows}
-              highlights={editor.editing ? [] : nodeAnnotations.highlights}
-              checkSquare={editor.editing ? null : checkSquare}
-              onSquareClick={
-                editor.editing
-                  ? editor.handleEditSquareClick
-                  : canPlay
-                    ? handleSquareClick
-                    : undefined
-              }
-              onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
-              onDragHover={handleDragHover}
-              dragMark={dragFlag}
-              onDrawArrow={canEdit && !editor.editing ? handleDrawArrow : undefined}
-              onToggleHighlight={canEdit && !editor.editing ? handleToggleHighlight : undefined}
-              drawColor={drawColor}
-              onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
-              paintBrush={editor.editing ? editor.editBrush : null}
-              onPaintSquare={
-                editor.editing && editor.editBrush !== null ? editor.paintSquare : undefined
-              }
-            />
-            {editor.editing && (
-              <div className="flex w-full items-center justify-between">
-                <PaletteStrip editor={editor} color={flipped ? 'b' : 'w'} side="bottom" />
-                {/* The eraser stands apart, flush with the board's right edge. */}
-                <button
-                  type="button"
-                  aria-pressed={editor.editBrush === 'erase'}
-                  aria-label={t('analysis.eraser')}
-                  data-testid="eraser-button"
-                  className={`grid h-9 w-9 place-items-center rounded-control border text-base transition-colors ${
-                    editor.editBrush === 'erase'
-                      ? 'border-gold/60 bg-gold/20 text-gold-hi'
-                      : 'border-line bg-panel text-muted hover:bg-raised'
-                  }`}
-                  onClick={() => editor.toggleBrush('erase')}
-                >
-                  ⌫
-                </button>
-              </div>
-            )}
-          </div>
-          {editor.editing && (
             <div
-              className="flex w-full max-w-[min(90vw,34rem)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
-              data-testid="edit-toolbar"
+              className={`relative flex flex-col items-stretch gap-2 ${
+                !editor.editing && engineOn ? 'ml-13' : ''
+              }`}
+              data-tour="board"
             >
-              <p className="m-0 text-ui text-muted">{t('analysis.editModeHint')}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  className={button({ intent: 'quiet', size: 'sm' })}
-                  onClick={editor.toggleTurn}
-                  data-testid="edit-turn-toggle"
+              {!editor.editing && engineOn && (
+                <div
+                  className="absolute top-0 right-full bottom-0 mr-3 flex w-10 flex-col justify-center"
+                  data-testid="board-left-slot"
                 >
-                  {editor.editTurn === 'w' ? t('analysis.whiteToMove') : t('analysis.blackToMove')}
-                </button>
-                <button
-                  type="button"
-                  className={button({ intent: 'quiet', size: 'sm' })}
-                  onClick={editor.clearBoard}
-                  data-testid="edit-clear-button"
-                >
-                  {t('analysis.clearBoard')}
-                </button>
-                <button
-                  type="button"
-                  className={button({ intent: 'quiet', size: 'sm' })}
-                  onClick={() => editor.resetPosition(current.fen ?? null)}
-                  data-testid="edit-reset-button"
-                >
-                  {t('analysis.resetPosition')}
-                </button>
-                <button
-                  type="button"
-                  className={button({ intent: 'primary', size: 'sm' })}
-                  onClick={handleSetPosition}
-                  data-testid="set-position-button"
-                >
-                  {t('analysis.done')}
-                </button>
-                <button
-                  type="button"
-                  className={button({ intent: 'ghost', size: 'sm' })}
-                  onClick={editor.exitEditMode}
-                >
-                  {t('analysis.cancelEdit')}
-                </button>
-              </div>
-              {editor.editError && (
-                <p className="m-0 text-ui text-bad-hi" role="alert">
-                  ⚠ {t('analysis.invalidSetup')}
-                </p>
+                  <EvalBar
+                    eval={engineState.eval}
+                    thinking={engineState.status === 'thinking'}
+                    unavailable={engineState.status === 'error'}
+                    flipped={flipped}
+                    label={evalBarLabel}
+                  />
+                </div>
+              )}
+              {editor.editing && (
+                <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} side="top" />
+              )}
+              <Board
+                position={editor.editing ? editor.editPos : parseFen(current.fen ?? '')}
+                lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}
+                flipped={flipped}
+                label={boardLabel}
+                interactive={editor.editing || canPlay || canEdit}
+                selected={editor.editing ? editor.editSelected : selected}
+                legalTargets={editor.editing ? [] : legalTargets}
+                arrows={editor.editing ? [] : boardArrows}
+                highlights={editor.editing ? [] : nodeAnnotations.highlights}
+                checkSquare={editor.editing ? null : checkSquare}
+                onSquareClick={
+                  editor.editing
+                    ? editor.handleEditSquareClick
+                    : canPlay
+                      ? handleSquareClick
+                      : undefined
+                }
+                onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
+                onDragHover={handleDragHover}
+                dragMark={dragFlag}
+                onDrawArrow={canEdit && !editor.editing ? handleDrawArrow : undefined}
+                onToggleHighlight={canEdit && !editor.editing ? handleToggleHighlight : undefined}
+                drawColor={drawColor}
+                onDrawColorChange={canEdit && !editor.editing ? setDrawColor : undefined}
+                paintBrush={editor.editing ? editor.editBrush : null}
+                onPaintSquare={
+                  editor.editing && editor.editBrush !== null ? editor.paintSquare : undefined
+                }
+              />
+              {editor.editing && (
+                <div className="flex w-full items-center justify-between">
+                  <PaletteStrip editor={editor} color={flipped ? 'b' : 'w'} side="bottom" />
+                  {/* The eraser stands apart, flush with the board's right edge. */}
+                  <button
+                    type="button"
+                    aria-pressed={editor.editBrush === 'erase'}
+                    aria-label={t('analysis.eraser')}
+                    data-testid="eraser-button"
+                    className={`grid h-9 w-9 place-items-center rounded-control border text-base transition-colors ${
+                      editor.editBrush === 'erase'
+                        ? 'border-gold/60 bg-gold/20 text-gold-hi'
+                        : 'border-line bg-panel text-muted hover:bg-raised'
+                    }`}
+                    onClick={() => editor.toggleBrush('erase')}
+                  >
+                    ⌫
+                  </button>
+                </div>
               )}
             </div>
-          )}
-          {/*
+            {editor.editing && (
+              <div
+                className="flex w-full max-w-[min(90vw,34rem)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
+                data-testid="edit-toolbar"
+              >
+                <p className="m-0 text-ui text-muted">{t('analysis.editModeHint')}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    className={button({ intent: 'quiet', size: 'sm' })}
+                    onClick={editor.toggleTurn}
+                    data-testid="edit-turn-toggle"
+                  >
+                    {editor.editTurn === 'w'
+                      ? t('analysis.whiteToMove')
+                      : t('analysis.blackToMove')}
+                  </button>
+                  <button
+                    type="button"
+                    className={button({ intent: 'quiet', size: 'sm' })}
+                    onClick={editor.clearBoard}
+                    data-testid="edit-clear-button"
+                  >
+                    {t('analysis.clearBoard')}
+                  </button>
+                  <button
+                    type="button"
+                    className={button({ intent: 'quiet', size: 'sm' })}
+                    onClick={() => editor.resetPosition(current.fen ?? null)}
+                    data-testid="edit-reset-button"
+                  >
+                    {t('analysis.resetPosition')}
+                  </button>
+                  <button
+                    type="button"
+                    className={button({ intent: 'primary', size: 'sm' })}
+                    onClick={handleSetPosition}
+                    data-testid="set-position-button"
+                  >
+                    {t('analysis.done')}
+                  </button>
+                  <button
+                    type="button"
+                    className={button({ intent: 'ghost', size: 'sm' })}
+                    onClick={editor.exitEditMode}
+                  >
+                    {t('analysis.cancelEdit')}
+                  </button>
+                </div>
+                {editor.editError && (
+                  <p className="m-0 text-ui text-bad-hi" role="alert">
+                    ⚠ {t('analysis.invalidSetup')}
+                  </p>
+                )}
+              </div>
+            )}
+            {/*
             The move navigation lives directly under the board at every
             size (lichess-style) — the move list is a pure list now.
           */}
-          {!editor.editing && (
-            <NavControls
-              navTargets={navTargets}
-              currentId={current.id}
-              currentPly={current.ply}
-              totalPly={tree.mainline_ply_count}
-              onSelect={navigate}
-            />
-          )}
-          {current.comment !== null && (
-            <div
-              className="w-full max-w-[min(90vw,34rem)] rounded-control border border-line bg-panel p-3 text-body text-ink"
-              data-testid="comment-bubble"
-            >
-              {current.comment}
-            </div>
-          )}
-          <p className="sr-only" role="status">
-            {selected !== null ? t('analysis.selected', { square: selected }) : boardLabel}
-          </p>
-          <BoardControls
-            flipped={flipped}
-            onFlip={handleFlip}
-            onOpenComment={canEdit ? openComment : undefined}
-            onToggleEdit={
-              canEdit && onSetPosition !== undefined
-                ? () =>
-                    editor.editing
-                      ? editor.exitEditMode()
-                      : editor.enterEditMode(current?.fen ?? null)
-                : undefined
-            }
-            editing={editor.editing}
-            drawColorPicker={canEdit ? { current: drawColor, onChange: setDrawColor } : undefined}
-            clearDrawings={
-              canEdit
-                ? {
-                    disabled:
-                      current === null ||
-                      (nodeAnnotations.arrows.length === 0 &&
-                        nodeAnnotations.highlights.length === 0),
-                    onClear: () => {
-                      if (current !== null) {
-                        onAnnotations?.({ arrows: [], highlights: [] }, current.id);
-                      }
-                    },
-                  }
-                : undefined
-            }
-          />
-          <p className="m-0 hidden text-note text-faint md:block">
-            <kbd className="inline-flex items-center">
-              <ArrowIcon of="left" className="h-3 w-3" />
-            </kbd>{' '}
-            <kbd className="inline-flex items-center">
-              <ArrowIcon of="right" className="h-3 w-3" />
-            </kbd>{' '}
-            {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
-            {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')} · <kbd>c</kbd>{' '}
-            {t('analysis.shortcutNote')}
-          </p>
-          {current.status !== 'active' && (
-            <p
-              id="analysis-status"
-              className="m-0 text-ui font-semibold text-gold-hi"
-              role="status"
-            >
-              {t(`analysis.status.${current.status}`)}
+            {!editor.editing && (
+              <NavControls
+                navTargets={navTargets}
+                currentId={current.id}
+                currentPly={current.ply}
+                totalPly={tree.mainline_ply_count}
+                onSelect={navigate}
+              />
+            )}
+            {current.comment !== null && (
+              <div
+                className="w-full max-w-[min(90vw,34rem)] rounded-control border border-line bg-panel p-3 text-body text-ink"
+                data-testid="comment-bubble"
+              >
+                {current.comment}
+              </div>
+            )}
+            <p className="sr-only" role="status">
+              {selected !== null ? t('analysis.selected', { square: selected }) : boardLabel}
             </p>
-          )}
-        </div>
+            <BoardControls
+              flipped={flipped}
+              onFlip={handleFlip}
+              onOpenComment={canEdit ? openComment : undefined}
+              onToggleEdit={
+                canEdit && onSetPosition !== undefined
+                  ? () =>
+                      editor.editing
+                        ? editor.exitEditMode()
+                        : editor.enterEditMode(current?.fen ?? null)
+                  : undefined
+              }
+              editing={editor.editing}
+              drawColorPicker={canEdit ? { current: drawColor, onChange: setDrawColor } : undefined}
+              clearDrawings={
+                canEdit
+                  ? {
+                      disabled:
+                        current === null ||
+                        (nodeAnnotations.arrows.length === 0 &&
+                          nodeAnnotations.highlights.length === 0),
+                      onClear: () => {
+                        if (current !== null) {
+                          onAnnotations?.({ arrows: [], highlights: [] }, current.id);
+                        }
+                      },
+                    }
+                  : undefined
+              }
+            />
+            <p className="m-0 hidden text-note text-faint md:block">
+              <kbd className="inline-flex items-center">
+                <ArrowIcon of="left" className="h-3 w-3" />
+              </kbd>{' '}
+              <kbd className="inline-flex items-center">
+                <ArrowIcon of="right" className="h-3 w-3" />
+              </kbd>{' '}
+              {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd>{' '}
+              {t('analysis.shortcutJump')} · <kbd>f</kbd> {t('analysis.shortcutFlip')} ·{' '}
+              <kbd>c</kbd> {t('analysis.shortcutNote')}
+            </p>
+            {current.status !== 'active' && (
+              <p
+                id="analysis-status"
+                className="m-0 text-ui font-semibold text-gold-hi"
+                role="status"
+              >
+                {t(`analysis.status.${current.status}`)}
+              </p>
+            )}
+          </div>
 
-        {/*
+          {/*
           The sidebar stretches to the board column's height on wide
           screens, so a long move list scrolls *inside* it and never
           stretches the page. Below xl it stacks full-width with a capped
           list. Comments live in a popup (the `c` key or the board
           controls), not here.
         */}
-        {/*
+          {/*
           The sidebar's height matches the board column's at xl: the board
           (34rem) plus the nav row, controls and hints (13rem, measured).
           A computed cap, not self-stretch — stretch lets a long move list
           grow the flex line instead of scrolling inside itself.
         */}
-        <aside className="flex w-full max-w-[min(100%,24rem)] flex-col gap-3 xl:h-[calc(min(90vw,34rem)+13rem)] xl:w-[340px]">
-          <SidebarTabs
-            tabs={[
-              {
-                id: 'analysis',
-                label: t('analysis.moves'),
-                content: (
-                  // One coherent panel: the engine section on top, the move
-                  // list scrolling below — lichess's analysis panel.
-                  <section
-                    className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
-                    data-tour="analysis-panel"
-                  >
-                    <EngineBox
-                      fen={current.fen ?? ''}
-                      state={engineState}
-                      engineOn={engineOn}
-                      arrowsOn={arrowsOn}
-                      linesCount={engineLines}
-                      paused={editor.editing}
-                      onToggleEngine={toggleEngine}
-                      onToggleArrows={toggleArrows}
-                      onLinesCount={setEngineLinesCount}
-                      onInsertLine={
-                        canEdit && !editor.editing && onAddLine !== undefined
-                          ? handleInsertLine
-                          : undefined
-                      }
-                      analyze={
-                        analyzeAction !== null && onAnalyze !== undefined
-                          ? {
-                              label: analyzeAction.label,
-                              progress: analyzing,
-                              onClick: () => onAnalyze(analyzeAction.positions),
+          <aside className="order-3 flex w-full max-w-[min(100%,24rem)] flex-col gap-3 xl:h-[calc(min(90vw,34rem)+13rem)] xl:w-[340px]">
+            <SidebarTabs
+              tabs={[
+                {
+                  id: 'analysis',
+                  label: t('analysis.moves'),
+                  content: (
+                    // One coherent panel: the engine section on top, the move
+                    // list scrolling below — lichess's analysis panel.
+                    <section
+                      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+                      data-tour="analysis-panel"
+                    >
+                      <EngineBox
+                        fen={current.fen ?? ''}
+                        state={engineState}
+                        engineOn={engineOn}
+                        arrowsOn={arrowsOn}
+                        linesCount={engineLines}
+                        paused={editor.editing}
+                        onToggleEngine={toggleEngine}
+                        onToggleArrows={toggleArrows}
+                        onLinesCount={setEngineLinesCount}
+                        onInsertLine={
+                          canEdit && !editor.editing && onAddLine !== undefined
+                            ? handleInsertLine
+                            : undefined
+                        }
+                        analyze={
+                          analyzeAction !== null && onAnalyze !== undefined
+                            ? {
+                                label: analyzeAction.label,
+                                progress: analyzing,
+                                onClick: () => onAnalyze(analyzeAction.positions),
+                              }
+                            : null
+                        }
+                      />
+                      {linePath !== null && linePathText !== null && (
+                        // Off-mainline bearings: the path from the branch
+                        // point; clicking returns to it.
+                        <button
+                          type="button"
+                          data-testid="line-path"
+                          title={t('analysis.backToMainline')}
+                          aria-label={t('analysis.backToMainline')}
+                          className="flex shrink-0 items-center gap-1.5 border-t border-line px-3 py-1.5 text-left text-note text-muted transition-colors hover:bg-raised hover:text-ink"
+                          onClick={() => {
+                            if (linePath.branchId !== null) {
+                              navigate(linePath.branchId);
                             }
-                          : null
-                      }
-                    />
-                    {linePath !== null && linePathText !== null && (
-                      // Off-mainline bearings: the path from the branch
-                      // point; clicking returns to it.
-                      <button
-                        type="button"
-                        data-testid="line-path"
-                        title={t('analysis.backToMainline')}
-                        aria-label={t('analysis.backToMainline')}
-                        className="flex shrink-0 items-center gap-1.5 border-t border-line px-3 py-1.5 text-left text-note text-muted transition-colors hover:bg-raised hover:text-ink"
-                        onClick={() => {
-                          if (linePath.branchId !== null) {
-                            navigate(linePath.branchId);
-                          }
-                        }}
-                      >
-                        <ArrowIcon of="left" className="h-3 w-3 shrink-0" />
-                        <span className="truncate tabular-nums">{linePathText}</span>
-                      </button>
-                    )}
-                    <MoveList
-                      rows={rows}
-                      currentId={current.id}
-                      onSelect={navigate}
-                      evalsByPly={evalsByPly}
-                      evalsByNodeId={evalsByNodeId}
-                      parentOf={(id) => byId.get(id)?.parent ?? null}
-                      bookExitPly={bookExitPly}
-                      bestMoves={bestMoves}
-                    />
-                  </section>
-                ),
-              },
-              {
-                id: 'game',
-                label: t('room.gameInfo'),
-                content: <GameInfo tree={tree} />,
-              },
-              {
-                id: 'reference',
-                label: t('analysis.referenceTab'),
-                content: (
-                  <section
-                    className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
-                  >
-                    <ReferencePanel
-                      book={book}
-                      fen={current?.fen ?? null}
-                      onPlayMove={canPlay && !editor.editing ? playMove : undefined}
-                      onHoverMove={setReferenceGhost}
-                    />
-                  </section>
-                ),
-              },
-            ]}
-          />
-          {/*
+                          }}
+                        >
+                          <ArrowIcon of="left" className="h-3 w-3 shrink-0" />
+                          <span className="truncate tabular-nums">{linePathText}</span>
+                        </button>
+                      )}
+                      <MoveList
+                        rows={rows}
+                        currentId={current.id}
+                        onSelect={navigate}
+                        evalsByPly={evalsByPly}
+                        evalsByNodeId={evalsByNodeId}
+                        parentOf={(id) => byId.get(id)?.parent ?? null}
+                        bookExitPly={bookExitPly}
+                        bestMoves={bestMoves}
+                      />
+                    </section>
+                  ),
+                },
+                {
+                  id: 'game',
+                  label: t('room.gameInfo'),
+                  content: <GameInfo tree={tree} />,
+                },
+                {
+                  id: 'reference',
+                  label: t('analysis.referenceTab'),
+                  content: (
+                    <section
+                      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+                    >
+                      <ReferencePanel
+                        book={book}
+                        fen={current?.fen ?? null}
+                        onPlayMove={canPlay && !editor.editing ? playMove : undefined}
+                        onHoverMove={setReferenceGhost}
+                      />
+                    </section>
+                  ),
+                },
+              ]}
+            />
+            {/*
             The visualization box sits below the tabs so it stays visible no
             matter which tab is active. A constant height (h-44 + padding),
             so the move list never resizes — the charts stretch to fill it.
           */}
-          {vizTabs.length > 0 && (
-            <section
-              className={`${panel({ layout: 'none', pad: 'none' })} shrink-0 overflow-hidden`}
-              data-testid="viz-box"
-              data-tour="viz-box"
-            >
-              <SidebarTabs tabs={vizTabs} />
-            </section>
-          )}
-        </aside>
+            {vizTabs.length > 0 && (
+              <section
+                className={`${panel({ layout: 'none', pad: 'none' })} shrink-0 overflow-hidden`}
+                data-testid="viz-box"
+                data-tour="viz-box"
+              >
+                <SidebarTabs tabs={vizTabs} />
+              </section>
+            )}
+          </aside>
+        </div>
+
+        {/*
+        The timeline band (ADR-0024, as amended): the whole-game charts as
+        stacked layers on one shared move axis, full width under the
+        board+sidebar row at xl and right under the board below it.
+      */}
+        <div className="order-2 w-full">
+          <TimelineBand
+            tree={tree}
+            evals={mainlineEvals}
+            currentPly={current.ply}
+            flipped={flipped}
+            openingExitPly={bookExitPly}
+            endgameStartPly={endgamePly}
+            captures={captures}
+            bestMoves={bestMoves}
+            spanPly={mainlineTipPly}
+            hasAnalysis={hasAnalysis}
+            analyzePlaceholder={analyzePlaceholder('h-36')}
+            onSelectPly={handleFlowSelect}
+          />
+        </div>
       </div>
 
       {editor.paletteGhost !== null && (

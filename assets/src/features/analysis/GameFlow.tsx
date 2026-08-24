@@ -64,6 +64,8 @@ export default function GameFlow({
   endgameStartPly = null,
   captures = [],
   bestMoves,
+  spanPly,
+  heightClass = 'h-44',
   onSelectPly,
 }: {
   evals: AnalysisEval[];
@@ -78,6 +80,10 @@ export default function GameFlow({
   captures?: CapturePoint[];
   /** The engine's best alternative per ply — shown for marked moves. */
   bestMoves?: Map<number, string>;
+  /** The x-axis domain: the last ply shown. Defaults to the last evaluated ply; the timeline band passes the mainline tip so layers align. */
+  spanPly?: number;
+  /** The chart's height (the timeline band stacks layers compactly). */
+  heightClass?: string;
   onSelectPly: (ply: number) => void;
 }) {
   const { t } = useTranslation();
@@ -104,7 +110,8 @@ export default function GameFlow({
     });
   }
 
-  const maxPly = evals.length > 0 ? evals[evals.length - 1].ply : 0;
+  // The x-axis domain: the last evaluated ply, or the shared span (band).
+  const maxPly = spanPly ?? (evals.length > 0 ? evals[evals.length - 1].ply : 0);
 
   const evalByPly = useMemo(
     () => new Map(evals.map((evaluation) => [evaluation.ply, evaluation.score])),
@@ -234,7 +241,7 @@ export default function GameFlow({
 
   return (
     <div
-      className="flex h-44 cursor-crosshair flex-col touch-none select-none"
+      className={`flex ${heightClass} cursor-crosshair flex-col touch-none select-none`}
       role="img"
       aria-label={t('analysis.gameFlow')}
       data-testid="game-flow"

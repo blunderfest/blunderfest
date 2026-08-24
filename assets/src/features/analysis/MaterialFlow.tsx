@@ -132,11 +132,17 @@ export default function MaterialFlow({
   tree,
   currentPly,
   flipped = false,
+  spanPly,
+  heightClass = 'h-44',
   onSelectPly,
 }: {
   tree: GameTree;
   currentPly: number;
   flipped?: boolean;
+  /** The x-axis domain: the last ply shown. Defaults to the mainline tip; the timeline band passes its own so layers align. */
+  spanPly?: number;
+  /** The chart's height (the timeline band stacks layers compactly). */
+  heightClass?: string;
   onSelectPly: (ply: number) => void;
 }) {
   const { t } = useTranslation();
@@ -146,7 +152,8 @@ export default function MaterialFlow({
   const [coarse] = useState(() => window.matchMedia('(pointer: coarse)').matches);
 
   const points = useMemo(() => materialTimeline(tree.root), [tree]);
-  const maxPly = points.length > 0 ? points[points.length - 1].ply : 0;
+  // The x-axis domain: the mainline tip, or the shared span (band).
+  const maxPly = spanPly ?? (points.length > 0 ? points[points.length - 1].ply : 0);
   const pointByPly = useMemo(() => new Map(points.map((p) => [p.ply, p])), [points]);
 
   if (maxPly === 0) {
@@ -194,7 +201,7 @@ export default function MaterialFlow({
 
   return (
     <div
-      className="flex h-44 cursor-crosshair flex-col touch-none select-none"
+      className={`flex ${heightClass} cursor-crosshair flex-col touch-none select-none`}
       role="img"
       aria-label={t('analysis.materialFlow')}
       data-testid="material-flow"
