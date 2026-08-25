@@ -69,7 +69,12 @@ defmodule Blunderfest.Corpus do
 
     pool =
       if db do
-        {:ok, pool} = Postgrex.start_link(Keyword.put(db, :pool_size, 4))
+        # Generous deadlines: corpus queries are batch operations (COPY
+        # loads, index builds) that legitimately run minutes, and the
+        # facade serializes them anyway — no checkout contention to bound.
+        {:ok, pool} =
+          Postgrex.start_link(Keyword.merge([pool_size: 4, timeout: :infinity, n: 1_800_000], db))
+
         pool
       else
         nil

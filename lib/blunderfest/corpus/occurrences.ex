@@ -56,7 +56,9 @@ defmodule Blunderfest.Corpus.Occurrences do
         }
   def counts(conn) do
     Map.new(@tables, fn table ->
-      %{rows: [[n]]} = Postgrex.query!(conn, "SELECT count(*) FROM #{table}", [])
+      %{rows: [[n]]} =
+        Postgrex.query!(conn, "SELECT count(*) FROM #{table}", [], timeout: :infinity)
+
       {table_key(table), n}
     end)
   end
@@ -165,7 +167,7 @@ defmodule Blunderfest.Corpus.Occurrences do
 
   defp drop_tables(conn) do
     for table <- @tables ++ ["corpus_positions_stage"] do
-      Postgrex.query!(conn, "DROP TABLE IF EXISTS #{table}", [])
+      Postgrex.query!(conn, "DROP TABLE IF EXISTS #{table}", [], timeout: :infinity)
     end
   end
 
@@ -210,16 +212,16 @@ defmodule Blunderfest.Corpus.Occurrences do
       """
     ]
 
-    Enum.each(statements, &Postgrex.query!(conn, &1, []))
+    Enum.each(statements, &Postgrex.query!(conn, &1, [], timeout: :infinity))
   end
 
   defp build_indexes(conn) do
-    Postgrex.query!(conn, "CREATE INDEX ON corpus_positions (pawn_hash)", [])
-    Postgrex.query!(conn, "CREATE INDEX ON corpus_occurrences (key)", [])
+    Postgrex.query!(conn, "CREATE INDEX ON corpus_positions (pawn_hash)", [], timeout: :infinity)
+    Postgrex.query!(conn, "CREATE INDEX ON corpus_occurrences (key)", [], timeout: :infinity)
   end
 
   defp analyze(conn) do
-    Enum.each(@tables, &Postgrex.query!(conn, "ANALYZE #{&1}", []))
+    Enum.each(@tables, &Postgrex.query!(conn, "ANALYZE #{&1}", [], timeout: :infinity))
   end
 
   ## Loading (COPY FROM STDIN, spike 03's proven bulk-load shape)
