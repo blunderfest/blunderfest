@@ -103,6 +103,22 @@ describe('TimelineBand', () => {
     expect(screen.queryByTestId('activity-flow')).not.toBeInTheDocument();
   });
 
+  it('marks the eval chip as needing an analysis until one exists', () => {
+    renderBand({ hasAnalysis: false });
+
+    expect(screen.getByTestId('eval-layer-needs-analysis')).toBeInTheDocument();
+    expect(layerToggle('eval')).toHaveAttribute(
+      'title',
+      'This layer needs an analysis — run “Analyze game”.',
+    );
+  });
+
+  it('drops the eval chip marker once an analysis exists', () => {
+    renderBand({ hasAnalysis: true });
+
+    expect(screen.queryByTestId('eval-layer-needs-analysis')).not.toBeInTheDocument();
+  });
+
   it('aligns every layer on the shared span, not each chart\u2019s own last ply', () => {
     // Both charts' own data ends at ply 2; the shared span is 4. The
     // current ply (2) must sit at the halfway line of both — without the

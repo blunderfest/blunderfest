@@ -47,8 +47,11 @@ function readVisibleLayers(): string[] {
  * uses the same span and the same scrub-to-ply gesture, so the gold
  * current-position marker walks the layers together. Layer toggles are
  * legend chips (dot + label) persisting in localStorage; new whole-game
- * timelines join as layers here, never as sidebar tabs. The analyze action
- * lives in the band header — always reachable, whatever layers are on.
+ * timelines join as layers here, never as sidebar tabs. The whole-game
+ * analyze job owns the band header — Analyze game, live progress, and
+ * Re-analyze when the mainline outgrew it — always reachable, whatever
+ * layers are on. The eval chip wears a needs-analysis marker until the
+ * job has run (the other layers need no analysis).
  */
 export default function TimelineBand({
   tree,
@@ -223,6 +226,9 @@ export default function TimelineBand({
                 aria-pressed={visible.includes(layer.id)}
                 data-testid="timeline-layer-toggle"
                 data-layer={layer.id}
+                title={
+                  layer.id === 'eval' && !hasAnalysis ? t('analysis.evalNeedsAnalysis') : undefined
+                }
                 onClick={() => toggleLayer(layer.id)}
               >
                 {/* The dot is the legend: the layer's chart hue, on or off. */}
@@ -231,6 +237,15 @@ export default function TimelineBand({
                   aria-hidden="true"
                 />
                 {layer.label}
+                {layer.id === 'eval' && !hasAnalysis && (
+                  // The one layer that needs an analysis: a quiet gold
+                  // marker until the whole-game job has run.
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold"
+                    aria-hidden="true"
+                    data-testid="eval-layer-needs-analysis"
+                  />
+                )}
               </button>
             ))}
           </div>

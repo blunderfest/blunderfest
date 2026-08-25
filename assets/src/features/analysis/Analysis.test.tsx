@@ -737,7 +737,7 @@ describe('game flow chart', () => {
     expect(screen.getByRole('button', { name: 'Save to library' })).toBeInTheDocument();
   });
 
-  it('holds the eval layer with the analyze button until an analysis exists', () => {
+  it('offers Analyze game in the band header until an analysis exists', () => {
     const onAnalyze = vi.fn();
     render(<Analysis tree={tree} onAnalyze={onAnalyze} />);
 
@@ -783,7 +783,7 @@ describe('server analysis actions', () => {
     expect(screen.queryByTestId('analyze-action-button')).not.toBeInTheDocument();
   });
 
-  it('offers Re-analyze when the mainline outgrew the analysis', () => {
+  it('offers Re-analyze in the band header when the mainline outgrew the analysis', () => {
     const onAnalyze = vi.fn();
     render(
       <Analysis
@@ -797,7 +797,9 @@ describe('server analysis actions', () => {
       />,
     );
 
-    const action = screen.getByTestId('analyze-action-button');
+    // The whole-game job owns the band header; the engine box is line-only.
+    expect(screen.queryByTestId('analyze-action-button')).not.toBeInTheDocument();
+    const action = screen.getByRole('button', { name: 'Re-analyze' });
     expect(action).toHaveTextContent('Re-analyze');
     fireEvent.click(action);
 
@@ -821,7 +823,7 @@ describe('server analysis actions', () => {
     ]);
   });
 
-  it('offers no action with a fresh analysis on the mainline', () => {
+  it('offers no action anywhere with a fresh analysis on the mainline', () => {
     render(
       <Analysis
         tree={tree}
@@ -837,6 +839,8 @@ describe('server analysis actions', () => {
     );
 
     expect(screen.queryByTestId('analyze-action-button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Analyze game' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Re-analyze' })).not.toBeInTheDocument();
   });
 });
 

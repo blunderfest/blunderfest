@@ -253,6 +253,7 @@
     "momentBoard": "Position after {{move}}",
     "noMoments": "No big swings — a clean game.",
     "noAnalysisYet": "No analysis yet.",
+    "evalNeedsAnalysis": "This layer needs an analysis — run “Analyze game”.",
     "bestMove": "best {{move}}",
     "insertLine": "Insert this line as a variation",
     "referenceTab": "Openings",

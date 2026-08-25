@@ -271,6 +271,32 @@ drags place **once, on release** (sweep-painting stays a
 board-pressed gesture) — dragging from the palette used to paint
 every square the ghost crossed.
 
+### Session handoff (2026-08-26 — Analysis split + band owns the analyze job)
+
+**Two design chats settled, both implemented.** (1) The ~1370-line
+`Analysis.tsx` split into region components: `Analysis` is now the
+~700-line orchestrator (all viewer state, derived data, handlers); the
+three screen regions are pure presentation — `BoardColumn.tsx` (title
+row, board, eval bar, palettes, nav, comments, board controls, plus the
+moved `PaletteStrip`/eval-label helpers), `AnalysisSidebar.tsx` (the four
+tabs + the viz box), and `VizBox.tsx` (Moments/Report tabs). No context
+introduced (the regions share nearly all state; a provider would
+re-render everything on every eval tick). DOM/testids unchanged, so the
+existing test suite held as the integration net. (2) **The timeline band
+header owns the whole-game analyze job's lifecycle** — "Analyze game"
+before any evals, live progress while a job runs, "Re-analyze" when the
+mainline outgrew the analysis — always reachable whatever layers are
+toggled (the previous design hid it after the first run and resurfaced
+Re-analyze in the engine box, two homes for one job). The engine box
+keeps only line-scoped "Analyze line", and the eval chip wears a small
+gold needs-analysis marker until a job has run (it is the only layer
+that depends on one). 598 frontend + 382 backend tests green.
+
+**Carried forward (queued, after everything else): room persistence
+across deploys.** Foundation = write-through op log to Postgres +
+replay-on-join; graceful handoff only as later polish. Needs an ADR
+covering anonymous-identity/expiry first.
+
 ### Session handoff (2026-08-24, second session — continued after an engine switch)
 
 **Spike 06 (plan skeletons & move-order robustness) done, spike-only

@@ -181,9 +181,15 @@ so clients send nothing and hide the member list.
   the app-bar help menu, which also houses the keyboard-shortcuts dialog.
 - `assets/src/features/analysis/` — the board: hand-rolled `Board.tsx`
   (keyboard-playable squares, drag, arrows, highlights, roles), `Analysis`
-  (navigation, comments, present/follow), `legalMoves.ts` (client-side legal
-  moves + resulting fen/status via chess.js — no server round trip),
-  `moveList.ts`/`MoveList.tsx`
+  (the orchestrator: all viewer state, derived data and interaction
+  handlers — navigation, comments, present/follow, engine toggles, the
+  whole-game analyze job), with the three screen regions as pure
+  presentation components: `BoardColumn.tsx` (title row, board, eval bar,
+  edit palettes, nav, comments, board controls), `AnalysisSidebar.tsx`
+  (Moves | Game info | Openings | Examples tabs plus the `VizBox`
+  moments/report tabs), and `TimelineBand.tsx`. `legalMoves.ts`
+  (client-side legal moves + resulting fen/status via chess.js — no
+  server round trip), `moveList.ts`/`MoveList.tsx`
   (variation tree), `nodeMap.ts` (ply ↔ node index), `BoardControls`,
   `GameInfo`, `NodeComment`. Whole-game visualization (ADR-0024, as
   amended 2026-08-24) splits by kind: `TimelineBand.tsx` is the full-width
@@ -196,9 +202,13 @@ so clients send nothing and hide the member list.
   first-class field at import, so clock data never pollutes comments; the
   Lichess game export requests `clocks=true`, and `moveTimes.ts` derives
   per-move think time from the clock drops plus the `TimeControl`
-  increment). The analyze action holds the eval layer until a job runs;
-  the sidebar viz box keeps the list views (`CriticalMoments`,
-  `GameReport`).
+  increment). The band header owns the whole-game analyze job's
+  lifecycle — "Analyze game" before any evals, live progress, and
+  "Re-analyze" when the mainline outgrew it — so a chip toggle never
+  gates the only path to an analysis; the eval chip wears a gold marker
+  until a job has run. The engine box keeps only its line-scoped
+  "Analyze line" action. The sidebar viz box keeps the list views
+  (`CriticalMoments`, `GameReport`).
 - `assets/src/features/analysis/engine.ts` + `useEngine.ts` + `uci.ts` +
   `EvalBar.tsx` — in-browser Stockfish 18 Lite (WASM, single-threaded, in a
   classic Web Worker via the `#<wasm-url>,worker` hash convention; ADR-0009).
