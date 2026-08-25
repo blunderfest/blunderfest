@@ -61,6 +61,19 @@ defmodule Blunderfest.Corpus do
     GenServer.call(__MODULE__, {:rebuild, data_dir, tier}, :infinity)
   end
 
+  @doc """
+  Loads from prepared positions rows (`corpus.prepare`), games and moves —
+  the production load path (pure COPY, no transform on the machine).
+  """
+  @spec load_prepared(Path.t(), Path.t(), Path.t()) :: map() | {:error, :not_configured}
+  def load_prepared(positions_path, games_path, moves_path) do
+    GenServer.call(
+      __MODULE__,
+      {:load_prepared, positions_path, games_path, moves_path},
+      :infinity
+    )
+  end
+
   ## Callbacks
 
   @impl true
@@ -127,5 +140,13 @@ defmodule Blunderfest.Corpus do
 
   def handle_call({:rebuild, data_dir, tier}, _from, state) do
     {:reply, Occurrences.rebuild(state.pool, data_dir, tier), state}
+  end
+
+  def handle_call({:load_prepared, _p, _g, _m}, _from, %{pool: nil} = state) do
+    {:reply, {:error, :not_configured}, state}
+  end
+
+  def handle_call({:load_prepared, positions_path, games_path, moves_path}, _from, state) do
+    {:reply, Occurrences.load_prepared(state.pool, positions_path, games_path, moves_path), state}
   end
 end

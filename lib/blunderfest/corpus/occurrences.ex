@@ -47,6 +47,28 @@ defmodule Blunderfest.Corpus.Occurrences do
     counts(conn)
   end
 
+  @doc """
+  Loads from *prepared* positions rows — `key \\t pawn_hash \\t gid \\t ply`,
+  the pawn-hash transform already applied (see `Mix.Tasks.Corpus.Prepare`).
+  This is the production load path: it turns the machine-side work into
+  pure COPY, which survives CPU throttling that stalls the hashing stream.
+  """
+  @spec load_prepared(conn(), Path.t(), Path.t(), Path.t()) :: map()
+  def load_prepared(conn, positions_path, games_path, moves_path) do
+    drop_tables(conn)
+    create_tables(conn)
+
+    copy_positions_prepared(conn, positions_path)
+    copy_occurrences(conn, positions_path)
+    copy_games(conn, games_path)
+    copy_moves(conn, moves_path)
+
+    build_indexes(conn)
+    analyze(conn)
+
+    counts(conn)
+  end
+
   @doc "Row counts of the four corpus tables."
   @spec counts(conn()) :: %{
           positions: non_neg_integer(),
@@ -257,6 +279,36 @@ defmodule Blunderfest.Corpus.Occurrences do
       |> Enum.into(copy)
     end)
 
+    stage_to_positions(conn)
+  end
+
+  # Prepared rows already carry the pawn hash (no transform on the
+  # loading machine); the columns are laid out like the stage table, so
+  # the dedup insert is the same.
+  defp copy_positions_prepared(conn, positions_path) do
+    Postgrex.query!(
+      conn,
+      """
+      CREATE UNLOGGED TABLE corpus_positions_stage (
+        key text NOT NULL,
+        pawn_hash bigint NOT NULL,
+        first_gid integer NOT NULL,
+        first_ply smallint NOT NULL
+      )
+      """,
+      []
+    )
+
+    with_copy(conn, "corpus_positions_stage", fn copy ->
+      positions_path
+      |> File.stream!(:line)
+      |> Enum.into(copy)
+    end)
+
+    stage_to_positions(conn)
+  end
+
+  defp stage_to_positions(conn) do
     # One row per distinct key: the true first occurrence is the minimum
     # (gid, ply). `keys-N.tsv` row order is irrelevant here.
     Postgrex.query!(
@@ -274,11 +326,14 @@ defmodule Blunderfest.Corpus.Occurrences do
     Postgrex.query!(conn, "DROP TABLE corpus_positions_stage", [])
   end
 
-  defp copy_occurrences(conn, keys_path) do
+  defp copy_occurrences(conn, source_path) do
     with_copy(conn, "corpus_occurrences", fn copy ->
-      keys_path
+      source_path
       |> stream_lines()
-      |> Stream.map(fn {key, gid, ply} -> Enum.join([key, gid, ply], "\t") <> "\n" end)
+      |> Stream.map(fn
+        {key, gid, ply} -> Enum.join([key, gid, ply], "\t") <> "\n"
+        {key, _pawn_hash, gid, ply} -> Enum.join([key, gid, ply], "\t") <> "\n"
+      end)
       |> Enum.into(copy)
     end)
   end
@@ -319,6 +374,7 @@ defmodule Blunderfest.Corpus.Occurrences do
     |> Stream.map(fn line ->
       case line |> String.trim_trailing("\n") |> String.split("\t") do
         [key, gid, ply] -> {key, gid, ply}
+        [key, pawn_hash, gid, ply] -> {key, pawn_hash, gid, ply}
       end
     end)
   end
