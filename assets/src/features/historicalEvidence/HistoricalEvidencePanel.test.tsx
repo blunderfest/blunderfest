@@ -37,6 +37,7 @@ const result: HistoricalEvidenceResult = {
 const openCandidate: EvidenceCandidate = {
   id: 'exact-1-16',
   strategy: 'exact',
+  stm: 'w',
   fen: START,
   gid: 1,
   ply: 16,
@@ -67,6 +68,7 @@ const openCandidate: EvidenceCandidate = {
   },
   route: {
     shared_plies: 16,
+    ref_ply: 16,
     diverged_ply: null,
     ref_move: null,
     cand_move: null,

@@ -121,6 +121,7 @@ defmodule Blunderfest.HistoricalEvidence do
     %{
       id: cand.id,
       strategy: cand.strategy,
+      stm: cand.stm,
       fen: cand.fen,
       gid: cand.gid,
       ply: cand.ply,
@@ -186,6 +187,7 @@ defmodule Blunderfest.HistoricalEvidence do
   defp route_dto(route) do
     %{
       shared_plies: route.shared_plies,
+      ref_ply: route.ref_ply,
       diverged_ply: route.diverged_ply,
       ref_move: route.ref_move,
       cand_move: route.cand_move,

@@ -47,6 +47,7 @@ Errors: `422 {"errors": {"code": "invalid_fen", "detail": ...}}` (ADR-0003).
     {
       "id": "pawn_skeleton-87136-17",
       "strategy": "exact" | "pawn_skeleton",
+      "stm": "w" | "b",
       "fen": "…",
       "gid": 87136, "ply": 17,
       "game": { "gid": 87136, "white": "…", "black": "…", "result": "…",
@@ -64,7 +65,7 @@ Errors: `422 {"errors": {"code": "invalid_fen", "detail": ...}}` (ADR-0003).
         "differences": [ { "type": "tempo_twin", "detail": "…" } ]
       },
       "route": {
-        "shared_plies": 6, "diverged_ply": 7,
+        "shared_plies": 6, "ref_ply": 16, "diverged_ply": 7,
         "ref_move": "e4", "cand_move": "e3", "ply_gap": 1,
         "extra_white": ["e3"], "extra_black": [],
         "missing_white": [], "missing_black": []

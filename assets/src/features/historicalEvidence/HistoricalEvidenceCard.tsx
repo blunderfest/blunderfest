@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button } from '@/components/ui';
@@ -23,67 +24,97 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function dimsText(dims: EvidenceCandidate['position']['dims']): ReactNode {
-  const lines: ReactNode[] = [];
-  lines.push(
-    <Fact
-      key="pawn"
-      label="Pawn structure"
-      value={dims.pawn_structure === 'same' ? 'same' : `differs (${dims.pawn_structure[1]})`}
-    />,
-  );
-  lines.push(
-    <Fact
-      key="material"
-      label="Material"
-      value={dims.material === 'same' ? 'same' : `differs (${dims.material[1]})`}
-    />,
-  );
-  lines.push(
-    <Fact
-      key="pieces"
-      label="Piece placement"
-      value={`${dims.piece_placement.matches}/${dims.piece_placement.ref_pieces} match`}
-    />,
-  );
-  lines.push(
-    <Fact
-      key="stm"
-      label="Side to move"
-      value={dims.side_to_move === 'same' ? 'same' : 'differs'}
-    />,
-  );
-  lines.push(
-    <Fact key="castling" label="Castling" value={dims.castling === 'same' ? 'same' : 'differs'} />,
-  );
-  return <div className="flex flex-col">{lines}</div>;
-}
-
 /**
- * The side's plan reading: the plan's own actions (so the plan is visible,
- * not just an id) plus the match quality. "none" when nothing reached the
- * join threshold.
+ * The headline describes the *positional* relationship only — typed facts,
+ * never a fused verdict about the game. Continuation conclusions live in
+ * their own per-side lines, and raw numbers under Comparison details.
  */
-function sideText(
-  side: EvidenceCandidate['families']['skeleton']['white'],
-  color: 'white' | 'black',
-  plans?: Map<number, PlanSide>,
-): string {
-  const actions = side.family_id !== null ? plans?.get(side.family_id)?.[color] : undefined;
+function headline(candidate: EvidenceCandidate, t: TFunction): string {
+  const d = candidate.position.dims;
+  const placement = d.piece_placement;
 
-  if (side.status === 'member') {
-    const pct = Math.round((side.sim ?? 0) * 100);
-    return actions !== undefined && actions.length > 0
-      ? `${actions.join(' · ')} (${pct}% match)`
-      : `plan ${side.family_id} (${pct}% match)`;
+  if (d.pawn_structure !== 'same') {
+    return t('evidence.headlineDifferentPawns');
   }
-  return 'none';
+  if (placement.matches === placement.ref_pieces && d.side_to_move === 'same') {
+    return t('evidence.headlineSamePosition');
+  }
+  if (placement.matches === placement.ref_pieces) {
+    return t('evidence.headlineTempoTwin');
+  }
+  if (placement.mismatches === 2 && d.side_to_move === 'same') {
+    return t('evidence.headlineOnePieceDiffers');
+  }
+  if (placement.mismatches === 2) {
+    return t('evidence.headlineOnePieceAndTempo');
+  }
+  if (d.material !== 'same') {
+    return t('evidence.headlineMaterialDiffers');
+  }
+  if (d.king_position !== 'same') {
+    return t('evidence.headlineKingDiffers');
+  }
+  return t('evidence.headlineSamePawns');
 }
 
 /**
- * One historical example (design brief §15): position, route, continuation
- * plans and counts — evidence only, no relevance score. The Open game
- * action loads the full corpus game into a fresh room.
+ * The candidate's own continuation, split per side (the side to move at
+ * the position plays first). Shows what was played — not an
+ * interpretation of it.
+ */
+function bySide(moves: string[], stm: 'w' | 'b'): { white: string[]; black: string[] } {
+  const white: string[] = [];
+  const black: string[] = [];
+  moves.forEach((move, index) => {
+    const mover = index % 2 === 0 ? stm : stm === 'w' ? 'b' : 'w';
+    if (mover === 'w') {
+      white.push(move);
+    } else {
+      black.push(move);
+    }
+  });
+  return { white, black };
+}
+
+/**
+ * Per-side continuation verdict — shown only when the analysis can
+ * support it: a high-confidence membership in a recurring family.
+ */
+function sideVerdict(
+  side: EvidenceCandidate['families']['skeleton']['white'],
+  t: TFunction,
+): string | null {
+  if (side.status === 'member' && (side.sim ?? 0) >= 0.8 && (side.family_games ?? 0) >= 2) {
+    if (side.family_id === 1) {
+      return t('evidence.followedMostCommon');
+    }
+    return t('evidence.followedSameContinuation', { games: side.family_games });
+  }
+  if (side.status === 'none') {
+    return t('evidence.followedDifferent');
+  }
+  return null;
+}
+
+function countText(candidate: EvidenceCandidate, t: TFunction): string {
+  const { occurrences, games, same_game_only: sameGame } = candidate.historical;
+
+  if (games === 1 && sameGame) {
+    return t('evidence.oneGameRepeat', { count: occurrences });
+  }
+  if (games === 1) {
+    return t('evidence.oneGame');
+  }
+  if (occurrences !== games) {
+    return t('evidence.gamesAndOccurrences', { games, occurrences });
+  }
+  return t('evidence.nGames', { count: games });
+}
+
+/**
+ * One historical example: the evidence that lets the user decide whether
+ * this game is interesting — position, route, continuation, counts — with
+ * the raw comparison numbers tucked behind a disclosure.
  */
 export default function HistoricalEvidenceCard({
   candidate,
@@ -99,7 +130,13 @@ export default function HistoricalEvidenceCard({
   onOpenGame?: () => void;
 }) {
   const { t } = useTranslation();
+  const d = candidate.position.dims;
   const fam = candidate.families;
+  const route = candidate.route;
+  const sides = bySide(candidate.continuation.moves, candidate.stm);
+
+  const whiteVerdict = sideVerdict(fam.skeleton.white, t);
+  const blackVerdict = sideVerdict(fam.skeleton.black, t);
 
   return (
     <article
@@ -128,24 +165,61 @@ export default function HistoricalEvidenceCard({
         </span>
       </header>
 
-      <Section title={t('evidence.position')}>{dimsText(candidate.position.dims)}</Section>
+      <p className="m-0 text-note font-semibold uppercase tracking-[0.06em] text-gold-text">
+        {headline(candidate, t)}
+      </p>
 
-      {candidate.route.shared_plies > 0 && (
+      <Section title={t('evidence.position')}>
+        <Fact
+          label={t('evidence.dimPawn')}
+          value={d.pawn_structure === 'same' ? t('evidence.same') : t('evidence.different')}
+        />
+        <Fact
+          label={t('evidence.dimMaterial')}
+          value={d.material === 'same' ? t('evidence.same') : d.material[1]}
+        />
+        <Fact
+          label={t('evidence.dimPieces')}
+          value={`${d.piece_placement.matches}/${d.piece_placement.ref_pieces} ${t('evidence.match')}`}
+        />
+        <Fact
+          label={t('evidence.dimSide')}
+          value={d.side_to_move === 'same' ? t('evidence.same') : t('evidence.different')}
+        />
+        <Fact
+          label={t('evidence.dimCastling')}
+          value={d.castling === 'same' ? t('evidence.same') : t('evidence.different')}
+        />
+      </Section>
+
+      {route.ref_ply !== null && (
         <Section title={t('evidence.route')}>
-          <Fact label={t('evidence.routeShared')} value={`${candidate.route.shared_plies} plies`} />
-          {candidate.route.diverged_ply !== null && candidate.route.ref_move !== null && (
+          {route.shared_plies > 0 ? (
+            <Fact
+              label={t('evidence.routeShared')}
+              value={t('evidence.plies', { count: route.shared_plies })}
+            />
+          ) : (
+            <Fact label={t('evidence.routeShared')} value={t('evidence.routeImmediate')} />
+          )}
+          {route.diverged_ply !== null && route.ref_move !== null && route.cand_move !== null && (
             <Fact
               label={t('evidence.routeDivergence')}
-              value={`ply ${candidate.route.diverged_ply}: ${candidate.route.ref_move} → ${candidate.route.cand_move}`}
+              value={t('evidence.routeDivergenceText', {
+                ply: route.diverged_ply,
+                side: route.diverged_ply % 2 === 1 ? t('evidence.white') : t('evidence.black'),
+                ref: route.ref_move,
+                cand: route.cand_move,
+              })}
             />
           )}
-          {candidate.route.ply_gap !== 0 && (
+          {route.ply_gap !== 0 && (
             <Fact
               label={t('evidence.routePlyGap')}
               value={
-                candidate.route.ply_gap > 0
-                  ? `+${candidate.route.ply_gap}`
-                  : String(candidate.route.ply_gap)
+                route.ply_gap > 0
+                  ? t('evidence.plyLater', { count: route.ply_gap })
+                  : t('evidence.plyEarlier', { count: -route.ply_gap })
               }
             />
           )}
@@ -153,37 +227,69 @@ export default function HistoricalEvidenceCard({
       )}
 
       <Section title={t('evidence.continuation')}>
-        <Fact
-          label={t('evidence.contMoves')}
-          value={candidate.continuation.moves.join(' ') || '—'}
-        />
-        <Fact
-          label={t('evidence.familyWhite')}
-          value={sideText(fam.skeleton.white, 'white', plans)}
-        />
-        <Fact
-          label={t('evidence.familyBlack')}
-          value={sideText(fam.skeleton.black, 'black', plans)}
-        />
+        <div className="flex flex-col gap-0.5">
+          <span className="text-note text-muted">{t('evidence.white')}</span>
+          <span className="text-note text-ink tabular-nums">{sides.white.join(' · ') || '—'}</span>
+          {whiteVerdict !== null && <span className="text-note text-muted">{whiteVerdict}</span>}
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-note text-muted">{t('evidence.black')}</span>
+          <span className="text-note text-ink tabular-nums">{sides.black.join(' · ') || '—'}</span>
+          {blackVerdict !== null && <span className="text-note text-muted">{blackVerdict}</span>}
+        </div>
       </Section>
 
       <Section title={t('evidence.historical')}>
-        <Fact label={t('evidence.occurrences')} value={candidate.historical.occurrences} />
-        <Fact label={t('evidence.games')} value={candidate.historical.games} />
-        {candidate.historical.same_game_only && (
-          <Fact label={t('evidence.sameGame')} value={t('evidence.sameGameOnly')} />
-        )}
+        <p className="m-0 text-note text-ink tabular-nums">{countText(candidate, t)}</p>
       </Section>
 
-      {candidate.flags.length > 0 && (
-        <footer className="flex flex-wrap gap-1">
-          {candidate.flags.map((flag) => (
-            <span key={flag} className="rounded-full bg-raised px-2 py-0.5 text-micro text-muted">
-              {flag.replaceAll('_', ' ')}
-            </span>
-          ))}
-        </footer>
-      )}
+      <details className="group">
+        <summary className="cursor-pointer list-none text-micro font-semibold uppercase tracking-[0.11em] text-faint transition-colors hover:text-muted">
+          ▸ {t('evidence.details')}
+        </summary>
+        <div className="mt-1.5 flex flex-col gap-1 border-l border-line pl-2">
+          <span className="text-note text-muted">{t('evidence.detailsTyped')}</span>
+          {candidate.position.differences.length > 0 ? (
+            candidate.position.differences.map((diff) => (
+              <span key={diff.type} className="text-note text-faint tabular-nums">
+                {diff.detail}
+              </span>
+            ))
+          ) : (
+            <span className="text-note text-faint">{t('evidence.detailsNone')}</span>
+          )}
+          {candidate.continuation.differences.length > 0 && (
+            <>
+              <span className="text-note text-muted">{t('evidence.detailsContinuation')}</span>
+              {candidate.continuation.differences.map((diff) => (
+                <span key={diff.type} className="text-note text-faint tabular-nums">
+                  {diff.detail}
+                </span>
+              ))}
+            </>
+          )}
+          <span className="text-note text-muted">{t('evidence.detailsMatching')}</span>
+          {(['white', 'black'] as const).map((color) => {
+            const side = fam.skeleton[color];
+            if (side.status === 'no_menu' || side.sim === null) {
+              return null;
+            }
+            const plan = side.family_id !== null ? plans?.get(side.family_id) : undefined;
+            const planMoves = plan?.[color] ?? [];
+            const planSuffix = planMoves.length > 0 ? ` · ${planMoves.join(' · ')}` : '';
+            return (
+              <span key={color} className="text-note text-faint tabular-nums">
+                {t('evidence.detailsMatchingLine', {
+                  side: t(`evidence.${color}`),
+                  id: side.family_id,
+                  sim: side.sim.toFixed(2),
+                })}
+                {planSuffix}
+              </span>
+            );
+          })}
+        </div>
+      </details>
     </article>
   );
 }

@@ -131,6 +131,7 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
     %{
       id: cand.id,
       strategy: cand.strategy,
+      stm: cand.features.stm,
       key: cand.key,
       fen: Features.fen(cand.key),
       gid: cand.gid,

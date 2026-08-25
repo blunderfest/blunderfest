@@ -57,6 +57,8 @@ export type PositionDims = {
 
 export type RouteInfo = {
   shared_plies: number;
+  /** Null when the analysis ran on a bare FEN (no reference route). */
+  ref_ply: number | null;
   diverged_ply: number | null;
   ref_move: string | null;
   cand_move: string | null;
@@ -86,6 +88,8 @@ export type SideMembership = {
 export type EvidenceCandidate = {
   id: string;
   strategy: 'exact' | 'pawn_skeleton';
+  /** The candidate position's side to move (for the per-side move split). */
+  stm: 'w' | 'b';
   fen: string;
   gid: number;
   ply: number;
