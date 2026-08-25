@@ -297,6 +297,29 @@ across deploys.** Foundation = write-through op log to Postgres +
 replay-on-join; graceful handoff only as later polish. Needs an ADR
 covering anonymous-identity/expiry first.
 
+**Later the same session — Examples-tab usability (five owner-reported
+issues, all fixed).** (1) Tab switches emptied the Examples list:
+`SidebarTabs` now keeps every tab's content mounted and hides inactive
+panels (`hidden` attr + class) — results survive switches by contract
+(tested with a counter). (2) "Add to room" opens the game at the
+candidate's move: the adder records the ply in `openAtPly` (gameId →
+ply), and `Analysis`/`useCursor` gained `initialNodeId` (init order:
+`startAtRoot` → last played → initial node → tail). (3)+(4) Both card
+actions now report and de-duplicate: "Add as variation" shows
+"Adding…" until the echo lands, then "Added ✓" — the exists state is
+derived from the tree (`variationState` in Analysis: the plan from
+`planHistoricalVariation` checked against the child chain with the same
+from/to/promotion descent `applyAddLine` uses, so it can never disagree
+with the insertion; a 5s timeout covers rejected ops; non-playable lines
+disable the button with a tooltip). "Add to room" flips to "Added ✓"
+once fetched (session-scoped gid set). (5) "Add to room" no longer
+steals the view: no `select_game` to the new game, no cursor switch —
+the game lands in the Games panel for later; a presenting adder
+re-points the room with `select_game` back to the viewed game (the
+presenter's own `set_game` otherwise counts as focus and would drag the
+room along). 607 frontend + 382 backend tests green. Also reviewed: the
+single Redux slice is judged correct — see the session notes.
+
 ### Session handoff (2026-08-24, second session — continued after an engine switch)
 
 **Spike 06 (plan skeletons & move-order robustness) done, spike-only

@@ -59,6 +59,7 @@ export default function AnalysisSidebar({
   onToggleEngine,
   onToggleArrows,
   onEngineLines,
+  variationState,
 }: {
   tree: GameTree;
   current: GameNode;
@@ -98,6 +99,12 @@ export default function AnalysisSidebar({
   onToggleEngine: () => void;
   onToggleArrows: () => void;
   onEngineLines: (count: number) => void;
+  /** The "Add as variation" button state per candidate (from Analysis). */
+  variationState: (
+    fen: string,
+    sans: string[],
+    exact: boolean,
+  ) => { addable: boolean; exists: boolean };
 }) {
   const { t } = useTranslation();
 
@@ -195,6 +202,7 @@ export default function AnalysisSidebar({
                   canAnalyze={canEdit}
                   onAddGame={canEdit ? onAddHistoricalGame : undefined}
                   onAddVariation={canEdit ? onAddHistoricalVariation : undefined}
+                  variationState={canEdit ? variationState : undefined}
                 />
               </section>
             ),

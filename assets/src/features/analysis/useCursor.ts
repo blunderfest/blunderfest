@@ -94,6 +94,7 @@ export function useCursor({
   lastPlayedId,
   amPresenter,
   startAtRoot = false,
+  initialNodeId = null,
   onCursorChange,
   onFollowChange,
 }: {
@@ -105,6 +106,12 @@ export function useCursor({
   amPresenter: boolean;
   /** Open on the initial position instead of the tail (fresh imports). */
   startAtRoot?: boolean;
+  /**
+   * The node to open on when the tree arrives and nothing else applies —
+   * e.g. an added historical game opens at the candidate's move. Room
+   * activity (a played move) still wins over it.
+   */
+  initialNodeId?: number | null;
   onCursorChange?: (nodeId: number) => void;
   onFollowChange?: (following: boolean) => void;
 }) {
@@ -114,17 +121,20 @@ export function useCursor({
   /**
    * Start at the move last played (the newest move/setup node, wherever it
    * lives — variations included) once a tree arrives: a refresh restores the
-   * game as it was. Untouched imports fall back to the mainline tip — except
-   * a game just imported here (`startAtRoot`), which opens on the initial
-   * position so it can be reviewed from the beginning. A one-time write
-   * during render (converges immediately) — subsequent cursor changes come
-   * only from navigation, playing moves, or the presenter cursor.
+   * game as it was. Untouched imports fall back to the requested opening
+   * node (`initialNodeId`), then the mainline tip — except a game just
+   * imported here (`startAtRoot`), which opens on the initial position so
+   * it can be reviewed from the beginning. A one-time write during render
+   * (converges immediately) — subsequent cursor changes come only from
+   * navigation, playing moves, or the presenter cursor.
    */
   if (currentId === null && tree !== null) {
     if (startAtRoot) {
       dispatch({ type: 'init', id: tree.root.id });
     } else if (lastPlayedId !== null && byId.has(lastPlayedId)) {
       dispatch({ type: 'init', id: lastPlayedId });
+    } else if (initialNodeId !== null && byId.has(initialNodeId)) {
+      dispatch({ type: 'init', id: initialNodeId });
     } else {
       let tip = tree.root;
       while (tip.children[0] !== undefined) {

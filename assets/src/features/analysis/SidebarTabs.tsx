@@ -12,6 +12,11 @@ export type SidebarTab = {
  * (Explorer, Search) a home without fighting the move list for space. The
  * tab strip is always visible — even with a single tab — so the structure is
  * there when the new tabs land.
+ *
+ * Every tab's content stays mounted; inactive panels are hidden (the
+ * `hidden` attribute removes them from the a11y tree). Panels like the
+ * Examples tab hold results state — unmounting on tab switches would lose
+ * a finished analysis for no reason.
  */
 export default function SidebarTabs({ tabs }: { tabs: SidebarTab[] }) {
   const [active, setActive] = useState(tabs[0]?.id ?? '');
@@ -42,9 +47,19 @@ export default function SidebarTabs({ tabs }: { tabs: SidebarTab[] }) {
           </button>
         ))}
       </div>
-      <div role="tabpanel" className="flex min-h-0 flex-1 flex-col gap-2">
-        {current.content}
-      </div>
+      {tabs.map((tab) => (
+        <div
+          key={tab.id}
+          role="tabpanel"
+          hidden={tab.id !== current.id}
+          className={[
+            'min-h-0 flex-col gap-2',
+            tab.id === current.id ? 'flex flex-1' : 'hidden',
+          ].join(' ')}
+        >
+          {tab.content}
+        </div>
+      ))}
     </div>
   );
 }

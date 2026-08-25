@@ -1,9 +1,13 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import HelpPopover from '@/components/HelpPopover';
 import { button } from '@/components/ui';
 import HistoricalEvidenceCard from '@/features/historicalEvidence/HistoricalEvidenceCard';
-import type { HistoricalEvidenceResult, PlanSide } from '@/features/historicalEvidence/types';
+import type {
+  EvidenceCandidate,
+  HistoricalEvidenceResult,
+  PlanSide,
+} from '@/features/historicalEvidence/types';
 import type { GameTree } from '@/lib/api';
 import { analyzeHistoricalEvidence, fetchHistoricalGame } from '@/lib/api';
 
@@ -12,6 +16,9 @@ type Status =
   | { kind: 'loading' }
   | { kind: 'ready'; result: HistoricalEvidenceResult }
   | { kind: 'error'; code: string };
+
+/** How long a variation add may wait for its echo before giving up. */
+const VARIATION_ECHO_TIMEOUT_MS = 5000;
 
 function HelpContent() {
   const { t } = useTranslation();
@@ -52,6 +59,7 @@ export default function HistoricalEvidencePanel({
   canAnalyze = true,
   onAddGame,
   onAddVariation,
+  variationState,
 }: {
   /** The board cursor's position (null when no game). */
   fen: string | null;
@@ -69,6 +77,17 @@ export default function HistoricalEvidencePanel({
    * is attached as a setup child first.
    */
   onAddVariation?: (fen: string, sans: string[], exact: boolean) => void;
+  /**
+   * Per-candidate button state from the orchestrator: whether the planned
+   * line is playable from the viewed node and whether the tree already
+   * contains it — the card's "Added ✓" state is echo-proven, never
+   * guessed.
+   */
+  variationState?: (
+    fen: string,
+    sans: string[],
+    exact: boolean,
+  ) => { addable: boolean; exists: boolean };
 }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
@@ -95,6 +114,19 @@ export default function HistoricalEvidencePanel({
   const disabled = fen === null || status.kind === 'loading' || !canAnalyze;
   const [addingGid, setAddingGid] = useState<number | null>(null);
   const [addFailed, setAddFailed] = useState(false);
+  /** Corpus games already added to the room this session (gid → added). */
+  const [addedGames, setAddedGames] = useState<ReadonlySet<number>>(new Set());
+  /** The candidate whose variation add is awaiting its echo. */
+  const [pendingVariation, setPendingVariation] = useState<string | null>(null);
+  const pendingTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pendingTimer.current !== null) {
+        window.clearTimeout(pendingTimer.current);
+      }
+    };
+  }, []);
 
   // Plan id → per-side actions, from the top member of each family in the
   // decision menu (members are sorted by occurrence count).
@@ -112,6 +144,33 @@ export default function HistoricalEvidencePanel({
     return map;
   }, [status]);
 
+  /**
+   * Candidate id → variation button state. Recomputed only when the
+   * results or the orchestrator's tree view change (`variationState` is
+   * referentially stable across engine ticks), so this stays cheap.
+   */
+  const variationStates = useMemo(() => {
+    if (status.kind !== 'ready' || variationState === undefined) {
+      return null;
+    }
+    const map = new Map<string, { addable: boolean; exists: boolean }>();
+    for (const candidate of status.result.candidates) {
+      map.set(
+        candidate.id,
+        variationState(candidate.fen, candidate.continuation.moves, candidate.strategy === 'exact'),
+      );
+    }
+    return map;
+  }, [status, variationState]);
+
+  // The pending add resolves the moment the echo lands in the tree — the
+  // button's exists state flips and "Adding…" becomes "Added ✓".
+  useEffect(() => {
+    if (pendingVariation !== null && variationStates?.get(pendingVariation)?.exists === true) {
+      setPendingVariation(null);
+    }
+  }, [pendingVariation, variationStates]);
+
   // Fetch the corpus game and hand it to the room as another game.
   const addGame = useCallback(
     async (gid: number, ply: number) => {
@@ -119,6 +178,7 @@ export default function HistoricalEvidencePanel({
       setAddFailed(false);
       try {
         const { tree } = await fetchHistoricalGame(gid);
+        setAddedGames((previous) => new Set(previous).add(gid));
         onAddGame?.(tree, ply);
       } catch {
         setAddFailed(true);
@@ -130,8 +190,17 @@ export default function HistoricalEvidencePanel({
   );
 
   const addVariation = useCallback(
-    (fen: string, sans: string[], exact: boolean) => {
-      onAddVariation?.(fen, sans, exact);
+    (candidate: EvidenceCandidate) => {
+      setPendingVariation(candidate.id);
+      // The op has no rejection callback — if the echo never lands (a
+      // rejected op), give the "Adding…" state up after a grace period.
+      if (pendingTimer.current !== null) {
+        window.clearTimeout(pendingTimer.current);
+      }
+      pendingTimer.current = window.setTimeout(() => {
+        setPendingVariation((pending) => (pending === candidate.id ? null : pending));
+      }, VARIATION_ECHO_TIMEOUT_MS);
+      onAddVariation?.(candidate.fen, candidate.continuation.moves, candidate.strategy === 'exact');
     },
     [onAddVariation],
   );
@@ -186,18 +255,14 @@ export default function HistoricalEvidencePanel({
               candidate={candidate}
               plans={plans}
               adding={addingGid === candidate.gid}
+              addedToRoom={addedGames.has(candidate.gid)}
+              variationState={variationStates?.get(candidate.id) ?? null}
+              addingVariation={pendingVariation === candidate.id}
               onAddGame={
                 onAddGame !== undefined ? () => addGame(candidate.gid, candidate.ply) : undefined
               }
               onAddVariation={
-                onAddVariation !== undefined
-                  ? () =>
-                      addVariation(
-                        candidate.fen,
-                        candidate.continuation.moves,
-                        candidate.strategy === 'exact',
-                      )
-                  : undefined
+                onAddVariation !== undefined ? () => addVariation(candidate) : undefined
               }
             />
           ))}

@@ -66,6 +66,7 @@ export default function Analysis({
   analyzing = null,
   analysis = null,
   startAtRoot = false,
+  initialNodeId = null,
   onAddHistoricalGame,
 }: {
   tree: GameTree | null;
@@ -99,6 +100,11 @@ export default function Analysis({
   analysis?: AnalysisEval[] | null;
   /** Open on the initial position instead of the tail (fresh imports). */
   startAtRoot?: boolean;
+  /**
+   * The node to open on when the tree arrives untouched — an added
+   * historical game opens at the candidate's move.
+   */
+  initialNodeId?: number | null;
   /** Add a historical game to the room as another game, cursor at `ply`. */
   onAddHistoricalGame?: (tree: GameTree, ply: number) => void;
 }) {
@@ -168,6 +174,7 @@ export default function Analysis({
     lastPlayedId,
     amPresenter,
     startAtRoot,
+    initialNodeId,
     onCursorChange,
     onFollowChange,
   });
@@ -648,6 +655,38 @@ export default function Analysis({
     [nodeAnnotations, current, onAnnotations],
   );
 
+  /**
+   * The "Add as variation" button's state for a historical candidate:
+   * whether the planned line is playable from the viewed node, and whether
+   * it is already in the tree (the card then shows "Added ✓" — the echo
+   * proves it, no optimistic bookkeeping). Plan-identical to the add
+   * itself, so the check can never disagree with the insertion.
+   */
+  const variationState = useCallback(
+    (fen: string, sans: string[], exact: boolean): { addable: boolean; exists: boolean } => {
+      if (current === null) {
+        return { addable: false, exists: false };
+      }
+      const plan = planHistoricalVariation({
+        exact,
+        currentId: current.id,
+        maxNodeId,
+        currentFen: current.fen ?? '',
+        candidateFen: fen,
+        sans,
+      });
+      if (plan === null) {
+        return { addable: false, exists: false };
+      }
+      if (plan.kind === 'line') {
+        return { addable: true, exists: chainMatches(current, plan.moves) };
+      }
+      const setup = current.children.find((child) => child.fen === plan.setup.fen);
+      return { addable: true, exists: setup !== undefined && chainMatches(setup, plan.line.moves) };
+    },
+    [current, maxNodeId],
+  );
+
   if (tree === null || current === null) {
     return (
       <div className="flex w-full flex-1 flex-col items-center justify-center gap-6 p-8">
@@ -824,6 +863,7 @@ export default function Analysis({
             onToggleEngine={toggleEngine}
             onToggleArrows={toggleArrows}
             onEngineLines={setEngineLinesCount}
+            variationState={variationState}
           />
         </div>
 
@@ -925,4 +965,24 @@ function variationPositions(linePath: { nodes: GameNode[] }): AnalysisPosition[]
 
 function lastChildOf(node: GameNode): GameNode {
   return node.children[0] ? lastChildOf(node.children[0]) : node;
+}
+
+/**
+ * Whether `start` already carries a child chain matching `moves` — the
+ * same from/to/promotion descent the `add_line` echo uses to de-duplicate
+ * against existing children.
+ */
+function chainMatches(start: GameNode, moves: LegalMove[]): boolean {
+  let node = start;
+  for (const move of moves) {
+    const next = node.children.find(
+      (child) =>
+        child.from === move.from && child.to === move.to && child.promotion === move.promotion,
+    );
+    if (next === undefined) {
+      return false;
+    }
+    node = next;
+  }
+  return true;
 }

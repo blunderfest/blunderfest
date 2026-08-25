@@ -233,7 +233,23 @@ so clients send nothing and hide the member list.
   **Examples** sidebar tab runs `POST /api/historical-evidence` for the
   board cursor (with the game's own move order as the route) and renders
   evidence cards — position dims, route divergence, per-side plan
-  membership, appearance/game counts, flags. Facts only (ADR-0027).
+  membership, appearance/game counts, flags. Facts only (ADR-0027). Card
+  actions report their outcome and de-duplicate: "Add to room" sends a
+  `set_game` op without switching the room's view (the game appears in
+  the Games panel; a presenting adder re-points the room via
+  `select_game` back to the viewed game, because the presenter's own
+  `set_game` counts as focus), records the candidate ply in `openAtPly`
+  so the game opens at the candidate's move (`Analysis.initialNodeId` →
+  `useCursor`'s init order: `startAtRoot` → last played → initial node →
+  mainline tip), and the button flips to "Added ✓" once fetched. "Add as
+  variation" shows "Adding…" until the echo lands in the tree, then
+  "Added ✓" — the exists state is derived from the tree itself
+  (`variationState` in `Analysis`, plan-identical to the insertion via
+  `planHistoricalVariation` + the same from/to/promotion chain descent
+  `applyAddLine` uses), so it can never disagree with reality.
+- `SidebarTabs` keeps every tab's content mounted and hides inactive
+  panels (`hidden` attr + class): the Examples results survive tab
+  switches; state-preserving by contract, tested with a counter.
 - `assets/src/components/ui.ts` — `tv()`-based component variants (Tailwind
   v4, dark theme); `<.icon>`-style icons are heroicons via the `.icon` /
   `Icon` components. The visual language (tokens, states, motion) is specced

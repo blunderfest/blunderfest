@@ -472,7 +472,10 @@
     "detailsMatchingLine": "{{side}} matches plan {{id}} · similarity {{sim}}",
     "addToRoom": "Add to room",
     "addVariation": "Add as variation",
-    "adding": "Adding…"
+    "adding": "Adding…",
+    "addedToRoom": "Added ✓",
+    "addedVariation": "Added ✓",
+    "variationNotPlayable": "This continuation can't be played from the current position."
   },
   "update": {
     "available": "A new version of Blunderfest is available.",

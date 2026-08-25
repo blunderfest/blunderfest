@@ -120,6 +120,9 @@ export default function HistoricalEvidenceCard({
   candidate,
   plans,
   adding = false,
+  addedToRoom = false,
+  variationState = null,
+  addingVariation = false,
   onAddGame,
   onAddVariation,
 }: {
@@ -128,6 +131,16 @@ export default function HistoricalEvidenceCard({
   plans?: Map<number, PlanSide>;
   /** The add-to-room request for this card is in flight. */
   adding?: boolean;
+  /** This corpus game is already in the room — the button shows "Added ✓". */
+  addedToRoom?: boolean;
+  /**
+   * The variation button's state from the orchestrator: playable from the
+   * viewed node, and already present in the tree. Null = unknown (button
+   * behaves as before).
+   */
+  variationState?: { addable: boolean; exists: boolean } | null;
+  /** The variation add is awaiting its echo. */
+  addingVariation?: boolean;
   /** Add this historical game to the room as another game. */
   onAddGame?: () => void;
   /** Add the historical continuation as a variation (exact candidates). */
@@ -239,22 +252,42 @@ export default function HistoricalEvidenceCard({
           {onAddVariation !== undefined && (
             <button
               type="button"
-              className={button({ intent: 'quiet', size: 'xs' })}
+              className={button({
+                intent: 'quiet',
+                size: 'xs',
+                active: variationState?.exists === true,
+              })}
+              disabled={
+                addingVariation ||
+                variationState?.exists === true ||
+                variationState?.addable === false
+              }
+              title={
+                variationState?.addable === false ? t('evidence.variationNotPlayable') : undefined
+              }
               onClick={onAddVariation}
               data-testid="historical-evidence-add-variation"
             >
-              {t('evidence.addVariation')}
+              {variationState?.exists === true
+                ? t('evidence.addedVariation')
+                : addingVariation
+                  ? t('evidence.adding')
+                  : t('evidence.addVariation')}
             </button>
           )}
           {onAddGame !== undefined && (
             <button
               type="button"
-              className={button({ intent: 'quiet', size: 'xs' })}
-              disabled={adding}
+              className={button({ intent: 'quiet', size: 'xs', active: addedToRoom })}
+              disabled={adding || addedToRoom}
               onClick={onAddGame}
               data-testid="historical-evidence-add-game"
             >
-              {adding ? t('evidence.adding') : t('evidence.addToRoom')}
+              {addedToRoom
+                ? t('evidence.addedToRoom')
+                : adding
+                  ? t('evidence.adding')
+                  : t('evidence.addToRoom')}
             </button>
           )}
         </div>

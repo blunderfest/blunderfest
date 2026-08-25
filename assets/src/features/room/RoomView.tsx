@@ -78,6 +78,12 @@ export default function RoomView({
   const [showImport, setShowImport] = useState(false);
   /** The game just imported here — it opens on the initial position. */
   const [freshImportId, setFreshImportId] = useState<string | null>(null);
+  /**
+   * Added historical games, keyed by room game id → the candidate's ply:
+   * when such a game is opened it starts on the candidate's move, so it
+   * can be compared against the analyzed position directly.
+   */
+  const [openAtPly, setOpenAtPly] = useState<ReadonlyMap<string, number>>(new Map());
 
   const amPresenter = selfId !== null && presenter?.id === selfId;
 
@@ -240,19 +246,19 @@ export default function RoomView({
   }
 
   // The Examples tab's "add to room": the historical game joins the room
-  // as another game (the current game is untouched), the presenter follows
-  // it, and the cursor lands on the candidate's move (mainline node ids
-  // equal plies in the exported tree).
+  // as another game without stealing the view — the adder may want to
+  // collect several games before looking at any of them. The game appears
+  // in the Games panel; opening it starts on the candidate's move. A
+  // presenting adder must re-point the room at the game being viewed:
+  // `selectPresenterGameId` counts the presenter's own `set_game` as
+  // focus, so without the restore the whole room would follow the add.
   function handleAddHistoricalGame(tree: GameTree, ply: number) {
-    setFollowOverride(false);
     const gameId = crypto.randomUUID();
     sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
-    if (amPresenter) {
-      sendOp({ type: 'select_game', payload: { game_id: gameId } });
+    setOpenAtPly((current) => new Map(current).set(gameId, ply));
+    if (amPresenter && effectiveGameId !== null) {
+      sendOp({ type: 'select_game', payload: { game_id: effectiveGameId } });
     }
-    setActiveGameId(gameId);
-    setFreshImportId(null);
-    sendOp({ type: 'set_cursor', payload: { node_id: ply } });
   }
 
   function handleSetRole(memberId: string, role: MemberRole) {
@@ -427,6 +433,9 @@ export default function RoomView({
               following={following}
               canEdit={canEdit}
               startAtRoot={effectiveGameId !== null && effectiveGameId === freshImportId}
+              initialNodeId={
+                effectiveGameId !== null ? (openAtPly.get(effectiveGameId) ?? null) : null
+              }
               onFollowChange={setFollowOverride}
               onCursorChange={handleCursorChange}
               onPlayMove={handlePlayMove}

@@ -98,6 +98,13 @@ describe('Analysis', () => {
 
     expect(pieceAt('square-e2')).toBe('wp');
     expect(pieceAt('square-e4')).toBeNull();
+  });
+
+  it('opens at the requested node with initialNodeId (an added historical game)', () => {
+    render(<Analysis tree={tree} initialNodeId={1} />);
+
+    // 1. e4 is on the board; the mainline tip (Nf3) is not.
+    expect(pieceAt('square-e4')).toBe('wp');
     expect(pieceAt('square-f3')).toBeNull();
   });
 

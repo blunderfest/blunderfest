@@ -1037,3 +1037,181 @@ describe('RoomView', () => {
     expect(pieceAt('square-e4')).toBeNull();
   });
 });
+
+describe('historical evidence integration', () => {
+  let channel: FakeChannel;
+  let channelFactory: () => FakeChannel;
+
+  beforeEach(() => {
+    channel = new FakeChannel();
+    channelFactory = () => channel;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function renderRoom(slug = 'abc12', onLeave = vi.fn(), selfId: string | null = null) {
+    const store = makeStore();
+    render(
+      <Provider store={store}>
+        <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />
+      </Provider>,
+    );
+  }
+
+  const E4_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1';
+
+  function evidenceCandidate(): import('@/features/historicalEvidence/types').EvidenceCandidate {
+    return {
+      id: 'exact-1-1',
+      strategy: 'exact',
+      stm: 'b',
+      fen: E4_FEN,
+      gid: 7,
+      ply: 1,
+      game: {
+        gid: 7,
+        white: 'Carol',
+        black: 'Dave',
+        result: '1-0',
+        date: '2017.05.01',
+        eco: 'A00',
+        opening: 'Uncommon Opening',
+        white_elo: null,
+        black_elo: null,
+        event: 'Fixture',
+        time_control: '300+0',
+        site: 'fix01',
+      },
+      position: {
+        dims: {
+          pawn_structure: 'same',
+          material: 'same',
+          piece_placement: { matches: 16, mismatches: 0, ref_pieces: 16 },
+          king_position: 'same',
+          side_to_move: 'same',
+          castling: 'same',
+        },
+        differences: [],
+      },
+      route: {
+        shared_plies: 1,
+        ref_ply: 1,
+        diverged_ply: null,
+        ref_move: null,
+        cand_move: null,
+        ply_gap: 0,
+        extra_white: [],
+        extra_black: [],
+        missing_white: [],
+        missing_black: [],
+      },
+      continuation: { moves: [], differences: [] },
+      families: {
+        membership: {
+          status: 'member',
+          member_of: 1,
+          sim: 1,
+          family_occurrences: 2,
+          family_games: 2,
+        },
+        skeleton: {
+          white: {
+            status: 'member',
+            family_id: 1,
+            sim: 1,
+            family_occurrences: 2,
+            family_games: 2,
+          },
+          black: {
+            status: 'member',
+            family_id: 1,
+            sim: 1,
+            family_occurrences: 2,
+            family_games: 2,
+          },
+        },
+      },
+      historical: { occurrences: 1, games: 1, same_game_only: false },
+      flags: [],
+    };
+  }
+
+  function jsonResponse(body: unknown): Response {
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  it('adds a historical game without switching and opens it at the candidate move', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/api/historical-evidence/games/')) {
+          return jsonResponse({ tree: secondTree });
+        }
+        if (url.includes('/api/historical-evidence')) {
+          return jsonResponse({
+            reference: { fen: E4_FEN, occurrences: 1, games: 1, families: [] },
+            candidates: [evidenceCandidate()],
+            timings: { candidates_ms: 1, menu_ms: 1, evidence_ms: 1, total_ms: 3 },
+          });
+        }
+        throw new Error(`unmocked fetch: ${url}`);
+      }),
+    );
+
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Examples' }));
+    fireEvent.click(await screen.findByTestId('historical-evidence-run'));
+    fireEvent.click(await screen.findByTestId('historical-evidence-add-game'));
+    await waitFor(() =>
+      expect(screen.getByTestId('historical-evidence-add-game')).toHaveTextContent('Added ✓'),
+    );
+
+    // The analyzed game stays on screen — the add never steals the view.
+    expect(screen.getByRole('heading', { name: 'Alice – Bob' })).toBeInTheDocument();
+
+    const pushes = channel.pushes as {
+      event: string;
+      payload: { type: string; payload: Record<string, unknown> };
+    }[];
+    const setGame = pushes.find(
+      (push) => push.payload.type === 'set_game' && push.payload.payload.game_id !== 'game-1',
+    );
+    expect(setGame).toBeDefined();
+    const addedId = setGame?.payload.payload.game_id as string;
+    expect(
+      pushes.some(
+        (push) => push.payload.type === 'select_game' && push.payload.payload.game_id === addedId,
+      ),
+    ).toBe(false);
+    // The presenting adder re-points the room at the game being viewed.
+    expect(
+      pushes.some(
+        (push) => push.payload.type === 'select_game' && push.payload.payload.game_id === 'game-1',
+      ),
+    ).toBe(true);
+
+    // The echo lands: the new game appears in the Games panel.
+    act(() => channel.emit('new_op', setGameOp(2, secondTree, addedId)));
+    expect(await screen.findByRole('button', { name: /Carol – Dave/ })).toBeInTheDocument();
+
+    // Opening it starts at the candidate's move (1... d4), not the tail.
+    fireEvent.click(screen.getByRole('button', { name: /Carol – Dave/ }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Carol – Dave' })).toBeInTheDocument(),
+    );
+    expect(pieceAt('square-d4')).toBe('wp');
+  });
+});

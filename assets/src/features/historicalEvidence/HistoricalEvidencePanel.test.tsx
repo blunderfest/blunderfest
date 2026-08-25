@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import HistoricalEvidencePanel from '@/features/historicalEvidence/HistoricalEvidencePanel';
 import type {
@@ -267,5 +267,124 @@ describe('HistoricalEvidencePanel', () => {
 
     expect(await screen.findByText("Couldn't add that game — try again.")).toBeInTheDocument();
     expect(onAddGame).not.toHaveBeenCalled();
+  });
+
+  it('marks the add-to-room button once the game is in the room', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+    mockFetchGame.mockResolvedValue({ tree: treeForGame });
+    const onAddGame = vi.fn<(tree: unknown, ply: number) => void>();
+
+    renderPanel(undefined, { onAddGame });
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    fireEvent.click(await screen.findByTestId('historical-evidence-add-game'));
+
+    await waitFor(() => expect(onAddGame).toHaveBeenCalledTimes(1));
+    const button = screen.getByTestId('historical-evidence-add-game');
+    expect(button).toHaveTextContent('Added ✓');
+    expect(button).toBeDisabled();
+  });
+
+  it('disables the variation button once the tree already contains the line', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+    const onAddVariation = vi.fn<(fen: string, sans: string[], exact: boolean) => void>();
+
+    render(
+      <HistoricalEvidencePanel
+        fen={START}
+        route={null}
+        refPly={null}
+        onAddVariation={onAddVariation}
+        variationState={() => ({ addable: true, exists: true })}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    const button = await screen.findByTestId('historical-evidence-add-variation');
+    expect(button).toHaveTextContent('Added ✓');
+    expect(button).toBeDisabled();
+
+    fireEvent.click(button);
+    expect(onAddVariation).not.toHaveBeenCalled();
+  });
+
+  it('disables the variation button when the line is not playable', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+    const onAddVariation = vi.fn<(fen: string, sans: string[], exact: boolean) => void>();
+
+    render(
+      <HistoricalEvidencePanel
+        fen={START}
+        route={null}
+        refPly={null}
+        onAddVariation={onAddVariation}
+        variationState={() => ({ addable: false, exists: false })}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    const button = await screen.findByTestId('historical-evidence-add-variation');
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute(
+      'title',
+      "This continuation can't be played from the current position.",
+    );
+  });
+
+  it('shows Adding… on a variation click until the echo lands in the tree', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+    const onAddVariation = vi.fn<(fen: string, sans: string[], exact: boolean) => void>();
+
+    const props = (exists: boolean) => (
+      <HistoricalEvidencePanel
+        fen={START}
+        route={null}
+        refPly={null}
+        onAddVariation={onAddVariation}
+        variationState={() => ({ addable: true, exists })}
+      />
+    );
+    const { rerender } = render(props(false));
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    fireEvent.click(await screen.findByTestId('historical-evidence-add-variation'));
+    expect(screen.getByTestId('historical-evidence-add-variation')).toHaveTextContent('Adding…');
+    expect(onAddVariation).toHaveBeenCalledTimes(1);
+
+    // The echo lands: the orchestrator's state flips, and the label follows.
+    rerender(props(true));
+    expect(await screen.findByText('Added ✓')).toBeInTheDocument();
+    expect(screen.getByTestId('historical-evidence-add-variation')).toBeDisabled();
+  });
+
+  it('gives up the Adding… state when the echo never lands', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+    const onAddVariation = vi.fn<(fen: string, sans: string[], exact: boolean) => void>();
+
+    vi.useFakeTimers();
+    try {
+      render(
+        <HistoricalEvidencePanel
+          fen={START}
+          route={null}
+          refPly={null}
+          onAddVariation={onAddVariation}
+          variationState={() => ({ addable: true, exists: false })}
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId('historical-evidence-run'));
+      await act(async () => {});
+      fireEvent.click(screen.getByTestId('historical-evidence-add-variation'));
+      expect(screen.getByTestId('historical-evidence-add-variation')).toHaveTextContent('Adding…');
+
+      act(() => vi.advanceTimersByTime(5000));
+      expect(screen.getByTestId('historical-evidence-add-variation')).toHaveTextContent(
+        'Add as variation',
+      );
+      expect(screen.getByTestId('historical-evidence-add-variation')).toBeEnabled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
