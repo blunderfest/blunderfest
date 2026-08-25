@@ -81,4 +81,24 @@ describe('HistoricalEvidencePanel', () => {
 
     expect(await screen.findByText('0 examples · 3 ms')).toBeInTheDocument();
   });
+
+  it('does not re-run when the cursor moves — results are marked stale instead', async () => {
+    const { rerender } = renderPanel();
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    expect(await screen.findByText('0 examples · 3 ms')).toBeInTheDocument();
+
+    rerender(
+      <HistoricalEvidencePanel
+        fen="rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
+        route={null}
+        refPly={null}
+      />,
+    );
+
+    expect(mockAnalyze).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByText('The position changed — run the analysis again to see examples for it.'),
+    ).toBeInTheDocument();
+  });
 });

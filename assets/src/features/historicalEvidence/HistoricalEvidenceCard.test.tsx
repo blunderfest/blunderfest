@@ -76,7 +76,7 @@ describe('HistoricalEvidenceCard', () => {
     expect(screen.getByText('14/14 match')).toBeInTheDocument();
     expect(screen.getByText('6 plies')).toBeInTheDocument();
     expect(screen.getByText('ply 7: e4 → e3')).toBeInTheDocument();
-    expect(screen.getByText('family 1 (0.50)')).toBeInTheDocument();
+    expect(screen.getByText('family 1 · 50% match')).toBeInTheDocument();
     expect(screen.getByText('tempo twin')).toBeInTheDocument();
   });
 

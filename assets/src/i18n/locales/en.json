@@ -17,7 +17,8 @@
   "help": {
     "menu": "Help",
     "tour": "Take the guided tour",
-    "shortcuts": "Keyboard shortcuts"
+    "shortcuts": "Keyboard shortcuts",
+    "close": "Close"
   },
   "chat": {
     "title": "Chat",
@@ -387,7 +388,7 @@
   "evidence": {
     "analyze": "Historical evidence",
     "analyzeHint": "What has been played from this position, and how did games reach it?",
-    "run": "Analyze",
+    "run": "Find examples",
     "empty": "Nothing yet. Run the analysis for this position.",
     "noCandidates": "No historical examples found for this position yet.",
     "error": "The analysis failed — please try again.",
@@ -399,8 +400,8 @@
     "routePlyGap": "Reached",
     "continuation": "Continuation",
     "contMoves": "Played",
-    "familyWhite": "White family",
-    "familyBlack": "Black family",
+    "familyWhite": "White's plan",
+    "familyBlack": "Black's plan",
     "historical": "Historical evidence",
     "occurrences": "Occurrences",
     "games": "Independent games",
@@ -410,6 +411,18 @@
     "menu": "Continuation menu",
     "menuNone": "No continuations recorded for this position yet.",
     "candidates": "Historical examples",
-    "tab": "History"
+    "tab": "History",
+    "positionChanged": "The position changed — run the analysis again to see examples for it.",
+    "helpTitle": "Historical examples, explained",
+    "helpPositionTitle": "Position",
+    "helpPositionBody": "What matched between your position and this game: pawn structure, material, piece placement (e.g. 13/14 pieces match), side to move and castling.",
+    "helpRouteTitle": "Route",
+    "helpRouteBody": "How this game reached its position compared to yours: how many plies were shared and the first move that differed (e.g. White played e4 where this game played e3).",
+    "helpFamiliesTitle": "White / Black plan",
+    "helpFamiliesBody": "Follow-ups after a position are grouped into families of similar plans. Each side gets its own match: family 1 · 100% match means that side's moves are exactly that family's plan; no match shows the nearest family instead.",
+    "helpHistoricalTitle": "Historical evidence",
+    "helpHistoricalBody": "Occurrences counts every time this position appeared; independent games counts how many different games support it. Same game only marks a position repeated within one game — not an independent example.",
+    "helpFlagsTitle": "Flags",
+    "helpFlagsBody": "Short labels for the differences found — e.g. tempo twin: identical placement, the other side to move."
   }
 }
