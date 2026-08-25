@@ -34,6 +34,11 @@ RUN pnpm install --frozen-lockfile
 COPY assets ./
 RUN pnpm build
 
+# The version beacon: the SPA polls this to offer a reload when a new
+# deployment lands (the open tab otherwise keeps the old bundle). A build
+# timestamp is enough — it changes on every deploy.
+RUN date -u +%s > ../priv/static/version.json
+
 FROM ${BUILDER_IMAGE} AS builder
 
 # install build dependencies

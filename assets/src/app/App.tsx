@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next';
 import AccountMenu from '@/app/AccountMenu';
 import HelpMenu from '@/app/HelpMenu';
 import Logo from '@/components/Logo';
+import UpdateBanner from '@/components/UpdateBanner';
 import Home from '@/features/home/Home';
 import RoomView from '@/features/room/RoomView';
 import { roomSteps } from '@/features/tour/steps';
 import Tour from '@/features/tour/Tour';
+import { hasNewVersion, loadInitialVersion } from '@/lib/appVersion';
 import { getTheme, setTheme, type Theme } from '@/lib/theme';
 import { useProfile } from '@/lib/useProfile';
 
@@ -35,9 +37,50 @@ export default function App() {
   const [backend, setBackend] = useState<BackendStatus>('checking');
   const [region, setRegion] = useState<string | null>(null);
   const [route, setRoute] = useState<Route>(readHashRoute);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const profile = useProfile();
   const mainRef = useRef<HTMLElement | null>(null);
   const firstRender = useRef(true);
+
+  // The version beacon: this tab learns about new deployments and offers
+  // a reload instead of silently running the old bundle.
+  useEffect(() => {
+    let cancelled = false;
+    let interval: number | null = null;
+    const onOnline = () => {
+      initialVersion.then((version) => {
+        if (!cancelled && version !== null) {
+          check(version);
+        }
+      });
+    };
+
+    const check = (initial: string | null) => {
+      hasNewVersion(initial).then((fresh) => {
+        if (!cancelled && fresh) {
+          setUpdateAvailable(true);
+        }
+      });
+    };
+
+    const initialVersion = loadInitialVersion();
+
+    initialVersion.then((version) => {
+      if (cancelled || version === null) {
+        return;
+      }
+      interval = window.setInterval(() => check(version), 60_000);
+      window.addEventListener('online', onOnline);
+    });
+
+    return () => {
+      cancelled = true;
+      if (interval !== null) {
+        window.clearInterval(interval);
+      }
+      window.removeEventListener('online', onOnline);
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -245,6 +288,7 @@ export default function App() {
       {tour !== null && tour.screen === 'room' && (
         <Tour key={tour.nonce} steps={roomSteps} onClose={closeTour} />
       )}
+      {updateAvailable && <UpdateBanner onReload={() => window.location.reload()} />}
     </div>
   );
 }

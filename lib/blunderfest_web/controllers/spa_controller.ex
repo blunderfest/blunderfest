@@ -12,10 +12,12 @@ defmodule BlunderfestWeb.SpaController do
     case File.read(index_path()) do
       {:ok, html} ->
         conn
-        # The shell must be revalidated on every load: it references the
+        # The shell must never be reused across deploys: it references the
         # hashed asset bundle, so a cached shell keeps serving a stale app
-        # after a deploy. The hashed assets themselves may be cached hard.
-        |> put_resp_header("cache-control", "no-cache, must-revalidate")
+        # after a deploy. `no-store` (not just revalidation) rules out any
+        # browser/cache variance. The hashed assets themselves may be
+        # cached; open tabs learn about deploys via the version beacon.
+        |> put_resp_header("cache-control", "no-store")
         |> put_resp_header("content-type", "text/html; charset=utf-8")
         |> send_resp(:ok, html)
 

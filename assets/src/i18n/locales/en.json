@@ -428,5 +428,9 @@
     "helpHistoricalBody": "Occurrences counts every time this position appeared; independent games counts how many different games support it. Same game only marks a position repeated within one game — not an independent example.",
     "helpFlagsTitle": "Flags",
     "helpFlagsBody": "Short labels for the differences found — e.g. tempo twin: identical placement, the other side to move."
+  },
+  "update": {
+    "available": "A new version of Blunderfest is available.",
+    "reload": "Reload"
   }
 }
