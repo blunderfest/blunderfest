@@ -30,27 +30,27 @@ defmodule Blunderfest.Corpus do
 
   @doc "Every occurrence of a canonical key as `[{gid, ply}]`, in game/ply order."
   @spec occurrences(String.t()) :: [{pos_integer(), pos_integer()}] | {:error, :not_configured}
-  def occurrences(key), do: GenServer.call(__MODULE__, {:occurrences, key})
+  def occurrences(key), do: GenServer.call(__MODULE__, {:occurrences, key}, :infinity)
 
   @doc "The position row for a canonical key, or nil if never seen."
   @spec position(String.t()) :: map() | nil | {:error, :not_configured}
-  def position(key), do: GenServer.call(__MODULE__, {:position, key})
+  def position(key), do: GenServer.call(__MODULE__, {:position, key}, :infinity)
 
   @doc "Distinct canonical keys sharing a pawn-skeleton hash."
   @spec pawn_bucket(non_neg_integer()) :: [String.t()] | {:error, :not_configured}
-  def pawn_bucket(pawn_hash), do: GenServer.call(__MODULE__, {:pawn_bucket, pawn_hash})
+  def pawn_bucket(pawn_hash), do: GenServer.call(__MODULE__, {:pawn_bucket, pawn_hash}, :infinity)
 
   @doc "Game metadata for a gid, or nil."
   @spec game(pos_integer()) :: map() | nil | {:error, :not_configured}
-  def game(gid), do: GenServer.call(__MODULE__, {:game, gid})
+  def game(gid), do: GenServer.call(__MODULE__, {:game, gid}, :infinity)
 
   @doc "Mainline SAN list of a game (empty when unknown)."
   @spec moves(pos_integer()) :: [String.t()] | {:error, :not_configured}
-  def moves(gid), do: GenServer.call(__MODULE__, {:moves, gid})
+  def moves(gid), do: GenServer.call(__MODULE__, {:moves, gid}, :infinity)
 
   @doc "Row counts of the four corpus tables."
   @spec counts() :: map() | {:error, :not_configured}
-  def counts, do: GenServer.call(__MODULE__, :counts)
+  def counts, do: GenServer.call(__MODULE__, :counts, :infinity)
 
   @doc """
   Drops and rebuilds the corpus tables from the extraction artifacts.

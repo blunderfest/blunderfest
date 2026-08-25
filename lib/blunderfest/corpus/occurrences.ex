@@ -70,7 +70,8 @@ defmodule Blunderfest.Corpus.Occurrences do
       Postgrex.query!(
         conn,
         "SELECT gid, ply FROM corpus_occurrences WHERE key = $1 ORDER BY gid, ply",
-        [key]
+        [key],
+        timeout: :infinity
       )
 
     Enum.map(rows, fn [gid, ply] -> {gid, ply} end)
@@ -86,7 +87,8 @@ defmodule Blunderfest.Corpus.Occurrences do
       Postgrex.query!(
         conn,
         "SELECT pawn_hash, first_gid, first_ply FROM corpus_positions WHERE key = $1",
-        [key]
+        [key],
+        timeout: :infinity
       )
 
     case rows do
@@ -105,7 +107,8 @@ defmodule Blunderfest.Corpus.Occurrences do
       Postgrex.query!(
         conn,
         "SELECT key FROM corpus_positions WHERE pawn_hash = $1 ORDER BY key",
-        [pawn_hash]
+        [pawn_hash],
+        timeout: :infinity
       )
 
     Enum.map(rows, fn [key] -> key end)
@@ -122,7 +125,8 @@ defmodule Blunderfest.Corpus.Occurrences do
                white_elo, black_elo, event, time_control, site
         FROM corpus_games WHERE gid = $1
         """,
-        [gid]
+        [gid],
+        timeout: :infinity
       )
 
     case rows do
@@ -150,7 +154,10 @@ defmodule Blunderfest.Corpus.Occurrences do
   @doc "Mainline SAN list of a game (empty when unknown)."
   @spec moves(conn(), pos_integer()) :: [String.t()]
   def moves(conn, gid) do
-    %{rows: rows} = Postgrex.query!(conn, "SELECT sans FROM corpus_moves WHERE gid = $1", [gid])
+    %{rows: rows} =
+      Postgrex.query!(conn, "SELECT sans FROM corpus_moves WHERE gid = $1", [gid],
+        timeout: :infinity
+      )
 
     case rows do
       [[sans]] -> String.split(sans, " ", trim: true)
