@@ -1093,7 +1093,7 @@ describe('position setup (what-if editing)', () => {
     expect(pieceAt('square-c4')).toBe('br');
   });
 
-  it('paints on the board on press and paints more while sweeping', () => {
+  it('paints only the pressed square — moving the pointer paints nothing', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
@@ -1110,7 +1110,8 @@ describe('position setup (what-if editing)', () => {
         y: 0,
       }) as DOMRect;
 
-    // Select the white queen with a palette press, then press-sweep a4→c4.
+    // Select the white queen with a palette press, then press a4 and move
+    // across b4 and c4: only the pressed square gets the piece.
     fireEvent(
       screen.getByRole('button', { name: 'White queen' }),
       new MouseEvent('pointerdown', { button: 0, bubbles: true }),
@@ -1123,8 +1124,8 @@ describe('position setup (what-if editing)', () => {
     fireEvent(window, new MouseEvent('pointerup', {}));
 
     expect(pieceAt('square-a4')).toBe('wq');
-    expect(pieceAt('square-b4')).toBe('wq');
-    expect(pieceAt('square-c4')).toBe('wq');
+    expect(pieceAt('square-b4')).toBeNull();
+    expect(pieceAt('square-c4')).toBeNull();
   });
 
   it('selects a piece on tap and places it on multiple squares', () => {

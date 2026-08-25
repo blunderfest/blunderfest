@@ -148,8 +148,6 @@ export default function Board({
   const suppressClickRef = useRef(false);
   // Brush painting (edit mode): active while the button is held after a
   // paint-press, with the last painted square so sweeps don't repeat.
-  const paintingRef = useRef(false);
-  const lastPaintedRef = useRef<string | null>(null);
   const longPressRef = useRef<{
     pointerId: number;
     from: string;
@@ -289,11 +287,12 @@ export default function Board({
     // A new press means any pending click suppression has served its purpose
     // (the suppressed click always fires right after the draw's release).
     suppressClickRef.current = false;
-    // A brush paints on press, not release — and owns the gesture (no drag).
+    // A brush paints exactly the pressed square — once, on press, no
+    // sweep. (The eraser used to wipe every square the pointer passed on
+    // its way across the board — same class of surprise as the palette
+    // drag that once painted a whole row.)
     if (event.button === 0 && paintBrush != null && onPaintSquare !== undefined) {
       event.preventDefault();
-      paintingRef.current = true;
-      lastPaintedRef.current = from;
       onPaintSquare(from);
       return;
     }
@@ -420,15 +419,6 @@ export default function Board({
   }
 
   function handlePointerMove(event: React.PointerEvent) {
-    // A held brush paints every square it sweeps over.
-    if (paintingRef.current) {
-      const square = pointToSquare(event);
-      if (square !== null && square !== lastPaintedRef.current) {
-        lastPaintedRef.current = square;
-        onPaintSquare?.(square);
-      }
-      return;
-    }
     const lp = longPressRef.current;
     if (
       lp !== null &&
@@ -471,8 +461,6 @@ export default function Board({
 
   function handlePointerUp(event: React.PointerEvent) {
     cancelLongPress();
-    paintingRef.current = false;
-    lastPaintedRef.current = null;
     const drag = dragRef.current;
     if (drag !== null) {
       dragRef.current = null;
@@ -489,8 +477,6 @@ export default function Board({
 
   function handlePointerCancel() {
     cancelLongPress();
-    paintingRef.current = false;
-    lastPaintedRef.current = null;
     const drag = dragRef.current;
     dragRef.current = null;
     setDragSource(null);
