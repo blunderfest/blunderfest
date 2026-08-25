@@ -98,6 +98,23 @@ split -l 600000 -d data/corpus/positions-100000.tsv /tmp/loadchunks/chunk_
   page. It is seeded on demand at join, not at boot, so it survives
   room-process and machine loss.
 
+### The version banner
+
+Open tabs learn about deploys through a **version beacon**: the Docker
+build writes `priv/static/version.json` (a build timestamp) and the SPA
+compares it against the value at page load — every 60s and on the
+browser's `online` event. When it changes, a banner offers a reload.
+
+- Fires **only in prod** (dev/Vite has no beacon).
+- Fires **only for bundle-changing deploys**: the Docker layer cache
+  re-runs the `date` step exactly when the frontend changes, so
+  backend-only deploys don't trigger it (a reload would change nothing).
+- The shell HTML is served with `cache-control: no-store`, so a normal
+  F5 after a deploy always picks up the new bundle; the banner is for
+  tabs that are *already open*.
+- Dev note: `version.json` must stay in the `only:` list of
+  `BlunderfestWeb.static_paths/0`, or it 404s.
+
 ## CI
 
 GitHub Actions is **disabled** (commit `63acf25`); checks and deploys are
