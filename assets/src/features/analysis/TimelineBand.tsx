@@ -236,25 +236,25 @@ export default function TimelineBand({
           </div>
         </fieldset>
         {analyzeAction !== null && (
-          <button
-            type="button"
-            id="analyze-game-button"
-            className={button({ intent: 'quiet', size: 'xs' })}
-            disabled={analyzeAction.progress !== null}
-            onClick={analyzeAction.onClick}
-          >
-            {analyzeAction.progress !== null
-              ? t('room.analyzing', {
-                  done: analyzeAction.progress.done,
-                  total: analyzeAction.progress.total,
-                })
-              : analyzeAction.label}
-          </button>
-        )}
-        {analyzeAction !== null && (
-          <HelpPopover label={t('analysis.aboutAnalyzeGame')}>
-            <p className="m-0 text-note text-muted">{t('analysis.helpAnalyzeGameBody')}</p>
-          </HelpPopover>
+          <div className="flex shrink-0 items-center gap-0.5">
+            <button
+              type="button"
+              id="analyze-game-button"
+              className={button({ intent: 'quiet', size: 'xs' })}
+              disabled={analyzeAction.progress !== null}
+              onClick={analyzeAction.onClick}
+            >
+              {analyzeAction.progress !== null
+                ? t('room.analyzing', {
+                    done: analyzeAction.progress.done,
+                    total: analyzeAction.progress.total,
+                  })
+                : analyzeAction.label}
+            </button>
+            <HelpPopover label={t('analysis.aboutAnalyzeGame')}>
+              <p className="m-0 text-note text-muted">{t('analysis.helpAnalyzeGameBody')}</p>
+            </HelpPopover>
+          </div>
         )}
       </div>
       <div className="flex flex-col gap-2 p-2">
