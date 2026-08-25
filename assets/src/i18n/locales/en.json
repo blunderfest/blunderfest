@@ -200,7 +200,7 @@
     "cancelEdit": "Cancel",
     "whiteToMove": "White to move",
     "blackToMove": "Black to move",
-    "invalidSetup": "That position isn't legal (kings missing, pawns on the back rank, or an impossible check).",
+    "invalidSetup": "That position couldn't be read — check the board.",
     "setupNode": "Setup",
     "noCommentYet": "No note on this move yet.",
     "unsaved": "Unsaved · ⌘↵ to save",

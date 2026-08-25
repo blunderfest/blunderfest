@@ -115,7 +115,7 @@ function renderPanel(
   },
   callbacks?: {
     onAddGame?: (tree: unknown, ply: number) => void;
-    onAddVariation?: (sans: string[]) => void;
+    onAddVariation?: (fen: string, sans: string[], exact: boolean) => void;
   },
 ) {
   const fen = props?.fen === undefined ? START : props.fen;
@@ -231,28 +231,28 @@ describe('HistoricalEvidencePanel', () => {
 
   it('offers the continuation as a variation for exact candidates', async () => {
     mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
-    const onAddVariation = vi.fn<(sans: string[]) => void>();
+    const onAddVariation = vi.fn<(fen: string, sans: string[], exact: boolean) => void>();
 
     renderPanel(undefined, { onAddVariation });
 
     fireEvent.click(screen.getByTestId('historical-evidence-run'));
     fireEvent.click(await screen.findByTestId('historical-evidence-add-variation'));
 
-    expect(onAddVariation).toHaveBeenCalledWith([]);
+    expect(onAddVariation).toHaveBeenCalledWith(START, [], true);
   });
 
-  it('hides the variation action for structural candidates', async () => {
+  it('offers the variation for structural candidates too (setup + line path)', async () => {
     const structural = { ...openCandidate, strategy: 'pawn_skeleton' as const };
     mockAnalyze.mockResolvedValue({ ...result, candidates: [structural] });
-    const onAddVariation = vi.fn<(sans: string[]) => void>();
+    const onAddVariation = vi.fn<(fen: string, sans: string[], exact: boolean) => void>();
     const onAddGame = vi.fn<(tree: unknown, ply: number) => void>();
 
     renderPanel(undefined, { onAddGame, onAddVariation });
 
     fireEvent.click(screen.getByTestId('historical-evidence-run'));
-    await screen.findByTestId('historical-evidence-add-game');
+    fireEvent.click(await screen.findByTestId('historical-evidence-add-variation'));
 
-    expect(screen.queryByTestId('historical-evidence-add-variation')).not.toBeInTheDocument();
+    expect(onAddVariation).toHaveBeenCalledWith(START, [], false);
   });
 
   it('surfaces add-to-room failures', async () => {

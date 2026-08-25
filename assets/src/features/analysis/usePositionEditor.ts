@@ -217,12 +217,18 @@ export function usePositionEditor({ flipped }: { flipped: boolean }) {
     window.addEventListener('pointercancel', onCancel);
   }
 
-  /** The FEN for the edited position, or null (and the error shown) when illegal. */
+  /**
+   * The FEN for the edited position, or null (and the error shown) when it
+   * can't even be read structurally. Analysis is an unstructured activity:
+   * chess-rule validation is skipped on purpose — kingless boards, pawns on
+   * the back rank and "impossible" checks all commit. Downstream features
+   * degrade honestly (no legal moves, engine unavailable).
+   */
   function buildFen(currentFen: string | null): string | null {
     const fullmove = Number.parseInt(currentFen?.split(' ')[5] ?? '1', 10) || 1;
     const fen = positionToFen(editPos, editTurn, fullmove);
     try {
-      new Chess(fen);
+      new Chess(fen, { skipValidation: true });
       return fen;
     } catch {
       setEditError(true);

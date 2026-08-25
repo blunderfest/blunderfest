@@ -16,7 +16,7 @@ import GameActions from '@/features/analysis/GameActions';
 import GameInfo from '@/features/analysis/GameInfo';
 import GameReport from '@/features/analysis/GameReport';
 import { endgameStart } from '@/features/analysis/gamePhases';
-import { legalMovesFor, sanLineToMoves, uciLineToMoves } from '@/features/analysis/legalMoves';
+import { legalMovesFor, uciLineToMoves } from '@/features/analysis/legalMoves';
 import { capturesOf } from '@/features/analysis/MaterialFlow';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
@@ -38,6 +38,7 @@ import { useDragFlag } from '@/features/analysis/useDragFlag';
 import { useEngine } from '@/features/analysis/useEngine';
 import { usePositionEditor } from '@/features/analysis/usePositionEditor';
 import HistoricalEvidencePanel from '@/features/historicalEvidence/HistoricalEvidencePanel';
+import { planHistoricalVariation } from '@/features/historicalEvidence/variationPlan';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
 import type {
   AddLineOp,
@@ -401,15 +402,19 @@ export default function Analysis({
     }
     onAddLine({
       parent_id: current.id,
-      moves: moves.map((move) => ({
-        san: move.san,
-        from: move.from,
-        to: move.to,
-        promotion: move.promotion,
-        fen: move.fen,
-        status: move.status,
-      })),
+      moves: lineMovePayloads(moves),
     });
+  }
+
+  function lineMovePayloads(moves: LegalMove[]) {
+    return moves.map((move) => ({
+      san: move.san,
+      from: move.from,
+      to: move.to,
+      promotion: move.promotion,
+      fen: move.fen,
+      status: move.status,
+    }));
   }
 
   function handleInsertLine(pv: string[]) {
@@ -420,13 +425,45 @@ export default function Analysis({
   }
 
   // The Examples tab: the historical continuation (SANs) becomes a
-  // variation under the viewed node — valid for exact-position candidates,
-  // whose position equals the viewed one.
-  function handleAddHistoricalVariation(sans: string[]) {
-    if (current === null) {
+  // variation under the viewed node. When the candidate's position is the
+  // viewed one, it is a plain line; otherwise the candidate's position is
+  // attached as a setup child first, and the line grafts onto it — the
+  // teacher's "compare with if you didn't play h3" flow.
+  function handleAddHistoricalVariation(fen: string, sans: string[], exact: boolean) {
+    if (!canEdit || editor.editing || current === null) {
       return;
     }
-    insertLineMoves(sanLineToMoves(current.fen ?? '', sans));
+
+    let maxNodeId = 0;
+    for (const id of byId.keys()) {
+      if (id > maxNodeId) {
+        maxNodeId = id;
+      }
+    }
+
+    const plan = planHistoricalVariation({
+      exact,
+      currentId: current.id,
+      maxNodeId,
+      currentFen: current.fen ?? '',
+      candidateFen: fen,
+      sans,
+    });
+
+    if (plan === null) {
+      return;
+    }
+
+    if (plan.kind === 'line') {
+      insertLineMoves(plan.moves);
+      return;
+    }
+
+    if (onSetPosition === undefined || onAddLine === undefined) {
+      return;
+    }
+    onSetPosition({ parent_id: plan.setup.parentId, fen: plan.setup.fen });
+    onAddLine({ parent_id: plan.line.parentId, moves: lineMovePayloads(plan.line.moves) });
   }
 
   function handleSetPosition() {

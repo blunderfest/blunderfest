@@ -63,8 +63,12 @@ export default function HistoricalEvidencePanel({
   canAnalyze?: boolean;
   /** Add a historical game to the room as another game (cursor at `ply`). */
   onAddGame?: (tree: GameTree, ply: number) => void;
-  /** Add the historical continuation as a variation under the viewed node. */
-  onAddVariation?: (sans: string[]) => void;
+  /**
+   * Add the historical continuation as a variation under the viewed node:
+   * a plain line for exact candidates, otherwise the candidate's position
+   * is attached as a setup child first.
+   */
+  onAddVariation?: (fen: string, sans: string[], exact: boolean) => void;
 }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
@@ -126,8 +130,8 @@ export default function HistoricalEvidencePanel({
   );
 
   const addVariation = useCallback(
-    (sans: string[]) => {
-      onAddVariation?.(sans);
+    (fen: string, sans: string[], exact: boolean) => {
+      onAddVariation?.(fen, sans, exact);
     },
     [onAddVariation],
   );
@@ -186,8 +190,13 @@ export default function HistoricalEvidencePanel({
                 onAddGame !== undefined ? () => addGame(candidate.gid, candidate.ply) : undefined
               }
               onAddVariation={
-                candidate.strategy === 'exact' && onAddVariation !== undefined
-                  ? () => addVariation(candidate.continuation.moves)
+                onAddVariation !== undefined
+                  ? () =>
+                      addVariation(
+                        candidate.fen,
+                        candidate.continuation.moves,
+                        candidate.strategy === 'exact',
+                      )
                   : undefined
               }
             />

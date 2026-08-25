@@ -1017,7 +1017,7 @@ describe('position setup (what-if editing)', () => {
     expect(pieceAt('square-e4')).toBeNull();
   });
 
-  it('rejects an illegal setup and keeps editing', () => {
+  it('commits a kingless setup — analysis is lax about chess legality', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
 
@@ -1027,8 +1027,11 @@ describe('position setup (what-if editing)', () => {
     fireEvent.click(screen.getByTestId('square-e8'));
     fireEvent.click(screen.getByTestId('set-position-button'));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/isn't legal/);
-    expect(onSetPosition).not.toHaveBeenCalled();
+    expect(onSetPosition).toHaveBeenCalledTimes(1);
+    const payload = onSetPosition.mock.calls[0][0];
+    // The black king is gone; the white pawn stands on e8.
+    expect(payload.fen).toContain('rnbqPbnr');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('places a palette piece by dragging it onto the board', () => {
