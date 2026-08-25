@@ -136,6 +136,16 @@ if url = System.get_env("DATABASE_URL") do
       _ -> false
     end
 
+  # Fly's private network is IPv6-only: `.internal`/`.flycast` hostnames
+  # have no A records, so the default IPv4 connect nxdomains.
+  socket_options =
+    if String.ends_with?(uri.host || "", ".internal") or
+         String.ends_with?(uri.host || "", ".flycast") do
+      [:inet6]
+    else
+      []
+    end
+
   config :blunderfest, Blunderfest.Corpus,
     db: [
       hostname: uri.host,
@@ -143,6 +153,7 @@ if url = System.get_env("DATABASE_URL") do
       database: uri.path |> String.trim_leading("/") |> URI.decode(),
       username: username,
       password: password,
-      ssl: ssl
+      ssl: ssl,
+      socket_options: socket_options
     ]
 end
