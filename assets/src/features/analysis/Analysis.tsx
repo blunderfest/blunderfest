@@ -1111,6 +1111,7 @@ export default function Analysis({
                         fen={current?.fen ?? null}
                         route={routeToCurrent}
                         refPly={current?.ply ?? null}
+                        canAnalyze={canEdit}
                       />
                     </section>
                   ),

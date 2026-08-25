@@ -40,11 +40,15 @@ function HelpContent() {
  * cards for the board cursor's position. The analysis is deliberately
  * manual — each run is a heavy corpus query (~0.8s), so it re-runs only
  * on demand; a stale result (the cursor moved) is flagged, never shown.
+ *
+ * The action follows the engine analysis rule: read-only rooms (the demo)
+ * and viewers can't request an analysis.
  */
 export default function HistoricalEvidencePanel({
   fen,
   route,
   refPly,
+  canAnalyze = true,
 }: {
   /** The board cursor's position (null when no game). */
   fen: string | null;
@@ -52,6 +56,8 @@ export default function HistoricalEvidencePanel({
   route: string[] | null;
   /** The position's ply in the game. */
   refPly: number | null;
+  /** Editors only (the demo room and viewers are read-only). */
+  canAnalyze?: boolean;
 }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
@@ -75,6 +81,7 @@ export default function HistoricalEvidencePanel({
   }, [fen, route, refPly]);
 
   const stale = status.kind === 'ready' && ranFor !== fen;
+  const disabled = fen === null || status.kind === 'loading' || !canAnalyze;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2" data-testid="historical-evidence-panel">
@@ -82,7 +89,7 @@ export default function HistoricalEvidencePanel({
         <button
           type="button"
           className={button({ intent: 'primary', size: 'sm' })}
-          disabled={fen === null || status.kind === 'loading'}
+          disabled={disabled}
           onClick={run}
           data-testid="historical-evidence-run"
         >
@@ -101,6 +108,8 @@ export default function HistoricalEvidencePanel({
 
       {fen === null ? (
         <p className="m-0 text-note text-faint">{t('analysis.noGame')}</p>
+      ) : !canAnalyze ? (
+        <p className="m-0 text-note text-faint">{t('evidence.readOnly')}</p>
       ) : status.kind === 'loading' ? (
         <p className="m-0 text-note text-faint">…</p>
       ) : status.kind === 'error' ? (

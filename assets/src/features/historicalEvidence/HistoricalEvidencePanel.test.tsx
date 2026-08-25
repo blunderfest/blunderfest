@@ -67,6 +67,20 @@ describe('HistoricalEvidencePanel', () => {
     expect(screen.queryByTestId('historical-evidence-run')).toBeDisabled();
   });
 
+  it('is disabled in read-only rooms (the demo rule)', async () => {
+    render(<HistoricalEvidencePanel fen={START} route={null} refPly={null} canAnalyze={false} />);
+
+    expect(screen.getByTestId('historical-evidence-run')).toBeDisabled();
+    expect(
+      screen.getByText(
+        'This room is read-only — historical analysis is available in rooms you can edit.',
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    expect(mockAnalyze).not.toHaveBeenCalled();
+  });
+
   it('surfaces errors and keeps them until retry', async () => {
     mockAnalyze.mockRejectedValue(new Error('boom'));
 
