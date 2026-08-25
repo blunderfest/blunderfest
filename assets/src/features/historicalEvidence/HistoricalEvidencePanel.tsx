@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import HelpPopover from '@/components/HelpPopover';
+import { button } from '@/components/ui';
 import HistoricalEvidenceCard from '@/features/historicalEvidence/HistoricalEvidenceCard';
 import type { HistoricalEvidenceResult } from '@/features/historicalEvidence/types';
 import { analyzeHistoricalEvidence } from '@/lib/api';
@@ -77,10 +78,10 @@ export default function HistoricalEvidencePanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2" data-testid="historical-evidence-panel">
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center justify-center gap-2">
         <button
           type="button"
-          className="rounded-control bg-gold px-3 py-1.5 text-ui font-semibold text-surface-hi transition-colors not-disabled:hover:bg-gold-hi disabled:opacity-50"
+          className={button({ intent: 'primary', size: 'sm' })}
           disabled={fen === null || status.kind === 'loading'}
           onClick={run}
           data-testid="historical-evidence-run"
@@ -90,13 +91,13 @@ export default function HistoricalEvidencePanel({
         <HelpPopover label={t('evidence.helpTitle')}>
           <HelpContent />
         </HelpPopover>
-        {status.kind === 'ready' && !stale && (
-          <span className="ml-auto text-note text-faint tabular-nums">
-            {t('evidence.examples', { count: status.result.candidates.length })} ·{' '}
-            {status.result.timings.total_ms} ms
-          </span>
-        )}
       </div>
+      {status.kind === 'ready' && !stale && (
+        <p className="m-0 shrink-0 text-center text-note text-faint tabular-nums">
+          {t('evidence.examples', { count: status.result.candidates.length })} ·{' '}
+          {status.result.timings.total_ms} ms
+        </p>
+      )}
 
       {fen === null ? (
         <p className="m-0 text-note text-faint">{t('analysis.noGame')}</p>

@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 function QuestionIcon() {
@@ -22,19 +23,22 @@ function QuestionIcon() {
  * A "?" icon button with an anchored explainer popover — the app's
  * always-available reference layer (the guided tour is the one-time
  * orientation; this is the on-demand help for specific features).
- * Content is supplied by the caller; a click outside or Escape closes it.
+ *
+ * The popover renders in a portal with viewport-fixed placement, so no
+ * ancestor's `overflow-hidden` (sidebar panels, tab sections) can clip it.
+ * A click outside, Escape or any scroll closes it.
  */
 export default function HelpPopover({
   label,
   children,
 }: {
-  /** Accessible label for the icon button. */
+  /** Accessible label for the icon button (and the popover header). */
   label: string;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) {
@@ -45,13 +49,25 @@ export default function HelpPopover({
         setOpen(false);
       }
     };
+    const onScroll = () => setOpen(false);
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', onScroll, true);
+    };
   }, [open]);
 
+  const anchor = buttonRef.current?.getBoundingClientRect();
+  // Below the button, right-aligned to it, clamped to the viewport.
+  const top = anchor ? Math.min(anchor.bottom + 6, window.innerHeight - 16) : 0;
+  const right = anchor ? Math.max(window.innerWidth - anchor.right, 8) : 0;
+  const maxHeight = Math.min(window.innerHeight - top - 12, 480);
+
   return (
-    <div className="relative">
+    <>
       <button
+        ref={buttonRef}
         type="button"
         aria-label={label}
         aria-expanded={open}
@@ -61,33 +77,35 @@ export default function HelpPopover({
         <QuestionIcon />
       </button>
 
-      {open && (
-        <>
-          {/* Click-outside backdrop (below the popover). */}
-          <div className="fixed inset-0 z-20" aria-hidden="true" onClick={() => setOpen(false)} />
-          <div
-            ref={popoverRef}
-            role="dialog"
-            aria-label={label}
-            className="absolute right-0 top-8 z-30 flex max-h-[70vh] w-80 flex-col gap-2 overflow-y-auto rounded-panel border border-line bg-panel p-3 shadow-panel"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-micro font-semibold uppercase tracking-[0.11em] text-muted">
-                {label}
-              </span>
-              <button
-                type="button"
-                aria-label={t('help.close')}
-                onClick={() => setOpen(false)}
-                className="rounded-full px-1.5 text-note text-muted transition-colors hover:bg-raised hover:text-ink"
-              >
-                ×
-              </button>
+      {open &&
+        createPortal(
+          <>
+            {/* Click-outside backdrop. */}
+            <div className="fixed inset-0 z-20" aria-hidden="true" onClick={() => setOpen(false)} />
+            <div
+              role="dialog"
+              aria-label={label}
+              className="fixed z-30 flex w-96 flex-col gap-2 overflow-hidden rounded-panel border border-line bg-panel p-3 shadow-panel"
+              style={{ top, right, maxHeight }}
+            >
+              <div className="flex shrink-0 items-center justify-between gap-2">
+                <span className="text-micro font-semibold uppercase tracking-[0.11em] text-muted">
+                  {label}
+                </span>
+                <button
+                  type="button"
+                  aria-label={t('help.close')}
+                  onClick={() => setOpen(false)}
+                  className="rounded-full px-1.5 text-note text-muted transition-colors hover:bg-raised hover:text-ink"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="min-h-0 overflow-y-auto pr-1">{children}</div>
             </div>
-            {children}
-          </div>
-        </>
-      )}
-    </div>
+          </>,
+          document.body,
+        )}
+    </>
   );
 }
