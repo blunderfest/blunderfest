@@ -16,7 +16,7 @@ import GameActions from '@/features/analysis/GameActions';
 import GameInfo from '@/features/analysis/GameInfo';
 import GameReport from '@/features/analysis/GameReport';
 import { endgameStart } from '@/features/analysis/gamePhases';
-import { legalMovesFor, uciLineToMoves } from '@/features/analysis/legalMoves';
+import { legalMovesFor, sanLineToMoves, uciLineToMoves } from '@/features/analysis/legalMoves';
 import { capturesOf } from '@/features/analysis/MaterialFlow';
 import MoveList from '@/features/analysis/MoveList';
 import { buildRows } from '@/features/analysis/moveList';
@@ -72,6 +72,7 @@ export default function Analysis({
   analyzing = null,
   analysis = null,
   startAtRoot = false,
+  onAddHistoricalGame,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -104,6 +105,8 @@ export default function Analysis({
   analysis?: AnalysisEval[] | null;
   /** Open on the initial position instead of the tail (fresh imports). */
   startAtRoot?: boolean;
+  /** Add a historical game to the room as another game, cursor at `ply`. */
+  onAddHistoricalGame?: (tree: GameTree, ply: number) => void;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
@@ -414,6 +417,16 @@ export default function Analysis({
       return;
     }
     insertLineMoves(uciLineToMoves(current.fen ?? '', pv));
+  }
+
+  // The Examples tab: the historical continuation (SANs) becomes a
+  // variation under the viewed node — valid for exact-position candidates,
+  // whose position equals the viewed one.
+  function handleAddHistoricalVariation(sans: string[]) {
+    if (current === null) {
+      return;
+    }
+    insertLineMoves(sanLineToMoves(current.fen ?? '', sans));
   }
 
   function handleSetPosition() {
@@ -1112,6 +1125,8 @@ export default function Analysis({
                         route={routeToCurrent}
                         refPly={current?.ply ?? null}
                         canAnalyze={canEdit}
+                        onAddGame={canEdit ? onAddHistoricalGame : undefined}
+                        onAddVariation={canEdit ? handleAddHistoricalVariation : undefined}
                       />
                     </section>
                   ),

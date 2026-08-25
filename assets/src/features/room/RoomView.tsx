@@ -239,6 +239,22 @@ export default function RoomView({
     }
   }
 
+  // The Examples tab's "add to room": the historical game joins the room
+  // as another game (the current game is untouched), the presenter follows
+  // it, and the cursor lands on the candidate's move (mainline node ids
+  // equal plies in the exported tree).
+  function handleAddHistoricalGame(tree: GameTree, ply: number) {
+    setFollowOverride(false);
+    const gameId = crypto.randomUUID();
+    sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
+    if (amPresenter) {
+      sendOp({ type: 'select_game', payload: { game_id: gameId } });
+    }
+    setActiveGameId(gameId);
+    setFreshImportId(null);
+    sendOp({ type: 'set_cursor', payload: { node_id: ply } });
+  }
+
   function handleSetRole(memberId: string, role: MemberRole) {
     sendRole(memberId, role);
   }
@@ -422,6 +438,7 @@ export default function RoomView({
               annotations={gameAnnotations}
               onAnnotations={handleAnnotations}
               onAnalyze={canEdit ? handleAnalyze : undefined}
+              onAddHistoricalGame={canEdit ? handleAddHistoricalGame : undefined}
               analyzing={analyzing}
               analysis={analysis?.evals ?? null}
             />

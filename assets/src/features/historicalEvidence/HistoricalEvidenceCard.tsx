@@ -119,15 +119,19 @@ function countText(candidate: EvidenceCandidate, t: TFunction): string {
 export default function HistoricalEvidenceCard({
   candidate,
   plans,
-  opening = false,
-  onOpenGame,
+  adding = false,
+  onAddGame,
+  onAddVariation,
 }: {
   candidate: EvidenceCandidate;
   /** Plan id → per-side actions, from the reference's decision menu. */
   plans?: Map<number, PlanSide>;
-  /** The game-open request for this card is in flight. */
-  opening?: boolean;
-  onOpenGame?: () => void;
+  /** The add-to-room request for this card is in flight. */
+  adding?: boolean;
+  /** Add this historical game to the room as another game. */
+  onAddGame?: () => void;
+  /** Add the historical continuation as a variation (exact candidates). */
+  onAddVariation?: () => void;
 }) {
   const { t } = useTranslation();
   const d = candidate.position.dims;
@@ -147,21 +151,8 @@ export default function HistoricalEvidenceCard({
         <span className="truncate text-ui font-semibold text-ink">
           {candidate.game.white} — {candidate.game.black}
         </span>
-        <span className="flex shrink-0 items-center gap-2">
-          <span className="text-micro text-muted tabular-nums">
-            {candidate.game.eco} · {candidate.game.result}
-          </span>
-          {onOpenGame !== undefined && (
-            <button
-              type="button"
-              className={button({ intent: 'quiet', size: 'xs' })}
-              disabled={opening}
-              onClick={onOpenGame}
-              data-testid="historical-evidence-open"
-            >
-              {opening ? t('evidence.opening') : t('evidence.openGame')}
-            </button>
-          )}
+        <span className="shrink-0 text-micro text-muted tabular-nums">
+          {candidate.game.eco} · {candidate.game.result}
         </span>
       </header>
 
@@ -242,6 +233,32 @@ export default function HistoricalEvidenceCard({
       <Section title={t('evidence.historical')}>
         <p className="m-0 text-note text-ink tabular-nums">{countText(candidate, t)}</p>
       </Section>
+
+      {(onAddGame !== undefined || onAddVariation !== undefined) && (
+        <div className="flex shrink-0 justify-end gap-2">
+          {onAddVariation !== undefined && (
+            <button
+              type="button"
+              className={button({ intent: 'quiet', size: 'xs' })}
+              onClick={onAddVariation}
+              data-testid="historical-evidence-add-variation"
+            >
+              {t('evidence.addVariation')}
+            </button>
+          )}
+          {onAddGame !== undefined && (
+            <button
+              type="button"
+              className={button({ intent: 'quiet', size: 'xs' })}
+              disabled={adding}
+              onClick={onAddGame}
+              data-testid="historical-evidence-add-game"
+            >
+              {adding ? t('evidence.adding') : t('evidence.addToRoom')}
+            </button>
+          )}
+        </div>
+      )}
 
       <details className="group">
         <summary className="cursor-pointer list-none text-micro font-semibold uppercase tracking-[0.11em] text-faint transition-colors hover:text-muted">

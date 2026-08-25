@@ -429,9 +429,7 @@
     "helpFlagsTitle": "Flags",
     "helpFlagsBody": "Short labels for the differences found — e.g. tempo twin: identical placement, the other side to move.",
     "readOnly": "This room is read-only — historical analysis is available in rooms you can edit.",
-    "openGame": "Open game",
-    "opening": "Opening…",
-    "openError": "Couldn't open that game — try again.",
+    "openError": "Couldn't add that game — try again.",
     "headlineSamePosition": "Same position",
     "headlineTempoTwin": "Same position · other side to move",
     "headlineOnePieceDiffers": "Same position · one piece differs",
@@ -470,7 +468,10 @@
     "detailsNone": "None",
     "detailsContinuation": "Continuation differences",
     "detailsMatching": "Continuation matching",
-    "detailsMatchingLine": "{{side}} matches plan {{id}} · similarity {{sim}}"
+    "detailsMatchingLine": "{{side}} matches plan {{id}} · similarity {{sim}}",
+    "addToRoom": "Add to room",
+    "addVariation": "Add as variation",
+    "adding": "Adding…"
   },
   "update": {
     "available": "A new version of Blunderfest is available.",

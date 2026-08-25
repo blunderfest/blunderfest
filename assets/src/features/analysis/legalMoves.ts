@@ -66,3 +66,23 @@ export function uciLineToMoves(fen: string, uciMoves: string[]): LegalMove[] {
   }
   return moves;
 }
+
+/**
+ * A SAN list → legal moves, walking the line like `uciLineToMoves` but
+ * matching by SAN. Used for the corpus continuations (the Examples tab's
+ * "add as variation"): the corpus stores SANs, and the candidate's
+ * continuation is guaranteed legal only from the *same* position.
+ */
+export function sanLineToMoves(fen: string, sans: string[]): LegalMove[] {
+  const moves: LegalMove[] = [];
+  let currentFen = fen;
+  for (const san of sans) {
+    const move = legalMovesFor(currentFen).find((candidate) => candidate.san === san);
+    if (move === undefined) {
+      break;
+    }
+    moves.push(move);
+    currentFen = move.fen;
+  }
+  return moves;
+}

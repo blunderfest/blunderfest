@@ -167,18 +167,26 @@ describe('HistoricalEvidenceCard', () => {
     ).toBeInTheDocument();
   });
 
-  it('offers to open the full game', () => {
-    const onOpenGame = vi.fn();
-    render(<HistoricalEvidenceCard candidate={candidate} onOpenGame={onOpenGame} />);
+  it('offers to add the game to the room', () => {
+    const onAddGame = vi.fn();
+    render(<HistoricalEvidenceCard candidate={candidate} onAddGame={onAddGame} />);
 
-    fireEvent.click(screen.getByTestId('historical-evidence-open'));
-    expect(onOpenGame).toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId('historical-evidence-add-game'));
+    expect(onAddGame).toHaveBeenCalled();
   });
 
-  it('shows the opening state while the game loads', () => {
-    render(<HistoricalEvidenceCard candidate={candidate} onOpenGame={vi.fn()} opening />);
+  it('offers to add the continuation as a variation', () => {
+    const onAddVariation = vi.fn();
+    render(<HistoricalEvidenceCard candidate={candidate} onAddVariation={onAddVariation} />);
 
-    expect(screen.getByTestId('historical-evidence-open')).toBeDisabled();
-    expect(screen.getByText('Opening…')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('historical-evidence-add-variation'));
+    expect(onAddVariation).toHaveBeenCalled();
+  });
+
+  it('shows the adding state while the game loads', () => {
+    render(<HistoricalEvidenceCard candidate={candidate} onAddGame={vi.fn()} adding />);
+
+    expect(screen.getByTestId('historical-evidence-add-game')).toBeDisabled();
+    expect(screen.getByText('Adding…')).toBeInTheDocument();
   });
 });

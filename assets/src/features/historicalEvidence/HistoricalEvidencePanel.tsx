@@ -4,13 +4,8 @@ import HelpPopover from '@/components/HelpPopover';
 import { button } from '@/components/ui';
 import HistoricalEvidenceCard from '@/features/historicalEvidence/HistoricalEvidenceCard';
 import type { HistoricalEvidenceResult, PlanSide } from '@/features/historicalEvidence/types';
-import {
-  analyzeHistoricalEvidence,
-  createRoom,
-  fetchHistoricalGame,
-  withDeviceRetry,
-} from '@/lib/api';
-import { generateRoomCode } from '@/lib/roomCode';
+import type { GameTree } from '@/lib/api';
+import { analyzeHistoricalEvidence, fetchHistoricalGame } from '@/lib/api';
 
 type Status =
   | { kind: 'idle' }
@@ -55,6 +50,8 @@ export default function HistoricalEvidencePanel({
   route,
   refPly,
   canAnalyze = true,
+  onAddGame,
+  onAddVariation,
 }: {
   /** The board cursor's position (null when no game). */
   fen: string | null;
@@ -64,6 +61,10 @@ export default function HistoricalEvidencePanel({
   refPly: number | null;
   /** Editors only (the demo room and viewers are read-only). */
   canAnalyze?: boolean;
+  /** Add a historical game to the room as another game (cursor at `ply`). */
+  onAddGame?: (tree: GameTree, ply: number) => void;
+  /** Add the historical continuation as a variation under the viewed node. */
+  onAddVariation?: (sans: string[]) => void;
 }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
@@ -88,8 +89,8 @@ export default function HistoricalEvidencePanel({
 
   const stale = status.kind === 'ready' && ranFor !== fen;
   const disabled = fen === null || status.kind === 'loading' || !canAnalyze;
-  const [openingGid, setOpeningGid] = useState<number | null>(null);
-  const [openFailed, setOpenFailed] = useState(false);
+  const [addingGid, setAddingGid] = useState<number | null>(null);
+  const [addFailed, setAddFailed] = useState(false);
 
   // Plan id → per-side actions, from the top member of each family in the
   // decision menu (members are sorted by occurrence count).
@@ -107,21 +108,29 @@ export default function HistoricalEvidencePanel({
     return map;
   }, [status]);
 
-  // Open the full corpus game in a fresh room (the library flow): fetch
-  // the tree, seed a room with it, and jump there.
-  const openGame = useCallback(async (gid: number) => {
-    setOpeningGid(gid);
-    setOpenFailed(false);
-    try {
-      const { tree } = await fetchHistoricalGame(gid);
-      const slug = generateRoomCode();
-      await withDeviceRetry((device) => createRoom(slug, tree, device));
-      window.location.hash = `#/r/${slug}`;
-    } catch {
-      setOpeningGid(null);
-      setOpenFailed(true);
-    }
-  }, []);
+  // Fetch the corpus game and hand it to the room as another game.
+  const addGame = useCallback(
+    async (gid: number, ply: number) => {
+      setAddingGid(gid);
+      setAddFailed(false);
+      try {
+        const { tree } = await fetchHistoricalGame(gid);
+        onAddGame?.(tree, ply);
+      } catch {
+        setAddFailed(true);
+      } finally {
+        setAddingGid(null);
+      }
+    },
+    [onAddGame],
+  );
+
+  const addVariation = useCallback(
+    (sans: string[]) => {
+      onAddVariation?.(sans);
+    },
+    [onAddVariation],
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2" data-testid="historical-evidence-panel">
@@ -145,7 +154,7 @@ export default function HistoricalEvidencePanel({
           {status.result.timings.total_ms} ms
         </p>
       )}
-      {openFailed && (
+      {addFailed && (
         <p className="m-0 shrink-0 text-center text-note text-danger">{t('evidence.openError')}</p>
       )}
 
@@ -172,8 +181,15 @@ export default function HistoricalEvidencePanel({
               key={candidate.id}
               candidate={candidate}
               plans={plans}
-              opening={openingGid === candidate.gid}
-              onOpenGame={() => openGame(candidate.gid)}
+              adding={addingGid === candidate.gid}
+              onAddGame={
+                onAddGame !== undefined ? () => addGame(candidate.gid, candidate.ply) : undefined
+              }
+              onAddVariation={
+                candidate.strategy === 'exact' && onAddVariation !== undefined
+                  ? () => addVariation(candidate.continuation.moves)
+                  : undefined
+              }
             />
           ))}
         </div>
