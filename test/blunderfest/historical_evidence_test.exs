@@ -45,7 +45,10 @@ defmodule Blunderfest.HistoricalEvidenceTest do
              HistoricalEvidence.analyze(
                TestFixtures.tabiya_key() <> " 0 1",
                reference_moves: ref,
-               ref_ply: 16
+               ref_ply: 16,
+               limit: 100,
+               scan_limit: 200,
+               exact_limit: 100
              )
 
     b1 = Enum.find(result.candidates, &(&1.gid == 5))
@@ -68,7 +71,11 @@ defmodule Blunderfest.HistoricalEvidenceTest do
   end
 
   test "the same-game structural candidate is exposed with counts and flags" do
-    assert {:ok, result} = HistoricalEvidence.analyze(TestFixtures.tabiya_key() <> " 0 1")
+    assert {:ok, result} =
+             HistoricalEvidence.analyze(TestFixtures.tabiya_key() <> " 0 1",
+               limit: 100,
+               scan_limit: 200
+             )
 
     sg = Enum.find(result.candidates, &(&1.fen == TestFixtures.same_game_key() <> " 0 1"))
 

@@ -36,7 +36,8 @@ defmodule Blunderfest.HistoricalEvidence do
           :ref_ply,
           :limit,
           :exact_limit,
-          :bucket_limit
+          :bucket_limit,
+          :scan_limit
         ])
 
       {:ok, key |> Pipeline.analyze(pipeline_opts) |> to_dto()}

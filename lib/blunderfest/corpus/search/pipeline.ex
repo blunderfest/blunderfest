@@ -55,16 +55,19 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
 
     {candidates_us, gen} =
       :timer.tc(fn ->
-        Candidates.generate(ref_key, Keyword.take(opts, [:exact_limit, :limit, :bucket_limit]))
+        Candidates.generate(
+          ref_key,
+          Keyword.take(opts, [:exact_limit, :limit, :bucket_limit, :scan_limit])
+        )
       end)
 
     ref = gen.reference
 
     {menu_us, menu} =
       :timer.tc(fn ->
-        gen.exact
-        |> Enum.map(fn c ->
-          {c.gid, c.ply, Blunderfest.Corpus.moves(c.gid) |> drop_ply(c.ply)}
+        gen.exact_occurrences
+        |> Enum.map(fn {gid, ply} ->
+          {gid, ply, Blunderfest.Corpus.moves(gid) |> drop_ply(ply)}
         end)
         |> Families.build(family_cfg)
       end)
@@ -76,7 +79,7 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
         []
       end
 
-    ref_counts = Counts.counts(Enum.map(gen.exact, &{&1.gid, &1.ply}))
+    ref_counts = Counts.counts(gen.exact_occurrences)
 
     {evidence_us, candidates} =
       :timer.tc(fn ->

@@ -14,9 +14,12 @@ defmodule Blunderfest.Corpus.Search.Candidates do
       deliberately not implemented: it produced ~1M candidates for a
       typical position in the research phase.
 
-  Caps: `:exact_limit` (default 100), `:limit` for structural candidates
-  (default 40), `:bucket_limit` for how many distinct bucket keys are
-  scanned (default 2000). Exact candidates keep **every** occurrence —
+  Caps: `:exact_limit` (default 12), `:limit` for structural candidates
+  (default 10), `:bucket_limit` for how many distinct bucket keys are read
+  (default 2000) and `:scan_limit` for how many of those keys get their
+  occurrences fetched (default 30) — bucket keys are ranked by piece
+  overlap *before* any occurrence query, so the expensive lookups run for
+  the top-ranked keys only. Exact candidates keep **every** occurrence —
   repeated positions inside one game are exposed by the evidence layer as a
   same-game flag, not silently dropped. Structural candidates are
   deduplicated by `{key, gid}` (first occurrence wins), since their purpose
@@ -51,22 +54,36 @@ defmodule Blunderfest.Corpus.Search.Candidates do
   def generate(ref_key, opts \\ []) do
     ref = Features.from_key(ref_key)
 
+    exact_occurrences = Blunderfest.Corpus.occurrences(ref_key)
+    exact_total = length(exact_occurrences)
+
     exact =
-      ref_key
-      |> Blunderfest.Corpus.occurrences()
-      |> Enum.take(Keyword.get(opts, :exact_limit, 100))
-      |> Enum.map(fn {gid, ply} -> candidate(:exact, ref_key, gid, ply, ref) end)
+      exact_occurrences
+      |> Enum.take(Keyword.get(opts, :exact_limit, 12))
+      |> Enum.map(fn {gid, ply} ->
+        candidate(:exact, ref_key, gid, ply, ref, exact_total)
+      end)
 
     %{
       exact: exact,
+      # The complete occurrence list — the pipeline builds the decision
+      # menu and the reference counts from it; the `exact` cap above is a
+      # display concern only.
+      exact_occurrences: exact_occurrences,
       structural: structural_candidates(ref, opts),
       reference: ref
     }
   end
 
   defp structural_candidates(ref, opts) do
-    limit = Keyword.get(opts, :limit, 40)
+    limit = Keyword.get(opts, :limit, 10)
     bucket_limit = Keyword.get(opts, :bucket_limit, 2000)
+    # The keys whose occurrences are actually fetched: ranking by piece
+    # overlap is pure local computation (features only), so the expensive
+    # occurrence queries run for the top-ranked keys alone — the bucket
+    # scan goes from N queries per key to a handful. (Measured: the KID
+    # tabiya's 365-key bucket dropped from ~2.2s to ~0.3s.)
+    scan_limit = Keyword.get(opts, :scan_limit, 30)
 
     ref_key = ref.key
 
@@ -76,9 +93,12 @@ defmodule Blunderfest.Corpus.Search.Candidates do
     |> Blunderfest.Corpus.pawn_bucket()
     |> Enum.reject(&(&1 == ref_key))
     |> Enum.take(bucket_limit)
-    |> Enum.flat_map(fn key ->
-      feats = Features.from_key(key)
-
+    |> Enum.map(fn key -> {key, Features.from_key(key)} end)
+    |> Enum.sort_by(fn {key, feats} ->
+      {-Features.piece_overlap(ref, feats).matches, key}
+    end)
+    |> Enum.take(scan_limit)
+    |> Enum.flat_map(fn {key, feats} ->
       key
       |> Blunderfest.Corpus.occurrences()
       |> Enum.take(8)
@@ -96,7 +116,7 @@ defmodule Blunderfest.Corpus.Search.Candidates do
     |> Enum.take(limit)
   end
 
-  defp candidate(strategy, key, gid, ply, feats) do
+  defp candidate(strategy, key, gid, ply, feats, exact_total \\ nil) do
     overlap = Features.piece_overlap(feats, feats)
 
     %{
@@ -107,16 +127,17 @@ defmodule Blunderfest.Corpus.Search.Candidates do
       ply: ply,
       features: feats,
       dims: Differences.dimensions(feats, feats),
-      why: why(strategy, key, overlap)
+      why: why(strategy, key, overlap, exact_total)
     }
   end
 
-  defp why(:exact, key, _overlap) do
-    n = length(Blunderfest.Corpus.occurrences(key))
+  # The exact total rides in from the one occurrence fetch; the structural
+  # why needs no extra query (the evidence stage fetches counts anyway).
+  defp why(:exact, _key, _overlap, n) do
     "exact position occurrence (#{n} occurrence#{if n == 1, do: "", else: "s"} total)"
   end
 
-  defp why(:pawn_skeleton, _key, overlap) do
+  defp why(:pawn_skeleton, _key, overlap, _exact_total) do
     "same pawn skeleton; #{overlap.matches}/#{overlap.ref_pieces} pieces match"
   end
 end

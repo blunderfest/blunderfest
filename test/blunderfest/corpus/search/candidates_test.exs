@@ -39,7 +39,7 @@ defmodule Blunderfest.Corpus.Search.CandidatesTest do
   end
 
   test "structural candidates include the B1/B3/B4 tempo and sideline keys" do
-    result = Candidates.generate(TestFixtures.tabiya_key())
+    result = Candidates.generate(TestFixtures.tabiya_key(), limit: 100, scan_limit: 200)
 
     keys = Enum.map(result.structural, & &1.key)
 
@@ -61,7 +61,7 @@ defmodule Blunderfest.Corpus.Search.CandidatesTest do
   end
 
   test "the tempo twin retrieves the tabiya structurally" do
-    result = Candidates.generate(TestFixtures.b1_key())
+    result = Candidates.generate(TestFixtures.b1_key(), limit: 100, scan_limit: 200)
 
     assert Enum.map(result.exact, &{&1.gid, &1.ply}) == [{5, 17}]
     assert Enum.any?(result.structural, &(&1.key == TestFixtures.tabiya_key()))
@@ -72,6 +72,15 @@ defmodule Blunderfest.Corpus.Search.CandidatesTest do
 
     gid12 = Enum.filter(result.exact, &(&1.gid == 12))
     assert Enum.map(gid12, & &1.ply) == [16, 20]
+  end
+
+  test "defaults cap the candidate lists", %{stats: _stats} do
+    result = Candidates.generate(TestFixtures.tabiya_key())
+
+    assert length(result.exact) <= 12
+    assert length(result.structural) <= 10
+    # The menu/count source stays complete behind the display cap.
+    assert length(result.exact_occurrences) == 11
   end
 
   test "caps apply", %{stats: _stats} do

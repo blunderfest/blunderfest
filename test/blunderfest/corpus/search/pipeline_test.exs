@@ -25,8 +25,15 @@ defmodule Blunderfest.Corpus.Search.PipelineTest do
     ~w(d4 Nf6 c4 g6 Nc3 Bg7 e4 d6 Nf3 O-O Be2 e5 O-O Nc6 d5 Ne7 Ne1 Ne8 Nd3 f5 Bd2 Kh8 Rc1 a5)
   end
 
+  # Generous limits: these tests pin case retrieval, not display caps.
   defp run_analyze do
-    Pipeline.analyze(TestFixtures.tabiya_key(), reference_moves: ref_moves_gid1(), ref_ply: 16)
+    Pipeline.analyze(TestFixtures.tabiya_key(),
+      reference_moves: ref_moves_gid1(),
+      ref_ply: 16,
+      limit: 100,
+      scan_limit: 200,
+      exact_limit: 100
+    )
   end
 
   test "the reference block carries counts and the decision menu" do
@@ -108,7 +115,8 @@ defmodule Blunderfest.Corpus.Search.PipelineTest do
   end
 
   test "A2: Marshall and Closed stay distinct families" do
-    result = Pipeline.analyze(TestFixtures.a2_key())
+    result =
+      Pipeline.analyze(TestFixtures.a2_key(), limit: 100, scan_limit: 200, exact_limit: 100)
 
     marshall = Enum.find(result.candidates, &(&1.gid == 10))
     closed = Enum.find(result.candidates, &(&1.gid == 8))
