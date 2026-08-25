@@ -60,10 +60,10 @@ function dimsText(dims: EvidenceCandidate['position']['dims']): ReactNode {
 
 function sideText(side: EvidenceCandidate['families']['skeleton']['white']): string {
   if (side.status === 'member') {
-    return `family ${side.family_id} · ${Math.round((side.sim ?? 0) * 100)}% match`;
+    return `plan ${side.family_id} · ${Math.round((side.sim ?? 0) * 100)}% match`;
   }
   if (side.sim !== null) {
-    return `no match (nearest family ${side.family_id})`;
+    return `no match (nearest plan ${side.family_id})`;
   }
   return '—';
 }

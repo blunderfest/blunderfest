@@ -213,17 +213,17 @@ so clients send nothing and hide the member list.
   to `ECO|Name`, so transpositions match and the en-passant-field convention
   can't break lookups. The name is the deepest book position on the *viewed*
   line, so it refines going deeper, sticks off-book, and follows variations.
-  The same book backs the **Reference tab** (`ReferencePanel.tsx`,
+  The same book backs the **Openings tab** (`ReferencePanel.tsx`,
   ADR-0024): `continuationsFor` lists the named book moves of the cursor
   position; hovering a row previews the move as a ghost arrow (local), and
   clicking it plays the move as a real broadcast op — the panel's
   re-anchor on cursor move makes the descent free. Corpus statistics
   upgrade the rows post-spike.
 - `assets/src/features/historicalEvidence/` — the vertical slice's UI: the
-  **History** sidebar tab runs `POST /api/historical-evidence` for the
+  **Examples** sidebar tab runs `POST /api/historical-evidence` for the
   board cursor (with the game's own move order as the route) and renders
-  evidence cards — position dims, route divergence, per-side family
-  membership, occurrence/independent-game counts, flags. Facts only (ADR-0027).
+  evidence cards — position dims, route divergence, per-side plan
+  membership, appearance/game counts, flags. Facts only (ADR-0027).
 - `assets/src/components/ui.ts` — `tv()`-based component variants (Tailwind
   v4, dark theme); `<.icon>`-style icons are heroicons via the `.icon` /
   `Icon` components. The visual language (tokens, states, motion) is specced
