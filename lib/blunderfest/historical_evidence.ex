@@ -139,14 +139,19 @@ defmodule Blunderfest.HistoricalEvidence do
 
   defp dims_dto(dims) do
     %{
-      pawn_structure: dims.pawn_structure,
-      material: dims.material,
+      pawn_structure: json_safe(dims.pawn_structure),
+      material: json_safe(dims.material),
       piece_placement: dims.piece_placement,
-      king_position: dims.king_position,
+      king_position: json_safe(dims.king_position),
       side_to_move: dims.side_to_move,
-      castling: dims.castling
+      castling: json_safe(dims.castling)
     }
   end
+
+  # Dimension values are `:same` atoms or `{:different, ...}` tuples;
+  # tuples become lists for JSON (the client types read them as arrays).
+  defp json_safe(v) when is_tuple(v), do: Tuple.to_list(v)
+  defp json_safe(v), do: v
 
   defp diff_dto(diff), do: %{type: diff.type, detail: diff.detail}
 
