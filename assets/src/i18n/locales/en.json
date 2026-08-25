@@ -428,7 +428,10 @@
     "helpHistoricalBody": "Appearances counts every time this position appeared; Games counts how many different games it appeared in. Same game only marks a position repeated within one game — not an independent example.",
     "helpFlagsTitle": "Flags",
     "helpFlagsBody": "Short labels for the differences found — e.g. tempo twin: identical placement, the other side to move.",
-    "readOnly": "This room is read-only — historical analysis is available in rooms you can edit."
+    "readOnly": "This room is read-only — historical analysis is available in rooms you can edit.",
+    "openGame": "Open game",
+    "opening": "Opening…",
+    "openError": "Couldn't open that game — try again."
   },
   "update": {
     "available": "A new version of Blunderfest is available.",

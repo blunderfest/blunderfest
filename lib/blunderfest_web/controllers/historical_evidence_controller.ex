@@ -39,4 +39,39 @@ defmodule BlunderfestWeb.HistoricalEvidenceController do
     |> put_status(422)
     |> json(%{errors: %{code: "invalid_fen", detail: "fen is required"}})
   end
+
+  @doc """
+  `GET /api/historical-evidence/games/:gid` — a corpus game as a playable
+  tree, so an evidence card can open the full game.
+  """
+  def game(conn, %{"gid" => gid}) do
+    case Integer.parse(gid) do
+      {n, ""} when n > 0 ->
+        case Blunderfest.HistoricalEvidence.game(n) do
+          {:ok, tree} ->
+            json(conn, %{tree: tree})
+
+          {:error, :not_found} ->
+            conn
+            |> put_status(404)
+            |> json(%{errors: %{code: "game_not_found"}})
+
+          {:error, :unavailable} ->
+            conn
+            |> put_status(503)
+            |> json(%{errors: %{code: "corpus_unavailable"}})
+        end
+
+      _ ->
+        conn
+        |> put_status(422)
+        |> json(%{errors: %{code: "invalid_gid"}})
+    end
+  end
+
+  def game(conn, _params) do
+    conn
+    |> put_status(422)
+    |> json(%{errors: %{code: "invalid_gid"}})
+  end
 end

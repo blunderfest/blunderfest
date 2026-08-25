@@ -1,10 +1,16 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import HelpPopover from '@/components/HelpPopover';
 import { button } from '@/components/ui';
 import HistoricalEvidenceCard from '@/features/historicalEvidence/HistoricalEvidenceCard';
-import type { HistoricalEvidenceResult } from '@/features/historicalEvidence/types';
-import { analyzeHistoricalEvidence } from '@/lib/api';
+import type { HistoricalEvidenceResult, PlanSide } from '@/features/historicalEvidence/types';
+import {
+  analyzeHistoricalEvidence,
+  createRoom,
+  fetchHistoricalGame,
+  withDeviceRetry,
+} from '@/lib/api';
+import { generateRoomCode } from '@/lib/roomCode';
 
 type Status =
   | { kind: 'idle' }
@@ -82,6 +88,40 @@ export default function HistoricalEvidencePanel({
 
   const stale = status.kind === 'ready' && ranFor !== fen;
   const disabled = fen === null || status.kind === 'loading' || !canAnalyze;
+  const [openingGid, setOpeningGid] = useState<number | null>(null);
+  const [openFailed, setOpenFailed] = useState(false);
+
+  // Plan id → per-side actions, from the top member of each family in the
+  // decision menu (members are sorted by occurrence count).
+  const plans = useMemo(() => {
+    if (status.kind !== 'ready') {
+      return new Map<number, PlanSide>();
+    }
+    const map = new Map<number, PlanSide>();
+    for (const family of status.result.reference.families) {
+      const top = family.members[0];
+      if (top !== undefined) {
+        map.set(family.id, { white: top.white, black: top.black });
+      }
+    }
+    return map;
+  }, [status]);
+
+  // Open the full corpus game in a fresh room (the library flow): fetch
+  // the tree, seed a room with it, and jump there.
+  const openGame = useCallback(async (gid: number) => {
+    setOpeningGid(gid);
+    setOpenFailed(false);
+    try {
+      const { tree } = await fetchHistoricalGame(gid);
+      const slug = generateRoomCode();
+      await withDeviceRetry((device) => createRoom(slug, tree, device));
+      window.location.hash = `#/r/${slug}`;
+    } catch {
+      setOpeningGid(null);
+      setOpenFailed(true);
+    }
+  }, []);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2 p-2" data-testid="historical-evidence-panel">
@@ -105,6 +145,9 @@ export default function HistoricalEvidencePanel({
           {status.result.timings.total_ms} ms
         </p>
       )}
+      {openFailed && (
+        <p className="m-0 shrink-0 text-center text-note text-danger">{t('evidence.openError')}</p>
+      )}
 
       {fen === null ? (
         <p className="m-0 text-note text-faint">{t('analysis.noGame')}</p>
@@ -125,7 +168,13 @@ export default function HistoricalEvidencePanel({
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
           {status.result.candidates.map((candidate) => (
-            <HistoricalEvidenceCard key={candidate.id} candidate={candidate} />
+            <HistoricalEvidenceCard
+              key={candidate.id}
+              candidate={candidate}
+              plans={plans}
+              opening={openingGid === candidate.gid}
+              onOpenGame={() => openGame(candidate.gid)}
+            />
           ))}
         </div>
       )}

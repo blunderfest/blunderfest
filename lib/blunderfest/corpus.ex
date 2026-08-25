@@ -15,7 +15,7 @@ defmodule Blunderfest.Corpus do
 
   use GenServer
 
-  alias Blunderfest.Corpus.Occurrences
+  alias Blunderfest.Corpus.{GameExport, Occurrences}
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -72,6 +72,17 @@ defmodule Blunderfest.Corpus do
       {:load_prepared, positions_path, games_path, moves_path},
       :infinity
     )
+  end
+
+  @doc """
+  A corpus game as a playable game tree (mainline only — the corpus drops
+  clocks, comments and variations by design).
+  """
+  @spec export_game(pos_integer()) ::
+          {:ok, Blunderfest.Game.Tree.t()}
+          | {:error, :not_found | :parse_failed | :not_configured}
+  def export_game(gid) do
+    GenServer.call(__MODULE__, {:export_game, gid}, :infinity)
   end
 
   ## Callbacks
@@ -148,5 +159,13 @@ defmodule Blunderfest.Corpus do
 
   def handle_call({:load_prepared, positions_path, games_path, moves_path}, _from, state) do
     {:reply, Occurrences.load_prepared(state.pool, positions_path, games_path, moves_path), state}
+  end
+
+  def handle_call({:export_game, _gid}, _from, %{pool: nil} = state) do
+    {:reply, {:error, :not_configured}, state}
+  end
+
+  def handle_call({:export_game, gid}, _from, state) do
+    {:reply, GameExport.tree(gid, state.pool), state}
   end
 end

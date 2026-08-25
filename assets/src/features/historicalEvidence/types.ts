@@ -12,6 +12,15 @@ export type TypedDiff = {
 export type FamilyMember = {
   moves: string[];
   occurrences: number;
+  /** Per-side plan actions (the skeleton tokenization), so the UI can
+   * show what a plan is instead of just its id. */
+  white: string[];
+  black: string[];
+};
+
+export type PlanSide = {
+  white: string[];
+  black: string[];
 };
 
 export type FamilySummary = {

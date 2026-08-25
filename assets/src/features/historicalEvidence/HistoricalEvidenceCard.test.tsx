@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import HistoricalEvidenceCard from '@/features/historicalEvidence/HistoricalEvidenceCard';
 import type { EvidenceCandidate } from '@/features/historicalEvidence/types';
 
@@ -69,15 +69,42 @@ const candidate: EvidenceCandidate = {
 };
 
 describe('HistoricalEvidenceCard', () => {
-  it('renders position facts, route divergence and family sides', () => {
-    render(<HistoricalEvidenceCard candidate={candidate} />);
+  const plans = new Map([[1, { white: ['N→e1', 'N→d3', 'B→d2'], black: ['N→e8', 'P→f5'] }]]);
+
+  it('renders position facts, route divergence and the per-side plans', () => {
+    render(<HistoricalEvidenceCard candidate={candidate} plans={plans} />);
 
     expect(screen.getByText('PlayerA — PlayerB')).toBeInTheDocument();
     expect(screen.getByText('14/14 match')).toBeInTheDocument();
     expect(screen.getByText('6 plies')).toBeInTheDocument();
     expect(screen.getByText('ply 7: e4 → e3')).toBeInTheDocument();
-    expect(screen.getByText('plan 1 · 50% match')).toBeInTheDocument();
+
+    // Black joined plan 1: the plan's own actions are shown, with the
+    // match quality; white matched nothing.
+    expect(screen.getByText('N→e8 · P→f5 (50% match)')).toBeInTheDocument();
+    expect(screen.getByText('none')).toBeInTheDocument();
     expect(screen.getByText('tempo twin')).toBeInTheDocument();
+  });
+
+  it('falls back to the plan id when no plan content is available', () => {
+    render(<HistoricalEvidenceCard candidate={candidate} />);
+
+    expect(screen.getByText('plan 1 (50% match)')).toBeInTheDocument();
+  });
+
+  it('offers to open the full game', () => {
+    const onOpenGame = vi.fn();
+    render(<HistoricalEvidenceCard candidate={candidate} onOpenGame={onOpenGame} />);
+
+    fireEvent.click(screen.getByTestId('historical-evidence-open'));
+    expect(onOpenGame).toHaveBeenCalled();
+  });
+
+  it('shows the opening state while the game loads', () => {
+    render(<HistoricalEvidenceCard candidate={candidate} onOpenGame={vi.fn()} opening />);
+
+    expect(screen.getByTestId('historical-evidence-open')).toBeDisabled();
+    expect(screen.getByText('Opening…')).toBeInTheDocument();
   });
 
   it('marks same-game-only candidates', () => {

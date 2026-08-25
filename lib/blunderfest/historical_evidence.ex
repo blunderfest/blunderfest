@@ -18,9 +18,22 @@ defmodule Blunderfest.HistoricalEvidence do
     * `:limit` / `:exact_limit` / `:bucket_limit` — candidate caps.
   """
 
-  alias Blunderfest.Corpus.Analysis.Counts
+  alias Blunderfest.Corpus.Analysis.{Counts, Skeleton}
   alias Blunderfest.Corpus.PositionKey
   alias Blunderfest.Corpus.Search.Pipeline
+
+  @doc """
+  A corpus game as a playable tree for the game-view feature (mainline
+  only — the corpus drops clocks, comments and variations by design).
+  """
+  @spec game(pos_integer()) :: {:ok, map()} | {:error, :not_found | :unavailable}
+  def game(gid) when is_integer(gid) and gid > 0 do
+    case Blunderfest.Corpus.export_game(gid) do
+      {:ok, tree} -> {:ok, Blunderfest.Game.Tree.to_map(tree)}
+      {:error, :not_found} -> {:error, :not_found}
+      _ -> {:error, :unavailable}
+    end
+  end
 
   @doc """
   Analyzes a FEN (or a bare canonical key, e.g. from tests). Returns
@@ -68,25 +81,39 @@ defmodule Blunderfest.HistoricalEvidence do
   end
 
   defp to_dto(result) do
+    stm = result.reference.stm
+
     %{
       reference: %{
         fen: result.reference.fen,
         occurrences: result.reference.historical.occurrences,
         games: result.reference.historical.games,
-        families: Enum.map(result.reference.families, &family_dto/1)
+        families: Enum.map(result.reference.families, &family_dto(&1, stm))
       },
       candidates: Enum.map(result.candidates, &candidate_dto/1),
       timings: result.timings
     }
   end
 
-  defp family_dto(family) do
+  # Members carry their per-side plan actions (the skeleton tokenization),
+  # so the UI can show *what* a plan is — not just its id.
+  defp family_dto(family, stm) do
     %{
       id: family.id,
       occurrences: family.occurrences,
       games: family.games,
       singleton: Counts.singleton?(family.games),
-      members: Enum.map(family.members, fn m -> %{moves: m.seq, occurrences: m.count} end)
+      members:
+        Enum.map(family.members, fn m ->
+          actions = Skeleton.represent(m.seq, :skeleton, stm)
+
+          %{
+            moves: m.seq,
+            occurrences: m.count,
+            white: Map.get(actions, :w, []),
+            black: Map.get(actions, :b, [])
+          }
+        end)
     }
   end
 

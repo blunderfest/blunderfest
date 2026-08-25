@@ -10,6 +10,7 @@ defmodule BlunderfestWeb.Router do
 
     get "/healthz", HealthController, :check
     post "/historical-evidence", HistoricalEvidenceController, :analyze
+    get "/historical-evidence/games/:gid", HistoricalEvidenceController, :game
     post "/profiles", ProfileController, :create
     get "/profiles/:id", ProfileController, :show
     post "/rooms", RoomController, :create

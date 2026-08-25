@@ -93,6 +93,7 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
       reference: %{
         key: ref_key,
         fen: Features.fen(ref_key),
+        stm: ref.stm,
         historical: ref_counts,
         families: menu
       },

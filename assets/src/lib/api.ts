@@ -445,3 +445,11 @@ export async function analyzeHistoricalEvidence(
     }),
   });
 }
+
+/**
+ * A corpus game as a playable tree (mainline only — the corpus drops
+ * clocks, comments and variations by design), for the game-view feature.
+ */
+export async function fetchHistoricalGame(gid: number): Promise<{ tree: GameTree }> {
+  return request(`/api/historical-evidence/games/${gid}`);
+}

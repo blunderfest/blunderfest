@@ -35,6 +35,12 @@ defmodule Blunderfest.HistoricalEvidenceTest do
     assert result.reference.games == 8
     assert length(result.reference.families) == 4
     assert length(result.candidates) > 0
+
+    # Plans carry their per-side actions, so the UI can show the plan
+    # itself, not just its id.
+    [top_family | _] = result.reference.families
+    assert is_list(hd(top_family.members).white)
+    assert is_list(hd(top_family.members).black)
   end
 
   test "B1 through the service: tempo twin, route divergence, black-side join" do

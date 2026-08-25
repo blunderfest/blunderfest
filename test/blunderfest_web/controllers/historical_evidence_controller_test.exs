@@ -63,4 +63,21 @@ defmodule BlunderfestWeb.HistoricalEvidenceControllerTest do
     assert conn.status == 422
     assert json_response(conn, 422)["errors"]["code"] == "invalid_fen"
   end
+
+  test "GET /api/historical-evidence/games/:gid returns the playable tree" do
+    conn = get(build_conn(), "/api/historical-evidence/games/1")
+
+    assert conn.status == 200
+    result = json_response(conn, 200)
+
+    assert result["tree"]["headers"]["White"] == "A"
+    [first | _] = result["tree"]["root"]["children"]
+    assert first["san"] == "d4"
+  end
+
+  test "an unknown gid is a structured 404" do
+    conn = get(build_conn(), "/api/historical-evidence/games/999999")
+    assert conn.status == 404
+    assert json_response(conn, 404)["errors"]["code"] == "game_not_found"
+  end
 end

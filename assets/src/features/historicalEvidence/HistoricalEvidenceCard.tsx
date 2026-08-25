@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { EvidenceCandidate } from '@/features/historicalEvidence/types';
+import { button } from '@/components/ui';
+import type { EvidenceCandidate, PlanSide } from '@/features/historicalEvidence/types';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -58,21 +59,45 @@ function dimsText(dims: EvidenceCandidate['position']['dims']): ReactNode {
   return <div className="flex flex-col">{lines}</div>;
 }
 
-function sideText(side: EvidenceCandidate['families']['skeleton']['white']): string {
+/**
+ * The side's plan reading: the plan's own actions (so the plan is visible,
+ * not just an id) plus the match quality. "none" when nothing reached the
+ * join threshold.
+ */
+function sideText(
+  side: EvidenceCandidate['families']['skeleton']['white'],
+  color: 'white' | 'black',
+  plans?: Map<number, PlanSide>,
+): string {
+  const actions = side.family_id !== null ? plans?.get(side.family_id)?.[color] : undefined;
+
   if (side.status === 'member') {
-    return `plan ${side.family_id} · ${Math.round((side.sim ?? 0) * 100)}% match`;
+    const pct = Math.round((side.sim ?? 0) * 100);
+    return actions !== undefined && actions.length > 0
+      ? `${actions.join(' · ')} (${pct}% match)`
+      : `plan ${side.family_id} (${pct}% match)`;
   }
-  if (side.sim !== null) {
-    return `no match (nearest plan ${side.family_id})`;
-  }
-  return '—';
+  return 'none';
 }
 
 /**
  * One historical example (design brief §15): position, route, continuation
- * families and counts — evidence only, no relevance score.
+ * plans and counts — evidence only, no relevance score. The Open game
+ * action loads the full corpus game into a fresh room.
  */
-export default function HistoricalEvidenceCard({ candidate }: { candidate: EvidenceCandidate }) {
+export default function HistoricalEvidenceCard({
+  candidate,
+  plans,
+  opening = false,
+  onOpenGame,
+}: {
+  candidate: EvidenceCandidate;
+  /** Plan id → per-side actions, from the reference's decision menu. */
+  plans?: Map<number, PlanSide>;
+  /** The game-open request for this card is in flight. */
+  opening?: boolean;
+  onOpenGame?: () => void;
+}) {
   const { t } = useTranslation();
   const fam = candidate.families;
 
@@ -85,8 +110,21 @@ export default function HistoricalEvidenceCard({ candidate }: { candidate: Evide
         <span className="truncate text-ui font-semibold text-ink">
           {candidate.game.white} — {candidate.game.black}
         </span>
-        <span className="shrink-0 text-micro text-muted tabular-nums">
-          {candidate.game.eco} · {candidate.game.result}
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="text-micro text-muted tabular-nums">
+            {candidate.game.eco} · {candidate.game.result}
+          </span>
+          {onOpenGame !== undefined && (
+            <button
+              type="button"
+              className={button({ intent: 'quiet', size: 'xs' })}
+              disabled={opening}
+              onClick={onOpenGame}
+              data-testid="historical-evidence-open"
+            >
+              {opening ? t('evidence.opening') : t('evidence.openGame')}
+            </button>
+          )}
         </span>
       </header>
 
@@ -119,8 +157,14 @@ export default function HistoricalEvidenceCard({ candidate }: { candidate: Evide
           label={t('evidence.contMoves')}
           value={candidate.continuation.moves.join(' ') || '—'}
         />
-        <Fact label={t('evidence.familyWhite')} value={sideText(fam.skeleton.white)} />
-        <Fact label={t('evidence.familyBlack')} value={sideText(fam.skeleton.black)} />
+        <Fact
+          label={t('evidence.familyWhite')}
+          value={sideText(fam.skeleton.white, 'white', plans)}
+        />
+        <Fact
+          label={t('evidence.familyBlack')}
+          value={sideText(fam.skeleton.black, 'black', plans)}
+        />
       </Section>
 
       <Section title={t('evidence.historical')}>
