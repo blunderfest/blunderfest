@@ -41,6 +41,10 @@ kill_signal = 'SIGTERM'
   region = 'ams'
   count = 1
 
+[mounts]
+  source = 'blunderfest_data'
+  destination = '/data'
+
 [[regions]]
   region = 'ord'
   count = 1
