@@ -37,7 +37,7 @@ function HelpContent() {
 /**
  * The Analyze interaction (design brief §20): one button, then evidence
  * cards for the board cursor's position. The analysis is deliberately
- * manual — each run is a heavy corpus query (~1-4s), so it re-runs only
+ * manual — each run is a heavy corpus query (~0.8s), so it re-runs only
  * on demand; a stale result (the cursor moved) is flagged, never shown.
  */
 export default function HistoricalEvidencePanel({
