@@ -323,7 +323,11 @@
     "shortcutHighlight": "highlight the square",
     "shortcutArrow": "start + finish an arrow",
     "shortcutColors": "drawing color",
-    "shortcutCancel": "cancel draft / clear drawings"
+    "shortcutCancel": "cancel draft / clear drawings",
+    "noAnalysisHint": "No engine analysis yet — run “Analyze game”. It powers Moments, the report and the eval marks.",
+    "helpAnalyzeGameTitle": "Analyze game",
+    "helpAnalyzeGameBody": "Runs the engine over the whole game; the result powers the eval marks, the Moments tab and the game report. (The History tab's “Find examples” is a separate search of historical games, not the engine.)",
+    "aboutAnalyzeGame": "About Analyze game"
   },
   "room": {
     "connecting": "Connecting...",

@@ -90,7 +90,9 @@ export default function CriticalMoments({
   if (moments.length === 0) {
     return (
       <div className="grid h-full place-items-center p-4">
-        <p className="m-0 text-note text-faint">{t('analysis.noMoments')}</p>
+        <p className="m-0 text-center text-note text-faint">
+          {evals.length === 0 ? t('analysis.noAnalysisHint') : t('analysis.noMoments')}
+        </p>
       </div>
     );
   }

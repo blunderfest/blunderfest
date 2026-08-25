@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import HelpPopover from '@/components/HelpPopover';
 import { button, panel } from '@/components/ui';
 import ActivityFlow from '@/features/analysis/ActivityFlow';
 import ClocksFlow from '@/features/analysis/ClocksFlow';
@@ -249,6 +250,11 @@ export default function TimelineBand({
                 })
               : analyzeAction.label}
           </button>
+        )}
+        {analyzeAction !== null && (
+          <HelpPopover label={t('analysis.aboutAnalyzeGame')}>
+            <p className="m-0 text-note text-muted">{t('analysis.helpAnalyzeGameBody')}</p>
+          </HelpPopover>
         )}
       </div>
       <div className="flex flex-col gap-2 p-2">

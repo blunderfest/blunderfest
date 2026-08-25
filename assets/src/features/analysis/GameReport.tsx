@@ -88,7 +88,9 @@ export default function GameReport({
         })}
       </div>
       {report.marked.length === 0 ? (
-        <p className="m-0 p-1 text-note text-faint">{t('analysis.noMoments')}</p>
+        <p className="m-0 p-1 text-note text-faint">
+          {evals.length === 0 ? t('analysis.noAnalysisHint') : t('analysis.noMoments')}
+        </p>
       ) : (
         <ul className="m-0 flex flex-col" data-testid="game-report-moves">
           {report.marked.map((move) => (
