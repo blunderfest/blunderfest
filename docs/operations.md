@@ -48,6 +48,35 @@ postgres://blunderfest:blunderfest@localhost:5433/blunderfest_test
 Export the dev one (or put it in your shell profile) before running
 `mix phx.server`; `config/runtime.exs` picks it up.
 
+### Loading the corpus into production
+
+The prod load lessons (all fought the hard way, 2026-08-25):
+
+- **Don't load on the app machines.** They auto-stop (killing the load),
+  deploys recreate them (wiping the ephemeral disk), and the shared vCPU
+  throttles the pawn-hash transform until the COPY connection idles out.
+- **Precompute the transform locally**, then load via chunked `psql`
+  COPYs through `flyctl proxy` (retryable ~50MB chunks):
+
+```sh
+flyctl proxy 15432:5432 -a blunderfest-db &   # background
+mix corpus.prepare                           # data/corpus/positions-100000.tsv
+split -l 600000 -d data/corpus/positions-100000.tsv /tmp/loadchunks/chunk_
+# psql "$URL" -f DDL...  (see Blunderfest.Corpus.Occurrences for the DDL)
+# for each chunk: psql "$URL" -c "COPY corpus_positions_stage FROM STDIN" < chunk_N
+# INSERT ... DISTINCT ON → corpus_positions; COPY occurrences from the same
+# chunks (cut -f1,3,4); COPY games/moves; CREATE the two indexes; ANALYZE.
+```
+
+- **The PG volume must have headroom for index builds**: building the
+  6.7M-row occurrence index on a 3GB volume sent the cluster into
+  emergency read-only mid-build (`cannot execute CREATE INDEX in a
+  read-only transaction`, flapping until space freed). The volume is
+  extended to 10GB (`flyctl volumes extend`).
+- Machine-side `bin/blunderfest rpc` is for quick probes; the app's pool
+  needs a few minutes after a machine start before it is reliable
+  (boot-time DNS/network settling).
+
 ## Deploy
 
 - App: `blunderfest` on Fly.io → `https://blunderfest.fly.dev` and

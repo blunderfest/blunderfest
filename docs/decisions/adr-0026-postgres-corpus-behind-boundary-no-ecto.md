@@ -51,3 +51,8 @@ scope its consequences anticipated.
   `DATABASE_URL`), which the corpus layer must handle gracefully.
 - Prod deployments now require the `DATABASE_URL` secret (already deployed
   via `flyctl postgres attach`).
+- Notes (2026-08-25): the volume was extended 3GB → 10GB after the
+  occurrence-index build pushed the cluster into emergency read-only; and
+  prod loads run via chunked psql COPY through `flyctl proxy` with the
+  pawn-hash transform precomputed locally (`mix corpus.prepare`) — see
+  docs/operations.md.
