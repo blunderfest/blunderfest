@@ -97,17 +97,18 @@ defmodule Blunderfest.HistoricalEvidenceTest do
     cand = Enum.find(result.candidates, &(&1.gid == 5))
     assert cand.position.dims.side_to_move == :differs
 
-    # Force a castling-differs shape through the encoder: gid 8's A2
-    # tabiya vs its own pre-Re1 structural twin differs in castling.
-    {:ok, a2} = HistoricalEvidence.analyze(TestFixtures.a2_key())
+    # Force a castling-differs shape through the encoder: analyze a
+    # castling-variant of the A2 tabiya (castling q). The real tabiya
+    # (castling kq) is its structural twin — same skeleton, differing
+    # rights.
+    {:ok, a2} =
+      HistoricalEvidence.analyze("r1bqk2r/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1 b q -")
 
-    twin =
-      Enum.find(
-        a2.candidates,
-        &(&1.fen == "r1bqk2r/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQ1RK1 w kq - 0 1")
-      )
+    twin = Enum.find(a2.candidates, &(&1.fen == TestFixtures.a2_key() <> " 0 1"))
 
-    assert is_list(twin.position.dims.castling)
-    assert Jason.encode!(twin)
+    # JSON encodes atoms as strings, so the wire form is
+    # ["differs", "q", "kq"] — the internal list keeps the atom.
+    assert twin.position.dims.castling == [:differs, "q", "kq"]
+    assert Jason.encode!(twin) =~ "[\"differs\",\"q\",\"kq\"]"
   end
 end
