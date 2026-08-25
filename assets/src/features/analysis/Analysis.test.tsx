@@ -973,7 +973,9 @@ describe('engine analysis', () => {
     expect(await screen.findByTestId('engine-eval-badge')).toHaveTextContent('-0.42');
     expect(await screen.findByTestId('board-arrows')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Black is better by 0.42 pawns' })).toBeInTheDocument();
-    expect(screen.getByTestId('engine-readout')).toHaveTextContent('Depth 9');
+    // The depth rides in the engine box header, next to the ENGINE label —
+    // the readout rows keep their column alignment.
+    expect(screen.getByTestId('engine-box')).toHaveTextContent('Depth 9');
   });
 
   it('shows no hint when the engine reports no best move', async () => {

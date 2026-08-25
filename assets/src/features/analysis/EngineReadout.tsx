@@ -63,8 +63,9 @@ function Line({
 /**
  * The engine's readout inside the engine box: one row per MultiPV line
  * (best first) — eval badge (light when white is better) plus the principal
- * variation in SAN. The first row carries the status dot and depth. The
- * previous lines stay visible while the next position is analyzed.
+ * variation in SAN. The first row carries the status dot; the search depth
+ * lives in the engine box header. The previous lines stay visible while the
+ * next position is analyzed.
  */
 export default function EngineReadout({
   fen,
@@ -127,11 +128,6 @@ export default function EngineReadout({
             <span className={statusDot({ tone: thinking ? 'warn' : 'ok', pulse: thinking })} />
           ) : (
             <span className="w-1.5 shrink-0" />
-          )}
-          {index === 0 && line.depth > 0 && (
-            <span className="shrink-0 text-micro font-semibold uppercase tracking-[0.08em] whitespace-nowrap text-faint">
-              {t('analysis.depthLabel')} <span className="text-muted">{line.depth}</span>
-            </span>
           )}
           <Line
             fen={fen}

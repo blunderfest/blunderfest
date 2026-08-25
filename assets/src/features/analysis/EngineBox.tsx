@@ -48,11 +48,21 @@ export default function EngineBox({
 }) {
   const { t } = useTranslation();
 
+  // The depth of the search behind the shown lines (the ticking current
+  // depth while thinking, the best line's depth once results land).
+  const depth = state.lines[0]?.depth ?? state.depth ?? 0;
+
   return (
     <div className="shrink-0" data-testid="engine-box">
       <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-1.5">
         <span className="text-micro font-semibold uppercase tracking-[0.11em] text-muted">
           {t('analysis.engineToggle')}
+          {depth > 0 && (
+            <>
+              {' · '}
+              {t('analysis.depthLabel')} <span className="tabular-nums text-faint">{depth}</span>
+            </>
+          )}
         </span>
         <span className="flex items-center gap-2">
           <select
