@@ -301,15 +301,40 @@ describe('HistoricalEvidencePanel', () => {
   it('is disabled in read-only rooms (the demo rule)', async () => {
     render(<HistoricalEvidencePanel fen={START} route={null} refPly={null} canAnalyze={false} />);
 
-    expect(screen.getByTestId('historical-evidence-run')).toBeDisabled();
+    const run = screen.getByTestId('historical-evidence-run');
+    expect(run).toBeDisabled();
+    expect(run).toHaveAttribute(
+      'title',
+      'Room editors run the analysis — the results are shared with everyone.',
+    );
+    // The panel renders the normal states for viewers now — no
+    // read-only wall; the idle note is the same as an editor's.
     expect(
-      screen.getByText(
-        'This room is read-only — historical analysis is available in rooms you can edit.',
-      ),
+      screen.getByText('Nothing here yet — run the analysis for this position.'),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    fireEvent.click(run);
     expect(mockAnalyze).not.toHaveBeenCalled();
+  });
+
+  it('shows a shared result to viewers, without the add actions', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+
+    render(
+      <HistoricalEvidencePanel
+        fen={START}
+        route={null}
+        refPly={null}
+        canAnalyze={false}
+        sharedEvidenceRun={{ fen: START, route: null, refPly: null }}
+      />,
+    );
+
+    // The cards render for viewers; the action buttons don't (they only
+    // exist when the host passes the edit callbacks).
+    expect(await screen.findByTestId('historical-evidence-card')).toBeInTheDocument();
+    expect(screen.queryByTestId('historical-evidence-add-game')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('historical-evidence-add-variation')).not.toBeInTheDocument();
   });
 
   it('surfaces errors and keeps them until retry', async () => {

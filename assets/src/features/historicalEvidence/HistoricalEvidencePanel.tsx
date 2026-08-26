@@ -408,6 +408,7 @@ export default function HistoricalEvidencePanel({
           type="button"
           className={button({ intent: 'primary', size: 'sm' })}
           disabled={disabled}
+          title={!canAnalyze ? t('evidence.editorsRun') : undefined}
           onClick={run}
           data-testid="historical-evidence-run"
         >
@@ -427,10 +428,14 @@ export default function HistoricalEvidencePanel({
         <p className="m-0 shrink-0 text-center text-note text-danger">{t('evidence.openError')}</p>
       )}
 
+      {/*
+        Viewers render the same states as editors — the cards are visible
+        to everyone. Only the action buttons and the run button are gated
+        on edit rights (the card hides its actions when the callbacks are
+        absent), so a viewer reads the shared examples but can't add them.
+      */}
       {fen === null ? (
         <p className="m-0 text-note text-faint">{t('analysis.noGame')}</p>
-      ) : !canAnalyze ? (
-        <p className="m-0 text-note text-faint">{t('evidence.readOnly')}</p>
       ) : status.kind === 'loading' ? (
         <p
           className="m-0 flex items-center justify-center gap-2 text-note text-muted"
