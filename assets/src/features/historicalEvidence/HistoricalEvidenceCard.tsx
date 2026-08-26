@@ -28,6 +28,12 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
  * The headline describes the *positional* relationship only — typed facts,
  * never a fused verdict about the game. Continuation conclusions live in
  * their own per-side lines, and raw numbers under Comparison details.
+ *
+ * "Same position" is only claimed when the placement and the side to move
+ * both match — a half-move off is a different statement. One piece moved
+ * *and* the side to move flipped means the candidate is one half-move off
+ * the viewed position (it played an extra move, or hasn't reached it yet),
+ * so the headline names the move instead of claiming sameness.
  */
 function headline(candidate: EvidenceCandidate, t: TFunction): string {
   const d = candidate.position.dims;
@@ -46,6 +52,15 @@ function headline(candidate: EvidenceCandidate, t: TFunction): string {
     return t('evidence.headlineOnePieceDiffers');
   }
   if (placement.mismatches === 2) {
+    // The route knows which way the candidate is off: a positive ply gap
+    // means it played an extra move (named in cand_move); a negative one
+    // means it stopped short of the viewed position.
+    if (candidate.route.ply_gap > 0 && candidate.route.cand_move !== null) {
+      return t('evidence.headlineMovePlayed', { move: candidate.route.cand_move });
+    }
+    if (candidate.route.ply_gap < 0) {
+      return t('evidence.headlineMoveBefore');
+    }
     return t('evidence.headlineOnePieceAndTempo');
   }
   if (d.material !== 'same') {

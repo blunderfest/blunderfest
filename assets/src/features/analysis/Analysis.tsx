@@ -69,6 +69,7 @@ export default function Analysis({
   startAtRoot = false,
   initialNodeId = null,
   onAddHistoricalGame,
+  addedEvidenceGids = new Set(),
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -113,7 +114,12 @@ export default function Analysis({
    */
   initialNodeId?: number | null;
   /** Add a historical game to the room as another game, cursor at `ply`. */
-  onAddHistoricalGame?: (tree: GameTree, ply: number) => void;
+  onAddHistoricalGame?: (tree: GameTree, ply: number, gid: number) => void;
+  /**
+   * Corpus game ids already in the room — the Examples cards show
+   * "Added ✓" for them without another round trip.
+   */
+  addedEvidenceGids?: ReadonlySet<number>;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
@@ -872,6 +878,7 @@ export default function Analysis({
             onToggleArrows={toggleArrows}
             onEngineLines={setEngineLinesCount}
             variationState={variationState}
+            addedGids={addedEvidenceGids}
           />
         </div>
 

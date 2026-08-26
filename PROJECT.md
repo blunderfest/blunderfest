@@ -332,6 +332,25 @@ purpose: cursors are per-viewer, never broadcast or stored. RoomView
 integration test covers the two-game switch-back loop. 608 frontend +
 382 backend tests green.
 
+**Later the same session — Examples follow-up (four owner-reported
+issues).** (1) Switching games cleared the Examples list: finished
+analyses are now remembered per request (position + route + ply) in a
+small session cache, so a game switch — which unmounts the panel —
+restores the results instantly; a re-run still re-fetches. (2) The card
+headline no longer claims "same position" unless the placement AND the
+side to move match: one piece moved plus a tempo flip means the
+candidate is a half-move off, and the headline is route-aware — "One
+move on — the candidate played Nge7" when the route names the extra
+move, "One move before this position" on a negative ply gap, with a
+plain "One piece differs · other side to move" fallback. (3)+(4) Add to
+room de-duplicates: RoomView checks the fetched game's PGN fingerprint
+against the room's games and skips the `set_game` when it is already
+there (the analyzed game itself included), and tracks added corpus gids
+in `evidenceGids` (fed back via `addedGids` through
+Analysis/AnalysisSidebar), so "Added ✓" survives panel remounts — no
+more duplicate adds after switching games and re-finding the examples.
+615 frontend + 382 backend tests green.
+
 ### Session handoff (2026-08-24, second session — continued after an engine switch)
 
 **Spike 06 (plan skeletons & move-order robustness) done, spike-only

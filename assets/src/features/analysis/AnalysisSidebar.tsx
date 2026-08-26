@@ -60,6 +60,7 @@ export default function AnalysisSidebar({
   onToggleArrows,
   onEngineLines,
   variationState,
+  addedGids,
 }: {
   tree: GameTree;
   current: GameNode;
@@ -93,7 +94,7 @@ export default function AnalysisSidebar({
   onPlayMove: (move: LegalMove) => void;
   onInsertLine: (pv: string[]) => void;
   onAddHistoricalVariation: (fen: string, sans: string[], exact: boolean) => void;
-  onAddHistoricalGame?: (tree: GameTree, ply: number) => void;
+  onAddHistoricalGame?: (tree: GameTree, ply: number, gid: number) => void;
   onReferenceGhost: (move: LegalMove | null) => void;
   onFlowSelect: (ply: number) => void;
   onToggleEngine: () => void;
@@ -105,6 +106,8 @@ export default function AnalysisSidebar({
     sans: string[],
     exact: boolean,
   ) => { addable: boolean; exists: boolean };
+  /** Corpus game ids already in the room (survives panel remounts). */
+  addedGids: ReadonlySet<number>;
 }) {
   const { t } = useTranslation();
 
@@ -203,6 +206,7 @@ export default function AnalysisSidebar({
                   onAddGame={canEdit ? onAddHistoricalGame : undefined}
                   onAddVariation={canEdit ? onAddHistoricalVariation : undefined}
                   variationState={canEdit ? variationState : undefined}
+                  addedGids={addedGids}
                 />
               </section>
             ),

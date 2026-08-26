@@ -20,6 +20,25 @@ type Status =
 /** How long a variation add may wait for its echo before giving up. */
 const VARIATION_ECHO_TIMEOUT_MS = 5000;
 
+/**
+ * Finished analyses, keyed by their request (position + route + ply), kept
+ * for the session. The panel unmounts on every game switch — without this,
+ * switching back to a game would throw a finished analysis away and force a
+ * re-run. A re-run always re-fetches (the corpus may change between
+ * deploys); the cache only restores the last result for a position.
+ */
+const RESULT_CACHE = new Map<string, HistoricalEvidenceResult>();
+const RESULT_CACHE_LIMIT = 20;
+
+function requestKey(fen: string, route: string[] | null, refPly: number | null): string {
+  return JSON.stringify([fen, route ?? null, refPly ?? null]);
+}
+
+/** Clears remembered results (tests). */
+export function resetHistoricalEvidenceCache(): void {
+  RESULT_CACHE.clear();
+}
+
 function HelpContent() {
   const { t } = useTranslation();
 
@@ -48,6 +67,8 @@ function HelpContent() {
  * cards for the board cursor's position. The analysis is deliberately
  * manual — each run is a heavy corpus query (~0.8s), so it re-runs only
  * on demand; a stale result (the cursor moved) is flagged, never shown.
+ * Finished analyses are remembered for the session (per request), so a
+ * game switch — which unmounts the panel — never throws a result away.
  *
  * The action follows the engine analysis rule: read-only rooms (the demo)
  * and viewers can't request an analysis.
@@ -60,6 +81,7 @@ export default function HistoricalEvidencePanel({
   onAddGame,
   onAddVariation,
   variationState,
+  addedGids,
 }: {
   /** The board cursor's position (null when no game). */
   fen: string | null;
@@ -70,7 +92,7 @@ export default function HistoricalEvidencePanel({
   /** Editors only (the demo room and viewers are read-only). */
   canAnalyze?: boolean;
   /** Add a historical game to the room as another game (cursor at `ply`). */
-  onAddGame?: (tree: GameTree, ply: number) => void;
+  onAddGame?: (tree: GameTree, ply: number, gid: number) => void;
   /**
    * Add the historical continuation as a variation under the viewed node:
    * a plain line for exact candidates, otherwise the candidate's position
@@ -88,10 +110,25 @@ export default function HistoricalEvidencePanel({
     sans: string[],
     exact: boolean,
   ) => { addable: boolean; exists: boolean };
+  /**
+   * Corpus game ids already in the room (host-tracked, survives panel
+   * remounts): the card shows "Added ✓" without another round trip.
+   */
+  addedGids?: ReadonlySet<number>;
 }) {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<Status>({ kind: 'idle' });
-  const [ranFor, setRanFor] = useState<string | null>(null);
+  // A finished analysis for the viewed position survives remounts (game
+  // switches) via the session cache; otherwise the panel starts idle.
+  const [status, setStatus] = useState<Status>(() => {
+    if (fen === null) {
+      return { kind: 'idle' };
+    }
+    const cached = RESULT_CACHE.get(requestKey(fen, route, refPly));
+    return cached !== undefined ? { kind: 'ready', result: cached } : { kind: 'idle' };
+  });
+  const [ranFor, setRanFor] = useState<string | null>(() =>
+    fen !== null && RESULT_CACHE.has(requestKey(fen, route, refPly)) ? fen : null,
+  );
 
   const run = useCallback(() => {
     if (fen === null) {
@@ -102,6 +139,14 @@ export default function HistoricalEvidencePanel({
 
     analyzeHistoricalEvidence(fen, { route: route ?? undefined, refPly: refPly ?? undefined })
       .then((result) => {
+        const key = requestKey(fen, route, refPly);
+        RESULT_CACHE.set(key, result);
+        if (RESULT_CACHE.size > RESULT_CACHE_LIMIT) {
+          const oldest = RESULT_CACHE.keys().next().value;
+          if (oldest !== undefined) {
+            RESULT_CACHE.delete(oldest);
+          }
+        }
         setStatus({ kind: 'ready', result });
         setRanFor(fen);
       })
@@ -114,8 +159,6 @@ export default function HistoricalEvidencePanel({
   const disabled = fen === null || status.kind === 'loading' || !canAnalyze;
   const [addingGid, setAddingGid] = useState<number | null>(null);
   const [addFailed, setAddFailed] = useState(false);
-  /** Corpus games already added to the room this session (gid → added). */
-  const [addedGames, setAddedGames] = useState<ReadonlySet<number>>(new Set());
   /** The candidate whose variation add is awaiting its echo. */
   const [pendingVariation, setPendingVariation] = useState<string | null>(null);
   const pendingTimer = useRef<number | null>(null);
@@ -171,15 +214,17 @@ export default function HistoricalEvidencePanel({
     }
   }, [pendingVariation, variationStates]);
 
-  // Fetch the corpus game and hand it to the room as another game.
+  // Fetch the corpus game and hand it to the room as another game. The
+  // host records the gid (its `addedGids` set feeds back into this panel),
+  // so the button flips to "Added ✓" whether the game was added now or is
+  // a duplicate the host skipped.
   const addGame = useCallback(
     async (gid: number, ply: number) => {
       setAddingGid(gid);
       setAddFailed(false);
       try {
         const { tree } = await fetchHistoricalGame(gid);
-        setAddedGames((previous) => new Set(previous).add(gid));
-        onAddGame?.(tree, ply);
+        onAddGame?.(tree, ply, gid);
       } catch {
         setAddFailed(true);
       } finally {
@@ -255,7 +300,7 @@ export default function HistoricalEvidencePanel({
               candidate={candidate}
               plans={plans}
               adding={addingGid === candidate.gid}
-              addedToRoom={addedGames.has(candidate.gid)}
+              addedToRoom={addedGids?.has(candidate.gid) ?? false}
               variationState={variationStates?.get(candidate.id) ?? null}
               addingVariation={pendingVariation === candidate.id}
               onAddGame={

@@ -72,6 +72,25 @@ const candidate: EvidenceCandidate = {
 
 const plans = new Map([[1, { white: ['N→e1', 'N→d3', 'B→d2'], black: ['N→e8', 'P→f5'] }]]);
 
+/** The fixture with one piece moved (2 mismatches) and a chosen side to move. */
+function onePieceDiffers(
+  sideToMove: 'same' | 'differs',
+  route?: Partial<EvidenceCandidate['route']>,
+): EvidenceCandidate {
+  return {
+    ...candidate,
+    position: {
+      ...candidate.position,
+      dims: {
+        ...candidate.position.dims,
+        piece_placement: { matches: 12, mismatches: 2, ref_pieces: 14 },
+        side_to_move: sideToMove,
+      },
+    },
+    route: route === undefined ? candidate.route : { ...candidate.route, ...route },
+  };
+}
+
 describe('HistoricalEvidenceCard', () => {
   it('heads the card with the positional relationship', () => {
     render(<HistoricalEvidenceCard candidate={candidate} />);
@@ -79,6 +98,34 @@ describe('HistoricalEvidenceCard', () => {
     expect(screen.getByText('Same position · other side to move')).toBeInTheDocument();
     expect(screen.getByText('PlayerA — PlayerB')).toBeInTheDocument();
     expect(screen.getByText('E97 · 1-0')).toBeInTheDocument();
+  });
+
+  it('claims "one piece differs" only when the side to move matches', () => {
+    render(<HistoricalEvidenceCard candidate={onePieceDiffers('same')} />);
+    expect(screen.getByText('One piece differs')).toBeInTheDocument();
+  });
+
+  it('names the candidate move when it is one move on from the viewed position', () => {
+    render(
+      <HistoricalEvidenceCard
+        candidate={onePieceDiffers('differs', { ply_gap: 1, cand_move: 'Nge7' })}
+      />,
+    );
+    expect(screen.getByText('One move on — the candidate played Nge7')).toBeInTheDocument();
+  });
+
+  it('says the candidate stopped short when the gap is negative', () => {
+    render(<HistoricalEvidenceCard candidate={onePieceDiffers('differs', { ply_gap: -2 })} />);
+    expect(screen.getByText('One move before this position')).toBeInTheDocument();
+  });
+
+  it('falls back to the plain fact when the route is unknown', () => {
+    render(
+      <HistoricalEvidenceCard
+        candidate={onePieceDiffers('differs', { ply_gap: 0, cand_move: null })}
+      />,
+    );
+    expect(screen.getByText('One piece differs · other side to move')).toBeInTheDocument();
   });
 
   it('keeps the route divergence concrete', () => {

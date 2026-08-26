@@ -1145,6 +1145,52 @@ describe('historical evidence integration', () => {
     });
   }
 
+  it('never adds a game that is already in the room', async () => {
+    // The corpus game IS the analyzed game (same tree as game-1).
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/api/historical-evidence/games/')) {
+          return jsonResponse({ tree: gameTree });
+        }
+        if (url.includes('/api/historical-evidence')) {
+          return jsonResponse({
+            reference: { fen: E4_FEN, occurrences: 1, games: 1, families: [] },
+            candidates: [evidenceCandidate()],
+            timings: { candidates_ms: 1, menu_ms: 1, evidence_ms: 1, total_ms: 3 },
+          });
+        }
+        throw new Error(`unmocked fetch: ${url}`);
+      }),
+    );
+
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Examples' }));
+    fireEvent.click(await screen.findByTestId('historical-evidence-run'));
+    fireEvent.click(await screen.findByTestId('historical-evidence-add-game'));
+
+    // The fingerprint matches a room game: no set_game, no select_game —
+    // and the card still reports it as in the room.
+    await waitFor(() =>
+      expect(screen.getByTestId('historical-evidence-add-game')).toHaveTextContent('Added ✓'),
+    );
+    const pushes = channel.pushes as {
+      event: string;
+      payload: { type: string; payload: Record<string, unknown> };
+    }[];
+    expect(pushes.some((push) => push.payload.type === 'set_game')).toBe(false);
+    expect(pushes.some((push) => push.payload.type === 'select_game')).toBe(false);
+    expect(screen.getByRole('heading', { name: 'Alice – Bob' })).toBeInTheDocument();
+  });
+
   it('adds a historical game without switching and opens it at the candidate move', async () => {
     vi.stubGlobal(
       'fetch',

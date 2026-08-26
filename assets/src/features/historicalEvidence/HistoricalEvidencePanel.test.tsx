@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import HistoricalEvidencePanel from '@/features/historicalEvidence/HistoricalEvidencePanel';
+import HistoricalEvidencePanel, {
+  resetHistoricalEvidenceCache,
+} from '@/features/historicalEvidence/HistoricalEvidencePanel';
 import type {
   EvidenceCandidate,
   HistoricalEvidenceResult,
@@ -114,8 +116,9 @@ function renderPanel(
     refPly?: number | null;
   },
   callbacks?: {
-    onAddGame?: (tree: unknown, ply: number) => void;
+    onAddGame?: (tree: unknown, ply: number, gid: number) => void;
     onAddVariation?: (fen: string, sans: string[], exact: boolean) => void;
+    addedGids?: ReadonlySet<number>;
   },
 ) {
   const fen = props?.fen === undefined ? START : props.fen;
@@ -126,12 +129,14 @@ function renderPanel(
       refPly={props?.refPly === undefined ? null : props.refPly}
       onAddGame={callbacks?.onAddGame}
       onAddVariation={callbacks?.onAddVariation}
+      addedGids={callbacks?.addedGids}
     />,
   );
 }
 
 describe('HistoricalEvidencePanel', () => {
   beforeEach(() => {
+    resetHistoricalEvidenceCache();
     mockAnalyze.mockReset();
     mockAnalyze.mockResolvedValue(result);
     mockFetchGame.mockReset();
@@ -216,7 +221,7 @@ describe('HistoricalEvidencePanel', () => {
   it('adds the historical game to the room at the candidate ply', async () => {
     mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
     mockFetchGame.mockResolvedValue({ tree: treeForGame });
-    const onAddGame = vi.fn<(tree: unknown, ply: number) => void>();
+    const onAddGame = vi.fn<(tree: unknown, ply: number, gid: number) => void>();
 
     renderPanel(undefined, { onAddGame });
 
@@ -225,8 +230,24 @@ describe('HistoricalEvidencePanel', () => {
 
     await waitFor(() => {
       expect(mockFetchGame).toHaveBeenCalledWith(1);
-      expect(onAddGame).toHaveBeenCalledWith(treeForGame, 16);
+      expect(onAddGame).toHaveBeenCalledWith(treeForGame, 16, 1);
     });
+  });
+
+  it('restores a finished analysis when the panel remounts (a game switch)', async () => {
+    const first = renderPanel();
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    expect(await screen.findByText('0 examples · 3 ms')).toBeInTheDocument();
+    expect(mockAnalyze).toHaveBeenCalledTimes(1);
+
+    // The panel unmounts on every game switch; a remount at the same
+    // position shows the remembered result without a re-run.
+    first.unmount();
+    renderPanel();
+
+    expect(await screen.findByText('0 examples · 3 ms')).toBeInTheDocument();
+    expect(mockAnalyze).toHaveBeenCalledTimes(1);
   });
 
   it('offers the continuation as a variation for exact candidates', async () => {
@@ -245,7 +266,7 @@ describe('HistoricalEvidencePanel', () => {
     const structural = { ...openCandidate, strategy: 'pawn_skeleton' as const };
     mockAnalyze.mockResolvedValue({ ...result, candidates: [structural] });
     const onAddVariation = vi.fn<(fen: string, sans: string[], exact: boolean) => void>();
-    const onAddGame = vi.fn<(tree: unknown, ply: number) => void>();
+    const onAddGame = vi.fn<(tree: unknown, ply: number, gid: number) => void>();
 
     renderPanel(undefined, { onAddGame, onAddVariation });
 
@@ -258,7 +279,7 @@ describe('HistoricalEvidencePanel', () => {
   it('surfaces add-to-room failures', async () => {
     mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
     mockFetchGame.mockRejectedValue(new Error('boom'));
-    const onAddGame = vi.fn<(tree: unknown, ply: number) => void>();
+    const onAddGame = vi.fn<(tree: unknown, ply: number, gid: number) => void>();
 
     renderPanel(undefined, { onAddGame });
 
@@ -269,17 +290,41 @@ describe('HistoricalEvidencePanel', () => {
     expect(onAddGame).not.toHaveBeenCalled();
   });
 
-  it('marks the add-to-room button once the game is in the room', async () => {
+  it('shows Added ✓ from the start for games the host reports as in the room', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+    const onAddGame = vi.fn<(tree: unknown, ply: number, gid: number) => void>();
+
+    renderPanel(undefined, { onAddGame, addedGids: new Set([1]) });
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    const button = await screen.findByTestId('historical-evidence-add-game');
+    expect(button).toHaveTextContent('Added ✓');
+    expect(button).toBeDisabled();
+    expect(onAddGame).not.toHaveBeenCalled();
+  });
+
+  it('flips to Added ✓ when the host records the add (duplicates included)', async () => {
     mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
     mockFetchGame.mockResolvedValue({ tree: treeForGame });
-    const onAddGame = vi.fn<(tree: unknown, ply: number) => void>();
+    const onAddGame = vi.fn<(tree: unknown, ply: number, gid: number) => void>();
 
-    renderPanel(undefined, { onAddGame });
+    const { rerender } = renderPanel(undefined, { onAddGame });
 
     fireEvent.click(screen.getByTestId('historical-evidence-run'));
     fireEvent.click(await screen.findByTestId('historical-evidence-add-game'));
-
     await waitFor(() => expect(onAddGame).toHaveBeenCalledTimes(1));
+    // The host records the gid whether the game was added or skipped as a
+    // duplicate — either way it is in the room now.
+    rerender(
+      <HistoricalEvidencePanel
+        fen={START}
+        route={null}
+        refPly={null}
+        onAddGame={onAddGame}
+        addedGids={new Set([1])}
+      />,
+    );
+
     const button = screen.getByTestId('historical-evidence-add-game');
     expect(button).toHaveTextContent('Added ✓');
     expect(button).toBeDisabled();

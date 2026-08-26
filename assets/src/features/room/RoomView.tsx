@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { pieceSrc } from '@/components/board';
 import { button, chip, panel, statusDot } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
+import { gameToPgn } from '@/features/analysis/pgnExport';
 import ImportDialog from '@/features/import/ImportDialog';
 import ChatPanel from '@/features/room/ChatPanel';
 import GameList from '@/features/room/GameList';
@@ -91,6 +92,12 @@ export default function RoomView({
    * comes back with them. Local only: never broadcast, never in the store.
    */
   const [cursorByGame, setCursorByGame] = useState<ReadonlyMap<string, number>>(new Map());
+  /**
+   * Corpus game ids added to the room via the Examples tab (survives panel
+   * remounts): the cards show "Added ✓" for them. Includes ids whose add
+   * was skipped as duplicates.
+   */
+  const [evidenceGids, setEvidenceGids] = useState<ReadonlySet<number>>(new Set());
 
   const amPresenter = selfId !== null && presenter?.id === selfId;
 
@@ -271,11 +278,18 @@ export default function RoomView({
   // The Examples tab's "add to room": the historical game joins the room
   // as another game without stealing the view — the adder may want to
   // collect several games before looking at any of them. The game appears
-  // in the Games panel; opening it starts on the candidate's move. A
-  // presenting adder must re-point the room at the game being viewed:
-  // `selectPresenterGameId` counts the presenter's own `set_game` as
-  // focus, so without the restore the whole room would follow the add.
-  function handleAddHistoricalGame(tree: GameTree, ply: number) {
+  // in the Games panel; opening it starts on the candidate's move. A game
+  // already in the room (imported earlier, or added in an earlier panel
+  // mount) is never sent again — the fingerprint check makes duplicates a
+  // no-op. A presenting adder must re-point the room at the game being
+  // viewed: `selectPresenterGameId` counts the presenter's own `set_game`
+  // as focus, so without the restore the whole room would follow the add.
+  function handleAddHistoricalGame(tree: GameTree, ply: number, gid: number) {
+    setEvidenceGids((current) => new Set(current).add(gid));
+    const fingerprint = gameToPgn(tree);
+    if (Object.values(games).some((game) => gameToPgn(game) === fingerprint)) {
+      return;
+    }
     const gameId = crypto.randomUUID();
     sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
     setOpenAtPly((current) => new Map(current).set(gameId, ply));
@@ -474,6 +488,7 @@ export default function RoomView({
               onAnnotations={handleAnnotations}
               onAnalyze={canEdit ? handleAnalyze : undefined}
               onAddHistoricalGame={canEdit ? handleAddHistoricalGame : undefined}
+              addedEvidenceGids={evidenceGids}
               analyzing={analyzing}
               analysis={analysis?.evals ?? null}
             />
