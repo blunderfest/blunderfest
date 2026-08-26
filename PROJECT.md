@@ -233,7 +233,11 @@ makes the library cross-device. Verified live: create a profile + save
 a library entry, SIGKILL the server, restart — the profile
 authenticates and the entry lists. ADR-0001/0004/0020/0026 amended.
 Open: orphaned-profile pruning; the durable canonical-corpus half of
-Spike 03.
+Spike 03. Also closed: **graceful room handoff** — evaluated and left
+out (rooms are `:temporary` and revive via load-on-join, so a handover
+protocol would only shave a reconnect the client socket makes anyway;
+no observable gain, see ADR-0028's consequences). Search (milestone 8)
+is the next spike-gated candidate, awaiting the owner.
 
 ### Session handoff (2026-08-24, third session — visualization milestones A/B/C)
 

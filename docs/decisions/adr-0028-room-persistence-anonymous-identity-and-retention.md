@@ -78,9 +78,11 @@ handling) are implementation detail that must satisfy this policy.
 
 ## Consequences
 
-- A deploy becomes a brief reconnect instead of data loss; the queued
-  room-persistence foundation is unblocked, and graceful handoff
-  remains optional polish.
+- A deploy becomes a brief reconnect instead of data loss. Graceful
+  handoff was evaluated after implementation and left out: rooms are
+  `:temporary` (Horde never restarts them on failover) and revive via
+  load-on-join, so a handover protocol would only shave a reconnect
+  that the client socket makes anyway — no observable gain.
 - Replayed history reads correctly (name snapshots), and roles survive
   because they are persisted alongside the log.
 - The store gains user-written chat text, bounded to 1h of idle life —
