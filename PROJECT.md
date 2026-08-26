@@ -349,7 +349,19 @@ there (the analyzed game itself included), and tracks added corpus gids
 in `evidenceGids` (fed back via `addedGids` through
 Analysis/AnalysisSidebar), so "Added ✓" survives panel remounts — no
 more duplicate adds after switching games and re-finding the examples.
-615 frontend + 382 backend tests green.
+  615 frontend + 382 backend tests green.
+
+**Later the same session — Examples polish (three owner-reported
+issues).** (1) The analyzed game itself no longer appears among its own
+examples: the panel filters candidates whose meta (players + result)
+matches the analyzed game's PGN headers — showing the game you are
+looking at as "historical evidence" for itself is noise. A partial
+header match keeps the candidate. (2) "Find examples" disables once the
+results for the viewed position are shown (re-running would repeat the
+same corpus query); it re-enables when the cursor moves (stale) or a
+run fails. (3) The loading state now reads "Searching the game
+corpus…" with the pulsing status dot instead of a bare "…". 619
+frontend + 382 backend tests green.
 
 ### Session handoff (2026-08-24, second session — continued after an engine switch)
 

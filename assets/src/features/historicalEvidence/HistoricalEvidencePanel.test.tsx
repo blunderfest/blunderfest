@@ -114,6 +114,7 @@ function renderPanel(
     fen?: string | null;
     route?: string[] | null;
     refPly?: number | null;
+    gameHeaders?: Record<string, string>;
   },
   callbacks?: {
     onAddGame?: (tree: unknown, ply: number, gid: number) => void;
@@ -127,6 +128,7 @@ function renderPanel(
       fen={fen}
       route={props?.route === undefined ? null : props.route}
       refPly={props?.refPly === undefined ? null : props.refPly}
+      gameHeaders={props?.gameHeaders ?? {}}
       onAddGame={callbacks?.onAddGame}
       onAddVariation={callbacks?.onAddVariation}
       addedGids={callbacks?.addedGids}
@@ -161,6 +163,67 @@ describe('HistoricalEvidencePanel', () => {
     await waitFor(() => {
       expect(mockAnalyze).toHaveBeenCalledWith(START, { route: ['e4', 'e5'], refPly: 2 });
     });
+  });
+
+  it('hides the analyzed game itself from the results', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+    // The panel receives the analyzed game's PGN headers; the candidate
+    // meta (PlayerA – PlayerB, 1-0) is that game — the corpus contains it.
+    renderPanel({ gameHeaders: { White: 'PlayerA', Black: 'PlayerB', Result: '1-0' } });
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+
+    expect(await screen.findByText('0 examples · 3 ms')).toBeInTheDocument();
+    expect(screen.queryByTestId('historical-evidence-card')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('No historical examples found for this position yet.'),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps candidates whose headers differ from the analyzed game', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+
+    renderPanel({ gameHeaders: { White: 'Someone', Black: 'Else' } });
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+
+    expect(await screen.findByTestId('historical-evidence-card')).toBeInTheDocument();
+  });
+
+  it('disables Find examples once the results are shown, and re-enables when stale', async () => {
+    const { rerender } = renderPanel();
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    expect(await screen.findByText('0 examples · 3 ms')).toBeInTheDocument();
+    expect(screen.getByTestId('historical-evidence-run')).toBeDisabled();
+
+    // The cursor moved: the results are stale and the button re-enables.
+    rerender(
+      <HistoricalEvidencePanel
+        fen="rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
+        route={null}
+        refPly={null}
+      />,
+    );
+    expect(screen.getByTestId('historical-evidence-run')).toBeEnabled();
+  });
+
+  it('explains itself while the corpus query runs', async () => {
+    let resolveAnalyze: (value: HistoricalEvidenceResult) => void = () => {};
+    mockAnalyze.mockImplementation(
+      () =>
+        new Promise<HistoricalEvidenceResult>((resolve) => {
+          resolveAnalyze = resolve;
+        }),
+    );
+
+    renderPanel();
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+    expect(await screen.findByText('Searching the game corpus…')).toBeInTheDocument();
+
+    await act(async () => resolveAnalyze(result));
+    expect(await screen.findByText('0 examples · 3 ms')).toBeInTheDocument();
   });
 
   it('shows the empty state when there is no game', () => {

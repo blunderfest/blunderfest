@@ -243,7 +243,12 @@ so clients send nothing and hide the member list.
   membership, appearance/game counts, flags. Facts only (ADR-0027).
   Finished analyses are remembered per request (position + route + ply)
   in a small session cache, so game switches — which unmount the panel —
-  never throw a result away. The card headline claims "same position"
+  never throw a result away. Candidates that ARE the analyzed game (the
+  corpus may contain an imported game) are filtered out via the PGN
+  headers the sidebar passes down; "Find examples" disables once the
+  results for the viewed position are shown (re-enabling when the
+  cursor moves), and the run shows a "Searching the game corpus…" note
+  while the query is in flight. The card headline claims "same position"
   only when the placement AND side to move match: one piece moved plus a
   tempo flip means the candidate is a half-move off, and the headline
   names the move instead (route-aware: "played Nge7" / "one move

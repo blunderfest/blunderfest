@@ -394,6 +394,7 @@
     "analyze": "Historical evidence",
     "analyzeHint": "What has been played from this position, and how did games reach it?",
     "run": "Find examples",
+    "searching": "Searching the game corpus…",
     "empty": "Nothing here yet — run the analysis for this position.",
     "noCandidates": "No historical examples found for this position yet.",
     "error": "The analysis failed — please try again.",

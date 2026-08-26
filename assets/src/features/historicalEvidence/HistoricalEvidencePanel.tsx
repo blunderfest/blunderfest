@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import HelpPopover from '@/components/HelpPopover';
-import { button } from '@/components/ui';
+import { button, statusDot } from '@/components/ui';
 import HistoricalEvidenceCard from '@/features/historicalEvidence/HistoricalEvidenceCard';
 import type {
   EvidenceCandidate,
+  GameMeta,
   HistoricalEvidenceResult,
   PlanSide,
 } from '@/features/historicalEvidence/types';
@@ -32,6 +33,27 @@ const RESULT_CACHE_LIMIT = 20;
 
 function requestKey(fen: string, route: string[] | null, refPly: number | null): string {
   return JSON.stringify([fen, route ?? null, refPly ?? null]);
+}
+
+/**
+ * Whether a candidate is the game being analyzed itself. The corpus may
+ * contain the imported game; showing it as "historical evidence" for
+ * itself is noise — you are already looking at it. Identified by the PGN
+ * headers (players and result), which the corpus meta mirrors. Header
+ * fields that differ (or are absent) keep the candidate: a partial match
+ * is not enough to hide it.
+ */
+function isAnalyzedGame(game: GameMeta, headers: Record<string, string>): boolean {
+  const white = headers.White;
+  const black = headers.Black;
+  const result = headers.Result;
+  if (white === undefined || black === undefined) {
+    return false;
+  }
+  if (game.white !== white || game.black !== black) {
+    return false;
+  }
+  return result === undefined || game.result === result;
 }
 
 /** Clears remembered results (tests). */
@@ -82,6 +104,7 @@ export default function HistoricalEvidencePanel({
   onAddVariation,
   variationState,
   addedGids,
+  gameHeaders = {},
 }: {
   /** The board cursor's position (null when no game). */
   fen: string | null;
@@ -115,6 +138,11 @@ export default function HistoricalEvidencePanel({
    * remounts): the card shows "Added ✓" without another round trip.
    */
   addedGids?: ReadonlySet<number>;
+  /**
+   * The analyzed game's PGN headers — candidates that ARE this game are
+   * filtered out (the corpus may contain the imported game itself).
+   */
+  gameHeaders?: Record<string, string>;
 }) {
   const { t } = useTranslation();
   // A finished analysis for the viewed position survives remounts (game
@@ -156,7 +184,11 @@ export default function HistoricalEvidencePanel({
   }, [fen, route, refPly]);
 
   const stale = status.kind === 'ready' && ranFor !== fen;
-  const disabled = fen === null || status.kind === 'loading' || !canAnalyze;
+  // The results for the viewed position are already shown — re-running
+  // would just repeat the same corpus query. The button re-enables when
+  // the cursor moves (stale) or a run fails.
+  const disabled =
+    fen === null || status.kind === 'loading' || !canAnalyze || (status.kind === 'ready' && !stale);
   const [addingGid, setAddingGid] = useState<number | null>(null);
   const [addFailed, setAddFailed] = useState(false);
   /** The candidate whose variation add is awaiting its echo. */
@@ -186,6 +218,16 @@ export default function HistoricalEvidencePanel({
     }
     return map;
   }, [status]);
+
+  /** Candidates minus the analyzed game itself (headers identify it). */
+  const visibleCandidates = useMemo(() => {
+    if (status.kind !== 'ready') {
+      return [];
+    }
+    return status.result.candidates.filter(
+      (candidate) => !isAnalyzedGame(candidate.game, gameHeaders),
+    );
+  }, [status, gameHeaders]);
 
   /**
    * Candidate id → variation button state. Recomputed only when the
@@ -268,7 +310,7 @@ export default function HistoricalEvidencePanel({
       </div>
       {status.kind === 'ready' && !stale && (
         <p className="m-0 shrink-0 text-center text-note text-faint tabular-nums">
-          {t('evidence.examples', { count: status.result.candidates.length })} ·{' '}
+          {t('evidence.examples', { count: visibleCandidates.length })} ·{' '}
           {status.result.timings.total_ms} ms
         </p>
       )}
@@ -281,7 +323,13 @@ export default function HistoricalEvidencePanel({
       ) : !canAnalyze ? (
         <p className="m-0 text-note text-faint">{t('evidence.readOnly')}</p>
       ) : status.kind === 'loading' ? (
-        <p className="m-0 text-note text-faint">…</p>
+        <p
+          className="m-0 flex items-center justify-center gap-2 text-note text-muted"
+          role="status"
+        >
+          <span className={statusDot({ tone: 'warn', pulse: true })} />
+          {t('evidence.searching')}
+        </p>
       ) : status.kind === 'error' ? (
         <p className="m-0 text-note text-danger">
           {status.code === 'invalid_fen' ? t('evidence.invalidFen') : t('evidence.error')}
@@ -290,11 +338,11 @@ export default function HistoricalEvidencePanel({
         <p className="m-0 text-note text-faint">
           {stale ? t('evidence.positionChanged') : t('evidence.empty')}
         </p>
-      ) : status.result.candidates.length === 0 ? (
+      ) : visibleCandidates.length === 0 ? (
         <p className="m-0 text-note text-faint">{t('evidence.noCandidates')}</p>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
-          {status.result.candidates.map((candidate) => (
+          {visibleCandidates.map((candidate) => (
             <HistoricalEvidenceCard
               key={candidate.id}
               candidate={candidate}

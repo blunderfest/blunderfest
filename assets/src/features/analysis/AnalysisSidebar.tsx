@@ -207,6 +207,7 @@ export default function AnalysisSidebar({
                   onAddVariation={canEdit ? onAddHistoricalVariation : undefined}
                   variationState={canEdit ? variationState : undefined}
                   addedGids={addedGids}
+                  gameHeaders={tree.headers}
                 />
               </section>
             ),
