@@ -1,6 +1,6 @@
 # ADR-0020: Game library v1 — anonymous profiles, session-scoped
 
-Status: Accepted (2026-08-11)
+Status: Accepted (2026-08-11); durable since ADR-0029 (Ecto-backed library_entries)
 
 ## Context
 

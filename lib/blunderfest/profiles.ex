@@ -1,50 +1,101 @@
 defmodule Blunderfest.Profiles do
   @moduledoc """
-  In-memory store of anonymous profiles. No PII — a profile is an id, a
-  server-generated name, and a salted hash of the device secret. State is
-  rebuilt on boot, so a scale-to-zero instance loses nothing critical.
+  Durable anonymous profiles (ADR-0004, ADR-0029). No PII — a profile is
+  an id, a server-generated name, the salted hashes of its device
+  secrets, and its linked external accounts. Backed by `Blunderfest.Repo`,
+  so a profile survives deploys and is the same on every cluster region
+  (the in-memory predecessor's split-brain is gone).
   """
 
-  use GenServer
+  import Ecto.Query
 
-  alias Blunderfest.Profiles.{Name, Profile}
+  alias Blunderfest.Profiles.{Account, Name, Profile}
+  alias Blunderfest.Repo
   alias Blunderfest.Secrets
 
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, nil, name: Keyword.get(opts, :name, __MODULE__))
+  @name_attempts 5
+
+  @doc "Creates a profile and returns it with the plaintext device secret."
+  def create do
+    secret = Secrets.new_secret()
+
+    profile = %Profile{
+      id: new_id(),
+      name: Name.generate(),
+      secret_hashes: [Secrets.hash(secret)],
+      created_at: DateTime.utc_now(),
+      accounts: []
+    }
+
+    with {:ok, profile} <- insert_with_unique_name(profile, @name_attempts) do
+      {:ok, profile, secret}
+    end
   end
 
-  @impl true
-  def init(nil), do: {:ok, %{profiles: %{}, names: MapSet.new()}}
-
-  def create(server \\ __MODULE__) do
-    GenServer.call(server, :create)
+  def get(id) do
+    case Repo.get(Profile, id) do
+      nil -> :error
+      profile -> {:ok, with_accounts(profile)}
+    end
   end
 
-  def get(id, server \\ __MODULE__) do
-    GenServer.call(server, {:get, id})
-  end
-
-  def authenticate(id, secret, server \\ __MODULE__) do
-    GenServer.call(server, {:authenticate, id, secret})
+  def authenticate(id, secret) do
+    case Repo.get(Profile, id) do
+      nil -> false
+      profile -> Enum.any?(profile.secret_hashes, &Secrets.verify(secret, &1))
+    end
   end
 
   @doc """
   Links (or refreshes) an external account on the profile (ADR-0022).
-  `account` is `%{type: "lichess", username, token, scopes, linked_at}`.
+  One account per type per profile; `{type, username}` is unique
+  globally. `account` is `%{type: "lichess", username, token, scopes,
+  linked_at}`.
   """
-  def link_account(id, account, server \\ __MODULE__) do
-    GenServer.call(server, {:link_account, id, account})
+  def link_account(id, account) do
+    case Repo.get(Profile, id) do
+      nil ->
+        {:error, :not_found}
+
+      profile ->
+        attrs = %{
+          profile_id: id,
+          type: account.type,
+          username: account.username,
+          access_token: account.token,
+          scopes: account.scopes,
+          linked_at: account.linked_at
+        }
+
+        case Repo.get_by(Account, profile_id: id, type: account.type) do
+          nil -> Repo.insert!(struct!(Account, attrs))
+          row -> Repo.update!(Ecto.Changeset.change(row, attrs))
+        end
+
+        {:ok, with_accounts(profile)}
+    end
   end
 
   @doc "Finds the profile linked to an external account. `{:error, :not_found}` otherwise."
-  def profile_by_account(type, username, server \\ __MODULE__) do
-    GenServer.call(server, {:profile_by_account, type, username})
+  def profile_by_account(type, username) do
+    case Repo.get_by(Account, type: type, username: username) do
+      nil -> {:error, :not_found}
+      account -> get(account.profile_id)
+    end
   end
 
   @doc "Detaches an external account (and its token) from the profile."
-  def unlink_account(id, type, server \\ __MODULE__) do
-    GenServer.call(server, {:unlink_account, id, type})
+  def unlink_account(id, type) do
+    case Repo.get(Profile, id) do
+      nil ->
+        {:error, :not_found}
+
+      profile ->
+        from(a in Account, where: a.profile_id == ^id and a.type == ^type)
+        |> Repo.delete_all()
+
+        {:ok, with_accounts(profile)}
+    end
   end
 
   @doc """
@@ -52,105 +103,51 @@ defmodule Blunderfest.Profiles do
   recovered identity reaches a new device (ADR-0022). Older secrets keep
   working.
   """
-  def issue_secret(id, server \\ __MODULE__) do
-    GenServer.call(server, {:issue_secret, id})
-  end
+  def issue_secret(id) do
+    case Repo.get(Profile, id) do
+      nil ->
+        {:error, :not_found}
 
-  def reset(server \\ __MODULE__) do
-    GenServer.call(server, :reset)
-  end
-
-  @impl true
-  def handle_call(:create, _from, state) do
-    secret = Secrets.new_secret()
-
-    profile = %Profile{
-      id: new_id(),
-      name: Name.generate(state.names),
-      secret_hashes: [Secrets.hash(secret)],
-      created_at: DateTime.utc_now()
-    }
-
-    state = %{state | names: MapSet.put(state.names, profile.name)}
-    profiles = Map.put(state.profiles, profile.id, profile)
-    state = %{state | profiles: profiles}
-
-    {:reply, {:ok, profile, secret}, state}
-  end
-
-  def handle_call({:get, id}, _from, state) do
-    {:reply, Map.fetch(state.profiles, id), state}
-  end
-
-  def handle_call({:authenticate, id, secret}, _from, state) do
-    reply =
-      case Map.fetch(state.profiles, id) do
-        {:ok, %Profile{secret_hashes: hashes}} ->
-          Enum.any?(hashes, &Secrets.verify(secret, &1))
-
-        :error ->
-          false
-      end
-
-    {:reply, reply, state}
-  end
-
-  def handle_call({:link_account, id, account}, _from, state) do
-    case Map.fetch(state.profiles, id) do
-      {:ok, profile} ->
-        accounts =
-          [account | Enum.reject(profile.accounts, &(&1.type == account.type))]
-
-        profiles = Map.put(state.profiles, id, %{profile | accounts: accounts})
-        {:reply, {:ok, Map.fetch!(profiles, id)}, %{state | profiles: profiles}}
-
-      :error ->
-        {:reply, {:error, :not_found}, state}
+      profile ->
+        secret = Secrets.new_secret()
+        hashes = [Secrets.hash(secret) | profile.secret_hashes]
+        {:ok, updated} = Repo.update(Ecto.Changeset.change(profile, secret_hashes: hashes))
+        {:ok, with_accounts(updated), secret}
     end
   end
 
-  def handle_call({:unlink_account, id, type}, _from, state) do
-    case Map.fetch(state.profiles, id) do
-      {:ok, profile} ->
-        accounts = Enum.reject(profile.accounts, &(&1.type == type))
-        profiles = Map.put(state.profiles, id, %{profile | accounts: accounts})
-        {:reply, {:ok, Map.fetch!(profiles, id)}, %{state | profiles: profiles}}
+  @doc "Drops every profile (test seam)."
+  def reset do
+    Repo.delete_all(Profile)
+    :ok
+  end
 
-      :error ->
-        {:reply, {:error, :not_found}, state}
+  # The display name is globally unique; a collision (same name drawn
+  # twice) just redraws. The unique index enforces it concurrently.
+  defp insert_with_unique_name(_profile, 0), do: {:error, :name_conflict}
+
+  defp insert_with_unique_name(profile, attempts) do
+    case Repo.insert(profile) do
+      {:ok, _} -> {:ok, profile}
+      {:error, _} -> insert_with_unique_name(%{profile | name: Name.generate()}, attempts - 1)
     end
   end
 
-  def handle_call({:profile_by_account, type, username}, _from, state) do
-    found =
-      Enum.find_value(state.profiles, fn {_id, profile} ->
-        Enum.find_value(profile.accounts, fn account ->
-          if account.type == type and account.username == username,
-            do: profile,
-            else: nil
-        end)
+  defp with_accounts(profile) do
+    accounts =
+      from(a in Account, where: a.profile_id == ^profile.id, order_by: [desc: a.linked_at])
+      |> Repo.all()
+      |> Enum.map(fn account ->
+        %{
+          type: account.type,
+          username: account.username,
+          token: account.access_token,
+          scopes: account.scopes,
+          linked_at: account.linked_at
+        }
       end)
 
-    case found do
-      nil -> {:reply, {:error, :not_found}, state}
-      profile -> {:reply, {:ok, profile}, state}
-    end
-  end
-
-  def handle_call({:issue_secret, id}, _from, state) do
-    case Map.fetch(state.profiles, id) do
-      {:ok, profile} ->
-        secret = Secrets.new_secret()
-        profile = %{profile | secret_hashes: [Secrets.hash(secret) | profile.secret_hashes]}
-        {:reply, {:ok, profile, secret}, put_in(state.profiles[id], profile)}
-
-      :error ->
-        {:reply, {:error, :not_found}, state}
-    end
-  end
-
-  def handle_call(:reset, _from, _state) do
-    {:reply, :ok, %{profiles: %{}, names: MapSet.new()}}
+    %{profile | accounts: accounts}
   end
 
   defp new_id do

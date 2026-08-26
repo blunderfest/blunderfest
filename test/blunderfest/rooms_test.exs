@@ -428,7 +428,9 @@ defmodule Blunderfest.RoomsTest do
     defp unique_slug(tag), do: "p#{System.unique_integer([:positive])}-#{tag}"
 
     defp wait_load(slug) do
-      for _ <- 1..100, reduce: false do
+      # The write-through is a cast; give it a generous window under a
+      # loaded test suite before giving up.
+      for _ <- 1..500, reduce: false do
         true ->
           true
 

@@ -1,6 +1,6 @@
 # ADR-0026: PostgreSQL for the corpus, behind Blunderfest.Corpus (no Ecto)
 
-Status: Accepted (2026-08-25)
+Status: Accepted (2026-08-25); "app data stays in-memory" amended by ADR-0029
 
 ## Context
 

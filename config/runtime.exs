@@ -158,4 +158,7 @@ if url = System.get_env("DATABASE_URL") do
 
   config :blunderfest, Blunderfest.Corpus, db: db
   config :blunderfest, Blunderfest.RoomLog, db: db
+
+  # Application data (ADR-0029) uses Ecto: the Repo reads the URL directly.
+  config :blunderfest, Blunderfest.Repo, url: url
 end

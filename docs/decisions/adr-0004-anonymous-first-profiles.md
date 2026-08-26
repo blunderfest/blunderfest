@@ -31,5 +31,6 @@ personal data.
   anonymous identity (nothing personal is lost).
 - Server-enforced roles depend on the bearer secret being kept client-side;
   there is no server-side session to steal.
-- `Profiles` is an in-memory GenServer (see ADR-0001); profiles vanish on
-  scale-to-zero and are recreated on demand.
+- Since ADR-0029 profiles are durable (Ecto-backed, one per device secret
+  cluster-wide): a deploy no longer re-rolls an identity — roles, account
+  links, and the library follow the device.

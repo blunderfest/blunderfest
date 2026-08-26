@@ -42,10 +42,10 @@ here, or point to the ADR that superseded this one.
 
 | ADR | Decision | Status |
 |---|---|---|
-| [0001](adr-0001-no-database-in-memory-state.md) | No database — in-memory state rebuilt on boot | Accepted (2026-08-04); corpus-scope superseded by ADR-0026 |
+| [0001](adr-0001-no-database-in-memory-state.md) | No database — in-memory state rebuilt on boot | Accepted (2026-08-04); corpus scope superseded by ADR-0026, application-data scope by ADR-0029 |
 | [0002](adr-0002-backend-serves-api-and-spa-no-ui.md) | Backend serves a JSON API + channel sockets and a bundled SPA; no server-rendered UI | Accepted (2026-08-04) |
 | [0003](adr-0003-structured-error-codes-client-owns-copy.md) | The API returns structured error codes; the client owns all copy | Accepted (2026-08-04) |
-| [0004](adr-0004-anonymous-first-profiles.md) | Anonymous-first profiles with device secrets, no stored PII | Accepted (2026-08-04) |
+| [0004](adr-0004-anonymous-first-profiles.md) | Anonymous-first profiles with device secrets, no stored PII | Accepted (2026-08-04); durable since ADR-0029 |
 | [0005](adr-0005-op-log-room-synchronization.md) | Rooms synchronize via an append-only op log replayed on join | Accepted (2026-08-05) |
 | [0006](adr-0006-explicit-room-creation-and-join-gating.md) | Rooms are created explicitly via `POST /api/rooms`; joins never create rooms | Accepted (2026-08-06) |
 | [0007](adr-0007-room-code-format.md) | Room codes are 5 chars from an unambiguous alphabet, validated on both ends | Accepted (2026-08-06) |
@@ -61,12 +61,13 @@ here, or point to the ADR that superseded this one.
 | [0017](adr-0017-room-creation-rate-limit.md) | Room creation is rate-limited per client IP (fixed window, per node) | Accepted (2026-08-11) |
 | [0018](adr-0018-server-understands-chess.md) | The server keeps first-class chess understanding (parsing, later materialization/search); the client is the interactivity layer, not the game authority | Accepted (2026-08-11) |
 | [0019](adr-0019-echecs-dependency-posture.md) | Keep echecs (contained risk, server-side import parsing only); fork/vendor if it stalls | Accepted (2026-08-11) |
-| [0020](adr-0020-anonymous-game-library.md) | Game library v1 on anonymous profiles, session-scoped (in-memory); re-keys to accounts when storage lands | Accepted (2026-08-11) |
+| [0020](adr-0020-anonymous-game-library.md) | Game library v1 on anonymous profiles; durable since ADR-0029 | Accepted (2026-08-11); durable since ADR-0029 |
 | [0021](adr-0021-presenter-handoff.md) | The owner can hand presenting to another member; presence-derived fallback amends ADR-0015 | Accepted (2026-08-15) |
 | [0022](adr-0022-external-identity-accounts.md) | External identity accounts (Lichess OAuth): User 1..n Account, link as recovery key not persona, in-memory until persistence lands | Accepted (2026-08-16) |
 | [0023](adr-0023-chat-permissions-and-moderation.md) | Chat needs edit rights (viewers read along); the owner moderates via `delete_chat` ops | Accepted (2026-08-17) |
 | [0024](adr-0024-reference-tab-and-search-destination.md) | Feature docking: per-position reference in an adaptive Reference tab; whole-game views in the viz box; search is a `#/search` destination | Accepted (2026-08-17) |
 | [0025](adr-0025-room-first-surface-model.md) | Room-first: the library backs rooms but never becomes the home; ChessBase's IA yes, interaction model no | Accepted (2026-08-17) |
-| [0026](adr-0026-postgres-corpus-behind-boundary-no-ecto.md) | PostgreSQL for the corpus, behind Blunderfest.Corpus via Postgrex — no Ecto; app data stays in-memory | Accepted (2026-08-25) |
+| [0026](adr-0026-postgres-corpus-behind-boundary-no-ecto.md) | PostgreSQL for the corpus, behind Blunderfest.Corpus via Postgrex — no Ecto; app data stays in-memory | Accepted (2026-08-25); app-data half amended by ADR-0029 |
 | [0027](adr-0027-historical-evidence-pipeline.md) | Historical-evidence pipeline: evidence over scores, PG as the v0 index, skeleton as membership layer | Accepted (2026-08-25) |
 | [0028](adr-0028-room-persistence-anonymous-identity-and-retention.md) | Room persistence: what the durable op log stores, author identity (name snapshots), 1h retention, privacy posture | Accepted (2026-08-26) |
+| [0029](adr-0029-durable-application-data-ecto.md) | Durable application data: one Ecto Repo for profiles, accounts, and the library; secrets stay hash-only; GenServers replaced by Repo-backed modules | Accepted (2026-08-27) |

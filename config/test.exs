@@ -49,3 +49,8 @@ config :blunderfest, Blunderfest.RoomLog,
     password: "blunderfest",
     ssl: false
   ]
+
+# Application data (ADR-0029): the local docker test Postgres. Boot
+# migrations run via Blunderfest.RepoMigrations.
+config :blunderfest, Blunderfest.Repo,
+  url: "postgres://blunderfest:blunderfest@localhost:5433/blunderfest_test"

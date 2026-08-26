@@ -8,9 +8,11 @@ defmodule Blunderfest.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      Blunderfest.Profiles,
-      # Per-profile game library (ADR-0020): saved game trees, session-scoped.
-      Blunderfest.Library,
+      # Application data (ADR-0029): durable profiles, accounts, and the
+      # game library behind Ecto. Migrations run at boot (advisory-locked,
+      # so both cluster nodes may boot at once), before anything serves.
+      Blunderfest.Repo,
+      Blunderfest.RepoMigrations,
       # Lichess OAuth flow state + one-time exchange codes (ADR-0022).
       Blunderfest.LichessAuth,
       # Fixed-window rate limiter for anonymous room creation.

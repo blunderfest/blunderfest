@@ -45,10 +45,19 @@ release and served by a catch-all (`SpaController`).
     (ADR-0014): a fixed annotated game, seeded on demand when a channel join
     targets the code (so it survives room-process and node loss). The create
     endpoint rejects the reserved code with `code_reserved`.
-  - `Profiles` (GenServer): anonymous profiles with salted device-secret
-    hashes (one per device, ADR-0004), `authenticate/2`, fun-name
-    generation, linked external **accounts** (lichess username + OAuth
-    token, ADR-0022) and `issue_secret/1` for cross-device recovery.
+  - `Repo` + `RepoMigrations` (ADR-0029): the application-data repository —
+    `profiles`, `accounts`, `library_entries` tables behind Ecto, with
+    boot-time, advisory-locked migrations (deploys self-migrate). The
+    corpus and the room log keep their Postgrex-direct boundaries; only
+    these three entity sets use Ecto.
+  - `Profiles` (ADR-0004, durable since ADR-0029): anonymous profiles
+    with salted device-secret hashes (one per device), `authenticate/2`,
+    fun-name generation, linked external **accounts** (lichess username
+    + OAuth token, ADR-0022) and `issue_secret/1` for cross-device
+    recovery. Ecto-backed: one profile per device secret cluster-wide —
+    the two-region split-brain of the in-memory predecessor is gone.
+  - `Library` (ADR-0020, durable since ADR-0029): per-profile saved game
+    trees in `library_entries` — the library finally crosses devices.
   - `LichessAuth` (GenServer): ephemeral OAuth state/PKCE verifiers and
     the single-use recovery exchange codes.
   - `lichess.ex` — fetches PGNs from Lichess for URL imports, plus the

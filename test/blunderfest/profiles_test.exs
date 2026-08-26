@@ -22,7 +22,10 @@ defmodule Blunderfest.ProfilesTest do
 
   test "get returns the profile by id" do
     {:ok, profile, _secret} = Profiles.create()
-    assert {:ok, ^profile} = Profiles.get(profile.id)
+    assert {:ok, loaded} = Profiles.get(profile.id)
+    assert loaded.id == profile.id
+    assert loaded.name == profile.name
+    assert loaded.secret_hashes == profile.secret_hashes
   end
 
   test "get returns :error for an unknown id" do

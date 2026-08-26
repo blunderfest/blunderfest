@@ -218,9 +218,22 @@ admits persisted rooms so a join revives them. Eviction purges the
 rows; the sweeper's backstop removes rows idle past 1h with no live
 process cluster-wide. Replayed chat resolves names from the snapshots.
 Verified live: SIGKILL the dev server, restart, rejoin — game and chat
-survive. Graceful handoff remains optional polish, and the
-profiles/accounts/library durability decision is still open. 399
-backend + 629 frontend tests green.
+survive. Graceful handoff remains optional polish. 399 backend + 629
+frontend tests green.
+
+**Later — durable application data (ADR-0029), the next candidate
+taken.** Ecto arrived, scoped to one `Blunderfest.Repo` (ADR-0029
+accepted): `profiles` (fun name, salted secret hashes, created_at),
+`accounts` (lichess links), `library_entries` (saved game trees) —
+boot-time advisory-locked migrations, dev/test point at the docker
+Postgres, prod self-migrates from `DATABASE_URL`. `Profiles` and
+`Library` are now plain Repo-backed modules with unchanged APIs; the
+GenServers are gone. This kills the two-region profile split-brain and
+makes the library cross-device. Verified live: create a profile + save
+a library entry, SIGKILL the server, restart — the profile
+authenticates and the entry lists. ADR-0001/0004/0020/0026 amended.
+Open: orphaned-profile pruning; the durable canonical-corpus half of
+Spike 03.
 
 ### Session handoff (2026-08-24, third session — visualization milestones A/B/C)
 

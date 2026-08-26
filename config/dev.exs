@@ -50,3 +50,8 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Application data (ADR-0029): the local docker Postgres (docs/operations.md).
+# DATABASE_URL in the environment overrides this via config/runtime.exs.
+config :blunderfest, Blunderfest.Repo,
+  url: "postgres://blunderfest:blunderfest@localhost:5433/blunderfest_dev"
