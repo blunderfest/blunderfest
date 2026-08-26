@@ -23,7 +23,10 @@ import { useCursor } from '@/features/analysis/useCursor';
 import { useDragFlag } from '@/features/analysis/useDragFlag';
 import { useEngine } from '@/features/analysis/useEngine';
 import { usePositionEditor } from '@/features/analysis/usePositionEditor';
-import { planHistoricalVariation } from '@/features/historicalEvidence/variationPlan';
+import {
+  planFromResolvedMoves,
+  planHistoricalVariation,
+} from '@/features/historicalEvidence/variationPlan';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
 import type {
   AddLineOp,
@@ -682,20 +685,21 @@ export default function Analysis({
    * whether the planned line is playable from the viewed node, and whether
    * it is already in the tree (the card then shows "Added ✓" — the echo
    * proves it, no optimistic bookkeeping). Plan-identical to the add
-   * itself, so the check can never disagree with the insertion.
+   * itself, so the check can never disagree with the insertion. `moves`
+   * is the caller's pre-resolved SAN→moves line: this runs for every
+   * candidate on every landing, and the resolution is the expensive part.
    */
   const variationState = useCallback(
-    (fen: string, sans: string[], exact: boolean): { addable: boolean; exists: boolean } => {
+    (fen: string, moves: LegalMove[], exact: boolean): { addable: boolean; exists: boolean } => {
       if (current === null) {
         return { addable: false, exists: false };
       }
-      const plan = planHistoricalVariation({
+      const plan = planFromResolvedMoves({
         exact,
         currentId: current.id,
         maxNodeId,
-        currentFen: current.fen ?? '',
         candidateFen: fen,
-        sans,
+        moves,
       });
       if (plan === null) {
         return { addable: false, exists: false };

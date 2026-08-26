@@ -10,17 +10,12 @@ export type VariationPlan =
     };
 
 /**
- * Plans the "Add as variation" action for a historical candidate.
- *
- * Exact candidates share the viewed position, so their continuation is a
- * legal variation from it — a plain line. Every other candidate's
- * continuation only applies from the candidate's own position, so the plan
- * first attaches that position as a setup child of the current node and
- * then grafts the line onto it. Node ids are derived deterministically on
- * every client (max id + 1), so the follow-up line can address the setup
- * node before any echo arrives.
- *
- * Returns null when nothing can be added (no legal prefix resolved).
+ * Plans the "Add as variation" action from SANs — resolving them with
+ * chess.js. Used on the click path, where one resolution per add is fine.
+ * The button-state check uses `planFromResolvedMoves/1` instead: the
+ * SAN→moves resolution is the expensive part, and the state check runs
+ * for every candidate on every landing, so callers resolve once and
+ * cache (the resolution is deterministic per FEN + SAN list).
  */
 export function planHistoricalVariation(args: {
   /** The candidate position equals the viewed one (exact retrieval). */
@@ -33,20 +28,40 @@ export function planHistoricalVariation(args: {
   candidateFen: string;
   sans: string[];
 }): VariationPlan | null {
-  if (args.exact) {
-    const moves = sanLineToMoves(args.currentFen, args.sans);
-    return moves.length === 0 ? null : { kind: 'line', parentId: args.currentId, moves };
+  const moves = args.exact
+    ? sanLineToMoves(args.currentFen, args.sans)
+    : sanLineToMoves(args.candidateFen, args.sans);
+  return planFromResolvedMoves({
+    exact: args.exact,
+    currentId: args.currentId,
+    maxNodeId: args.maxNodeId,
+    candidateFen: args.candidateFen,
+    moves,
+  });
+}
+
+/**
+ * The same plan, from pre-resolved moves (no chess.js here). Empty or
+ * unresolved lines yield null — there is nothing to add.
+ */
+export function planFromResolvedMoves(args: {
+  exact: boolean;
+  currentId: number;
+  maxNodeId: number;
+  candidateFen: string;
+  moves: LegalMove[];
+}): VariationPlan | null {
+  if (args.moves.length === 0) {
+    return null;
   }
 
-  const moves = sanLineToMoves(args.candidateFen, args.sans);
-
-  if (moves.length === 0) {
-    return null;
+  if (args.exact) {
+    return { kind: 'line', parentId: args.currentId, moves: args.moves };
   }
 
   return {
     kind: 'setup_line',
     setup: { parentId: args.currentId, fen: args.candidateFen },
-    line: { parentId: args.maxNodeId + 1, moves },
+    line: { parentId: args.maxNodeId + 1, moves: args.moves },
   };
 }

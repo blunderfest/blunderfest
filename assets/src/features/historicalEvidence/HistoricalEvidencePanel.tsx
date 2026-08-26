@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import HelpPopover from '@/components/HelpPopover';
 import { button, statusDot } from '@/components/ui';
+import { sanLineToMoves } from '@/features/analysis/legalMoves';
 import HistoricalEvidenceCard from '@/features/historicalEvidence/HistoricalEvidenceCard';
 import type {
   EvidenceCandidate,
@@ -9,7 +10,7 @@ import type {
   HistoricalEvidenceResult,
   PlanSide,
 } from '@/features/historicalEvidence/types';
-import type { GameTree } from '@/lib/api';
+import type { GameTree, LegalMove } from '@/lib/api';
 import { analyzeHistoricalEvidence, fetchHistoricalGame } from '@/lib/api';
 
 type Status =
@@ -20,6 +21,33 @@ type Status =
 
 /** How long a variation add may wait for its echo before giving up. */
 const VARIATION_ECHO_TIMEOUT_MS = 5000;
+
+/**
+ * Resolved SAN→moves lines, keyed by FEN + SAN list. The resolution
+ * (chess.js legal-move generation) is deterministic per input and the
+ * expensive part of the variation button's state check — which runs for
+ * every candidate whenever the viewer lands on an analyzed position.
+ * Caching it keeps re-landings cheap; the cap bounds memory.
+ */
+const MOVES_CACHE = new Map<string, LegalMove[]>();
+const MOVES_CACHE_LIMIT = 200;
+
+function resolvedLineMoves(fen: string, sans: string[]): LegalMove[] {
+  const key = `${fen}\n${sans.join(' ')}`;
+  const cached = MOVES_CACHE.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const moves = sanLineToMoves(fen, sans);
+  MOVES_CACHE.set(key, moves);
+  if (MOVES_CACHE.size > MOVES_CACHE_LIMIT) {
+    const oldest = MOVES_CACHE.keys().next().value;
+    if (oldest !== undefined) {
+      MOVES_CACHE.delete(oldest);
+    }
+  }
+  return moves;
+}
 
 /**
  * Finished analyses, keyed by their request (position + route + ply), kept
@@ -56,9 +84,10 @@ function isAnalyzedGame(game: GameMeta, headers: Record<string, string>): boolea
   return result === undefined || game.result === result;
 }
 
-/** Clears remembered results (tests). */
+/** Clears remembered results and resolved lines (tests). */
 export function resetHistoricalEvidenceCache(): void {
   RESULT_CACHE.clear();
+  MOVES_CACHE.clear();
 }
 
 function HelpContent() {
@@ -126,11 +155,12 @@ export default function HistoricalEvidencePanel({
    * Per-candidate button state from the orchestrator: whether the planned
    * line is playable from the viewed node and whether the tree already
    * contains it — the card's "Added ✓" state is echo-proven, never
-   * guessed.
+   * guessed. `moves` is the pre-resolved candidate line (the panel
+   * resolves and caches it — the orchestrator only walks the tree).
    */
   variationState?: (
     fen: string,
-    sans: string[],
+    moves: LegalMove[],
     exact: boolean,
   ) => { addable: boolean; exists: boolean };
   /**
@@ -174,6 +204,16 @@ export default function HistoricalEvidencePanel({
           if (oldest !== undefined) {
             RESULT_CACHE.delete(oldest);
           }
+        }
+        // Resolve the candidates' lines now, under the "Searching…" note:
+        // the SAN resolution is ~0.8s of chess.js work for 20+ candidates,
+        // and doing it before the results appear keeps the first render
+        // (and every later landing — the cache is module-wide) cheap.
+        for (const candidate of result.candidates) {
+          resolvedLineMoves(
+            candidate.strategy === 'exact' ? fen : candidate.fen,
+            candidate.continuation.moves,
+          );
         }
         setStatus({ kind: 'ready', result });
         setRanFor(fen);
@@ -230,23 +270,42 @@ export default function HistoricalEvidencePanel({
   }, [status, gameHeaders]);
 
   /**
-   * Candidate id → variation button state. Recomputed only when the
-   * results or the orchestrator's tree view change (`variationState` is
-   * referentially stable across engine ticks), so this stays cheap.
+   * Candidate id → resolved continuation moves. Computed once per current
+   * result (the FEN is fixed while the results are current), with the
+   * deterministic resolution cached module-wide (and warmed while the
+   * corpus query runs) — re-landing on the same position costs tree walks
+   * only.
+   */
+  const candidateMoves = useMemo(() => {
+    if (status.kind !== 'ready' || stale || fen === null) {
+      return null;
+    }
+    return status.result.candidates.map((candidate) => ({
+      candidate,
+      moves:
+        candidate.strategy === 'exact'
+          ? resolvedLineMoves(fen, candidate.continuation.moves)
+          : resolvedLineMoves(candidate.fen, candidate.continuation.moves),
+    }));
+  }, [status, stale, fen]);
+
+  /**
+   * Candidate id → variation button state. Only computed while the cards
+   * are actually shown (a current, non-stale result): navigating the game
+   * re-renders this panel on every cursor move, and planning 20+ candidate
+   * lines per move made navigation sluggish for nothing — stale results
+   * are hidden anyway.
    */
   const variationStates = useMemo(() => {
-    if (status.kind !== 'ready' || variationState === undefined) {
+    if (candidateMoves === null || variationState === undefined) {
       return null;
     }
     const map = new Map<string, { addable: boolean; exists: boolean }>();
-    for (const candidate of status.result.candidates) {
-      map.set(
-        candidate.id,
-        variationState(candidate.fen, candidate.continuation.moves, candidate.strategy === 'exact'),
-      );
+    for (const { candidate, moves } of candidateMoves) {
+      map.set(candidate.id, variationState(candidate.fen, moves, candidate.strategy === 'exact'));
     }
     return map;
-  }, [status, variationState]);
+  }, [candidateMoves, variationState]);
 
   // The pending add resolves the moment the echo lands in the tree — the
   // button's exists state flips and "Adding…" becomes "Added ✓".

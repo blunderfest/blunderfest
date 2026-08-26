@@ -103,7 +103,7 @@ export default function AnalysisSidebar({
   /** The "Add as variation" button state per candidate (from Analysis). */
   variationState: (
     fen: string,
-    sans: string[],
+    moves: LegalMove[],
     exact: boolean,
   ) => { addable: boolean; exists: boolean };
   /** Corpus game ids already in the room (survives panel remounts). */
