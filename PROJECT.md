@@ -295,7 +295,12 @@ that depends on one). 598 frontend + 382 backend tests green.
 **Carried forward (queued, after everything else): room persistence
 across deploys.** Foundation = write-through op log to Postgres +
 replay-on-join; graceful handoff only as later polish. Needs an ADR
-covering anonymous-identity/expiry first.
+covering anonymous-identity/expiry first — the outline now exists as
+**ADR-0028 (Proposed)**: stored log shape (no `set_cursor` ops, roles
+alongside), `author_name` snapshots for replayed history, 1h
+idle-and-orphaned purge mirroring ADR-0016, privacy posture, and the
+`Blunderfest.RoomLog` Postgrex boundary. Awaiting owner sign-off on
+its six decision points.
 
 **Later the same session — Examples-tab usability (five owner-reported
 issues, all fixed).** (1) Tab switches emptied the Examples list:
