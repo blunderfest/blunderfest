@@ -22,6 +22,7 @@ defmodule BlunderfestWeb.RoomSweeper do
 
   use GenServer
 
+  alias Blunderfest.RoomLog
   alias Blunderfest.Rooms
   alias BlunderfestWeb.Presence
 
@@ -49,11 +50,28 @@ defmodule BlunderfestWeb.RoomSweeper do
   @impl true
   def handle_info(:sweep, state) do
     Rooms.evict_idle(state.scope, state.idle_ttl_ms, &room_has_members?/1)
+    purge_orphaned_rows(state.idle_ttl_ms)
     Process.send_after(self(), :sweep, state.interval_ms)
     {:noreply, state}
   end
 
   defp room_has_members?(slug) do
     Presence.list("room:" <> slug) != %{}
+  end
+
+  # ADR-0028's backstop: durable rows whose room never came back after a
+  # machine restart. "Idle and no live process anywhere in the cluster" —
+  # the registry lookup is cluster-wide, so a room hosted on the other
+  # node is never purged.
+  defp purge_orphaned_rows(idle_ttl_ms) do
+    with {:ok, slugs} <- RoomLog.stale_slugs(idle_ttl_ms) do
+      for slug <- slugs, not Rooms.room_exists?(slug) do
+        RoomLog.delete(slug)
+      end
+    end
+
+    :ok
+  catch
+    :exit, _ -> :ok
   end
 end

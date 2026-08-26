@@ -38,3 +38,14 @@ config :blunderfest, Blunderfest.Corpus,
     password: "blunderfest",
     ssl: false
   ]
+
+# The durable room log (ADR-0028) uses the same test database.
+config :blunderfest, Blunderfest.RoomLog,
+  db: [
+    hostname: "localhost",
+    port: 5433,
+    database: "blunderfest_test",
+    username: "blunderfest",
+    password: "blunderfest",
+    ssl: false
+  ]

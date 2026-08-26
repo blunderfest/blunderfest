@@ -65,7 +65,17 @@ export type RoomState = {
   /** Whole-game engine analysis per game (ADR-0009), from `set_analysis` ops. */
   analysis: Record<string, { depth: number; evals: AnalysisEval[] }>;
   /** Room chat, newest last, capped (chat rides the op log — replay is the sync). */
-  chatMessages: { seq: number; author: string; text: string; ts: string }[];
+  chatMessages: {
+    seq: number;
+    author: string;
+    /**
+     * The display-name snapshot from the durable mirror (ADR-0028) —
+     * replayed chat resolves names even before presence refills.
+     */
+    author_name?: string;
+    text: string;
+    ts: string;
+  }[];
   /** Live progress of a running analysis job (transient broadcast). */
   analysisProgress: { gameId: string; done: number; total: number } | null;
   /**
@@ -686,6 +696,7 @@ const roomSlice = createSlice({
           state.chatMessages.push({
             seq: op.seq,
             author: op.author,
+            author_name: op.author_name,
             text: op.payload.text,
             ts: op.ts,
           });
@@ -758,7 +769,13 @@ const roomSlice = createSlice({
         .filter((op): op is Extract<Op, { type: 'chat' }> => op.type === 'chat')
         .filter((op) => !deletedChat.has(op.seq))
         .slice(-MAX_CHAT_MESSAGES)
-        .map((op) => ({ seq: op.seq, author: op.author, text: op.payload.text, ts: op.ts }));
+        .map((op) => ({
+          seq: op.seq,
+          author: op.author,
+          author_name: op.author_name,
+          text: op.payload.text,
+          ts: op.ts,
+        }));
       for (const op of state.ops) {
         if (op.type === 'set_analysis') {
           state.analysis[op.payload.game_id] = mergeAnalysis(

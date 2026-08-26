@@ -34,8 +34,11 @@ defmodule BlunderfestWeb.RoomChannel do
       not Rooms.valid_code?(slug) ->
         {:error, %{reason: :invalid_code}}
 
-      not Rooms.room_exists?(slug) ->
-        # Joins never create rooms; only the create endpoint does.
+      not Rooms.room_exists?(slug) and not Rooms.persisted?(slug) ->
+        # Joins never create rooms; only the create endpoint does. A
+        # persisted room (ADR-0028) whose process a deploy killed is not
+        # "never created" — the join below starts it, and its init loads
+        # the log back before the join reply.
         {:error, %{reason: :room_not_found}}
 
       true ->
@@ -172,10 +175,18 @@ defmodule BlunderfestWeb.RoomChannel do
 
   # The room process permission-checks and appends atomically: a demote can
   # no longer slip between check and append, and an op costs one cross-node
-  # round trip instead of three (ADR-0013).
+  # round trip instead of three (ADR-0013). The author's display name rides
+  # along for the durable mirror's snapshot (ADR-0028).
   defp submit_op(op, socket) do
     op = Map.merge(op, %{"author" => socket.assigns.profile_id})
-    Rooms.submit_op(socket.assigns.slug, socket.assigns.profile_id, op)
+
+    Rooms.submit_op(
+      socket.assigns.slug,
+      socket.assigns.profile_id,
+      op,
+      Rooms.default_scope(),
+      socket.assigns.profile_name
+    )
   end
 
   defp check_can_edit(socket) do

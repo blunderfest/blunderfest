@@ -29,6 +29,7 @@ defmodule Blunderfest.Rooms do
   """
 
   alias Blunderfest.Room
+  alias Blunderfest.RoomLog
 
   @type role :: :owner | :collaborator | :viewer
   @type op :: map()
@@ -70,6 +71,15 @@ defmodule Blunderfest.Rooms do
   @doc "Whether a room with `slug` exists (has a live room process)."
   def room_exists?(slug, scope \\ default_scope()) do
     lookup(slug, scope) != nil
+  end
+
+  @doc """
+  Whether a room with `slug` has durable rows (ADR-0028) even though its
+  process is gone — the join gate lets these revive: a join starts the
+  room, which loads its log back instead of starting empty.
+  """
+  def persisted?(slug, _scope \\ default_scope()) do
+    match?({:ok, _}, RoomLog.load(slug))
   end
 
   @doc "Whether the room is read-only (the demo room): false for unknown rooms."
@@ -134,17 +144,20 @@ defmodule Blunderfest.Rooms do
   rights with `:forbidden`, appends beyond the cap with `:op_limit`. Doing
   it in the room process closes the check-then-append race (a demote can no
   longer slip between the permission check and the append) and costs one
-  cross-node round trip instead of three (ADR-0013).
+  cross-node round trip instead of three (ADR-0013). `author_name` is the
+  display-name snapshot for the durable mirror (ADR-0028).
   """
-  def submit_op(slug, profile_id, op, scope \\ default_scope()) do
-    ensure_and_call(slug, scope, {:submit_op, profile_id, op})
+  def submit_op(slug, profile_id, op, scope \\ default_scope(), author_name \\ nil) do
+    ensure_and_call(slug, scope, {:submit_op, profile_id, op, author_name})
   end
 
   @doc """
   Stops every room in the scope that has been idle (no joins, ops, or role
   changes) for at least `idle_ttl_ms` and for which `has_members?.(slug)` is
   false. Only rooms on the local node are considered — each cluster node
-  sweeps its own (ADR-0013). Used by `BlunderfestWeb.RoomSweeper`.
+  sweeps its own (ADR-0013). Evicted rooms also lose their durable rows
+  (ADR-0028: eviction is the purge path — a deploy's shutdown is not).
+  Used by `BlunderfestWeb.RoomSweeper`.
   """
   def evict_idle(scope, idle_ttl_ms, has_members?) do
     {_registry, supervisor} = scope
@@ -157,6 +170,7 @@ defmodule Blunderfest.Rooms do
            {:ok, activity} <- room_activity(pid),
            true <- DateTime.diff(now, activity.last_active_at, :millisecond) >= idle_ttl_ms,
            false <- has_members?.(activity.slug) do
+        RoomLog.delete(activity.slug)
         Horde.DynamicSupervisor.terminate_child(supervisor, pid)
       else
         _ -> :ok
@@ -166,13 +180,21 @@ defmodule Blunderfest.Rooms do
     :ok
   end
 
-  @doc "Stops all room processes in the scope (test seam)."
+  @doc """
+  Stops all room processes in the scope (test seam), purging their durable
+  rows — the same semantics as eviction.
+  """
   def reset(scope \\ default_scope()) do
     {registry, supervisor} = scope
 
     supervisor
     |> Horde.DynamicSupervisor.which_children()
     |> Enum.each(fn {_, pid, _, _} ->
+      case room_activity(pid) do
+        {:ok, activity} -> RoomLog.delete(activity.slug)
+        :error -> :ok
+      end
+
       Horde.DynamicSupervisor.terminate_child(supervisor, pid)
     end)
 

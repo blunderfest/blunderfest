@@ -1,6 +1,6 @@
 defmodule Blunderfest.RoomsTest do
   use ExUnit.Case, async: true
-
+  alias Blunderfest.RoomLog
   alias Blunderfest.Rooms
 
   setup do
@@ -13,6 +13,16 @@ defmodule Blunderfest.RoomsTest do
     start_supervised!(
       {Horde.DynamicSupervisor, name: supervisor, strategy: :one_for_one, members: :auto}
     )
+
+    # Scoped processes share the global durable mirror (ADR-0028); purge
+    # the fixed slugs this module uses so rows from an earlier (or crashed)
+    # run can't revive into a fresh test room. RoomLog is a cast; draining
+    # its mailbox makes the deletes synchronous.
+    for slug <- ["abcde", "room-a", "room-b", "fresh-room", "aaaaa", "bbbbb", "full", "onemore"] do
+      RoomLog.delete(slug)
+    end
+
+    _ = :sys.get_state(RoomLog)
 
     %{store: {registry, supervisor}}
   end
@@ -68,7 +78,6 @@ defmodule Blunderfest.RoomsTest do
   test "ops returns ops in append order", %{store: store} do
     Rooms.append("room-a", %{"type" => "move_at_ply"}, store)
     Rooms.append("room-a", %{"type" => "set_cursor"}, store)
-
     assert Enum.map(Rooms.ops("room-a", store), & &1["seq"]) == [1, 2]
   end
 
@@ -86,11 +95,9 @@ defmodule Blunderfest.RoomsTest do
 
   test "the first joiner claims the room and becomes owner", %{store: store} do
     assert Rooms.owner("room-a", store) == nil
-
     Rooms.claim("room-a", "profile-1", store)
     assert Rooms.owner("room-a", store) == "profile-1"
     assert Rooms.role_for("room-a", "profile-1", store) == :owner
-
     Rooms.claim("room-a", "profile-2", store)
     assert Rooms.owner("room-a", store) == "profile-1"
   end
@@ -99,7 +106,6 @@ defmodule Blunderfest.RoomsTest do
     Rooms.claim("room-a", "anonymous", store)
     assert Rooms.owner("room-a", store) == nil
     assert Rooms.roles("room-a", store) == %{}
-
     Rooms.claim("room-a", "profile-1", store)
     assert Rooms.owner("room-a", store) == "profile-1"
   end
@@ -107,7 +113,6 @@ defmodule Blunderfest.RoomsTest do
   test "unclaimed members are viewers by default", %{store: store} do
     Rooms.claim("room-a", "profile-1", store)
     Rooms.claim("room-a", "profile-2", store)
-
     assert Rooms.role_for("room-a", "profile-2", store) == :viewer
     assert Rooms.role_for("room-a", "unknown", store) == :viewer
   end
@@ -116,7 +121,6 @@ defmodule Blunderfest.RoomsTest do
     Rooms.claim("room-a", "profile-1", store)
     Rooms.claim("room-a", "profile-2", store)
     Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
-
     Rooms.claim("room-a", "profile-2", store)
     assert Rooms.role_for("room-a", "profile-2", store) == :collaborator
   end
@@ -129,7 +133,6 @@ defmodule Blunderfest.RoomsTest do
              Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
 
     assert Rooms.role_for("room-a", "profile-2", store) == :collaborator
-
     assert {:ok, :viewer} = Rooms.set_role("room-a", "profile-1", "profile-2", :viewer, store)
     assert Rooms.role_for("room-a", "profile-2", store) == :viewer
   end
@@ -164,7 +167,6 @@ defmodule Blunderfest.RoomsTest do
     Rooms.claim("room-a", "profile-2", store)
     Rooms.claim("room-a", "profile-3", store)
     Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
-
     assert Rooms.can_edit?("room-a", "profile-1", store)
     assert Rooms.can_edit?("room-a", "profile-2", store)
     refute Rooms.can_edit?("room-a", "profile-3", store)
@@ -173,10 +175,8 @@ defmodule Blunderfest.RoomsTest do
 
   test "read-only rooms record no members and allow no edits", %{store: store} do
     Rooms.create("abcde", "profile-1", store, read_only: true)
-
     assert Rooms.read_only?("abcde", store)
     assert Rooms.owner("abcde", store) == nil
-
     Rooms.claim("abcde", "profile-2", store)
     assert Rooms.owner("abcde", store) == nil
     assert Rooms.roles("abcde", store) == %{}
@@ -246,7 +246,6 @@ defmodule Blunderfest.RoomsTest do
     Rooms.claim("room-a", "profile-2", store)
     Rooms.claim("room-a", "profile-3", store)
     {:ok, _} = Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
-
     # Owner and collaborator chat; the viewer doesn't.
     assert {:ok, _} =
              Rooms.submit_op(
@@ -304,9 +303,7 @@ defmodule Blunderfest.RoomsTest do
   test "join_snapshot claims membership and returns the room state in one call", %{store: store} do
     Rooms.create("room-a", "anonymous", store)
     Rooms.append("room-a", %{"type" => "set_cursor", "payload" => %{"node_id" => 1}}, store)
-
     snapshot = Rooms.join_snapshot("room-a", "profile-1", store)
-
     assert [%{"seq" => 1}] = snapshot.ops
     assert snapshot.roles == %{"profile-1" => :owner}
     assert snapshot.read_only == false
@@ -317,7 +314,6 @@ defmodule Blunderfest.RoomsTest do
     Rooms.claim("room-a", "profile-1", store)
     Rooms.claim("room-a", "profile-2", store)
     Rooms.set_role("room-a", "profile-1", "profile-2", :collaborator, store)
-
     assert Rooms.roles("room-a", store) == %{"profile-1" => :owner, "profile-2" => :collaborator}
     assert Rooms.roles("room-b", store) == %{}
   end
@@ -349,9 +345,7 @@ defmodule Blunderfest.RoomsTest do
     Rooms.create("aaaaa", "anonymous", store)
     [{pid, _}] = Horde.Registry.lookup(registry, "aaaaa")
     ref = Process.monitor(pid)
-
     Rooms.evict_idle(store, 0, fn _slug -> false end)
-
     assert_receive {:DOWN, ^ref, :process, ^pid, _reason}
     assert_unregistered(registry, "aaaaa")
   end
@@ -361,12 +355,10 @@ defmodule Blunderfest.RoomsTest do
   } do
     Rooms.create("aaaaa", "anonymous", store)
     Rooms.create("bbbbb", "anonymous", store)
-
     # Nothing is idle past an hour.
     Rooms.evict_idle(store, :timer.hours(1), fn _slug -> false end)
     assert Rooms.room_exists?("aaaaa", store)
     assert Rooms.room_exists?("bbbbb", store)
-
     # With a zero ttl, only the room with members survives.
     Rooms.evict_idle(store, 0, fn slug -> slug == "bbbbb" end)
     assert_unregistered(registry, "aaaaa")
@@ -376,7 +368,6 @@ defmodule Blunderfest.RoomsTest do
   test "each room runs as its own registered process", %{store: {registry, _sup} = store} do
     Rooms.create("aaaaa", "anonymous", store)
     Rooms.create("bbbbb", "anonymous", store)
-
     [{pid_a, _}] = Horde.Registry.lookup(registry, "aaaaa")
     [{pid_b, _}] = Horde.Registry.lookup(registry, "bbbbb")
     assert pid_a != pid_b
@@ -402,13 +393,11 @@ defmodule Blunderfest.RoomsTest do
     Rooms.create("aaaaa", "anonymous", store)
     Rooms.append("aaaaa", %{"type" => "set_cursor"}, store)
     Rooms.create("bbbbb", "anonymous", store)
-
     [{pid, _}] = Horde.Registry.lookup(registry, "aaaaa")
     ref = Process.monitor(pid)
     GenServer.stop(pid)
     assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
     assert_unregistered(registry, "aaaaa")
-
     refute Rooms.room_exists?("aaaaa", store)
     assert Rooms.ops("aaaaa", store) == []
     assert Rooms.room_exists?("bbbbb", store)
@@ -432,6 +421,119 @@ defmodule Blunderfest.RoomsTest do
       _ ->
         Process.sleep(10)
         assert_unregistered(registry, slug, attempts - 1)
+    end
+  end
+
+  describe "durable mirror (ADR-0028)" do
+    defp unique_slug(tag), do: "p#{System.unique_integer([:positive])}-#{tag}"
+
+    defp wait_load(slug) do
+      for _ <- 1..100, reduce: false do
+        true ->
+          true
+
+        false ->
+          Process.sleep(10)
+          match?({:ok, _}, Blunderfest.RoomLog.load(slug))
+      end
+    end
+
+    test "ops are written through; cursor noise and the demo room are not", %{store: store} do
+      s = unique_slug("wt")
+      Rooms.create(s, "profile-1", store)
+
+      Rooms.submit_op(
+        s,
+        "profile-1",
+        %{"type" => "move_at_ply", "payload" => %{"ply" => 1, "san" => "e4"}},
+        store,
+        "Brave Otter 42"
+      )
+
+      Rooms.submit_op(
+        s,
+        "profile-1",
+        %{"type" => "set_cursor", "payload" => %{"node_id" => 1}},
+        store,
+        "Brave Otter 42"
+      )
+
+      assert wait_load(s)
+
+      {:ok, %{ops: ops}} = Blunderfest.RoomLog.load(s)
+      assert Enum.map(ops, & &1["type"]) == ["move_at_ply"]
+      assert hd(ops)["author_name"] == "Brave Otter 42"
+
+      demo = unique_slug("demo")
+      Rooms.create(demo, "anonymous", store, read_only: true)
+      Rooms.append(demo, %{"type" => "set_game", "payload" => %{"tree" => %{}}}, store)
+      assert :not_found = Blunderfest.RoomLog.load(demo)
+    end
+
+    test "a restarted room loads its log back (the deploy story)", %{store: store} do
+      s = unique_slug("restart")
+      Rooms.create(s, "profile-1", store)
+
+      Rooms.submit_op(
+        s,
+        "profile-1",
+        %{"type" => "chat", "payload" => %{"text" => "hi"}},
+        store,
+        "Brave Otter 42"
+      )
+
+      assert wait_load(s)
+
+      # Simulate the machine dying: stop the process directly — the
+      # deploy path must NOT purge (only eviction does).
+      [{pid, _}] = Horde.Registry.lookup(elem(store, 0), s)
+      ref = Process.monitor(pid)
+      Horde.DynamicSupervisor.terminate_child(elem(store, 1), pid)
+      assert_receive {:DOWN, ^ref, :process, ^pid, _reason}
+      refute Rooms.room_exists?(s, store)
+
+      snapshot = Rooms.join_snapshot(s, "profile-1", store)
+      assert Enum.map(snapshot.ops, & &1["type"]) == ["chat"]
+      assert Rooms.owner(s, store) == "profile-1"
+    end
+
+    test "roles survive a restart", %{store: store} do
+      s = unique_slug("roles")
+      Rooms.create(s, "profile-1", store)
+      Rooms.set_role(s, "profile-1", "profile-2", :collaborator, store)
+      assert wait_load(s)
+
+      [{pid, _}] = Horde.Registry.lookup(elem(store, 0), s)
+      ref = Process.monitor(pid)
+      Horde.DynamicSupervisor.terminate_child(elem(store, 1), pid)
+      assert_receive {:DOWN, ^ref, :process, ^pid, _reason}
+
+      snapshot = Rooms.join_snapshot(s, "profile-1", store)
+      assert snapshot.roles["profile-2"] == :collaborator
+    end
+
+    test "eviction purges the durable rows", %{store: store} do
+      s = unique_slug("evict")
+      Rooms.create(s, "profile-1", store)
+
+      Rooms.submit_op(
+        s,
+        "profile-1",
+        %{"type" => "chat", "payload" => %{"text" => "hi"}},
+        store,
+        nil
+      )
+
+      assert wait_load(s)
+
+      Rooms.evict_idle(store, 0, fn _slug -> false end)
+      refute Rooms.room_exists?(s, store)
+
+      for _ <- 1..100 do
+        if Blunderfest.RoomLog.load(s) == :not_found, do: :ok, else: Process.sleep(10)
+      end
+
+      assert :not_found = Blunderfest.RoomLog.load(s)
     end
   end
 end

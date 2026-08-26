@@ -25,10 +25,22 @@ release and served by a catch-all (`SpaController`).
     `create/2`, `claim/2`, `append/2`, `submit_op/3` (permission check +
     append, atomically), `join_snapshot/3` (claim + ops/roles/read_only in
     one call), `ops/1`, `roles/1`, `valid_code?/1`, `room_exists?/1`,
-    `read_only?/1`, `approval_status/3`. The op log is the room's
-    authoritative state (ADR-0005); joins never create rooms (ADR-0006).
-    Ops are stored prepended with a counter (O(1) append). Rooms created
-    `read_only: true` record no members and allow no edits.
+    `persisted?/1`, `read_only?/1`, `approval_status/3`. The op log is the
+    room's authoritative state (ADR-0005); joins never create rooms
+    (ADR-0006) — except that a room with durable rows (ADR-0028) revives:
+    the join gate admits it, the process starts, and its init loads the
+    log back. Ops are stored prepended with a counter (O(1) append).
+    Rooms created `read_only: true` record no members and allow no edits.
+  - `RoomLog` (GenServer, ADR-0028) — the durable mirror of rooms' op
+    logs: every non-cursor op is written through (with an `author_name`
+    snapshot) as the room appends it, roles are persisted on change, and
+    a starting room loads its log, roles, and activity time back. Rows
+    live in the existing Fly Postgres (ADR-0026), two tables
+    (`room_logs`, `room_ops`) behind this boundary via Postgrex — no
+    Ecto. Purge paths: eviction deletes the rows with the room, and the
+    room sweeper's backstop removes rows idle past the 1h threshold with
+    no live process cluster-wide. Unconfigured (no `db:`), it is inert —
+    rooms stay memory-only.
   - `DemoRoom` — the read-only demo room at the reserved code `chess`
     (ADR-0014): a fixed annotated game, seeded on demand when a channel join
     targets the code (so it survives room-process and node loss). The create

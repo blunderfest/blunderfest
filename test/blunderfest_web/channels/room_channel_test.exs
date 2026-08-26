@@ -4,6 +4,14 @@ defmodule BlunderfestWeb.RoomChannelTest do
 
   setup do
     Rooms.reset()
+    # The durable mirror (ADR-0028) outlives room processes: purge the
+    # fixed slugs too, so a crashed prior run can't revive stale state.
+    for slug <- ["abcde", "fresh", "chess"] do
+      Blunderfest.RoomLog.delete(slug)
+    end
+
+    _ = :sys.get_state(Blunderfest.RoomLog)
+
     # Joins never create rooms; the tests create theirs up front.
     Rooms.create("abcde", "anonymous")
     Rooms.create("fresh", "anonymous")
@@ -509,6 +517,52 @@ defmodule BlunderfestWeb.RoomChannelTest do
       join_room("room:chess", %{"profile_id" => "profile-1", "name" => "Brave Otter 42"})
       assert BlunderfestWeb.Presence.list("room:chess") == %{}
     end
+  end
+
+  test "a persisted room revives on join after its process died (ADR-0028)", %{} do
+    {:ok, _reply, owner} =
+      join_room("room:abcde", %{"profile_id" => "profile-1", "name" => "Brave Otter 42"})
+
+    ref = push(owner, "op", %{"type" => "chat", "payload" => %{"text" => "before the crash"}})
+    assert_reply ref, :ok
+    _ = :sys.get_state(Blunderfest.RoomLog)
+
+    # The machine dies: stop the room process directly (the deploy path —
+    # it must NOT purge the durable rows; only eviction does).
+    [{pid, _}] = Horde.Registry.lookup(Blunderfest.RoomRegistry, "abcde")
+    ref_mon = Process.monitor(pid)
+    Horde.DynamicSupervisor.terminate_child(Blunderfest.RoomSupervisor, pid)
+    assert_receive {:DOWN, ^ref_mon, :process, ^pid, _reason}
+    refute Rooms.room_exists?("abcde")
+
+    # A fresh join revives the room from the durable log.
+    {:ok, reply, _socket} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+    assert [%{"type" => "chat", "payload" => %{"text" => "before the crash"}}] = reply.ops
+    assert reply.roles["profile-1"] == "owner"
+  end
+
+  test "the durable mirror carries the author's display name (ADR-0028)", %{} do
+    {:ok, _reply, owner} =
+      join_room("room:abcde", %{"profile_id" => "profile-1", "name" => "Brave Otter 42"})
+
+    ref = push(owner, "op", %{"type" => "chat", "payload" => %{"text" => "hello"}})
+    assert_reply ref, :ok
+
+    # The write-through is a cast; drain RoomLog, then poll the row.
+    _ = :sys.get_state(Blunderfest.RoomLog)
+    slug = "abcde"
+
+    for _ <- 1..200 do
+      case Blunderfest.RoomLog.load(slug) do
+        {:ok, %{ops: [%{"type" => "chat", "author_name" => "Brave Otter 42"}]}} -> :ok
+        _ -> Process.sleep(10)
+      end
+    end
+
+    assert {:ok, %{ops: [op]}} = Blunderfest.RoomLog.load(slug)
+    assert op["author"] == "profile-1"
+    assert op["author_name"] == "Brave Otter 42"
+    assert op["payload"] == %{"text" => "hello"}
   end
 
   describe "evidence_run sharing" do

@@ -110,11 +110,11 @@ if config_env() == :prod do
   # Check `Plug.SSL` for all available options in `force_ssl`.
 end
 
-# Corpus Postgres connection (ADR-0026). The corpus store lives behind the
-# `Blunderfest.Corpus` boundary and connects via Postgrex directly — no Ecto,
-# no Repo. DATABASE_URL is set by `flyctl postgres attach` in prod; locally
-# set it to reach any Postgres (Fly proxy or docker). Absent in dev/test, the
-# corpus is simply not configured.
+# Postgres connection (ADR-0026 corpus, ADR-0028 room log). Both stores
+# live behind their own boundary module and connect via Postgrex directly
+# — no Ecto, no Repo. DATABASE_URL is set by `flyctl postgres attach` in
+# prod; locally set it to reach any Postgres (Fly proxy or docker). Absent
+# in dev/test, the stores are simply not configured.
 if url = System.get_env("DATABASE_URL") do
   split_userinfo = fn
     nil ->
@@ -146,14 +146,16 @@ if url = System.get_env("DATABASE_URL") do
       []
     end
 
-  config :blunderfest, Blunderfest.Corpus,
-    db: [
-      hostname: uri.host,
-      port: uri.port || 5432,
-      database: uri.path |> String.trim_leading("/") |> URI.decode(),
-      username: username,
-      password: password,
-      ssl: ssl,
-      socket_options: socket_options
-    ]
+  db = [
+    hostname: uri.host,
+    port: uri.port || 5432,
+    database: uri.path |> String.trim_leading("/") |> URI.decode(),
+    username: username,
+    password: password,
+    ssl: ssl,
+    socket_options: socket_options
+  ]
+
+  config :blunderfest, Blunderfest.Corpus, db: db
+  config :blunderfest, Blunderfest.RoomLog, db: db
 end

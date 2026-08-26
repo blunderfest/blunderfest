@@ -1,6 +1,6 @@
 # ADR-0028: Room persistence — anonymous identity and retention
 
-Status: Accepted — implementation pending (2026-08-26)
+Status: Accepted (2026-08-26)
 
 ## Context
 

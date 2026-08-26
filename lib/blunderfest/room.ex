@@ -6,17 +6,22 @@ defmodule Blunderfest.Room do
   serializes behind another.
 
   Ops are stored prepended (newest first) with a separate `op_count`, so
-  appends and the growth-cap check are O(1); reads reverse. `:temporary` —
-  a crashed room is a lost room, which matches the no-DB stance: a
-  scale-to-zero instance loses all rooms anyway (ADR-0001).
+  appends and the growth-cap check are O(1); reads reverse.
 
-  A room created with `read_only: true` (the demo room, ADR-0014) records
-  no members at all: nobody owns it and nobody gains edit rights.
+  Since ADR-0028 the log has a durable mirror: every non-cursor op is
+  written through to `Blunderfest.RoomLog` (with an author-name snapshot)
+  as it is appended, roles are persisted on change, and a room process
+  starting for a known slug loads its log, roles, and activity time back
+  before serving joins — a deploy kills the process, not the room. The
+  read-only demo room (ADR-0014) is never persisted, and eviction purges
+  a room's durable rows (deletion lives in the sweeper path, not in
+  `terminate/2`: a deploy's shutdown must not delete rooms).
   """
 
   use GenServer, restart: :temporary
 
   alias Blunderfest.Ops
+  alias Blunderfest.RoomLog
 
   # Growth cap: a busy or hostile room can't grow without
   # limit; appends beyond the cap are rejected with `{:error, :op_limit}`.
@@ -28,18 +33,63 @@ defmodule Blunderfest.Room do
 
   @impl true
   def init({slug, opts}) do
-    {:ok,
-     %{
-       slug: slug,
-       seq: 0,
-       op_count: 0,
-       ops: [],
-       owner: nil,
-       presenter: nil,
-       roles: %{},
-       read_only: Keyword.get(opts, :read_only, false),
-       last_active_at: DateTime.utc_now()
-     }}
+    read_only = Keyword.get(opts, :read_only, false)
+
+    room =
+      if read_only do
+        empty_room(slug, read_only: true)
+      else
+        load_durable(slug)
+      end
+
+    {:ok, room}
+  end
+
+  # The durable mirror of the room: ops (ascending), roles, activity time.
+  # Absent or unconfigured storage falls back to an empty room — the
+  # in-memory stance (ADR-0001) still holds when there is nothing to load.
+  defp load_durable(slug) do
+    case RoomLog.load(slug) do
+      {:ok, %{ops: ops, roles: roles, last_active_at: last_active_at}} ->
+        seq =
+          ops
+          |> List.last()
+          |> case do
+            nil -> 0
+            op -> op["seq"]
+          end
+
+        owner = Enum.find(Map.keys(roles), &(Map.get(roles, &1) == :owner))
+
+        %{
+          slug: slug,
+          seq: seq,
+          op_count: length(ops),
+          ops: Enum.reverse(ops),
+          owner: owner,
+          presenter: nil,
+          roles: roles,
+          read_only: false,
+          last_active_at: last_active_at
+        }
+
+      _ ->
+        empty_room(slug, read_only: false)
+    end
+  end
+
+  defp empty_room(slug, read_only: read_only) do
+    %{
+      slug: slug,
+      seq: 0,
+      op_count: 0,
+      ops: [],
+      owner: nil,
+      presenter: nil,
+      roles: %{},
+      read_only: read_only,
+      last_active_at: DateTime.utc_now()
+    }
   end
 
   @impl true
@@ -69,16 +119,16 @@ defmodule Blunderfest.Room do
   end
 
   def handle_call({:append, op}, _from, room) do
-    case append_op(room, op) do
+    case append_op(room, op, nil) do
       {:ok, op, room} -> {:reply, {:ok, op}, room}
       {:error, reason} -> {:reply, {:error, reason}, room}
     end
   end
 
-  def handle_call({:submit_op, profile_id, op}, _from, room) do
+  def handle_call({:submit_op, profile_id, op, author_name}, _from, room) do
     case check_op(room, profile_id, op) do
       :ok ->
-        case append_op(room, op) do
+        case append_op(room, op, author_name) do
           {:ok, op, room} -> {:reply, {:ok, op}, room}
           {:error, reason} -> {:reply, {:error, reason}, room}
         end
@@ -122,7 +172,9 @@ defmodule Blunderfest.Room do
         {:reply, {:error, :invalid_member}, room}
 
       true ->
-        {:reply, {:ok, role}, touch(%{room | roles: Map.put(room.roles, member_id, role)})}
+        room = touch(%{room | roles: Map.put(room.roles, member_id, role)})
+        persist_roles(room)
+        {:reply, {:ok, role}, room}
     end
   end
 
@@ -201,7 +253,7 @@ defmodule Blunderfest.Room do
     Enum.any?(room.ops, fn op -> op["type"] == "chat" and op["seq"] == seq end)
   end
 
-  defp append_op(room, op) do
+  defp append_op(room, op, author_name) do
     if room.op_count >= @max_ops_per_room do
       {:error, :op_limit}
     else
@@ -216,8 +268,21 @@ defmodule Blunderfest.Room do
           last_active_at: now
       }
 
+      # The durable mirror (ADR-0028): everything but the cursor noise and
+      # the read-only demo room. Best-effort — the in-memory log stays
+      # authoritative.
+      unless room.read_only or op["type"] == "set_cursor" do
+        RoomLog.append(room.slug, op, author_name)
+      end
+
       {:ok, op, room}
     end
+  end
+
+  defp persist_roles(%{read_only: true}), do: :ok
+
+  defp persist_roles(room) do
+    RoomLog.put_roles(room.slug, room.roles)
   end
 
   defp touch(room), do: %{room | last_active_at: DateTime.utc_now()}

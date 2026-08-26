@@ -36,6 +36,10 @@ defmodule Blunderfest.Application do
       # all historical-evidence queries. Starts unconfigured (and inert)
       # when no db: config exists, e.g. dev without DATABASE_URL.
       Blunderfest.Corpus,
+      # The durable room log (ADR-0028): a write-through mirror of rooms'
+      # op logs so deploys stop losing rooms. Same unconfigured-when-absent
+      # stance as the corpus.
+      Blunderfest.RoomLog,
       BlunderfestWeb.Endpoint
     ]
 

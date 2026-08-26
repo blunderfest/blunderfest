@@ -208,6 +208,20 @@ the library's cross-device half, exercises the whole Ecto/Fly-Postgres
 path before the big corpus data touches it). Report:
 [`docs/technical-spike-03-persistence-report.md`](docs/technical-spike-03-persistence-report.md).
 
+**Carried forward: room persistence across deploys — DONE (the
+foundation).** ADR-0028 implemented: `Blunderfest.RoomLog` (the
+Postgrex boundary on the existing Fly Postgres, two tables) mirrors
+every non-cursor op as the room appends it (with an `author_name`
+snapshot), persists roles on change, and a room process starting for a
+known slug loads its log, roles, and activity time back; the join gate
+admits persisted rooms so a join revives them. Eviction purges the
+rows; the sweeper's backstop removes rows idle past 1h with no live
+process cluster-wide. Replayed chat resolves names from the snapshots.
+Verified live: SIGKILL the dev server, restart, rejoin — game and chat
+survive. Graceful handoff remains optional polish, and the
+profiles/accounts/library durability decision is still open. 399
+backend + 629 frontend tests green.
+
 ### Session handoff (2026-08-24, third session — visualization milestones A/B/C)
 
 **`docs/visualization_ideas.md` partially implemented, three commits**
@@ -289,20 +303,8 @@ mainline outgrew the analysis — always reachable whatever layers are
 toggled (the previous design hid it after the first run and resurfaced
 Re-analyze in the engine box, two homes for one job). The engine box
 keeps only line-scoped "Analyze line", and the eval chip wears a small
-gold needs-analysis marker until a job has run (it is the only layer
+ gold needs-analysis marker until a job has run (it is the only layer
 that depends on one). 598 frontend + 382 backend tests green.
-
-**Carried forward (queued, after everything else): room persistence
-across deploys.** Foundation = write-through op log to Postgres +
-replay-on-join; graceful handoff only as later polish. The identity/
-retention ADR is now **accepted — implementation pending**
-(**ADR-0028**): the durable log excludes `set_cursor` ops and stores
-`author_name` snapshots + the roles map, retention mirrors ADR-0016's
-1h idle purge (on eviction + a backstop for orphaned rows), chat text
-is bounded by that window, and rows live behind a `Blunderfest.RoomLog`
-Postgrex boundary on the existing Fly Postgres (narrow ADR-0001/0026
-amendment). The write-through foundation itself is the next
-implementation candidate when picked up.
 
 **Later the same session — Examples-tab usability (five owner-reported
 issues, all fixed).** (1) Tab switches emptied the Examples list:

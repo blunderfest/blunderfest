@@ -12,6 +12,12 @@ export type OpBase = {
   seq: number;
   author: string;
   ts: string;
+  /**
+   * The display-name snapshot attached by the durable mirror (ADR-0028) —
+   * present on ops replayed after a room reload, so history resolves
+   * names even before presence refills.
+   */
+  author_name?: string;
 };
 
 export type SetGameOp = OpBase & {
