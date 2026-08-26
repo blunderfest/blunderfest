@@ -174,6 +174,13 @@ so clients send nothing and hide the member list.
   10s ping loop → `lagMs`; events from superseded channels are ignored),
   `RoomPanel` (code/copy/leave + a single-line region/lag readout inside
   the box), `MemberList` (follow toggle, presenter handoff), `GameList`.
+  `RoomView` keeps a per-game cursor memory (`cursorByGame`, fed by
+  Analysis' `onLocalCursor` — every local cursor change, presenter or
+  not): Analysis unmounts on each game switch, so without it a switch
+  back would reopen the game at the tail; the stored node feeds
+  `initialNodeId` (after `openAtPly` for added historical games). The
+  memory is local — cursors are per-viewer state, never broadcast or
+  stored.
 - `assets/src/features/tour/` + `assets/src/app/HelpMenu.tsx` — the guided
   tour: a hand-rolled spotlight (a ring whose box-shadow dims the page) and
   tooltip stepping through `data-tour` landmarks; steps that don't resolve

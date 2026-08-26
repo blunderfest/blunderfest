@@ -1215,3 +1215,111 @@ describe('historical evidence integration', () => {
     expect(pieceAt('square-d4')).toBe('wp');
   });
 });
+
+describe('per-game cursor memory', () => {
+  let channel: FakeChannel;
+  let channelFactory: () => FakeChannel;
+
+  beforeEach(() => {
+    channel = new FakeChannel();
+    channelFactory = () => channel;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function renderRoom(slug = 'abc12', onLeave = vi.fn(), selfId: string | null = null) {
+    const store = makeStore();
+    render(
+      <Provider store={store}>
+        <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />
+      </Provider>,
+    );
+  }
+
+  function lineTree(players: [string, string], moveFens: string[]): GameTree {
+    // moveFens[i] is the fen after move i+1 (all played from the root).
+    let tip = node({ id: 0, ply: 0, san: null });
+    const roots = [tip];
+    moveFens.forEach((fen, index) => {
+      const ply = index + 1;
+      const next = node({
+        id: ply,
+        ply,
+        san: `m${ply}`,
+        from: 'e2',
+        to: 'e4',
+        fen,
+      });
+      tip.children = [next];
+      roots.push(next);
+      tip = next;
+    });
+    return {
+      headers: { White: players[0], Black: players[1] },
+      result: '*',
+      setup: null,
+      mainline_ply_count: moveFens.length,
+      node_count: moveFens.length + 1,
+      root: roots[0] as GameNode,
+    };
+  }
+
+  // A: e4 e5 Nf3 Nc6 (tip = Nc6); B: d4 d5 Nf3 Nf6 (tip = Nf6).
+  const treeA = lineTree(
+    ['Alice', 'Bob'],
+    [
+      'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1',
+      'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2',
+      'rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2',
+      'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3',
+    ],
+  );
+  const treeB = lineTree(
+    ['Carol', 'Dave'],
+    [
+      'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1',
+      'rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq d6 0 2',
+      'rnbqkbnr/ppp1pppp/8/3p4/3P4/5N2/PPP1PPPP/RNBQKB1R b KQkq - 1 2',
+      'rnbqkb1r/ppp1pppp/5n2/3p4/3P4/5N2/PPP1PPPP/RNBQKB1R w KQkq - 2 3',
+    ],
+  );
+
+  it('restores each game at its own last viewed position across switches', async () => {
+    channel.joinReturn = {
+      ops: [setGameOp(1, treeA), setGameOp(2, treeB, 'game-2')],
+      roles: { 'profile-1': 'owner' },
+    };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    // Game A opens at its tail: Nc6 is on c6.
+    await waitFor(() => expect(pieceAt('square-c6')).toBe('bn'));
+    // Walk A back to move 2 (1... e5).
+    fireEvent.click(screen.getByTestId('analysis-move-2'));
+    expect(pieceAt('square-e5')).toBe('bp');
+    expect(pieceAt('square-c6')).toBeNull();
+
+    // Game B opens at its tail (Nf6), then moves back to move 3 (Nf3).
+    fireEvent.click(await screen.findByRole('button', { name: /Carol – Dave/ }));
+    await waitFor(() => expect(pieceAt('square-f6')).toBe('bn'));
+    fireEvent.click(screen.getByTestId('analysis-move-3'));
+    expect(pieceAt('square-f3')).toBe('wn');
+    expect(pieceAt('square-f6')).toBeNull();
+
+    // Back to A: still on move 2 (e5), not the tail.
+    fireEvent.click(screen.getByRole('button', { name: /Alice – Bob/ }));
+    await waitFor(() => expect(pieceAt('square-e5')).toBe('bp'));
+    expect(pieceAt('square-c6')).toBeNull();
+
+    // Back to B: still on move 3 (Nf3), not the tail.
+    fireEvent.click(screen.getByRole('button', { name: /Carol – Dave/ }));
+    await waitFor(() => expect(pieceAt('square-f3')).toBe('wn'));
+    expect(pieceAt('square-f6')).toBeNull();
+  });
+});

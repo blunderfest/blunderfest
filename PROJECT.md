@@ -315,10 +315,22 @@ disable the button with a tooltip). "Add to room" flips to "Added ✓"
 once fetched (session-scoped gid set). (5) "Add to room" no longer
 steals the view: no `select_game` to the new game, no cursor switch —
 the game lands in the Games panel for later; a presenting adder
-re-points the room with `select_game` back to the viewed game (the
-presenter's own `set_game` otherwise counts as focus and would drag the
-room along). 607 frontend + 382 backend tests green. Also reviewed: the
-single Redux slice is judged correct — see the session notes.
+  re-points the room with `select_game` back to the viewed game (the
+  presenter's own `set_game` otherwise counts as focus and would drag the
+  room along). 607 frontend + 382 backend tests green. Also reviewed: the
+  single Redux slice is judged correct — see the session notes.
+
+**Later the same session — per-game cursor memory.** Switching games
+remounted Analysis, so each switch back reopened the game at the tail —
+the user's place was lost. `RoomView` now keeps `cursorByGame` (game id →
+last locally viewed node), fed by a new `onLocalCursor` signal from
+`useCursor` (every local cursor change — navigation, init, follow-tail,
+rollbacks — regardless of presenting; `onCursorChange` stays the
+presenter-only broadcast). The stored node feeds `initialNodeId` (after
+`openAtPly`), so each game reopens where it was left. Local state on
+purpose: cursors are per-viewer, never broadcast or stored. RoomView
+integration test covers the two-game switch-back loop. 608 frontend +
+382 backend tests green.
 
 ### Session handoff (2026-08-24, second session — continued after an engine switch)
 

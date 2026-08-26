@@ -96,6 +96,7 @@ export function useCursor({
   startAtRoot = false,
   initialNodeId = null,
   onCursorChange,
+  onLocalCursor,
   onFollowChange,
 }: {
   tree: GameTree | null;
@@ -113,6 +114,13 @@ export function useCursor({
    */
   initialNodeId?: number | null;
   onCursorChange?: (nodeId: number) => void;
+  /**
+   * Reports every local cursor change — navigation, the initial position,
+   * follow-tail, rollbacks — regardless of presenting. The room view uses
+   * it to persist the per-game cursor, so switching games and back restores
+   * where you were.
+   */
+  onLocalCursor?: (nodeId: number) => void;
   onFollowChange?: (following: boolean) => void;
 }) {
   const [state, dispatch] = useReducer(cursorReducer, { currentId: null, pending: new Map() });
@@ -198,6 +206,13 @@ export function useCursor({
       onCursorChange(currentId);
     }
   }, [amPresenter, currentId, onCursorChange]);
+
+  /** Report every local cursor change (the caller persists it per game). */
+  useEffect(() => {
+    if (currentId !== null && onLocalCursor) {
+      onLocalCursor(currentId);
+    }
+  }, [currentId, onLocalCursor]);
 
   /**
    * Local navigation: breaks away from the presenter and moves the cursor.

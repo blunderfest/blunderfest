@@ -55,6 +55,7 @@ export default function Analysis({
   lastPlayedId = null,
   onFollowChange,
   onCursorChange,
+  onLocalCursor,
   onPlayMove,
   onComment,
   onSetPosition,
@@ -79,6 +80,12 @@ export default function Analysis({
   lastPlayedId?: number | null;
   onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
+  /**
+   * Fires on every local cursor change (navigation, the opening position,
+   * follow-tail, rollbacks) — the room view persists it per game, so
+   * switching games and back restores the viewed position.
+   */
+  onLocalCursor?: (nodeId: number) => void;
   onPlayMove?: (payload: Omit<MoveAtPlyOp['payload'], 'game_id'>, onError?: () => void) => void;
   onComment?: (payload: Omit<CommentAtPlyOp['payload'], 'game_id'>) => void;
   onSetPosition?: (
@@ -176,6 +183,7 @@ export default function Analysis({
     startAtRoot,
     initialNodeId,
     onCursorChange,
+    onLocalCursor,
     onFollowChange,
   });
 

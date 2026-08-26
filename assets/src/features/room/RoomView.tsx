@@ -84,6 +84,13 @@ export default function RoomView({
    * can be compared against the analyzed position directly.
    */
   const [openAtPly, setOpenAtPly] = useState<ReadonlyMap<string, number>>(new Map());
+  /**
+   * The last locally viewed node per game (game id → node id). Analysis
+   * unmounts on every game switch, so without this each switch back would
+   * reopen the game at the tail — the user's place is per game, and it
+   * comes back with them. Local only: never broadcast, never in the store.
+   */
+  const [cursorByGame, setCursorByGame] = useState<ReadonlyMap<string, number>>(new Map());
 
   const amPresenter = selfId !== null && presenter?.id === selfId;
 
@@ -121,6 +128,22 @@ export default function RoomView({
       }
     },
     [sendOp, readOnly],
+  );
+
+  // The presenter's broadcast and the local record share the same signal
+  // from Analysis; this one is the per-game memory (local only).
+  const handleLocalCursor = useCallback(
+    (nodeId: number) => {
+      if (effectiveGameId === null) {
+        return;
+      }
+      setCursorByGame((current) =>
+        current.get(effectiveGameId) === nodeId
+          ? current
+          : new Map(current).set(effectiveGameId, nodeId),
+      );
+    },
+    [effectiveGameId],
   );
 
   const handlePlayMove = useCallback(
@@ -434,10 +457,13 @@ export default function RoomView({
               canEdit={canEdit}
               startAtRoot={effectiveGameId !== null && effectiveGameId === freshImportId}
               initialNodeId={
-                effectiveGameId !== null ? (openAtPly.get(effectiveGameId) ?? null) : null
+                effectiveGameId !== null
+                  ? (cursorByGame.get(effectiveGameId) ?? openAtPly.get(effectiveGameId) ?? null)
+                  : null
               }
               onFollowChange={setFollowOverride}
               onCursorChange={handleCursorChange}
+              onLocalCursor={handleLocalCursor}
               onPlayMove={handlePlayMove}
               lastPlayedId={lastPlayedId}
               onComment={handleComment}
