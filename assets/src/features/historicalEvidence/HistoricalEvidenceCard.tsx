@@ -268,7 +268,7 @@ export default function HistoricalEvidenceCard({
             <button
               type="button"
               className={button({
-                intent: 'quiet',
+                intent: 'secondary',
                 size: 'xs',
                 active: variationState?.exists === true,
               })}
@@ -293,7 +293,7 @@ export default function HistoricalEvidenceCard({
           {onAddGame !== undefined && (
             <button
               type="button"
-              className={button({ intent: 'quiet', size: 'xs', active: addedToRoom })}
+              className={button({ intent: 'secondary', size: 'xs', active: addedToRoom })}
               disabled={adding || addedToRoom}
               onClick={onAddGame}
               data-testid="historical-evidence-add-game"

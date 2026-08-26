@@ -26,6 +26,7 @@ import {
   selectCanEdit,
   selectFirstGameId,
   selectLastPlayed,
+  selectLastPlayedBy,
   selectPresenter,
   selectPresenterCursor,
   selectPresenterGameId,
@@ -120,6 +121,12 @@ export default function RoomView({
     effectiveGameId === null ? undefined : state.room.analysis[effectiveGameId],
   );
   const lastPlayedId = useAppSelector((state) => selectLastPlayed(state.room, effectiveGameId));
+  const lastPlayedBy = useAppSelector((state) => selectLastPlayedBy(state.room, effectiveGameId));
+  // Follow-the-tail only reacts to OTHER members' plays: your own variation
+  // inserts (setup + line ops update lastPlayed too) must never yank the
+  // cursor off the position being analyzed. The initial cursor on open
+  // still uses the unfiltered `lastPlayedId`.
+  const remoteLastPlayedId = lastPlayedBy !== null && lastPlayedBy !== selfId ? lastPlayedId : null;
   const gameAnnotations = useAppSelector((state) =>
     effectiveGameId !== null
       ? (state.room.annotations[effectiveGameId] ?? NO_ANNOTATIONS)
@@ -479,11 +486,12 @@ export default function RoomView({
               onCursorChange={handleCursorChange}
               onLocalCursor={handleLocalCursor}
               onPlayMove={handlePlayMove}
-              lastPlayedId={lastPlayedId}
               onComment={handleComment}
               onSetPosition={handleSetPosition}
               onAddLine={handleAddLine}
               onSetNags={handleSetNags}
+              lastPlayedId={lastPlayedId}
+              remoteLastPlayedId={remoteLastPlayedId}
               annotations={gameAnnotations}
               onAnnotations={handleAnnotations}
               onAnalyze={canEdit ? handleAnalyze : undefined}

@@ -376,6 +376,7 @@ describe('useRoomChannel', () => {
       roles: {},
       games: {},
       lastPlayed: {},
+      lastPlayedBy: {},
       annotations: {},
       region: null,
       roomRegion: null,

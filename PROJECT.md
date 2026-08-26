@@ -363,6 +363,27 @@ run fails. (3) The loading state now reads "Searching the game
 corpus…" with the pulsing status dot instead of a bare "…". 619
 frontend + 382 backend tests green.
 
+**Later the same session — cursor yank, dot mystery, button visibility.**
+(a)+(d) Root cause found for the disappearing examples / "position
+changed" ghost: the follow-the-tail cursor effect treated the viewer's
+OWN variation inserts (the `set_position` + `add_line` pair, or a
+one-move line) as moves to follow, yanking the cursor off the analyzed
+position — the panel then flagged its results stale, and the per-game
+cursor memory remembered the new position, so the examples were gone
+after a game switch. The store now tracks who played last
+(`lastPlayedBy`), and follow-the-tail only reacts to OTHER members'
+plays (`remoteLastPlayedId` through Analysis → useCursor); the initial
+cursor on open still uses the unfiltered `lastPlayedId`. Reproduced the
+user's exact flow in the browser against the local corpus
+(voncul–kel2zad22 etc. — adding multiple games works as intended;
+the add-game path itself never moved the cursor, so (a) is the stale
+list after a variation add). (b) The green dot before the first engine
+line is the engine's status dot (ready/thinking) — it now explains
+itself in a tooltip ("Engine ready — lines shown are for the current
+position"). (c) The card action buttons are `secondary` (raised)
+instead of `quiet` (ghost) — noticeably present without shouting. 622
+frontend + 382 backend tests green.
+
 ### Session handoff (2026-08-24, second session — continued after an engine switch)
 
 **Spike 06 (plan skeletons & move-order robustness) done, spike-only

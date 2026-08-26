@@ -635,18 +635,34 @@ describe('follow-the-tail cursor', () => {
   };
 
   it('advances when a remote move is played from my current position', () => {
-    const { rerender } = render(<Analysis tree={tree} lastPlayedId={4} />);
+    const { rerender } = render(<Analysis tree={tree} lastPlayedId={4} remoteLastPlayedId={4} />);
     expect(pieceAt('square-f3')).toBe('wn');
 
     fireEvent.keyDown(document.body, { key: 'Home' });
     expect(pieceAt('square-g1')).toBe('wn');
 
-    rerender(<Analysis tree={treeWithC4} lastPlayedId={5} />);
+    rerender(<Analysis tree={treeWithC4} lastPlayedId={5} remoteLastPlayedId={5} />);
     expect(pieceAt('square-c4')).toBe('wp');
   });
 
+  it('stays put when the last play is my own (a variation insert)', () => {
+    const { rerender } = render(
+      <Analysis tree={tree} lastPlayedId={4} remoteLastPlayedId={null} />,
+    );
+    expect(pieceAt('square-f3')).toBe('wn');
+
+    fireEvent.keyDown(document.body, { key: 'Home' });
+    expect(pieceAt('square-g1')).toBe('wn');
+
+    // The tree gained a variation under the root (my own add): lastPlayed
+    // moved to it, but the follow signal is mine — no jump.
+    rerender(<Analysis tree={treeWithC4} lastPlayedId={5} remoteLastPlayedId={null} />);
+    expect(pieceAt('square-g1')).toBe('wn');
+    expect(pieceAt('square-c4')).toBeNull();
+  });
+
   it('does not bounce forward when navigating back to the parent of the last move', () => {
-    render(<Analysis tree={tree} lastPlayedId={4} />);
+    render(<Analysis tree={tree} lastPlayedId={4} remoteLastPlayedId={4} />);
     // At the tip (Nf3, id 4); its parent is e5 (id 2).
     expect(pieceAt('square-f3')).toBe('wn');
 

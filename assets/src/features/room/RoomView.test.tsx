@@ -1010,6 +1010,52 @@ describe('RoomView', () => {
     await waitFor(() => expect(pieceAt('square-c4')).toBe('wp'));
   });
 
+  it('does not yank the cursor onto the viewer\u2019s own inserted variation', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    // Opens at the mainline tip (e4), then back to the start position.
+    await waitFor(() => expect(pieceAt('square-e4')).toBe('wp'));
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    expect(pieceAt('square-e4')).toBeNull();
+
+    // The viewer's own variation insert under the root: the line lands in
+    // the tree, but follow-the-tail must NOT jump the cursor onto it —
+    // insertLine deliberately leaves the user where they were analyzing.
+    const lineOp: Op = {
+      seq: 2,
+      author: 'profile-1',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'add_line',
+      payload: {
+        game_id: 'game-1',
+        parent_id: 0,
+        moves: [
+          {
+            san: 'c4',
+            from: 'c2',
+            to: 'c4',
+            promotion: null,
+            fen: 'rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1',
+            status: 'active',
+          },
+        ],
+      },
+    };
+    act(() => channel.emit('new_op', lineOp));
+
+    // The variation is in the move list; the board still shows the start
+    // position (the cursor never moved).
+    expect(screen.getByTestId('analysis-move-3')).toBeInTheDocument();
+    expect(pieceAt('square-c4')).toBeNull();
+    expect(pieceAt('square-e2')).toBe('wp');
+  });
+
   it('opens on the last played move after a rejoin, even in a variation', async () => {
     // Mainline e4, then a variation move c4 played from the root.
     const c4Op: Op = {

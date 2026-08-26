@@ -125,7 +125,14 @@ export default function EngineReadout({
         // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity — row N is always the Nth-best line
         <div key={index} className="flex h-7 items-center gap-2" data-testid="engine-line">
           {index === 0 ? (
-            <span className={statusDot({ tone: thinking ? 'warn' : 'ok', pulse: thinking })} />
+            // The engine's status dot: green when the shown lines are the
+            // current position's result, pulsing gold while a new search
+            // is running. The first row carries it because there is one
+            // engine, not one per line.
+            <span
+              className={statusDot({ tone: thinking ? 'warn' : 'ok', pulse: thinking })}
+              title={thinking ? t('analysis.engineThinking') : t('analysis.engineReady')}
+            />
           ) : (
             <span className="w-1.5 shrink-0" />
           )}

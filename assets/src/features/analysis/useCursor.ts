@@ -92,6 +92,7 @@ export function useCursor({
   following,
   presenterCursorId,
   lastPlayedId,
+  followPlayedId = null,
   amPresenter,
   startAtRoot = false,
   initialNodeId = null,
@@ -104,6 +105,12 @@ export function useCursor({
   following: boolean;
   presenterCursorId: number | null;
   lastPlayedId: number | null;
+  /**
+   * The most recent move/setup node played by ANOTHER member — the only
+   * plays follow-the-tail reacts to (own variation inserts must never
+   * yank the cursor). Null when the last play was the viewer's own.
+   */
+  followPlayedId?: number | null;
   amPresenter: boolean;
   /** Open on the initial position instead of the tail (fresh imports). */
   startAtRoot?: boolean;
@@ -153,15 +160,23 @@ export function useCursor({
   }
 
   /**
-   * Follow the tail. Only runs when the newest op CHANGES (a move actually
-   * arrived) — never because the cursor moved. Otherwise navigating back to
-   * the parent of the last move would bounce you forward again.
+   * Follow the tail — but only other members' plays. The viewer's own
+   * move/setup/line ops update `lastPlayed` too; following those would
+   * yank the cursor onto just-inserted variations (playMove already
+   * navigates explicitly; insertLine deliberately does not). Only runs
+   * when the newest op CHANGES (a move actually arrived) — never because
+   * the cursor moved. Otherwise navigating back to the parent of the last
+   * move would bounce you forward again.
    */
-  const lastPlayedParentId =
-    lastPlayedId !== null ? (byId.get(lastPlayedId)?.parent?.id ?? null) : null;
+  const followPlayedParentId =
+    followPlayedId !== null ? (byId.get(followPlayedId)?.parent?.id ?? null) : null;
   useEffect(() => {
-    dispatch({ type: 'follow_tail', lastPlayedId, lastPlayedParentId });
-  }, [lastPlayedId, lastPlayedParentId]);
+    dispatch({
+      type: 'follow_tail',
+      lastPlayedId: followPlayedId,
+      lastPlayedParentId: followPlayedParentId,
+    });
+  }, [followPlayedId, followPlayedParentId]);
 
   /**
    * While following, the presenter's cursor wins; otherwise the viewer's own

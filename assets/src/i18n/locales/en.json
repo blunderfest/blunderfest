@@ -221,6 +221,7 @@
     "evalMateBlack": "Mate in {{count}} for Black",
     "evalEqual": "Equal position",
     "engineThinking": "Analyzing...",
+    "engineReady": "Engine ready — lines shown are for the current position",
     "engineUnavailable": "Engine analysis unavailable",
     "engineRetry": "Retry",
     "depthLabel": "Depth",

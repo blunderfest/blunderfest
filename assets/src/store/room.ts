@@ -42,6 +42,13 @@ export type RoomState = {
    * Drives the initial cursor on join/refresh.
    */
   lastPlayed: Record<string, number>;
+  /**
+   * Who authored the most recent move/setup op per game. `useCursor`'s
+   * follow-the-tail only reacts to *other* members' plays — your own
+   * variation inserts (setup + line ops) must never yank the cursor off
+   * the position being analyzed.
+   */
+  lastPlayedBy: Record<string, string>;
   /** The Fly region of the machine this client is connected to (join reply). */
   region: string | null;
   /** The Fly region hosting the room process (join reply; null pre-join). */
@@ -71,6 +78,7 @@ const initialState: RoomState = {
   roles: {},
   games: {},
   lastPlayed: {},
+  lastPlayedBy: {},
   annotations: {},
   region: null,
   roomRegion: null,
@@ -428,6 +436,18 @@ export function selectLastPlayed(state: RoomState, gameId: string | null): numbe
 }
 
 /**
+ * Who authored the most recent move/setup op in `gameId` — follow-the-tail
+ * only reacts to other members' plays, so the caller compares this against
+ * the viewer's own profile id.
+ */
+export function selectLastPlayedBy(state: RoomState, gameId: string | null): string | null {
+  if (gameId === null) {
+    return null;
+  }
+  return state.lastPlayedBy[gameId] ?? null;
+}
+
+/**
  * Room members sorted for the member list: owner, then collaborators, then
  * viewers, each group alphabetically by name. Members without a role are
  * treated as viewers.
@@ -571,6 +591,7 @@ const roomSlice = createSlice({
       state.roles = {};
       state.games = {};
       state.lastPlayed = {};
+      state.lastPlayedBy = {};
       state.annotations = {};
       state.region = null;
       state.roomRegion = null;
@@ -588,6 +609,7 @@ const roomSlice = createSlice({
       state.roles = {};
       state.games = {};
       state.lastPlayed = {};
+      state.lastPlayedBy = {};
       state.annotations = {};
       state.region = null;
       state.roomRegion = null;
@@ -681,6 +703,7 @@ const roomSlice = createSlice({
             if (tree !== undefined) {
               // Post-apply max is the newest node — for a line, its end.
               state.lastPlayed[op.payload.game_id] = maxNodeId(tree.root);
+              state.lastPlayedBy[op.payload.game_id] = op.author;
             }
           }
         }
@@ -690,6 +713,7 @@ const roomSlice = createSlice({
       state.ops = [...action.payload].sort((a, b) => a.seq - b.seq);
       state.games = {};
       state.lastPlayed = {};
+      state.lastPlayedBy = {};
       state.annotations = {};
       state.analysis = {};
       state.analysisProgress = null;
@@ -738,6 +762,7 @@ const roomSlice = createSlice({
             if (tree !== undefined) {
               // Post-apply max is the newest node — for a line, its end.
               state.lastPlayed[op.payload.game_id] = maxNodeId(tree.root);
+              state.lastPlayedBy[op.payload.game_id] = op.author;
             }
           }
         }

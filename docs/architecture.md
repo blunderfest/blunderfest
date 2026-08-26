@@ -180,7 +180,11 @@ so clients send nothing and hide the member list.
   back would reopen the game at the tail; the stored node feeds
   `initialNodeId` (after `openAtPly` for added historical games). The
   memory is local — cursors are per-viewer state, never broadcast or
-  stored.
+  stored. The store also tracks `lastPlayedBy` (who played last per
+  game): `useCursor`'s follow-the-tail reacts only to the
+  `remoteLastPlayedId` derived from it, so a viewer's own variation
+  inserts never yank the cursor off the position being analyzed, while
+  other members' moves still carry the game along.
 - `assets/src/features/tour/` + `assets/src/app/HelpMenu.tsx` — the guided
   tour: a hand-rolled spotlight (a ring whose box-shadow dims the page) and
   tooltip stepping through `data-tour` landmarks; steps that don't resolve

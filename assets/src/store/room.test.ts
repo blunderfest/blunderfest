@@ -19,6 +19,7 @@ import roomReducer, {
   selectCanEdit,
   selectFirstGameId,
   selectLastPlayed,
+  selectLastPlayedBy,
   selectPresenter,
   selectPresenterCursor,
   selectPresenterGameId,
@@ -213,6 +214,7 @@ describe('room slice', () => {
       roles: {},
       games: {},
       lastPlayed: {},
+      lastPlayedBy: {},
       annotations: {},
       region: null,
       readOnly: false,
@@ -235,6 +237,7 @@ describe('room slice', () => {
         roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
         lastPlayed: { 'game-1': 1 },
+        lastPlayedBy: { 'game-1': 'author-1' },
         annotations: {},
         region: 'ord',
         readOnly: true,
@@ -255,6 +258,7 @@ describe('room slice', () => {
       roles: {},
       games: {},
       lastPlayed: {},
+      lastPlayedBy: {},
       annotations: {},
       region: null,
       readOnly: false,
@@ -277,6 +281,7 @@ describe('room slice', () => {
         roles: { 'author-1': 'owner' },
         games: { 'game-1': tree },
         lastPlayed: { 'game-1': 1 },
+        lastPlayedBy: { 'game-1': 'author-1' },
         annotations: {},
         region: 'ord',
         readOnly: true,
@@ -297,6 +302,7 @@ describe('room slice', () => {
       roles: {},
       games: {},
       lastPlayed: {},
+      lastPlayedBy: {},
       annotations: {},
       region: null,
       readOnly: false,
@@ -1069,6 +1075,24 @@ describe('lastPlayed tracking', () => {
       ]),
     );
     expect(selectLastPlayed(state, 'game-1')).toBe(4);
+  });
+
+  it('tracks who played last, for the follow-the-tail filter', () => {
+    let state = roomReducer(undefined, applyOp(playedGameOp(1)));
+    expect(selectLastPlayedBy(state, 'game-1')).toBeNull();
+
+    state = roomReducer(state, applyOp(moveAtPly(2, 3, { san: 'Nf3', parent_id: 2 })));
+    expect(selectLastPlayedBy(state, 'game-1')).toBe('author-1');
+
+    // A different member's play becomes the author of record.
+    state = roomReducer(
+      state,
+      applyOp({ ...moveAtPly(3, 2, { san: 'c5', parent_id: 1 }), author: 'author-2' }),
+    );
+    expect(selectLastPlayedBy(state, 'game-1')).toBe('author-2');
+
+    const replayed = roomReducer(undefined, replayOps([playedGameOp(1), moveAtPly(2, 3)]));
+    expect(selectLastPlayedBy(replayed, 'game-1')).toBe('author-1');
   });
 });
 

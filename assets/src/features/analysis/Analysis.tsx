@@ -53,6 +53,7 @@ export default function Analysis({
   canEdit = false,
   engine = undefined,
   lastPlayedId = null,
+  remoteLastPlayedId = null,
   onFollowChange,
   onCursorChange,
   onLocalCursor,
@@ -79,6 +80,12 @@ export default function Analysis({
   canEdit?: boolean;
   engine?: ChessEngine | null;
   lastPlayedId?: number | null;
+  /**
+   * The most recent move/setup node played by ANOTHER member (null for the
+   * viewer's own plays): follow-the-tail reacts to this one only, so your
+   * own variation inserts never yank the cursor off the viewed position.
+   */
+  remoteLastPlayedId?: number | null;
   onFollowChange?: (following: boolean) => void;
   onCursorChange?: (nodeId: number) => void;
   /**
@@ -185,6 +192,7 @@ export default function Analysis({
     following,
     presenterCursorId,
     lastPlayedId,
+    followPlayedId: remoteLastPlayedId,
     amPresenter,
     startAtRoot,
     initialNodeId,
