@@ -423,6 +423,28 @@ since (`initialNodeId` before `lastPlayedId`; a refresh still opens at
 the last played move, since the memory is empty then). 628 frontend +
 386 backend tests green.
 
+**Later the same session — sync follow-ups + a real stress run (four
+owner-reported issues).** (1) Examples sync still failed for the
+second user: the shared-run auto-execution was gated on `canAnalyze` —
+viewers (an anonymous second browser) could never see an editor's
+shared results. The gate is gone (viewers still can't initiate a run;
+seeing shared results is read-only). (2) The card buttons now render
+with fixed label widths, so "Add to room" → "Same game — already
+added" swaps never shift the sibling button. (3) The disabled
+add-to-room button was the same corpus game at another position (the
+list surfaces one game at several plies): the label now says exactly
+that — "Same game — already added" — instead of an ambiguous "Added
+✓". Verified by reproduction: 21 cards → 12 distinct games added;
+different games between the same players (hout14–pilocl 1-0 vs 0-1)
+both added fine. (4) Honest stress test at scale: a generated 100-game
+PGN (33 KB, random legal games via chess.js) imported in one go, two
+users, 30+ moves, comments/NAGs, 21 chat messages, 2 whole-game
+analyses (99 evals), 74 cursor ops. Measured from the join payload
+(the client's replay = its Redux room slice): **100 games, 256 ops,
+4,924 nodes, 1.11 MB**; join+replay 3.2 s; cursor navigation 33
+ms/move; game switch 43 ms. Headroom confirmed (5,000-op cap). 628
+frontend + 386 backend tests green.
+
 ### Session handoff (2026-08-24, second session — continued after an engine switch)
 
 **Spike 06 (plan skeletons & move-order robustness) done, spike-only

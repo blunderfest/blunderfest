@@ -283,11 +283,15 @@ export default function HistoricalEvidenceCard({
               onClick={onAddVariation}
               data-testid="historical-evidence-add-variation"
             >
-              {variationState?.exists === true
-                ? t('evidence.addedVariation')
-                : addingVariation
-                  ? t('evidence.adding')
-                  : t('evidence.addVariation')}
+              {/* Fixed width: "Add as variation" ↔ "Added ✓" must not shift
+                  the sibling button when the label swaps. */}
+              <span className="inline-block w-[7.5rem] text-left">
+                {variationState?.exists === true
+                  ? t('evidence.addedVariation')
+                  : addingVariation
+                    ? t('evidence.adding')
+                    : t('evidence.addVariation')}
+              </span>
             </button>
           )}
           {onAddGame !== undefined && (
@@ -297,12 +301,19 @@ export default function HistoricalEvidenceCard({
               disabled={adding || addedToRoom}
               onClick={onAddGame}
               data-testid="historical-evidence-add-game"
+              title={addedToRoom ? t('evidence.sameGameInRoom') : undefined}
             >
-              {addedToRoom
-                ? t('evidence.addedToRoom')
-                : adding
-                  ? t('evidence.adding')
-                  : t('evidence.addToRoom')}
+              {/* Fixed width for the same reason. "Same game" matters:
+                  the corpus surfaces the same game at several positions,
+                  and a second card with the same players is that game —
+                  not a different game that deserves another add. */}
+              <span className="inline-block w-[11.5rem] text-left">
+                {addedToRoom
+                  ? t('evidence.sameGameInRoom')
+                  : adding
+                    ? t('evidence.adding')
+                    : t('evidence.addToRoom')}
+              </span>
             </button>
           )}
         </div>

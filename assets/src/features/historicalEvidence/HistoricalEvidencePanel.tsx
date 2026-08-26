@@ -258,13 +258,14 @@ export default function HistoricalEvidencePanel({
   // Another member ran the analysis for the viewed position: run the same
   // query (once per position per mount) so the examples are shared. The
   // viewer's own route/ply are preferred — the FEN is what matters.
+  // Deliberately NOT gated on canAnalyze: viewers can't initiate a run,
+  // but seeing an editor's shared results is a read-only view of them.
   const lastAutoRun = useRef<string | null>(null);
   useEffect(() => {
     if (
       sharedEvidenceRun !== null &&
       fen !== null &&
       sharedEvidenceRun.fen === fen &&
-      canAnalyze &&
       !(status.kind === 'ready' && !stale)
     ) {
       if (lastAutoRun.current !== sharedEvidenceRun.fen) {
@@ -276,7 +277,7 @@ export default function HistoricalEvidencePanel({
         });
       }
     }
-  }, [sharedEvidenceRun, fen, route, refPly, canAnalyze, status, stale, runQuery]);
+  }, [sharedEvidenceRun, fen, route, refPly, status, stale, runQuery]);
 
   const [addingGid, setAddingGid] = useState<number | null>(null);
   const [addFailed, setAddFailed] = useState(false);

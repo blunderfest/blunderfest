@@ -480,6 +480,7 @@
     "adding": "Adding…",
     "addedToRoom": "Added ✓",
     "addedVariation": "Added ✓",
+    "sameGameInRoom": "Same game — already added",
     "variationNotPlayable": "This continuation can't be played from the current position."
   },
   "update": {

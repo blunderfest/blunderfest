@@ -1229,7 +1229,9 @@ describe('historical evidence integration', () => {
     // The fingerprint matches a room game: no set_game, no select_game —
     // and the card still reports it as in the room.
     await waitFor(() =>
-      expect(screen.getByTestId('historical-evidence-add-game')).toHaveTextContent('Added ✓'),
+      expect(screen.getByTestId('historical-evidence-add-game')).toHaveTextContent(
+        'Same game — already added',
+      ),
     );
     const pushes = channel.pushes as {
       event: string;
@@ -1306,11 +1308,13 @@ describe('historical evidence integration', () => {
     ).toBe(true);
 
     // The echo lands (carrying the corpus gid): the new game appears in
-    // the Games panel and the card flips to "Added ✓" — derived from the
+    // the Games panel and the card flips to "same game" — derived from the
     // log now, so every client agrees.
     act(() => channel.emit('new_op', setGameOp(2, secondTree, addedId, 7)));
     await waitFor(() =>
-      expect(screen.getByTestId('historical-evidence-add-game')).toHaveTextContent('Added ✓'),
+      expect(screen.getByTestId('historical-evidence-add-game')).toHaveTextContent(
+        'Same game — already added',
+      ),
     );
     expect(await screen.findByRole('button', { name: /Carol – Dave/ })).toBeInTheDocument();
 

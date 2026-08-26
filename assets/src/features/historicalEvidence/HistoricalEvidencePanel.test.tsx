@@ -419,7 +419,7 @@ describe('HistoricalEvidencePanel', () => {
     expect(onAddGame).not.toHaveBeenCalled();
   });
 
-  it('shows Added ✓ from the start for games the host reports as in the room', async () => {
+  it('shows "same game" from the start for games the host reports as in the room', async () => {
     mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
     const onAddGame = vi.fn<(tree: unknown, ply: number, gid: number) => void>();
 
@@ -427,12 +427,12 @@ describe('HistoricalEvidencePanel', () => {
 
     fireEvent.click(screen.getByTestId('historical-evidence-run'));
     const button = await screen.findByTestId('historical-evidence-add-game');
-    expect(button).toHaveTextContent('Added ✓');
+    expect(button).toHaveTextContent('Same game — already added');
     expect(button).toBeDisabled();
     expect(onAddGame).not.toHaveBeenCalled();
   });
 
-  it('flips to Added ✓ when the host records the add (duplicates included)', async () => {
+  it('flips to "same game" when the host records the add (duplicates included)', async () => {
     mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
     mockFetchGame.mockResolvedValue({ tree: treeForGame });
     const onAddGame = vi.fn<(tree: unknown, ply: number, gid: number) => void>();
@@ -455,7 +455,7 @@ describe('HistoricalEvidencePanel', () => {
     );
 
     const button = screen.getByTestId('historical-evidence-add-game');
-    expect(button).toHaveTextContent('Added ✓');
+    expect(button).toHaveTextContent('Same game — already added');
     expect(button).toBeDisabled();
   });
 
