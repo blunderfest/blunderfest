@@ -1,6 +1,6 @@
 # ADR-0028: Room persistence — anonymous identity and retention
 
-Status: Proposed (2026-08-26)
+Status: Accepted — implementation pending (2026-08-26)
 
 ## Context
 
@@ -25,8 +25,6 @@ persistence code lands; the storage mechanics (write batching, failure
 handling) are implementation detail that must satisfy this policy.
 
 ## Decision
-
-Each point below is the proposed default, pending owner sign-off.
 
 1. **What is stored.** The room's op log — `seq, type, payload, author,
    ts` — plus one room record per slug (`last_active_at`, the current
