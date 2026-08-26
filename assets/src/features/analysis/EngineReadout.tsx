@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next';
-import { statusDot } from '@/components/ui';
 import { evalLabel, pvToSan, type WhiteEval } from '@/features/analysis/uci';
 import type { EngineLineState, EngineState } from '@/features/analysis/useEngine';
 
@@ -63,9 +62,9 @@ function Line({
 /**
  * The engine's readout inside the engine box: one row per MultiPV line
  * (best first) — eval badge (light when white is better) plus the principal
- * variation in SAN. The first row carries the status dot; the search depth
- * lives in the engine box header. The previous lines stay visible while the
- * next position is analyzed.
+ * variation in SAN. The engine's status dot lives in the engine box header
+ * (one engine, one status); the lines themselves render uniformly. The
+ * previous lines stay visible while the next position is analyzed.
  */
 export default function EngineReadout({
   fen,
@@ -93,7 +92,6 @@ export default function EngineReadout({
   if (status === 'error') {
     return (
       <div className="flex h-9 w-full items-center gap-2 px-3" data-testid="engine-readout">
-        <span className={statusDot({ tone: 'bad' })} />
         <span className="text-ui text-muted">{t('analysis.engineUnavailable')}</span>
         <button
           type="button"
@@ -108,8 +106,7 @@ export default function EngineReadout({
 
   if (displayLines.length === 0) {
     return (
-      <div className="flex h-9 w-full items-center gap-2 px-3" data-testid="engine-readout">
-        <span className={statusDot({ tone: thinking ? 'warn' : 'ok', pulse: thinking })} />
+      <div className="flex h-9 w-full items-center px-3" data-testid="engine-readout">
         <span className="text-micro font-semibold uppercase tracking-[0.08em] text-faint">
           {thinking ? t('analysis.engineThinking') : ''}
         </span>
@@ -124,18 +121,6 @@ export default function EngineReadout({
       {displayLines.map((line, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity — row N is always the Nth-best line
         <div key={index} className="flex h-7 items-center gap-2" data-testid="engine-line">
-          {index === 0 ? (
-            // The engine's status dot: green when the shown lines are the
-            // current position's result, pulsing gold while a new search
-            // is running. The first row carries it because there is one
-            // engine, not one per line.
-            <span
-              className={statusDot({ tone: thinking ? 'warn' : 'ok', pulse: thinking })}
-              title={thinking ? t('analysis.engineThinking') : t('analysis.engineReady')}
-            />
-          ) : (
-            <span className="w-1.5 shrink-0" />
-          )}
           <Line
             fen={fen}
             line={line}

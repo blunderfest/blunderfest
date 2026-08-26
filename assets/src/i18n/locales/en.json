@@ -309,6 +309,7 @@
       "p": "pawn"
     },
     "engineToggle": "Engine",
+    "engineOff": "Engine off — switch it on to see lines and hints",
     "hintArrows": "Hint arrows",
     "drawColor": "Drawing color",
     "colors": {

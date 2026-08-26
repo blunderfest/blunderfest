@@ -384,6 +384,13 @@ position"). (c) The card action buttons are `secondary` (raised)
 instead of `quiet` (ghost) — noticeably present without shouting. 622
 frontend + 382 backend tests green.
 
+**Later the same session — the engine status dot moves to the box
+header (owner-directed).** The dot was never a property of the first PV
+line — one engine, one status — so it now lives in the "Engine · Depth
+…" bar (green ready, pulsing gold thinking, red error, faint when the
+engine is off, tooltip in every state); the PV lines render uniformly.
+623 frontend + 382 backend tests green.
+
 ### Session handoff (2026-08-24, second session — continued after an engine switch)
 
 **Spike 06 (plan skeletons & move-order robustness) done, spike-only

@@ -892,6 +892,24 @@ describe('engine box', () => {
     };
   }
 
+  it('carries the engine status dot in the box header, not on a PV line', async () => {
+    render(<Analysis tree={tree} engine={makeEngine()} />);
+
+    const header = screen.getByTestId('engine-box');
+    // The engine may already be mid-search — the dot reports the current
+    // status, whatever it is; the point is that it lives in the header.
+    const dot = header.querySelector('span[class*="bg-"]');
+    expect(dot).not.toBeNull();
+    expect(['Analyzing...', 'Engine ready — lines shown are for the current position']).toContain(
+      dot?.getAttribute('title'),
+    );
+
+    // The lines themselves stay uniform — no dot, no first-line special case.
+    const line = await screen.findByTestId('engine-line');
+    expect(line.querySelector('[class*="bg-ok"]')).toBeNull();
+    expect(line.querySelector('[class*="bg-gold"]')).toBeNull();
+  });
+
   it('turns the engine display off and on from the engine box switch', async () => {
     render(<Analysis tree={tree} engine={makeEngine()} />);
     expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();

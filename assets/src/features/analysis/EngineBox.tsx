@@ -55,8 +55,32 @@ export default function EngineBox({
   return (
     <div className="shrink-0" data-testid="engine-box">
       <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-1.5">
-        <span className="text-micro font-semibold uppercase tracking-[0.11em] text-muted">
+        <span className="flex items-center gap-1.5 text-micro font-semibold uppercase tracking-[0.11em] text-muted">
           {t('analysis.engineToggle')}
+          {/* The engine's status dot lives here, with the engine's identity —
+              one engine, one status; it was never a property of the first
+              PV line. */}
+          <span
+            className={statusDot({
+              tone: !engineOn
+                ? 'idle'
+                : state.status === 'error'
+                  ? 'bad'
+                  : state.status === 'thinking'
+                    ? 'warn'
+                    : 'ok',
+              pulse: engineOn && state.status === 'thinking',
+            })}
+            title={
+              !engineOn
+                ? t('analysis.engineOff')
+                : state.status === 'error'
+                  ? t('analysis.engineUnavailable')
+                  : state.status === 'thinking'
+                    ? t('analysis.engineThinking')
+                    : t('analysis.engineReady')
+            }
+          />
           {depth > 0 && (
             <>
               {' · '}
