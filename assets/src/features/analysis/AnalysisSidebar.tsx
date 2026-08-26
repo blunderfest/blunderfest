@@ -61,6 +61,8 @@ export default function AnalysisSidebar({
   onEngineLines,
   variationState,
   addedGids,
+  sharedEvidenceRun = null,
+  onEvidenceRun,
 }: {
   tree: GameTree;
   current: GameNode;
@@ -108,6 +110,10 @@ export default function AnalysisSidebar({
   ) => { addable: boolean; exists: boolean };
   /** Corpus game ids already in the room (survives panel remounts). */
   addedGids: ReadonlySet<number>;
+  /** Another member's Examples analysis request (transient broadcast). */
+  sharedEvidenceRun?: { fen: string; route: string[] | null; refPly: number | null } | null;
+  /** Shares this viewer's Examples analysis request with the room. */
+  onEvidenceRun?: (run: { fen: string; route: string[] | null; refPly: number | null }) => void;
 }) {
   const { t } = useTranslation();
 
@@ -208,6 +214,8 @@ export default function AnalysisSidebar({
                   variationState={canEdit ? variationState : undefined}
                   addedGids={addedGids}
                   gameHeaders={tree.headers}
+                  sharedEvidenceRun={sharedEvidenceRun}
+                  onEvidenceRun={onEvidenceRun}
                 />
               </section>
             ),

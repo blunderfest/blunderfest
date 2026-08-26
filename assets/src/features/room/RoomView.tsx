@@ -1,5 +1,5 @@
 import type { Channel } from 'phoenix';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { pieceSrc } from '@/components/board';
 import { button, chip, panel, statusDot } from '@/components/ui';
@@ -24,6 +24,7 @@ import { useAppSelector } from '@/store';
 import type { BoardAnnotations } from '@/store/room';
 import {
   selectCanEdit,
+  selectEvidenceGids,
   selectFirstGameId,
   selectLastPlayed,
   selectLastPlayedBy,
@@ -58,12 +59,8 @@ export default function RoomView({
   channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
 }) {
   const { t } = useTranslation();
-  const { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze } = useRoomChannel(
-    slug,
-    selfId,
-    selfName,
-    channelFactory,
-  );
+  const { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze, sendEvidenceRun } =
+    useRoomChannel(slug, selfId, selfName, channelFactory);
   const members = useAppSelector((state) => selectSortedMembers(state.room));
   const roles = useAppSelector((state) => state.room.roles);
   const games = useAppSelector((state) => state.room.games);
@@ -94,11 +91,24 @@ export default function RoomView({
    */
   const [cursorByGame, setCursorByGame] = useState<ReadonlyMap<string, number>>(new Map());
   /**
-   * Corpus game ids added to the room via the Examples tab (survives panel
-   * remounts): the cards show "Added ✓" for them. Includes ids whose add
-   * was skipped as duplicates.
+   * Corpus game ids already in the room via the Examples tab, derived from
+   * the op log (`evidence_gid` on `set_game`) — every client agrees, so a
+   * card one member added shows "Added ✓" for everyone.
    */
-  const [evidenceGids, setEvidenceGids] = useState<ReadonlySet<number>>(new Set());
+  const evidenceGids = useAppSelector((state) => selectEvidenceGids(state.room));
+  /**
+   * Duplicate adds — the game was already in the room via another path
+   * (an import, the analyzed game itself): no op is sent, so nothing
+   * derives from the log. A local mark still flips the card to
+   * "Added ✓" for the clicking client.
+   */
+  const [dedupedEvidenceGids, setDedupedEvidenceGids] = useState<ReadonlySet<number>>(new Set());
+  const addedEvidenceGids = useMemo(
+    () => new Set<number>([...evidenceGids, ...dedupedEvidenceGids]),
+    [evidenceGids, dedupedEvidenceGids],
+  );
+  /** Another member's shared Examples analysis request (transient). */
+  const evidenceRun = useAppSelector((state) => state.room.evidenceRun);
 
   const amPresenter = selfId !== null && presenter?.id === selfId;
 
@@ -292,13 +302,18 @@ export default function RoomView({
   // viewed: `selectPresenterGameId` counts the presenter's own `set_game`
   // as focus, so without the restore the whole room would follow the add.
   function handleAddHistoricalGame(tree: GameTree, ply: number, gid: number) {
-    setEvidenceGids((current) => new Set(current).add(gid));
     const fingerprint = gameToPgn(tree);
     if (Object.values(games).some((game) => gameToPgn(game) === fingerprint)) {
+      // Already in the room — nothing to send; still mark it so the card
+      // reports the truth ("Added ✓") instead of inviting a no-op click.
+      setDedupedEvidenceGids((current) => new Set(current).add(gid));
       return;
     }
     const gameId = crypto.randomUUID();
-    sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
+    sendOp({
+      type: 'set_game',
+      payload: { game_id: gameId, tree, evidence_gid: gid },
+    });
     setOpenAtPly((current) => new Map(current).set(gameId, ply));
     if (amPresenter && effectiveGameId !== null) {
       sendOp({ type: 'select_game', payload: { game_id: effectiveGameId } });
@@ -496,7 +511,9 @@ export default function RoomView({
               onAnnotations={handleAnnotations}
               onAnalyze={canEdit ? handleAnalyze : undefined}
               onAddHistoricalGame={canEdit ? handleAddHistoricalGame : undefined}
-              addedEvidenceGids={evidenceGids}
+              addedEvidenceGids={addedEvidenceGids}
+              sharedEvidenceRun={evidenceRun}
+              onEvidenceRun={sendEvidenceRun}
               analyzing={analyzing}
               analysis={analysis?.evals ?? null}
             />

@@ -74,6 +74,8 @@ export default function Analysis({
   initialNodeId = null,
   onAddHistoricalGame,
   addedEvidenceGids = new Set(),
+  sharedEvidenceRun = null,
+  onEvidenceRun,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -130,6 +132,13 @@ export default function Analysis({
    * "Added ✓" for them without another round trip.
    */
   addedEvidenceGids?: ReadonlySet<number>;
+  /**
+   * Another member's Examples analysis request (transient broadcast) —
+   * the panel runs it when the cursor is on that position.
+   */
+  sharedEvidenceRun?: { fen: string; route: string[] | null; refPly: number | null } | null;
+  /** Shares this viewer's own Examples analysis request with the room. */
+  onEvidenceRun?: (run: { fen: string; route: string[] | null; refPly: number | null }) => void;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
@@ -891,6 +900,8 @@ export default function Analysis({
             onEngineLines={setEngineLinesCount}
             variationState={variationState}
             addedGids={addedEvidenceGids}
+            sharedEvidenceRun={sharedEvidenceRun}
+            onEvidenceRun={onEvidenceRun}
           />
         </div>
 

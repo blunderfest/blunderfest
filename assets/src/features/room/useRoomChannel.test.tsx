@@ -386,6 +386,7 @@ describe('useRoomChannel', () => {
       analysis: {},
       analysisProgress: null,
       chatMessages: [],
+      evidenceRun: null,
     });
   });
 

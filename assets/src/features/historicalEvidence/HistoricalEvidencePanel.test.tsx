@@ -226,6 +226,72 @@ describe('HistoricalEvidencePanel', () => {
     expect(await screen.findByText('0 examples · 3 ms')).toBeInTheDocument();
   });
 
+  it('shares the analysis request when the button runs it', async () => {
+    const onEvidenceRun =
+      vi.fn<(run: { fen: string; route: string[] | null; refPly: number | null }) => void>();
+
+    render(
+      <HistoricalEvidencePanel
+        fen={START}
+        route={['e4', 'e5']}
+        refPly={2}
+        onEvidenceRun={onEvidenceRun}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('historical-evidence-run'));
+
+    await waitFor(() =>
+      expect(onEvidenceRun).toHaveBeenCalledWith({
+        fen: START,
+        route: ['e4', 'e5'],
+        refPly: 2,
+      }),
+    );
+  });
+
+  it('runs a shared request for the viewed position without re-sharing it', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [openCandidate] });
+    const onEvidenceRun =
+      vi.fn<(run: { fen: string; route: string[] | null; refPly: number | null }) => void>();
+
+    render(
+      <HistoricalEvidencePanel
+        fen={START}
+        route={null}
+        refPly={null}
+        onEvidenceRun={onEvidenceRun}
+        sharedEvidenceRun={{ fen: START, route: ['e4', 'e5'], refPly: 2 }}
+      />,
+    );
+
+    expect(await screen.findByText('1 examples · 3 ms')).toBeInTheDocument();
+    expect(mockAnalyze).toHaveBeenCalledTimes(1);
+    // The auto-run must not broadcast — that would ping-pong between clients.
+    expect(onEvidenceRun).not.toHaveBeenCalled();
+  });
+
+  it('ignores a shared request for a different position', async () => {
+    render(
+      <HistoricalEvidencePanel
+        fen={START}
+        route={null}
+        refPly={null}
+        sharedEvidenceRun={{
+          fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+          route: null,
+          refPly: null,
+        }}
+      />,
+    );
+
+    await new Promise((r) => setTimeout(r, 300));
+    expect(mockAnalyze).not.toHaveBeenCalled();
+    expect(
+      screen.getByText('Nothing here yet — run the analysis for this position.'),
+    ).toBeInTheDocument();
+  });
+
   it('shows the empty state when there is no game', () => {
     renderPanel({ fen: null });
 

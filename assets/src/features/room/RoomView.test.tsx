@@ -63,13 +63,16 @@ function makeStore() {
   return configureStore({ reducer: { room: roomReducer } });
 }
 
-function setGameOp(seq: number, tree: GameTree, gameId = 'game-1'): Op {
+function setGameOp(seq: number, tree: GameTree, gameId = 'game-1', evidenceGid?: number): Op {
   return {
     seq,
     author: 'profile-1',
     ts: '2026-01-01T00:00:00Z',
     type: 'set_game',
-    payload: { game_id: gameId, tree },
+    payload:
+      evidenceGid === undefined
+        ? { game_id: gameId, tree }
+        : { game_id: gameId, tree, evidence_gid: evidenceGid },
   };
 }
 
@@ -1267,9 +1270,6 @@ describe('historical evidence integration', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'Examples' }));
     fireEvent.click(await screen.findByTestId('historical-evidence-run'));
     fireEvent.click(await screen.findByTestId('historical-evidence-add-game'));
-    await waitFor(() =>
-      expect(screen.getByTestId('historical-evidence-add-game')).toHaveTextContent('Added ✓'),
-    );
 
     // The analyzed game stays on screen — the add never steals the view.
     expect(screen.getByRole('heading', { name: 'Alice – Bob' })).toBeInTheDocument();
@@ -1278,10 +1278,20 @@ describe('historical evidence integration', () => {
       event: string;
       payload: { type: string; payload: Record<string, unknown> };
     }[];
+    // The add fetches the corpus game before pushing the op.
+    await waitFor(() =>
+      expect(
+        pushes.some(
+          (push) => push.payload.type === 'set_game' && push.payload.payload.game_id !== 'game-1',
+        ),
+      ).toBe(true),
+    );
     const setGame = pushes.find(
       (push) => push.payload.type === 'set_game' && push.payload.payload.game_id !== 'game-1',
     );
     expect(setGame).toBeDefined();
+    // The corpus gid rides the op, so every client's cards can agree.
+    expect(setGame?.payload.payload.evidence_gid).toBe(7);
     const addedId = setGame?.payload.payload.game_id as string;
     expect(
       pushes.some(
@@ -1295,8 +1305,13 @@ describe('historical evidence integration', () => {
       ),
     ).toBe(true);
 
-    // The echo lands: the new game appears in the Games panel.
-    act(() => channel.emit('new_op', setGameOp(2, secondTree, addedId)));
+    // The echo lands (carrying the corpus gid): the new game appears in
+    // the Games panel and the card flips to "Added ✓" — derived from the
+    // log now, so every client agrees.
+    act(() => channel.emit('new_op', setGameOp(2, secondTree, addedId, 7)));
+    await waitFor(() =>
+      expect(screen.getByTestId('historical-evidence-add-game')).toHaveTextContent('Added ✓'),
+    );
     expect(await screen.findByRole('button', { name: /Carol – Dave/ })).toBeInTheDocument();
 
     // Opening it starts at the candidate's move (1... d4), not the tail.

@@ -133,6 +133,26 @@ defmodule BlunderfestWeb.RoomChannel do
     end
   end
 
+  # The Examples tab's analysis request, shared transiently (never an op —
+  # replays must not re-run corpus queries): other members' panels run the
+  # same request for the position when it matches their cursor, so one
+  # member's examples become everyone's. Editors only, like the analysis.
+  @impl true
+  def handle_in("evidence_run", params, socket) do
+    with :ok <- check_can_edit(socket),
+         {:ok, payload} <- validate_evidence_run(params) do
+      broadcast!(
+        socket,
+        "evidence_run",
+        Map.put(payload, "profile_id", socket.assigns.profile_id)
+      )
+
+      {:reply, :ok, socket}
+    else
+      {:error, reason} -> {:reply, {:error, %{reason: reason}}, socket}
+    end
+  end
+
   @impl true
   def handle_in("set_role", %{"member_id" => member_id, "role" => role}, socket) do
     case Rooms.set_role(
@@ -186,6 +206,28 @@ defmodule BlunderfestWeb.RoomChannel do
   end
 
   defp valid_position?(_), do: false
+
+  # {fen, route, ref_ply}: the shared examples-analysis request, bounded.
+  defp validate_evidence_run(%{"fen" => fen} = params)
+       when is_binary(fen) and byte_size(fen) <= 128 do
+    route = params["route"]
+    ref_ply = params["ref_ply"]
+
+    cond do
+      route != nil and
+          (not is_list(route) or length(route) > 300 or
+             not Enum.all?(route, &(is_binary(&1) and byte_size(&1) <= 32))) ->
+        {:error, :invalid_request}
+
+      ref_ply != nil and (not is_integer(ref_ply) or ref_ply < 0) ->
+        {:error, :invalid_request}
+
+      true ->
+        {:ok, %{"fen" => fen, "route" => route, "ref_ply" => ref_ply}}
+    end
+  end
+
+  defp validate_evidence_run(_), do: {:error, :invalid_request}
 
   defp string_to_role("collaborator"), do: :collaborator
   defp string_to_role("viewer"), do: :viewer

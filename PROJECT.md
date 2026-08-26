@@ -396,6 +396,33 @@ line — one engine, one status — so it now lives in the "Engine · Depth
 engine is off, tooltip in every state); the PV lines render uniformly.
 623 frontend + 382 backend tests green.
 
+**Later the same session — UI stress test + the findings fixed.** A
+two-user Playwright pass exercised every feature (imports incl.
+multi-game PGN, moves/variations, engine controls, comments/NAGs,
+position editor, drawings, chart scrub, band layers, whole-game
+analysis via the server pool, reference tab, examples, export/library,
+chat + moderation, roles/promotion, presence/following, tour,
+shortcuts, keyboard nav, mobile layout — no horizontal overflow).
+Findings fixed: (1) **Navigation slowed down after running examples**:
+the deployed panel planned 20+ candidate variation lines (chess.js SAN
+resolution) on EVERY cursor move — profiled at ~830ms per landing. The
+button-state check is now gated on a current result, the deterministic
+resolution is cached module-wide, and the cache is warmed while the
+corpus query runs (the resolution hides under the "Searching…" note).
+Measured after: ~35ms/move on the prod bundle, landings included. (2)
+**Examples are now synchronized**: a run broadcasts a transient
+`evidence_run` message (never an op — replays must not re-run corpus
+queries); members whose cursor is on that position run the same query
+automatically. (3) **Add-to-room state is now synchronized**: the
+`set_game` op carries the corpus `evidence_gid`, and every client
+derives "Added ✓" from the op log (fingerprint guard unchanged for
+non-corpus duplicates; the clicking client still gets the local mark
+on that path). (4) **Per-game cursor precedence**: switching back to a
+game now restores the last VIEWED node even when moves were played
+since (`initialNodeId` before `lastPlayedId`; a refresh still opens at
+the last played move, since the memory is empty then). 628 frontend +
+386 backend tests green.
+
 ### Session handoff (2026-08-24, second session — continued after an engine switch)
 
 **Spike 06 (plan skeletons & move-order robustness) done, spike-only

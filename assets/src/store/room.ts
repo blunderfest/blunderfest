@@ -68,6 +68,13 @@ export type RoomState = {
   chatMessages: { seq: number; author: string; text: string; ts: string }[];
   /** Live progress of a running analysis job (transient broadcast). */
   analysisProgress: { gameId: string; done: number; total: number } | null;
+  /**
+   * The latest Examples-tab analysis request shared by another member
+   * (transient broadcast, never an op): panels whose cursor sits on that
+   * position run the same query, so examples are synchronized per
+   * position without replaying corpus queries on join.
+   */
+  evidenceRun: { fen: string; route: string[] | null; refPly: number | null } | null;
 };
 
 const initialState: RoomState = {
@@ -88,6 +95,7 @@ const initialState: RoomState = {
   analysis: {},
   analysisProgress: null,
   chatMessages: [],
+  evidenceRun: null,
 };
 
 /** Chat history cap per room session (newest kept). */
@@ -436,6 +444,21 @@ export function selectLastPlayed(state: RoomState, gameId: string | null): numbe
 }
 
 /**
+ * Corpus game ids that entered the room via the Examples tab — derived
+ * from the op log (`evidence_gid` on `set_game`), so every client agrees
+ * on which candidates are already in the room. Memoized on the op log.
+ */
+export const selectEvidenceGids = createSelector([(state: RoomState) => state.ops], (ops) => {
+  const gids = new Set<number>();
+  for (const op of ops) {
+    if (op.type === 'set_game' && op.payload.evidence_gid !== undefined) {
+      gids.add(op.payload.evidence_gid);
+    }
+  }
+  return gids;
+});
+
+/**
  * Who authored the most recent move/setup op in `gameId` — follow-the-tail
  * only reacts to other members' plays, so the caller compares this against
  * the viewer's own profile id.
@@ -600,6 +623,7 @@ const roomSlice = createSlice({
       state.readOnly = false;
       state.analysis = {};
       state.analysisProgress = null;
+      state.evidenceRun = null;
     },
     leaveRoom(state) {
       state.slug = null;
@@ -618,6 +642,7 @@ const roomSlice = createSlice({
       state.readOnly = false;
       state.analysis = {};
       state.analysisProgress = null;
+      state.evidenceRun = null;
     },
     setRoles(state, action: PayloadAction<Record<string, MemberRole>>) {
       state.roles = action.payload;
@@ -630,6 +655,12 @@ const roomSlice = createSlice({
       action: PayloadAction<{ gameId: string; done: number; total: number } | null>,
     ) {
       state.analysisProgress = action.payload;
+    },
+    setEvidenceRun(
+      state,
+      action: PayloadAction<{ fen: string; route: string[] | null; refPly: number | null }>,
+    ) {
+      state.evidenceRun = action.payload;
     },
     setRegion(state, action: PayloadAction<string | null>) {
       state.region = action.payload;
@@ -789,6 +820,7 @@ export const {
   setMemberRole,
   setPresenter,
   setAnalysisProgress,
+  setEvidenceRun,
   applyOp,
   replayOps,
   joinMember,

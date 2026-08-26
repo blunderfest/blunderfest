@@ -108,6 +108,16 @@ describe('Analysis', () => {
     expect(pieceAt('square-f3')).toBeNull();
   });
 
+  it('prefers the viewed position over the move last played (a game switch)', () => {
+    // Moves were played since (lastPlayed = the tip), but the per-game
+    // cursor memory says the viewer left off at node 2 — switching back
+    // restores the viewed position, not the last move.
+    render(<Analysis tree={tree} lastPlayedId={4} initialNodeId={2} />);
+
+    expect(pieceAt('square-e5')).toBe('bp');
+    expect(pieceAt('square-f3')).toBeNull();
+  });
+
   it('navigates forward and backward with the buttons', () => {
     renderAnalysis();
 

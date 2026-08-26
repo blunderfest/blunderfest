@@ -223,6 +223,16 @@ defmodule Blunderfest.OpsTest do
       assert :ok = Ops.validate(set_game_op(root))
     end
 
+    test "accepts the optional evidence_gid marker, rejecting malformed ones" do
+      with_gid = Map.update!(set_game_op(tree_node()), "payload", &Map.put(&1, "evidence_gid", 7))
+      assert :ok = Ops.validate(with_gid)
+
+      bad =
+        Map.update!(set_game_op(tree_node()), "payload", &Map.put(&1, "evidence_gid", "seven"))
+
+      assert {:error, :invalid_op} = Ops.validate(bad)
+    end
+
     test "accepts the optional clock field (integer or fractional seconds)" do
       fractional = tree_node(%{"id" => 2, "ply" => 2, "san" => "e5", "clock" => 7.64})
 

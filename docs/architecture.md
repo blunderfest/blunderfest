@@ -262,17 +262,28 @@ so clients send nothing and hide the member list.
   via `select_game` back to the viewed game, because the presenter's own
   `set_game` counts as focus), records the candidate ply in `openAtPly`
   so the game opens at the candidate's move (`Analysis.initialNodeId` →
-  `useCursor`'s init order: `startAtRoot` → last played → initial node →
-  mainline tip). RoomView dedupes by PGN fingerprint before sending —
-  a game already in the room (imported, or added in an earlier panel
-  mount) never produces a duplicate op — and tracks added corpus gids in
-  `evidenceGids`, fed back through `addedGids` so cards show "Added ✓"
-  across remounts. "Add as variation" shows "Adding…" until the echo
-  lands in the tree, then "Added ✓" — the exists state is derived from
-  the tree itself (`variationState` in `Analysis`, plan-identical to the
-  insertion via `planHistoricalVariation` + the same from/to/promotion
-  chain descent `applyAddLine` uses), so it can never disagree with
-  reality.
+  `useCursor`'s init order: `startAtRoot` → initial node → last played →
+  mainline tip — the viewed position wins over the last played move on
+  a game switch; a refresh has no memory, so the last played move then
+  decides). The `set_game` op carries the corpus `evidence_gid`, so
+  every client derives which candidates are already in the room from
+  the op log (`selectEvidenceGids`) — "Added ✓" agrees across the room;
+  RoomView dedupes by PGN fingerprint before sending, so a game already
+  in the room (imported, or added in an earlier panel mount) never
+  produces a duplicate op (with a local mark for the clicking client).
+  Analyses are shared transiently: a button run pushes `evidence_run`
+  (a channel broadcast, never an op — replays must not re-run corpus
+  queries) and members whose cursor is on that position run the same
+  query, so one member's examples become everyone's. "Add as variation"
+  shows "Adding…" until the echo lands in the tree, then "Added ✓" —
+  the exists state is derived from the tree itself (`variationState` in
+  `Analysis`, plan-identical to the insertion via
+  `planHistoricalVariation` + the same from/to/promotion chain descent
+  `applyAddLine` uses), so it can never disagree with reality; the SAN
+  resolution behind it is cached module-wide and warmed during the
+  corpus query, and the state check only runs while the results are
+  current (the un-gated version made every cursor move cost ~0.8s with
+  20+ candidates).
 - `SidebarTabs` keeps every tab's content mounted and hides inactive
   panels (`hidden` attr + class): the Examples results survive tab
   switches; state-preserving by contract, tested with a counter.

@@ -55,9 +55,11 @@ defmodule Blunderfest.Ops do
     # walkers, so it gets a real shape check: every node needs an integer
     # id/ply and a children list, and the tree's size and depth are capped —
     # a 256 KB op can otherwise nest deep enough to overflow a client's call
-    # stack on replay.
-    case payload do
-      %{"tree" => tree} -> if valid_game_tree?(tree), do: :ok, else: {:error, :invalid_op}
+    # stack on replay. `evidence_gid` marks Examples-tab imports (optional).
+    with %{"tree" => tree} <- payload,
+         :ok <- optional_int(payload, "evidence_gid") do
+      if valid_game_tree?(tree), do: :ok, else: {:error, :invalid_op}
+    else
       _ -> {:error, :invalid_op}
     end
   end

@@ -17,6 +17,7 @@ import roomReducer, {
   leaveRoom,
   replayOps,
   selectCanEdit,
+  selectEvidenceGids,
   selectFirstGameId,
   selectLastPlayed,
   selectLastPlayedBy,
@@ -224,6 +225,7 @@ describe('room slice', () => {
       presenterId: null,
       analysisProgress: null,
       chatMessages: [],
+      evidenceRun: null,
     });
   });
 
@@ -247,6 +249,7 @@ describe('room slice', () => {
         presenterId: null,
         analysisProgress: null,
         chatMessages: [],
+        evidenceRun: null,
       },
       enterRoom({ slug: 'room-123' }),
     );
@@ -268,6 +271,7 @@ describe('room slice', () => {
       presenterId: null,
       analysisProgress: null,
       chatMessages: [],
+      evidenceRun: null,
     });
   });
 
@@ -291,6 +295,7 @@ describe('room slice', () => {
         presenterId: null,
         analysisProgress: null,
         chatMessages: [],
+        evidenceRun: null,
       },
       leaveRoom(),
     );
@@ -312,6 +317,7 @@ describe('room slice', () => {
       presenterId: null,
       analysisProgress: null,
       chatMessages: [],
+      evidenceRun: null,
     });
   });
 
@@ -1093,6 +1099,50 @@ describe('lastPlayed tracking', () => {
 
     const replayed = roomReducer(undefined, replayOps([playedGameOp(1), moveAtPly(2, 3)]));
     expect(selectLastPlayedBy(replayed, 'game-1')).toBe('author-1');
+  });
+});
+
+describe('evidence gid tracking', () => {
+  it('derives the in-room corpus gids from set_game ops, across a replay', () => {
+    let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice')));
+    expect(selectEvidenceGids(state)).toEqual(new Set());
+
+    state = roomReducer(
+      state,
+      applyOp({
+        ...setGameOp(2, 'Bob', 'game-2'),
+        payload: {
+          game_id: 'game-2',
+          tree: setGameOp(2, 'Bob', 'game-2').payload.tree,
+          evidence_gid: 7,
+        },
+      }),
+    );
+    expect(selectEvidenceGids(state)).toEqual(new Set([7]));
+
+    const replayed = roomReducer(
+      undefined,
+      replayOps([
+        setGameOp(1, 'Alice'),
+        {
+          ...setGameOp(2, 'Bob', 'game-2'),
+          payload: {
+            game_id: 'game-2',
+            tree: setGameOp(2, 'Bob', 'game-2').payload.tree,
+            evidence_gid: 7,
+          },
+        },
+        {
+          ...setGameOp(3, 'Carol', 'game-3'),
+          payload: {
+            game_id: 'game-3',
+            tree: setGameOp(3, 'Carol', 'game-3').payload.tree,
+            evidence_gid: 9,
+          },
+        },
+      ]),
+    );
+    expect(selectEvidenceGids(replayed)).toEqual(new Set([7, 9]));
   });
 });
 

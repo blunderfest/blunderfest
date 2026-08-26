@@ -115,9 +115,10 @@ export function useCursor({
   /** Open on the initial position instead of the tail (fresh imports). */
   startAtRoot?: boolean;
   /**
-   * The node to open on when the tree arrives and nothing else applies —
-   * e.g. an added historical game opens at the candidate's move. Room
-   * activity (a played move) still wins over it.
+   * The node to open on when the tree arrives — the per-game cursor
+   * memory (switching back restores the viewed position) or an added
+   * historical game's candidate ply. Wins over the move last played; a
+   * refresh has no memory, so `lastPlayedId` then decides.
    */
   initialNodeId?: number | null;
   onCursorChange?: (nodeId: number) => void;
@@ -134,10 +135,12 @@ export function useCursor({
   const { currentId, pending } = state;
 
   /**
-   * Start at the move last played (the newest move/setup node, wherever it
-   * lives — variations included) once a tree arrives: a refresh restores the
-   * game as it was. Untouched imports fall back to the requested opening
-   * node (`initialNodeId`), then the mainline tip — except a game just
+   * Start at the requested opening node when the room view has one — the
+   * per-game cursor memory or an added historical game's candidate ply:
+   * switching games and back must restore where the user left off, even
+   * when moves have been played since. A refresh loses the memory, so the
+   * move last played then wins (a refresh restores the game as it was);
+   * untouched games fall back to the mainline tip — except a game just
    * imported here (`startAtRoot`), which opens on the initial position so
    * it can be reviewed from the beginning. A one-time write during render
    * (converges immediately) — subsequent cursor changes come only from
@@ -146,10 +149,10 @@ export function useCursor({
   if (currentId === null && tree !== null) {
     if (startAtRoot) {
       dispatch({ type: 'init', id: tree.root.id });
-    } else if (lastPlayedId !== null && byId.has(lastPlayedId)) {
-      dispatch({ type: 'init', id: lastPlayedId });
     } else if (initialNodeId !== null && byId.has(initialNodeId)) {
       dispatch({ type: 'init', id: initialNodeId });
+    } else if (lastPlayedId !== null && byId.has(lastPlayedId)) {
+      dispatch({ type: 'init', id: lastPlayedId });
     } else {
       let tip = tree.root;
       while (tip.children[0] !== undefined) {

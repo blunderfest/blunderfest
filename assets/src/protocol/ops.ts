@@ -16,7 +16,15 @@ export type OpBase = {
 
 export type SetGameOp = OpBase & {
   type: 'set_game';
-  payload: { game_id?: string; tree: GameTree };
+  payload: {
+    game_id?: string;
+    tree: GameTree;
+    /**
+     * The corpus game id when the import came from the Examples tab —
+     * lets every client derive which candidates are already in the room.
+     */
+    evidence_gid?: number;
+  };
 };
 
 export type SelectGameOp = OpBase & {

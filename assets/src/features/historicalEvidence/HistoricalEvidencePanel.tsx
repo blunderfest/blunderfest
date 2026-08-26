@@ -134,6 +134,8 @@ export default function HistoricalEvidencePanel({
   variationState,
   addedGids,
   gameHeaders = {},
+  sharedEvidenceRun = null,
+  onEvidenceRun,
 }: {
   /** The board cursor's position (null when no game). */
   fen: string | null;
@@ -173,6 +175,14 @@ export default function HistoricalEvidencePanel({
    * filtered out (the corpus may contain the imported game itself).
    */
   gameHeaders?: Record<string, string>;
+  /**
+   * Another member's Examples analysis request (transient broadcast):
+   * when the cursor is on that position, this panel runs the same query
+   * so one member's examples become everyone's.
+   */
+  sharedEvidenceRun?: { fen: string; route: string[] | null; refPly: number | null } | null;
+  /** Shares this viewer's own analysis request with the room (button runs only). */
+  onEvidenceRun?: (run: { fen: string; route: string[] | null; refPly: number | null }) => void;
 }) {
   const { t } = useTranslation();
   // A finished analysis for the viewed position survives remounts (game
@@ -188,40 +198,55 @@ export default function HistoricalEvidencePanel({
     fen !== null && RESULT_CACHE.has(requestKey(fen, route, refPly)) ? fen : null,
   );
 
+  /**
+   * Runs the query without sharing it — the auto-run path must not
+   * re-broadcast (that would ping-pong between clients). The button path
+   * (`run`) shares first, then calls this.
+   */
+  const runQuery = useCallback(
+    (query: { fen: string; route: string[] | null; refPly: number | null }) => {
+      setStatus({ kind: 'loading' });
+
+      analyzeHistoricalEvidence(query.fen, {
+        route: query.route ?? undefined,
+        refPly: query.refPly ?? undefined,
+      })
+        .then((result) => {
+          const key = requestKey(query.fen, query.route, query.refPly);
+          RESULT_CACHE.set(key, result);
+          if (RESULT_CACHE.size > RESULT_CACHE_LIMIT) {
+            const oldest = RESULT_CACHE.keys().next().value;
+            if (oldest !== undefined) {
+              RESULT_CACHE.delete(oldest);
+            }
+          }
+          // Resolve the candidates' lines now, under the "Searching…" note:
+          // the SAN resolution is ~0.8s of chess.js work for 20+ candidates,
+          // and doing it before the results appear keeps the first render
+          // (and every later landing — the cache is module-wide) cheap.
+          for (const candidate of result.candidates) {
+            resolvedLineMoves(
+              candidate.strategy === 'exact' ? query.fen : candidate.fen,
+              candidate.continuation.moves,
+            );
+          }
+          setStatus({ kind: 'ready', result });
+          setRanFor(query.fen);
+        })
+        .catch(() => {
+          setStatus({ kind: 'error', code: 'unknown' });
+        });
+    },
+    [],
+  );
+
   const run = useCallback(() => {
     if (fen === null) {
       return;
     }
-
-    setStatus({ kind: 'loading' });
-
-    analyzeHistoricalEvidence(fen, { route: route ?? undefined, refPly: refPly ?? undefined })
-      .then((result) => {
-        const key = requestKey(fen, route, refPly);
-        RESULT_CACHE.set(key, result);
-        if (RESULT_CACHE.size > RESULT_CACHE_LIMIT) {
-          const oldest = RESULT_CACHE.keys().next().value;
-          if (oldest !== undefined) {
-            RESULT_CACHE.delete(oldest);
-          }
-        }
-        // Resolve the candidates' lines now, under the "Searching…" note:
-        // the SAN resolution is ~0.8s of chess.js work for 20+ candidates,
-        // and doing it before the results appear keeps the first render
-        // (and every later landing — the cache is module-wide) cheap.
-        for (const candidate of result.candidates) {
-          resolvedLineMoves(
-            candidate.strategy === 'exact' ? fen : candidate.fen,
-            candidate.continuation.moves,
-          );
-        }
-        setStatus({ kind: 'ready', result });
-        setRanFor(fen);
-      })
-      .catch(() => {
-        setStatus({ kind: 'error', code: 'unknown' });
-      });
-  }, [fen, route, refPly]);
+    onEvidenceRun?.({ fen, route: route ?? null, refPly: refPly ?? null });
+    runQuery({ fen, route: route ?? null, refPly: refPly ?? null });
+  }, [fen, route, refPly, onEvidenceRun, runQuery]);
 
   const stale = status.kind === 'ready' && ranFor !== fen;
   // The results for the viewed position are already shown — re-running
@@ -229,6 +254,30 @@ export default function HistoricalEvidencePanel({
   // the cursor moves (stale) or a run fails.
   const disabled =
     fen === null || status.kind === 'loading' || !canAnalyze || (status.kind === 'ready' && !stale);
+
+  // Another member ran the analysis for the viewed position: run the same
+  // query (once per position per mount) so the examples are shared. The
+  // viewer's own route/ply are preferred — the FEN is what matters.
+  const lastAutoRun = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      sharedEvidenceRun !== null &&
+      fen !== null &&
+      sharedEvidenceRun.fen === fen &&
+      canAnalyze &&
+      !(status.kind === 'ready' && !stale)
+    ) {
+      if (lastAutoRun.current !== sharedEvidenceRun.fen) {
+        lastAutoRun.current = sharedEvidenceRun.fen;
+        runQuery({
+          fen,
+          route: route ?? sharedEvidenceRun.route,
+          refPly: refPly ?? sharedEvidenceRun.refPly,
+        });
+      }
+    }
+  }, [sharedEvidenceRun, fen, route, refPly, canAnalyze, status, stale, runQuery]);
+
   const [addingGid, setAddingGid] = useState<number | null>(null);
   const [addFailed, setAddFailed] = useState(false);
   /** The candidate whose variation add is awaiting its echo. */

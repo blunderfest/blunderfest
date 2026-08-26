@@ -1,6 +1,5 @@
 defmodule BlunderfestWeb.RoomChannelTest do
   use BlunderfestWeb.ChannelCase, async: false
-
   alias Blunderfest.Rooms
 
   setup do
@@ -19,9 +18,7 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "join replies with the room's op log", %{} do
     Rooms.append("abcde", %{"type" => "move_at_ply", "payload" => %{"ply" => 1, "san" => "e4"}})
     Rooms.append("abcde", %{"type" => "set_cursor", "payload" => %{"ply" => 2}})
-
     {:ok, reply, _socket} = join_room("room:abcde")
-
     assert [%{"seq" => 1}, %{"seq" => 2}] = reply.ops
   end
 
@@ -55,7 +52,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
       push(socket, "op", %{"type" => "move_at_ply", "payload" => %{"ply" => 1, "san" => "e4"}})
 
     assert_reply ref, :ok
-
     assert_broadcast "new_op", %{"seq" => 1, "author" => "profile-1", "type" => "move_at_ply"}
   end
 
@@ -105,7 +101,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "viewers cannot chat (ADR-0023)", %{} do
     join_room("room:abcde", %{"profile_id" => "profile-1"})
     {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})
-
     ref = push(viewer, "op", %{"type" => "chat", "payload" => %{"text" => "hello room"}})
     assert_reply ref, :error, %{reason: :forbidden}
     refute_receive {:broadcast, _, _, _}
@@ -114,11 +109,9 @@ defmodule BlunderfestWeb.RoomChannelTest do
 
   test "the owner can delete a chat message; the deletion broadcasts", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
-
     ref = push(owner, "op", %{"type" => "chat", "payload" => %{"text" => "oops"}})
     assert_reply ref, :ok
     assert_broadcast "new_op", %{"type" => "chat", "seq" => 1}
-
     ref = push(owner, "op", %{"type" => "delete_chat", "payload" => %{"seq" => 1}})
     assert_reply ref, :ok
     assert_broadcast "new_op", %{"type" => "delete_chat", "payload" => %{"seq" => 1}}
@@ -137,31 +130,25 @@ defmodule BlunderfestWeb.RoomChannelTest do
 
     ref = push(owner, "op", %{"type" => "chat", "payload" => %{"text" => "mine"}})
     assert_reply ref, :ok
-
     ref = push(collaborator, "op", %{"type" => "delete_chat", "payload" => %{"seq" => 1}})
     assert_reply ref, :error, %{reason: :forbidden}
   end
 
   test "delete_chat must name the seq of an actual chat op", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
-
     ref = push(owner, "op", %{"type" => "set_cursor", "payload" => %{"node_id" => 3}})
     assert_reply ref, :ok
-
     # Seq 1 is a cursor op, not a chat message; seq 99 doesn't exist.
     ref = push(owner, "op", %{"type" => "delete_chat", "payload" => %{"seq" => 1}})
     assert_reply ref, :error, %{reason: :invalid_op}
-
     ref = push(owner, "op", %{"type" => "delete_chat", "payload" => %{"seq" => 99}})
     assert_reply ref, :error, %{reason: :invalid_op}
   end
 
   test "authors without a profile fall back to anonymous", %{} do
     {:ok, _reply, socket} = join_room("room:abcde")
-
     ref = push(socket, "op", %{"type" => "set_cursor", "payload" => %{"node_id" => 3}})
     assert_reply ref, :ok
-
     assert_broadcast "new_op", %{"author" => "anonymous"}
   end
 
@@ -177,7 +164,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
     {:ok, profile, _secret} = Blunderfest.Profiles.create()
     profile_id = profile.id
     profile_name = profile.name
-
     join_room("room:abcde", %{"profile_id" => profile_id})
 
     assert_push "presence_diff", %{
@@ -187,7 +173,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
 
   test "presence reflects members when a new client joins", %{} do
     join_room("room:abcde", %{"profile_id" => "profile-1", "name" => "Brave Otter 42"})
-
     join_room("room:abcde", %{"profile_id" => "profile-2", "name" => "Swift Falcon 17"})
 
     assert %{"profile-1" => _, "profile-2" => _} =
@@ -196,7 +181,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
 
   test "a joining client receives the current presence state including themselves", %{} do
     join_room("room:abcde", %{"profile_id" => "profile-1", "name" => "Brave Otter 42"})
-
     join_room("room:abcde", %{"profile_id" => "profile-2", "name" => "Swift Falcon 17"})
 
     assert_push "presence_state", %{
@@ -212,7 +196,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
 
   test "later joiners are viewers and get the full role map", %{} do
     join_room("room:abcde", %{"profile_id" => "profile-1"})
-
     {:ok, reply, _socket} = join_room("room:abcde", %{"profile_id" => "profile-2"})
     assert reply.roles == %{"profile-1" => "owner", "profile-2" => "viewer"}
   end
@@ -221,14 +204,12 @@ defmodule BlunderfestWeb.RoomChannelTest do
     {:ok, reply, _socket} = join_room("room:abcde", %{"name" => "No Profile"})
     assert reply.roles == %{}
     assert Rooms.owner("abcde") == nil
-
     {:ok, reply2, _socket} = join_room("room:abcde", %{"profile_id" => "profile-1"})
     assert reply2.roles == %{"profile-1" => "owner"}
   end
 
   test "a real profile id is required to claim ownership", %{} do
     {:ok, profile, _secret} = Blunderfest.Profiles.create()
-
     {:ok, reply, _socket} = join_room("room:abcde", %{"profile_id" => profile.id})
     assert reply.roles == %{profile.id => "owner"}
     assert Rooms.owner("abcde") == profile.id
@@ -236,7 +217,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
 
   test "the owner cannot promote the shared anonymous key", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
-
     ref = push(owner, "set_role", %{"member_id" => "anonymous", "role" => "collaborator"})
     assert_reply ref, :error, %{reason: :invalid_member}
   end
@@ -274,7 +254,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "viewers can still push cursor and selection ops", %{} do
     join_room("room:abcde", %{"profile_id" => "profile-1"})
     {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})
-
     ref = push(viewer, "op", %{"type" => "set_cursor", "payload" => %{"node_id" => 3}})
     assert_reply ref, :ok
     assert_broadcast "new_op", %{"type" => "set_cursor"}
@@ -283,7 +262,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "collaborators can push edit ops", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
     join_room("room:abcde", %{"profile_id" => "profile-2"})
-
     ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
     assert_reply ref, :ok
 
@@ -306,10 +284,8 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "the owner can promote a member to collaborator", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
     join_room("room:abcde", %{"profile_id" => "profile-2"})
-
     ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
     assert_reply ref, :ok
-
     assert_broadcast "role_update", %{"member_id" => "profile-2", "role" => "collaborator"}
   end
 
@@ -317,7 +293,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
     join_room("room:abcde", %{"profile_id" => "profile-2"})
     push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
-
     ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "viewer"})
     assert_reply ref, :ok
     assert_broadcast "role_update", %{"member_id" => "profile-2", "role" => "viewer"}
@@ -326,7 +301,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "non-owners cannot change roles", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
     join_room("room:abcde", %{"profile_id" => "profile-2"})
-
     ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "collaborator"})
     assert_reply ref, :ok
 
@@ -342,7 +316,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
 
   test "the owner cannot demote themselves", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
-
     ref = push(owner, "set_role", %{"member_id" => "profile-1", "role" => "viewer"})
     assert_reply ref, :error, %{reason: :invalid_member}
   end
@@ -350,13 +323,10 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "the owner can hand presenting to a member and take it back", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
     {:ok, join_reply, _member} = join_room("room:abcde", %{"profile_id" => "profile-2"})
-
     assert join_reply.presenter == nil
-
     ref = push(owner, "set_presenter", %{"member_id" => "profile-2"})
     assert_reply ref, :ok
     assert_broadcast "presenter_update", %{"member_id" => "profile-2"}
-
     ref = push(owner, "set_presenter", %{"member_id" => "profile-1"})
     assert_reply ref, :ok
     assert_broadcast "presenter_update", %{"member_id" => nil}
@@ -365,7 +335,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "non-owners cannot hand presenting", %{} do
     {:ok, _reply, _owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
     {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})
-
     ref = push(viewer, "set_presenter", %{"member_id" => "profile-2"})
     assert_reply ref, :error, %{reason: :forbidden}
   end
@@ -373,7 +342,6 @@ defmodule BlunderfestWeb.RoomChannelTest do
   test "invalid roles are rejected", %{} do
     {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
     join_room("room:abcde", %{"profile_id" => "profile-2"})
-
     ref = push(owner, "set_role", %{"member_id" => "profile-2", "role" => "admin"})
     assert_reply ref, :error, %{reason: :invalid_role}
   end
@@ -510,9 +478,7 @@ defmodule BlunderfestWeb.RoomChannelTest do
   describe "the read-only demo room" do
     test "joining seeds it on demand and replies read-only", %{} do
       refute Rooms.room_exists?("chess")
-
       {:ok, reply, _socket} = join_room("room:chess", %{"profile_id" => "profile-1"})
-
       assert reply.read_only == true
       assert [%{"type" => "set_game"}] = reply.ops
       assert reply.roles == %{}
@@ -523,14 +489,12 @@ defmodule BlunderfestWeb.RoomChannelTest do
       {:ok, _reply, _socket} = join_room("room:chess")
       Rooms.reset()
       refute Rooms.room_exists?("chess")
-
       {:ok, reply, _socket} = join_room("room:chess")
       assert [%{"type" => "set_game"}] = reply.ops
     end
 
     test "rejects every op, including cursor noise", %{} do
       {:ok, _reply, socket} = join_room("room:chess", %{"profile_id" => "profile-1"})
-
       ref = push(socket, "op", %{"type" => "set_cursor", "payload" => %{"node_id" => 3}})
       assert_reply ref, :error, %{reason: :read_only}
 
@@ -538,14 +502,59 @@ defmodule BlunderfestWeb.RoomChannelTest do
         push(socket, "op", %{"type" => "move_at_ply", "payload" => %{"ply" => 1, "san" => "e4"}})
 
       assert_reply ref, :error, %{reason: :read_only}
-
       assert [%{"type" => "set_game"}] = Rooms.ops("chess")
     end
 
     test "tracks no presence", %{} do
       join_room("room:chess", %{"profile_id" => "profile-1", "name" => "Brave Otter 42"})
-
       assert BlunderfestWeb.Presence.list("room:chess") == %{}
+    end
+  end
+
+  describe "evidence_run sharing" do
+    test "the owner shares an analysis request with the room", %{} do
+      {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+
+      ref =
+        push(owner, "evidence_run", %{
+          "fen" => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "route" => ["e4", "e5"],
+          "ref_ply" => 2
+        })
+
+      assert_reply ref, :ok
+
+      assert_broadcast "evidence_run", %{
+        "fen" => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "route" => ["e4", "e5"],
+        "ref_ply" => 2,
+        "profile_id" => "profile-1"
+      }
+    end
+
+    test "viewers cannot share analysis requests", %{} do
+      {:ok, _reply, _owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+      {:ok, _reply, viewer} = join_room("room:abcde", %{"profile_id" => "profile-2"})
+
+      ref =
+        push(viewer, "evidence_run", %{
+          "fen" => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        })
+
+      assert_reply ref, :error, %{reason: :forbidden}
+    end
+
+    test "rejects malformed requests", %{} do
+      {:ok, _reply, owner} = join_room("room:abcde", %{"profile_id" => "profile-1"})
+
+      ref = push(owner, "evidence_run", %{"route" => ["e4"]})
+      assert_reply ref, :error, %{reason: :invalid_request}
+
+      ref = push(owner, "evidence_run", %{"fen" => "ok fen", "route" => "not-a-list"})
+      assert_reply ref, :error, %{reason: :invalid_request}
+
+      ref = push(owner, "evidence_run", %{"fen" => "ok fen", "ref_ply" => "two"})
+      assert_reply ref, :error, %{reason: :invalid_request}
     end
   end
 end
