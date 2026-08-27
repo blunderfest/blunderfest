@@ -287,6 +287,14 @@ export default function BoardColumn({
             drawColorPicker={canEdit ? drawColorPicker : undefined}
             clearDrawings={canEdit ? clearDrawings : undefined}
           />
+          {/* A terminal result rides the toolbar row (gold text), not a
+              row of its own — every pixel of vertical chrome costs the
+              board's height budget. */}
+          {current.status !== 'active' && (
+            <span id="analysis-status" className="text-ui font-semibold text-gold-hi" role="status">
+              {t(`analysis.status.${current.status}`)}
+            </span>
+          )}
         </div>
       )}
       {current.comment !== null && (
@@ -300,11 +308,6 @@ export default function BoardColumn({
       <p className="sr-only" role="status">
         {selected !== null ? t('analysis.selected', { square: selected }) : boardLabel}
       </p>
-      {current.status !== 'active' && (
-        <p id="analysis-status" className="m-0 text-ui font-semibold text-gold-hi" role="status">
-          {t(`analysis.status.${current.status}`)}
-        </p>
-      )}
     </div>
   );
 }
