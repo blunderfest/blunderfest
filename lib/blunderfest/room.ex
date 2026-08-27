@@ -20,6 +20,7 @@ defmodule Blunderfest.Room do
 
   use GenServer, restart: :temporary
 
+  alias Blunderfest.DemoRoom
   alias Blunderfest.Ops
   alias Blunderfest.RoomLog
 
@@ -33,7 +34,12 @@ defmodule Blunderfest.Room do
 
   @impl true
   def init({slug, opts}) do
-    read_only = Keyword.get(opts, :read_only, false)
+    # The reserved demo slug is read-only no matter how the process was
+    # started (ADR-0014): the seed passes the flag, but a registry-race
+    # restart (the seed's existence check observes a zombie entry and skips
+    # creation; the join's ensure_room then restarts with default opts) must
+    # not produce a writable demo room. The slug decides, not the caller.
+    read_only = DemoRoom.reserved?(slug) or Keyword.get(opts, :read_only, false)
 
     room =
       if read_only do

@@ -62,4 +62,23 @@ defmodule Blunderfest.DemoRoomTest do
     assert DemoRoom.reserved?("chess")
     refute DemoRoom.reserved?("abcde")
   end
+
+  test "a demo room started off the seed path is still read-only" do
+    # Regression (observed live): during deploy churn the seed's existence
+    # check can observe a zombie registry entry and skip creation; the
+    # join's ensure_room then restarts the process with default opts —
+    # writable, first joiner becomes owner, and the ops persist from then
+    # on. The reserved slug alone must force read-only at init, and the
+    # durable log must never revive it.
+    Rooms.join_snapshot(DemoRoom.code(), "profile-1")
+
+    assert Rooms.read_only?(DemoRoom.code())
+    assert Rooms.owner(DemoRoom.code()) == nil
+    assert Rooms.roles(DemoRoom.code()) == %{}
+    refute Rooms.can_edit?(DemoRoom.code(), "profile-1")
+
+    # And the next seed still repopulates it with the demo game.
+    DemoRoom.seed()
+    assert [%{"type" => "set_game"}] = Rooms.ops(DemoRoom.code())
+  end
 end
