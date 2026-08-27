@@ -248,57 +248,62 @@ The mascot is a knight caught mid-blunder — the badge drops below 20px renderi
 
 ### 5.2 Room (`/room/[code]`) — Desktop ≥1280px
 
-Three-column layout, **no page scroll**:
+Two regions — board column + one tabbed sidebar — **no page scroll** (the
+board row fits the viewport; only lists scroll, inside their panels). The
+left rail is gone (ADR-0031).
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ [K] Blunderfest │ Untitled study · Carlsen – Nepo │ Library │ code qh4nx ⧉ │ 🟢 Brave Otter 42 ♔ │
-├────────┬──────────────────────────────────────────┬──────────────────────────┤
-│        │                                          │ Comment                  │
-│ Games  │    ┌─ eval bar ─┐                        │ 4. Nc6                   │
-│ (2)    │    │            │  ┌──────────────────┐  │ ┌──────────────────────┐ │
-│────────│    │  ▓▓▓▓▓▓▓▓▓ │  │                  │  │ Write your thoughts  │ │
-│● Carls…│    │            │  │                  │  │ about this position… │ │
-│  vs Ne…│    │  +1.25     │  │     ♔ ♕ ♖ ♗ ♘ ♙ │  │                      │ │
-│  136 pl│    │            │  │                  │  │ └──────────────────────┘ │
-│  +16 n │    │  ░░░░░░░░░ │  │     ♟ ♞ ♝ ♜ ♛ ♚ │  │ Saved for everyone    │
-│────────│    │  (white)   │  │                  │  ├──────────────────────────┤
-│ Members│    └────────────┘  │                  │  │ Moves (23 nodes)        │
-│ 3/3    │                    │                  │  ├──────────────────────────┤
-│ ♔ Brave│    🟡 Thinking…    │                  │  │ 1. e4 e5 2. Nf3 Nc6    │
-│  presenting                  │ 3. Bb5 a6 4. Ba4 │  │ 3. Bb5 a6 4. Ba4 Nf6   │
-│ ♘ Sneaky│   Depth 12   +0.45│  Nf6 5. O-O Be7  │  │ 5. O-O Be7 6. Re1 b5  │
-│  collaborator                 │ 6. Re1 b5 7. Bb3 │  │ 7. Bb3 O-O 8. h3       │
-│ ♙ Patient│                   │  O-O 8. h3       │  │  (8... Bb7 9. d3 d6)  │
-│  viewer   │                   │                  │  │ 9. Nxe5 Nxb3 10. axb3 │
-│────────│    ┌─ navigation ─────────────────────┐  │ 10. axb3 Bb7 1-0      │
-│ Activity│   │ ⏮ ◀ ply 16/20 ▶ ⏭  ⇅ Flip     │  ├──────────────────────────┤
-│────────│   │ ◉ Present  ⇢ Following  ♟ Engine  │  │ Game Info               │
-│📥 Brave │   └──────────────────────────────────┘  │ Event  WCh 2021        │
-│  import…│                                        │ Date   2021.12.03       │
-│♟ Sneaky │                                        │ Result 1-0              │
-│  8... Na│                                        │ Opening C88 Ruy Lopez   │
-│💬 Sneaky │                                       │ Plies   20 main · 23    │
-│  commen…│                                        │ Source  lichess          │
-│👤 Brave  │                                       │              [Export PGN]│
-└────────┴──────────────────────────────────────────┴──────────────────────────┘
+│ [K] Blunderfest        [Share] (avatars: BR SN PA +2)  ? ◐  Brave Otter 42   │
+├───────────────────────────────────────────────┬──────────────────────────────┤
+│ Carlsen – Nepo  1-0        Find examples ⬇ 🔖 │ MOVES REVIEW REF CHAT(2) ROOM│
+│ C88 · Ruy Lopez                               │──────────────────────────────│
+│ ┌─ eval bar ─┐ ┌──────────────────────────┐   │ ENGINE ● · Depth 12  3 ▾ ↗ ◐ │
+│ │            │ │                          │   │ +1.25  Nf3                 │
+│ │  ▓▓▓▓▓▓▓▓▓ │ │                          │   │ +1.31  Bb5 a6 O-O ...      │
+│ │            │ │                          │   │──────────────────────────────│
+│ │  +1.25     │ │                          │   │ 1. e4 e5 2. Nf3 Nc6        │
+│ │  ░░░░░░░░░ │ │                          │   │ 3. Bb5 a6 4. Ba4 Nf6       │
+│ │  (white)   │ │                          │   │ 5. O-O Be7 6. Re1 b5       │
+│ └────────────┘ └──────────────────────────┘   │  (8... Bb7 9. d3 d6)       │
+│                ⏮ ◀ ply 16/20 ▶ ⏭  ⇅ 💬 ⋯      │  ...                         │
+├───────────────────────────────────────────────┴──────────────────────────────┤
+│ ▾ MATERIAL  Layers ▾                                    [Analyze game] ?     │
+│ ▔▔▔▔▔▔▔▔▔▔▔▔▔ timeline strip (sparkline, scrubbable) ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Left rail** (236px): Games panel → Members panel → Activity panel. Each
-  scrolls independently (`.scroll-y`).
-- **Center**: Board with eval bar to its left, engine readout below, nav
-  controls at the bottom.
-- **Right sidebar** (340px): Comment editor → Move list → Game info. Moves panel
-  flex-grows; all panels match the board column height via `xl:grid-rows` on the
-  left rail.
-- The header carries brand, room title, room code (copy button, owner only),
-  and user identity.
+- **App bar**: brand, then the room's chrome — the gold **Share** button
+  (copies the room link) and the **presence strip** (overlapping avatars,
+  "+N" past four; its popover holds follow/presenter/role actions) — then
+  help, theme, account.
+- **Board column**: title row (players, result, Find examples, export/save
+  icons), opening line, eval bar + board, then ONE toolbar: navigation
+  (⏮ ◀ ply ▶ ⏭) + flip/comment + the ⋯ overflow menu (edit position,
+  drawing colors, clear drawings). No hint row — the shortcuts dialog and
+  tour carry the keyboard map.
+- **Sidebar** (360px): the single tab strip — Moves · Review · Reference ·
+  Chat · Room. Moves = engine box fused atop the move list. Review nests
+  Moments | Report | Game info. Chat carries an unread-count badge. Room =
+  games list (import/new icon buttons) + room code/copy/leave + region/lag.
+  The active tab survives game switches; all tab panels stay mounted
+  (hidden), so a finished analysis or a chat scrollback never resets.
+- **Timeline band**: a collapsed strip by default — one sparkline-height
+  scrubbable layer (the first enabled layer holding data) with its caption
+  dot + label, a Layers popover holding the toggle chips, and the analyze
+  job in the header. The chevron expands the full stacked band (Eval |
+  Material | Activity | Clocks); layer visibility and the expanded state
+  are per-viewer localStorage preferences.
 
 ### 5.3 Room — Mobile (<1280px)
 
-Stacks vertically: board first, then engine/controls, comment, moves (max-h
-45vh), then rail panels below. Page scrolls normally. Header collapses Library
-into overflow.
+A designed layout, not a stack: slim header (Share + avatars + help/theme) →
+one-line truncated title → board + eval bar → the merged toolbar → the
+timeline strip → the same tabbed sidebar as a fixed-height panel (~52dvh,
+internal scroll). The board stays near-visible when a move is tapped in the
+list; the page scrolls at most a little. The board's width formula
+(`min(100vw - 4.75rem, 34rem)`) is rail-free; below xl the sidebar matches
+the board block's width, ≥xl they sit side by side.
 
 ### 5.4 Import Dialog
 
@@ -783,42 +788,42 @@ explicitly discard or save — remote updates do not clobber your draft.
 
 ### Room Layout (Desktop ≥1280px)
 
-```
-xl:grid-cols-[236px_minmax(560px,1fr)_340px]  gap-3  p-3
-```
+Board column + sidebar, side by side (`xl:flex-row`, stretched to one row
+height); the timeline strip spans the row below.
 
-- **Left rail** (236px): 3-row grid (`xl:grid-rows-[0.85fr_1fr_1.15fr]`):
-  Games → Members → Activity. Each panel scrolls independently.
-- **Center**: Board column, flex-col: board → engine readout → nav controls.
-  Board width: `min(100%, calc(100vh - 11.5rem))` — fills available space
-  without exceeding viewport height.
-- **Right sidebar** (340px): Comment → Moves (flex-grow, capped at 45vh on
-  mobile, `xl:max-h-none` on desktop) → Game info.
-- **No page-level scrolling.** `xl:h-screen xl:overflow-hidden` on the body.
-  Only the panels scroll.
+- **Board column**: title row → opening line → eval bar + board → one
+  toolbar (navigation + flip/comment + ⋯ overflow). Board width:
+  `min(100vw - 4.75rem, 34rem)` — viewport-minus-chrome, capped.
+- **Sidebar** (360px): the tab strip owns everything that isn't the board;
+  only the active tab's lists scroll.
+- **No page-level scrolling** at xl — the board row is sized to fit; the
+  strip's collapsed height keeps it that way.
 
 ### Mobile Layout (<1280px)
 
-Single column, `grid-cols-1`. Page scrolls normally.
+Board-first, one thumb-reach surface: header → title → board → toolbar →
+timeline strip → the tabbed sidebar as a fixed-height panel (~52dvh) with
+internal scroll. The same five tabs; nothing is hidden behind desktop-only
+menus.
 
-Order: board → engine/controls → comment → moves (max-h 45vh) → rail panels
-(games, members, activity). Header keeps brand + code + name; Library moves
-into an overflow menu.
+### Extensibility — the docking contract (ADR-0024 + ADR-0031)
 
-### Extensibility Slots (Designed For, Not Yet Built)
+No new permanent panels. A new feature is exactly one of:
 
-| Feature                | Docked where                                     |
-| ---------------------- | ------------------------------------------------ |
-| **Engine lines**       | Under the Moves panel in the right sidebar. Insertable as variations. Collapses to a single 28px header when empty. |
-| **Opening / ECO / Masters reference** | The adaptive **Reference** sidebar tab (ADR-0024): corpus continuation rows, hidden when empty. |
-| **Whole-game eval curve + blunder report** | Horizontal band below the board, between the engine readout and the nav controls. |
-| **Game library**       | `/library` route, linked from the header of every screen. |
-| **Position search**    | Marquee feature — its own `#/search` destination (ADR-0024); results open into rooms as a game or variation. |
-| **Text chat**          | Bottom of the left rail, below Activity (shares the "stream" behaviour). |
-| **Move voting / polls**| Below Activity in the left rail, same stream-like rendering. |
-| **PGN export**         | Button in the Game info panel header ("Export PGN"). |
-| **Drawable arrows**    | Board's SVG overlay layer — protocol in place, UI pending. |
-| **Private rooms / optional sign-in** | Header right side — account menu slot already reserved. |
+| Feature kind           | Docked where                                             |
+| ---------------------- | -------------------------------------------------------- |
+| Per-position reference | The **Reference** sidebar tab (ADR-0024): corpus continuation rows, statistics post-spike; always present, text placeholder when empty. |
+| Whole-game view        | A **timeline-band layer** (a toggle in the Layers popover; renders only when enabled *and* holding data). |
+| Board action           | The board **toolbar** — frequent ones as icons, rare ones in the ⋯ overflow menu. |
+| Game action            | The title row's icon cluster (export, save) or the Find examples launcher. |
+| Room/social            | The **Room** tab (games, invite, leave) or the **presence strip** popover (members). |
+| Task flow              | A dialog (import, examples) or a destination (`#/search`, ADR-0024). |
+| Ambient status         | App-bar chrome (avatars, Share) — never a panel.         |
+
+Empty states take no space: placeholders render only inside the active tab;
+band layers render only when enabled and holding data. One tab idiom
+(`SidebarTabs`) everywhere.
+
 
 ---
 

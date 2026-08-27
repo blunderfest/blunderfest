@@ -182,6 +182,62 @@ describe('App', () => {
     expect(await screen.findByText(code.toUpperCase())).toBeInTheDocument();
   });
 
+  it('follows a re-healed device identity when room creation 401s once', async () => {
+    // A stored device whose profile is gone server-side: the create 401s,
+    // withDeviceRetry mints a fresh profile and retries — and the app must
+    // JOIN the room as the new profile (the room is owned by it), not keep
+    // acting as the stale one. Regression test: before the re-heal event,
+    // the creator landed in their own room as a viewer.
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'stale-profile', secret: 'stale-secret' }),
+    );
+    const freshBody = {
+      profile: { id: 'profile-2', name: 'Fresh Lynx 99', created_at: '2026-01-01T00:00:00Z' },
+      secret: 'fresh-secret',
+    };
+    let roomPosts = 0;
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/profiles/stale-profile': () =>
+        jsonResponse(
+          { profile: { id: 'stale-profile', name: 'Old Otter 42', created_at: '2026-01-01' } },
+          200,
+        ),
+      '/api/profiles/stale-profile/library': () => jsonResponse({ entries: [] }),
+      '/api/profiles/profile-2': () => jsonResponse({ profile: freshBody.profile }, 200),
+      '/api/profiles/profile-2/library': () => jsonResponse({ entries: [] }),
+      '/api/profiles': () => jsonResponse(freshBody, 201),
+      '/api/rooms': () =>
+        roomPosts++ === 0
+          ? jsonResponse({ errors: { code: 'unauthorized' } }, 401)
+          : jsonResponse({ code: 'abcde' }, 201),
+    });
+    const channel = new FakeChannel();
+    channel.joinReturn = { ops: [], roles: { 'profile-2': 'owner' } };
+    socketMocks.channelFor.mockReturnValue(channel);
+    render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Create a room' }));
+
+    // The app re-reads its identity after the re-heal…
+    expect(await screen.findByText('Fresh Lynx 99')).toBeInTheDocument();
+    // …and the room channel (re)joins as the new profile, so the recorded
+    // owner role lands — the owner empty state, not the viewer's.
+    await waitFor(() =>
+      expect(socketMocks.channelFor).toHaveBeenLastCalledWith(expect.any(String), {
+        profile_id: 'profile-2',
+        name: 'Fresh Lynx 99',
+      }),
+    );
+    expect(await screen.findByText('Empty room')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Import games' })).toBeInTheDocument();
+  });
+
   it('joins a room from the code input', async () => {
     stubFetch({
       '/api/healthz': () => new Promise(() => {}),
@@ -235,6 +291,8 @@ describe('App', () => {
     );
 
     expect(await screen.findByText('ABCDE')).toBeInTheDocument();
+    // Copy/leave live in the sidebar's Room tab (ADR-0031).
+    fireEvent.click(screen.getByRole('tab', { name: 'Room' }));
     expect(screen.getByRole('button', { name: 'Leave room' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
   });
@@ -271,7 +329,8 @@ describe('App', () => {
       }),
     );
 
-    expect(await screen.findByTestId('member-list')).toBeInTheDocument();
+    // Joined (and only then): the room's sidebar appears.
+    expect(await screen.findByTestId('room-sidebar')).toBeInTheDocument();
     await waitFor(() =>
       expect(socketMocks.channelFor).toHaveBeenCalledWith('room:abcde', {
         profile_id: 'profile-1',
@@ -371,7 +430,8 @@ describe('App', () => {
       </Provider>,
     );
 
-    // In room A, select the second game explicitly.
+    // In room A, select the second game explicitly (the Room tab lists games).
+    fireEvent.click(await screen.findByRole('tab', { name: 'Room' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Carol – Bob' }));
     expect(await screen.findByRole('heading', { name: 'Carol – Bob' })).toBeInTheDocument();
 
@@ -400,6 +460,8 @@ describe('App', () => {
       </Provider>,
     );
 
+    // Leave lives in the sidebar's Room tab (ADR-0031).
+    fireEvent.click(await screen.findByRole('tab', { name: 'Room' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Leave room' }));
 
     await waitFor(() => expect(window.location.hash).toBe('#/'));
@@ -464,9 +526,9 @@ describe('App', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Help' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Take the guided tour' }));
 
-    expect(await screen.findByText('Room & connection')).toBeInTheDocument();
+    expect(await screen.findByText('Everything else, in one sidebar')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Skip tour' }));
-    expect(screen.queryByText('Room & connection')).not.toBeInTheDocument();
+    expect(screen.queryByText('Everything else, in one sidebar')).not.toBeInTheDocument();
   });
 
   it('does not offer the tour on the landing page', async () => {

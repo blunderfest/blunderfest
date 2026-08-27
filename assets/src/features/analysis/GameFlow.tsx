@@ -66,6 +66,7 @@ export default function GameFlow({
   bestMoves,
   spanPly,
   heightClass = 'h-44',
+  compact = false,
   onSelectPly,
 }: {
   evals: AnalysisEval[];
@@ -84,6 +85,8 @@ export default function GameFlow({
   spanPly?: number;
   /** The chart's height (the timeline band stacks layers compactly). */
   heightClass?: string;
+  /** Strip mode (the band's collapsed sparkline): corner controls hidden. */
+  compact?: boolean;
   onSelectPly: (ply: number) => void;
 }) {
   const { t } = useTranslation();
@@ -434,18 +437,20 @@ export default function GameFlow({
             })()}
           </div>
         )}
-        <button
-          type="button"
-          className="absolute top-1 right-1 z-10 rounded-chip border border-line-strong bg-panel/90 px-1.5 py-0.5 font-semibold text-[10px] text-muted backdrop-blur-sm transition-colors hover:text-ink"
-          aria-label={t('analysis.evalScale')}
-          aria-pressed={scale === 'win'}
-          title={t('analysis.evalScale')}
-          data-testid="eval-scale-toggle"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={toggleScale}
-        >
-          {scale === 'win' ? '%' : 'cp'}
-        </button>
+        {!compact && (
+          <button
+            type="button"
+            className="absolute top-1 right-1 z-10 rounded-chip border border-line-strong bg-panel/90 px-1.5 py-0.5 font-semibold text-[10px] text-muted backdrop-blur-sm transition-colors hover:text-ink"
+            aria-label={t('analysis.evalScale')}
+            aria-pressed={scale === 'win'}
+            title={t('analysis.evalScale')}
+            data-testid="eval-scale-toggle"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={toggleScale}
+          >
+            {scale === 'win' ? '%' : 'cp'}
+          </button>
+        )}
       </div>
       {/*
         The quality strip: one cell per move, colored by severity, aligned

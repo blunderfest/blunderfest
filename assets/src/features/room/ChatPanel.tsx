@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { button, panel, panelHeader } from '@/components/ui';
+import { button } from '@/components/ui';
 import { useAppSelector } from '@/store';
 
 /**
- * The room's chat panel: op-log-backed history (replays on join), live for
- * everyone in the room. Sits in the rail under Members. Sending is a plain
- * `chat` op — the echo is the only application path (ADR-0005).
+ * The room's chat: op-log-backed history (replays on join), live for
+ * everyone in the room. A sidebar tab since ADR-0031 (it was a rail panel);
+ * the tab carries an unread badge. Sending is a plain `chat` op — the echo
+ * is the only application path (ADR-0005).
  *
  * Chat is for owners and collaborators; viewers read along (ADR-0023), so
  * the input only renders with `canChat`. The owner (`canModerate`) can
@@ -52,15 +53,11 @@ export default function ChatPanel({
   }
 
   return (
-    <section className={`${panel({ layout: 'none', pad: 'none' })} flex shrink-0 flex-col`}>
-      <div className={panelHeader()}>
-        <h2 className="m-0">{t('chat.title')}</h2>
-        <span className="text-faint tabular-nums">{messages.length}</span>
-      </div>
+    <section className="flex min-h-0 flex-1 flex-col" aria-label={t('chat.title')}>
       <ul
         ref={listRef}
         data-testid="chat-list"
-        className="m-0 flex min-h-24 max-h-56 flex-1 flex-col gap-1 overflow-y-auto p-2"
+        className="m-0 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2"
       >
         {messages.length === 0 && <li className="p-1 text-ui text-faint">{t('chat.empty')}</li>}
         {messages.map((message) => (
@@ -87,7 +84,7 @@ export default function ChatPanel({
         ))}
       </ul>
       {canChat ? (
-        <div className="flex gap-2 border-t border-line p-2">
+        <div className="flex shrink-0 gap-2 border-t border-line p-2">
           <input
             type="text"
             id="chat-input"

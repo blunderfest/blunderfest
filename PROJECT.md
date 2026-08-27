@@ -239,6 +239,57 @@ protocol would only shave a reconnect the client socket makes anyway;
 no observable gain, see ADR-0028's consequences). Search (milestone 8)
 is the next spike-gated candidate, awaiting the owner.
 
+### Session handoff (2026-08-27, evening — the one-sidebar redesign, ADR-0031)
+
+**The room screen was restructured** after a design review (the rail had
+accreted four panels, the board column six stacked regions, and the band
+amendment had broken the spec's no-page-scroll invariant; mobile was the
+desktop DOM in document order). The visual language is unchanged — this
+was an information-architecture fix, specced in ADR-0031 and the rewritten
+`design/DESIGN-SYSTEM.md` §5.2/§5.3/§8. What shipped:
+
+- **One tabbed sidebar** (Moves · Review · Reference · Chat · Room):
+  Review absorbs the old viz box (Moments/Report) + Game info as nested
+  tabs; Chat is a tab with an unread badge (the count/read-marker lives in
+  RoomView, which also owns the active tab so it survives game switches);
+  Room holds the games list + import/new + code/copy/leave + region/lag.
+  The left rail is deleted. Empty rooms keep a slim Chat/Room sidebar next
+  to the CTA. Tab contents stay mounted (hidden) — analyses and chat
+  scrollbacks survive switches.
+- **Presence is chrome**: members are an avatar strip in the app bar
+  (portaled from RoomView into a header slot; popover = follow/presenter/
+  roles), plus a gold **Share** button that copies the room link. The tour
+  re-points at the new landmarks (it only targets always-visible chrome —
+  hidden tab panels measure 0).
+- **Board chrome consolidated**: one toolbar under the board (nav +
+  flip/comment icons + a ⋯ overflow with edit position, drawing colors,
+  clear drawings); the keyboard-hint row is gone (shortcuts dialog/tour
+  cover it). Board width formula no longer subtracts the dead rail.
+- **Timeline band is a strip**: collapsed to one sparkline-height
+  scrubbable layer by default (first enabled layer with data), toggles in
+  a Layers popover, expand chevron for the full stack; layer choice and
+  expanded state persist (`blunderfest.timelineLayers` / `…Expanded`).
+  Analyze game lives in the strip header, reachable in both states.
+- **Mobile is designed, not stacked**: header → one-line title → board →
+  toolbar → strip → the sidebar as a fixed-height tabbed panel; board
+  never scrolls far away; 635 frontend + 396 backend tests green.
+
+**Two pre-existing bugs found and fixed along the way** (both user-reported
+symptoms), plus one UI bug: (0) the engine-lines `<select>` popup rendered
+white in dark mode (the UA options list doesn't follow the page
+color-scheme reliably) — `option` now carries the theme colors in
+`app.css`'s base layer. (1) a mid-session device re-heal (401 → new profile minted)
+never updated the app's profile state, so a room created in that window
+was owned by the new device while the app kept acting as the old one — the
+creator landed as a viewer in their own room. `rehealDevice` now dispatches
+`DEVICE_REHEALED_EVENT`; `useProfile` re-bootstraps on it (regression test
+in App.test.tsx). (2) `Presence.fetch` stripped metas to `:name`, dropping
+`phx_ref` — phoenix.js matches metas by ref, so any tab closing evicted
+the whole member. The client now syncs presence through phoenix's own
+`Presence` helper into a wholesale `syncMembers` replace, and the server
+keeps `:phx_ref` in metas (regression tests: shared-key tab close keeps
+the member).
+
 ### Session handoff (2026-08-24, third session — visualization milestones A/B/C)
 
 **`docs/visualization_ideas.md` partially implemented, three commits**

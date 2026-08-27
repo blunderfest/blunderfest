@@ -151,6 +151,11 @@ export default function App() {
   const selfId = profile.status === 'ready' ? profile.profile.id : null;
   const selfName = profile.status === 'ready' ? profile.profile.name : null;
 
+  // The app bar's room slot (ADR-0031): the room portals its Share button
+  // and presence strip here — room chrome rides the app bar while the app
+  // bar stays app-level (the room fills the slot; the shell owns it).
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+
   // The inline script in index.html sets data-theme before first paint.
   const [theme, setThemeState] = useState<Theme>(getTheme);
 
@@ -185,6 +190,7 @@ export default function App() {
           </a>
         </div>
         <div className="flex items-center gap-3">
+          <div ref={setHeaderSlot} className="flex items-center gap-2" data-testid="header-slot" />
           <HelpMenu onStartTour={startTour} showTour={route.screen === 'room'} />
           <button
             type="button"
@@ -282,6 +288,7 @@ export default function App() {
               profile.status === 'ready' &&
               profile.profile.accounts?.some((account) => account.type === 'lichess') === true
             }
+            headerSlot={headerSlot}
           />
         )}
       </main>

@@ -1,7 +1,6 @@
 import type { TFunction } from 'i18next';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import ArrowIcon from '@/components/ArrowIcon';
 import Board, { type BoardArrow } from '@/components/Board';
 import { parseFen, pieceSrc } from '@/components/board';
 import { button } from '@/components/ui';
@@ -99,7 +98,7 @@ export default function BoardColumn({
   return (
     <div className="order-1 flex max-w-full flex-col items-center gap-4">
       <div className="flex w-full items-baseline justify-between gap-4">
-        <h2 className="m-0 min-w-0 text-display font-bold tracking-[-0.02em]">
+        <h2 className="m-0 min-w-0 truncate text-display font-bold tracking-[-0.02em]">
           {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
         </h2>
         <div className="flex shrink-0 items-center gap-2">
@@ -266,17 +265,40 @@ export default function BoardColumn({
         </div>
       )}
       {/*
-        The move navigation lives directly under the board at every
-        size (lichess-style) — the move list is a pure list now.
+        One toolbar under the board (ADR-0031): the move navigation and the
+        board actions share a single row — the rarer tools (position
+        editing, drawing colors) live in the row's overflow menu. Hidden
+        while the position editor owns the board (its toolbar has the
+        exits).
       */}
       {!editor.editing && (
-        <NavControls
-          navTargets={navTargets}
-          currentId={current.id}
-          currentPly={current.ply}
-          totalPly={tree.mainline_ply_count}
-          onSelect={onSelect}
-        />
+        <div
+          className="flex w-full max-w-[min(90vw,34rem)] flex-wrap items-center justify-center gap-x-3 gap-y-1.5"
+          data-testid="board-toolbar"
+        >
+          <NavControls
+            navTargets={navTargets}
+            currentId={current.id}
+            currentPly={current.ply}
+            totalPly={tree.mainline_ply_count}
+            onSelect={onSelect}
+          />
+          <BoardControls
+            flipped={flipped}
+            onFlip={onFlip}
+            onOpenComment={canEdit ? onOpenComment : undefined}
+            onToggleEdit={
+              canEdit && onSetPosition !== undefined
+                ? () =>
+                    editor.editing
+                      ? editor.exitEditMode()
+                      : editor.enterEditMode(current.fen ?? null)
+                : undefined
+            }
+            drawColorPicker={canEdit ? drawColorPicker : undefined}
+            clearDrawings={canEdit ? clearDrawings : undefined}
+          />
+        </div>
       )}
       {current.comment !== null && (
         <div
@@ -288,30 +310,6 @@ export default function BoardColumn({
       )}
       <p className="sr-only" role="status">
         {selected !== null ? t('analysis.selected', { square: selected }) : boardLabel}
-      </p>
-      <BoardControls
-        flipped={flipped}
-        onFlip={onFlip}
-        onOpenComment={canEdit ? onOpenComment : undefined}
-        onToggleEdit={
-          canEdit && onSetPosition !== undefined
-            ? () =>
-                editor.editing ? editor.exitEditMode() : editor.enterEditMode(current.fen ?? null)
-            : undefined
-        }
-        editing={editor.editing}
-        drawColorPicker={canEdit ? drawColorPicker : undefined}
-        clearDrawings={canEdit ? clearDrawings : undefined}
-      />
-      <p className="m-0 hidden text-note text-faint md:block">
-        <kbd className="inline-flex items-center">
-          <ArrowIcon of="left" className="h-3 w-3" />
-        </kbd>{' '}
-        <kbd className="inline-flex items-center">
-          <ArrowIcon of="right" className="h-3 w-3" />
-        </kbd>{' '}
-        {t('analysis.shortcutNav')} · <kbd>Home</kbd> <kbd>End</kbd> {t('analysis.shortcutJump')} ·{' '}
-        <kbd>f</kbd> {t('analysis.shortcutFlip')} · <kbd>c</kbd> {t('analysis.shortcutNote')}
       </p>
       {current.status !== 'active' && (
         <p id="analysis-status" className="m-0 text-ui font-semibold text-gold-hi" role="status">
@@ -361,7 +359,7 @@ function PaletteStrip({
               color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
               piece: t(`analysis.pieces.${kind}`),
             })}
-            className={`grid h-[min(calc((100vw-4.75rem)/8),4.25rem)] w-[min(calc((100vw-4.75rem)/8),4.25rem)] place-items-center rounded-control leading-none transition-colors md:h-[min(calc((100vw-20.25rem)/8),4.25rem)] md:w-[min(calc((100vw-20.25rem)/8),4.25rem)] ${
+            className={`grid h-[min(calc((100vw-4.75rem)/8),4.25rem)] w-[min(calc((100vw-4.75rem)/8),4.25rem)] place-items-center rounded-control leading-none transition-colors ${
               active ? 'bg-gold/25 ring-1 ring-gold/60' : 'hover:bg-black/10'
             }`}
             onPointerDown={(event) => editor.handlePalettePointerDown({ color, kind }, event)}

@@ -4,27 +4,46 @@ import { useState } from 'react';
 export type SidebarTab = {
   id: string;
   label: string;
+  /** A small marker on the tab button (e.g. the chat unread count). */
+  badge?: ReactNode;
   content: ReactNode;
 };
 
 /**
- * The tabbed container for the analysis sidebar. Gives future panels
- * (Explorer, Search) a home without fighting the move list for space. The
- * tab strip is always visible — even with a single tab — so the structure is
- * there when the new tabs land.
+ * The one tab strip (ADR-0031): the room sidebar's tabs, and nested tab
+ * groups like Review's Moments | Report | Game info. Every tab's content
+ * stays mounted; inactive panels are hidden (the `hidden` attribute removes
+ * them from the a11y tree). Panels hold results state (a finished analysis,
+ * a chat scrollback) — unmounting on tab switches would lose it.
  *
- * Every tab's content stays mounted; inactive panels are hidden (the
- * `hidden` attribute removes them from the a11y tree). Panels like the
- * Examples tab hold results state — unmounting on tab switches would lose
- * a finished analysis for no reason.
+ * Uncontrolled by default; pass `activeId` + `onActivate` to lift the
+ * active tab to the parent (the room keeps it across game switches and
+ * resets the chat badge on activation).
  */
-export default function SidebarTabs({ tabs }: { tabs: SidebarTab[] }) {
-  const [active, setActive] = useState(tabs[0]?.id ?? '');
+export default function SidebarTabs({
+  tabs,
+  activeId,
+  onActivate,
+}: {
+  tabs: SidebarTab[];
+  activeId?: string;
+  onActivate?: (id: string) => void;
+}) {
+  const [internal, setInternal] = useState(tabs[0]?.id ?? '');
+  const active = activeId ?? internal;
 
   const current = tabs.find((tab) => tab.id === active) ?? tabs[0];
 
   if (current === undefined) {
     return null;
+  }
+
+  function activate(id: string) {
+    if (onActivate !== undefined) {
+      onActivate(id);
+    } else {
+      setInternal(id);
+    }
   }
 
   return (
@@ -36,14 +55,15 @@ export default function SidebarTabs({ tabs }: { tabs: SidebarTab[] }) {
             type="button"
             role="tab"
             aria-selected={tab.id === current.id}
-            className={`flex-1 border-b-2 py-2 text-center text-micro font-semibold uppercase tracking-[0.11em] transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1 border-b-2 py-2 text-center text-micro font-semibold uppercase tracking-[0.11em] transition-colors ${
               tab.id === current.id
                 ? 'border-gold text-gold-hi'
                 : 'border-transparent text-muted hover:text-ink'
             }`}
-            onClick={() => setActive(tab.id)}
+            onClick={() => activate(tab.id)}
           >
             {tab.label}
+            {tab.badge}
           </button>
         ))}
       </div>

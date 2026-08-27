@@ -5,8 +5,8 @@ import Tour from '@/features/tour/Tour';
 
 const steps: TourStepDef[] = [
   { target: null, titleKey: 'tour.boardTitle', bodyKey: 'tour.boardBody' },
-  { target: '#tour-fixture', titleKey: 'tour.vizBoxTitle', bodyKey: 'tour.vizBoxBody' },
-  { target: '#tour-missing', titleKey: 'tour.gameListTitle', bodyKey: 'tour.gameListBody' },
+  { target: '#tour-fixture', titleKey: 'tour.roomPanelTitle', bodyKey: 'tour.roomPanelBody' },
+  { target: '#tour-missing', titleKey: 'tour.memberListTitle', bodyKey: 'tour.memberListBody' },
 ];
 
 function renderTour(onClose = vi.fn(), defs: TourStepDef[] = steps) {
@@ -32,10 +32,10 @@ describe('Tour', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('The shared board')).toBeInTheDocument();
     expect(screen.getByText(progressText('1 of 2'))).toBeInTheDocument();
-    expect(screen.queryByText("The room's games")).not.toBeInTheDocument();
+    expect(screen.queryByText('Who is here')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByText('The viz box')).toBeInTheDocument();
+    expect(screen.getByText('Share the room')).toBeInTheDocument();
     expect(screen.getByText(progressText('2 of 2'))).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
@@ -63,14 +63,14 @@ describe('Tour', () => {
   it('advances with the arrow keys', () => {
     renderTour();
     fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(screen.getByText('The viz box')).toBeInTheDocument();
+    expect(screen.getByText('Share the room')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'ArrowLeft' });
     expect(screen.getByText('The shared board')).toBeInTheDocument();
   });
 
   it('renders nothing when no step resolves', () => {
     const { container } = renderTour(vi.fn(), [
-      { target: '#tour-absent', titleKey: 'tour.gameListTitle', bodyKey: 'tour.gameListBody' },
+      { target: '#tour-absent', titleKey: 'tour.memberListTitle', bodyKey: 'tour.memberListBody' },
     ]);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(container.querySelector('.fixed.inset-0')).toBeNull();

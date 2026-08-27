@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DRAW_COLORS, kingInCheckSquare, pieceSrc } from '@/components/board';
 import AnalysisSidebar from '@/features/analysis/AnalysisSidebar';
@@ -75,6 +75,11 @@ export default function Analysis({
   initialNodeId = null,
   onAddHistoricalGame,
   addedEvidenceGids = new Set(),
+  activeSidebarTab = 'moves',
+  onSidebarTabChange,
+  chatTab,
+  chatBadge,
+  roomTab,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -131,8 +136,28 @@ export default function Analysis({
    * "Added ✓" for them without another round trip.
    */
   addedEvidenceGids?: ReadonlySet<number>;
+  /**
+   * The sidebar's active tab, lifted to the room (ADR-0031) so it survives
+   * game switches and drives the chat unread badge. Defaults to Moves.
+   */
+  activeSidebarTab?: string;
+  onSidebarTabChange?: (id: string) => void;
+  /** The Chat tab's content (absent in read-only rooms). */
+  chatTab?: ReactNode;
+  /** The unread badge on the Chat tab (the room owns the count). */
+  chatBadge?: ReactNode;
+  /** The Room tab's content (games + room actions). */
+  roomTab?: ReactNode;
 }) {
   const { t } = useTranslation();
+  /**
+   * The sidebar tab: controlled by the room (ADR-0031 — it survives game
+   * switches and drives the chat badge), but self-managed when Analysis
+   * stands alone (tests, stories).
+   */
+  const [internalSidebarTab, setInternalSidebarTab] = useState('moves');
+  const sidebarTab = onSidebarTabChange !== undefined ? activeSidebarTab : internalSidebarTab;
+  const handleSidebarTabChange = onSidebarTabChange ?? setInternalSidebarTab;
   const [flipped, setFlipped] = useState(false);
   /** The Reference row under the pointer — its move previews as a ghost arrow. */
   const [referenceGhost, setReferenceGhost] = useState<LegalMove | null>(null);
@@ -829,7 +854,7 @@ export default function Analysis({
         as wide as the row above it, both centered as one block.
       */}
       <div className="flex w-full max-w-full flex-col items-center gap-3 md:gap-6 xl:w-fit">
-        <div className="contents xl:flex xl:flex-row xl:items-start xl:gap-6">
+        <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
           <BoardColumn
             tree={tree}
             current={current}
@@ -903,6 +928,11 @@ export default function Analysis({
             canEdit={canEdit}
             canPlay={canPlay}
             flipped={flipped}
+            activeTab={sidebarTab}
+            onTabChange={handleSidebarTabChange}
+            chatTab={chatTab}
+            chatBadge={chatBadge}
+            roomTab={roomTab ?? null}
             onNavigate={navigate}
             onPlayMove={playMove}
             onInsertLine={handleInsertLine}
@@ -919,7 +949,7 @@ export default function Analysis({
           stacked layers on one shared move axis, full width under the
           board+sidebar row at xl and right under the board below it.
         */}
-        <div className="order-2 w-full">
+        <div className="order-2 w-full max-w-[min(90vw,34rem)] xl:max-w-none">
           <TimelineBand
             tree={tree}
             evals={mainlineEvals}

@@ -1,15 +1,17 @@
 import type { Channel } from 'phoenix';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { pieceSrc } from '@/components/board';
 import { button, chip, panel, statusDot } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
 import { gameToPgn } from '@/features/analysis/pgnExport';
+import SidebarTabs from '@/features/analysis/SidebarTabs';
 import ImportDialog from '@/features/import/ImportDialog';
 import ChatPanel from '@/features/room/ChatPanel';
-import GameList from '@/features/room/GameList';
-import MemberList from '@/features/room/MemberList';
-import RoomPanel from '@/features/room/RoomPanel';
+import PresenceStrip from '@/features/room/PresenceStrip';
+import RoomTab from '@/features/room/RoomTab';
+import ShareButton from '@/features/room/ShareButton';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
 import type {
@@ -49,6 +51,7 @@ export default function RoomView({
   selfName = null,
   lichessLinked = false,
   channelFactory,
+  headerSlot = null,
 }: {
   slug: string;
   onLeave: () => void;
@@ -57,6 +60,11 @@ export default function RoomView({
   /** Shows the "My Lichess studies" source in the import dialog (ADR-0022). */
   lichessLinked?: boolean;
   channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
+  /**
+   * The app bar's room slot (ADR-0031): the Share button and presence strip
+   * portal into it. Optional — tests render the room without the app shell.
+   */
+  headerSlot?: HTMLElement | null;
 }) {
   const { t } = useTranslation();
   const { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze } = useRoomChannel(
@@ -79,6 +87,47 @@ export default function RoomView({
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [followOverride, setFollowOverride] = useState<boolean | null>(null);
   const [showImport, setShowImport] = useState(false);
+  /**
+   * The sidebar's active tab (ADR-0031), lifted here so it survives game
+   * switches (Analysis remounts per game) and drives the chat unread badge.
+   */
+  const [sidebarTab, setSidebarTab] = useState('moves');
+  /**
+   * The chat read marker (an op seq). Replayed history is not unread — the
+   * marker starts at the join-time tail; opening the Chat tab marks read.
+   */
+  const [chatReadSeq, setChatReadSeq] = useState<number | null>(null);
+  const chatMessages = useAppSelector((state) => state.room.chatMessages);
+  const maxChatSeq = chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].seq : 0;
+
+  // joined flips true only after the op-log replay lands (useRoomChannel),
+  // so maxChatSeq at that moment is the history tail, not a live message.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: baseline once, at join
+  useEffect(() => {
+    if (joined && chatReadSeq === null) {
+      setChatReadSeq(maxChatSeq);
+    }
+  }, [joined, chatReadSeq]);
+
+  useEffect(() => {
+    if (sidebarTab === 'chat') {
+      setChatReadSeq(maxChatSeq);
+    }
+  }, [sidebarTab, maxChatSeq]);
+
+  const chatUnread =
+    chatReadSeq === null
+      ? 0
+      : chatMessages.reduce((count, message) => (message.seq > chatReadSeq ? count + 1 : count), 0);
+  const chatBadge =
+    chatUnread > 0 ? (
+      <span
+        className="rounded-chip bg-info/15 px-1 text-info tabular-nums"
+        data-testid="chat-badge"
+      >
+        {chatUnread > 9 ? '9+' : chatUnread}
+      </span>
+    ) : undefined;
   /** The game just imported here — it opens on the initial position. */
   const [freshImportId, setFreshImportId] = useState<string | null>(null);
   /**
@@ -383,144 +432,191 @@ export default function RoomView({
     );
   }
 
+  // The sidebar's Chat and Room tab contents (ADR-0031). Their handlers
+  // live here; Analysis just slots them into its tabs. Chat is absent in
+  // read-only rooms (the demo, ADR-0014) — same gating as the old rail.
+  const chatContent = readOnly ? undefined : (
+    <ChatPanel
+      onSend={handleChatSend}
+      onDelete={handleChatDelete}
+      canChat={canEdit}
+      canModerate={myRole === 'owner'}
+    />
+  );
+  const roomContent = (
+    <RoomTab
+      slug={slug}
+      games={games}
+      activeGameId={effectiveGameId}
+      presenterGameId={presenterGameId}
+      canEdit={canEdit}
+      onSelectGame={handleSelectGame}
+      onAddGame={() => setShowImport(true)}
+      onNewGame={handleNewGame}
+      onLeave={onLeave}
+    />
+  );
+
   return (
     <div className="flex flex-1 flex-col items-stretch gap-3 p-3">
-      <div className="relative grid flex-1 grid-cols-1 gap-3 md:grid-cols-[236px_1fr]">
-        {/*
-          On wide screens the rail is pinned to the analysis sidebar's
-          height (board + nav/controls, the same +13rem the sidebar uses):
-          Games caps at a share of it, Members sizes to content — each
-          scrolls inside its own panel, so the page never grows a body
-          scrollbar. The page is already that tall via the main column, so
-          the taller rail spends dead space below it rather than growing
-          the page. Chat never shrinks (shrink-0): a squeezed input row
-          overflows its panel's bottom border.
-        */}
-        <aside className="flex flex-col gap-3 xl:h-[calc(min(90vw,34rem)+13rem)]">
-          <RoomPanel slug={slug} onLeave={onLeave} />
-          <GameList
-            games={games}
-            activeGameId={effectiveGameId}
-            presenterGameId={presenterGameId}
-            canEdit={canEdit}
-            onSelectGame={handleSelectGame}
-            onAddGame={() => setShowImport(true)}
-            onNewGame={handleNewGame}
-          />
-          {!readOnly && (
-            <MemberList
-              members={members}
-              roles={roles}
-              presenterId={presenter?.id ?? null}
-              myRole={myRole}
-              selfId={selfId}
-              following={following}
-              onFollowChange={setFollowOverride}
-              onSetRole={handleSetRole}
-              onSetPresenter={sendPresenter}
-            />
-          )}
-          {!readOnly && (
-            <ChatPanel
-              onSend={handleChatSend}
-              onDelete={handleChatDelete}
-              canChat={canEdit}
-              canModerate={myRole === 'owner'}
-            />
-          )}
-        </aside>
+      {/*
+        The room's app-bar chrome: the Share button (the room's primary
+        action) and the presence strip — ambient "who's here" as header
+        chrome, not a panel. Portaled so the handlers stay local to the
+        room; the slot is optional so tests can render the room bare.
+      */}
+      {headerSlot !== null &&
+        createPortal(
+          <>
+            <ShareButton slug={slug} />
+            {!readOnly && (
+              <PresenceStrip
+                members={members}
+                roles={roles}
+                presenterId={presenter?.id ?? null}
+                myRole={myRole}
+                selfId={selfId}
+                following={following}
+                onFollowChange={setFollowOverride}
+                onSetRole={handleSetRole}
+                onSetPresenter={sendPresenter}
+              />
+            )}
+          </>,
+          headerSlot,
+        )}
 
-        <section className="order-first flex flex-col items-center gap-4 md:order-none">
-          {noGames ? (
-            canEdit ? (
-              // A lone call-to-action centers across the whole content area
-              // on wide screens (lg+), not within the main column — the rail
-              // stays clickable behind it. In-flow in the column below lg.
-              <div className="flex flex-1 items-center justify-center p-8 lg:pointer-events-none lg:absolute lg:inset-0">
-                <div
-                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] animate-pop flex-col items-center gap-4 text-center lg:pointer-events-auto`}
-                >
-                  <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
-                    <img src={pieceSrc({ color: 'w', kind: 'p' })} alt="" className="h-10 w-10" />
-                  </div>
-                  <h2 className="m-0 text-display font-bold">{t('room.emptyTitle')}</h2>
-                  <p className="m-0 text-body text-muted">{t('room.emptyOwner')}</p>
-                  <div className="flex flex-col gap-2 self-stretch sm:flex-row sm:justify-center sm:self-auto">
-                    <button
-                      type="button"
-                      id="empty-import-button"
-                      className={button({ intent: 'primary' })}
-                      onClick={() => setShowImport(true)}
-                    >
-                      {t('room.emptyImport')}
-                    </button>
-                    <button
-                      type="button"
-                      id="empty-new-game-button"
-                      className={button({ intent: 'secondary' })}
-                      onClick={handleNewGame}
-                    >
-                      {t('room.emptyFresh')}
-                    </button>
-                  </div>
+      {noGames ? (
+        // No game yet: the call-to-action next to a slim sidebar (Chat /
+        // Room tabs), so the room's social surface exists before the
+        // first import.
+        <div className="flex flex-1 flex-col items-center gap-4 xl:flex-row xl:items-stretch xl:justify-center xl:gap-6">
+          <div className="flex flex-1 items-center justify-center p-8">
+            {canEdit ? (
+              <div
+                className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] animate-pop flex-col items-center gap-4 text-center`}
+              >
+                <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
+                  <img src={pieceSrc({ color: 'w', kind: 'p' })} alt="" className="h-10 w-10" />
+                </div>
+                <h2 className="m-0 text-display font-bold">{t('room.emptyTitle')}</h2>
+                <p className="m-0 text-body text-muted">{t('room.emptyOwner')}</p>
+                <div className="flex flex-col gap-2 self-stretch sm:flex-row sm:justify-center sm:self-auto">
+                  <button
+                    type="button"
+                    id="empty-import-button"
+                    className={button({ intent: 'primary' })}
+                    onClick={() => setShowImport(true)}
+                  >
+                    {t('room.emptyImport')}
+                  </button>
+                  <button
+                    type="button"
+                    id="empty-new-game-button"
+                    className={button({ intent: 'secondary' })}
+                    onClick={handleNewGame}
+                  >
+                    {t('room.emptyFresh')}
+                  </button>
                 </div>
               </div>
             ) : (
-              // Same centering as the owner's empty state: page-wide on lg+.
-              <div className="flex flex-1 items-center justify-center p-8 lg:pointer-events-none lg:absolute lg:inset-0">
-                <div
-                  className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] flex-col items-center gap-4 text-center lg:pointer-events-auto`}
-                >
-                  <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
-                    <span className="text-3xl text-muted">⏳</span>
-                  </div>
-                  <h2 className="m-0 text-display font-bold">{t('room.emptyViewerTitle')}</h2>
-                  <p id="viewer-waiting" className="m-0 text-body text-muted">
-                    {t('room.viewerWaiting')}
-                  </p>
-                  <span className={chip({ tone: 'gold' })}>
-                    <span className={statusDot({ tone: 'warn', pulse: true })} />
-                    {t('room.listening')}
-                  </span>
+              <div
+                className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] flex-col items-center gap-4 text-center`}
+              >
+                <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
+                  <span className="text-3xl text-muted">⏳</span>
                 </div>
+                <h2 className="m-0 text-display font-bold">{t('room.emptyViewerTitle')}</h2>
+                <p id="viewer-waiting" className="m-0 text-body text-muted">
+                  {t('room.viewerWaiting')}
+                </p>
+                <span className={chip({ tone: 'gold' })}>
+                  <span className={statusDot({ tone: 'warn', pulse: true })} />
+                  {t('room.listening')}
+                </span>
               </div>
-            )
-          ) : (
-            <Analysis
-              key={effectiveGameId ?? 'none'}
-              tree={game}
-              presenterId={presenter?.id ?? null}
-              selfId={selfId}
-              presenterCursorId={presenterCursor}
-              following={following}
-              canEdit={canEdit}
-              startAtRoot={effectiveGameId !== null && effectiveGameId === freshImportId}
-              initialNodeId={
-                effectiveGameId !== null
-                  ? (cursorByGame.get(effectiveGameId) ?? openAtPly.get(effectiveGameId) ?? null)
-                  : null
-              }
-              onFollowChange={setFollowOverride}
-              onCursorChange={handleCursorChange}
-              onLocalCursor={handleLocalCursor}
-              onPlayMove={handlePlayMove}
-              onComment={handleComment}
-              onSetPosition={handleSetPosition}
-              onAddLine={handleAddLine}
-              onSetNags={handleSetNags}
-              lastPlayedId={lastPlayedId}
-              remoteLastPlayedId={remoteLastPlayedId}
-              annotations={gameAnnotations}
-              onAnnotations={handleAnnotations}
-              onAnalyze={canEdit ? handleAnalyze : undefined}
-              onAddHistoricalGame={canEdit ? handleAddHistoricalGame : undefined}
-              addedEvidenceGids={addedEvidenceGids}
-              analyzing={analyzing}
-              analysis={analysis?.evals ?? null}
+            )}
+          </div>
+          <aside
+            className="flex h-[46dvh] w-full max-w-[min(100%,24rem)] flex-col self-center xl:h-auto xl:max-h-[36rem] xl:w-[360px] xl:self-auto"
+            data-tour="sidebar"
+            data-testid="room-sidebar"
+          >
+            <SidebarTabs
+              tabs={[
+                ...(chatContent !== undefined
+                  ? [
+                      {
+                        id: 'chat',
+                        label: t('chat.title'),
+                        badge: chatBadge,
+                        content: (
+                          <section
+                            className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+                          >
+                            {chatContent}
+                          </section>
+                        ),
+                      },
+                    ]
+                  : []),
+                {
+                  id: 'room',
+                  label: t('room.panelTitle'),
+                  content: (
+                    <section
+                      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden py-1.5`}
+                    >
+                      {roomContent}
+                    </section>
+                  ),
+                },
+              ]}
+              activeId={sidebarTab}
+              onActivate={setSidebarTab}
             />
-          )}
-        </section>
-      </div>
+          </aside>
+        </div>
+      ) : (
+        <Analysis
+          key={effectiveGameId ?? 'none'}
+          tree={game}
+          presenterId={presenter?.id ?? null}
+          selfId={selfId}
+          presenterCursorId={presenterCursor}
+          following={following}
+          canEdit={canEdit}
+          startAtRoot={effectiveGameId !== null && effectiveGameId === freshImportId}
+          initialNodeId={
+            effectiveGameId !== null
+              ? (cursorByGame.get(effectiveGameId) ?? openAtPly.get(effectiveGameId) ?? null)
+              : null
+          }
+          onFollowChange={setFollowOverride}
+          onCursorChange={handleCursorChange}
+          onLocalCursor={handleLocalCursor}
+          onPlayMove={handlePlayMove}
+          onComment={handleComment}
+          onSetPosition={handleSetPosition}
+          onAddLine={handleAddLine}
+          onSetNags={handleSetNags}
+          lastPlayedId={lastPlayedId}
+          remoteLastPlayedId={remoteLastPlayedId}
+          annotations={gameAnnotations}
+          onAnnotations={handleAnnotations}
+          onAnalyze={canEdit ? handleAnalyze : undefined}
+          onAddHistoricalGame={canEdit ? handleAddHistoricalGame : undefined}
+          addedEvidenceGids={addedEvidenceGids}
+          analyzing={analyzing}
+          analysis={analysis?.evals ?? null}
+          activeSidebarTab={sidebarTab}
+          onSidebarTabChange={setSidebarTab}
+          chatTab={chatContent}
+          chatBadge={chatBadge}
+          roomTab={roomContent}
+        />
+      )}
 
       {showImport && (
         <ImportDialog

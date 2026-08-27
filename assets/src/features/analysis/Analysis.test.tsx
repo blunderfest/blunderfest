@@ -84,6 +84,11 @@ function pieceAt(testId: string): string | null {
   );
 }
 
+/** The board's overflow menu (⋯): edit position, drawing colors, clear. */
+function openBoardMenu() {
+  fireEvent.click(screen.getByRole('button', { name: 'Board actions' }));
+}
+
 describe('Analysis', () => {
   it('opens on the latest mainline position (so a refresh restores the game state)', () => {
     renderAnalysis();
@@ -606,6 +611,7 @@ describe('board annotations', () => {
       />,
     );
 
+    openBoardMenu();
     const button = screen.getByTestId('clear-drawings-button');
     expect(button).toBeEnabled();
     fireEvent.click(button);
@@ -615,6 +621,7 @@ describe('board annotations', () => {
   it('disables the clear button when nothing is drawn', () => {
     render(<Analysis tree={tree} canEdit onAnnotations={vi.fn()} lastPlayedId={4} />);
 
+    openBoardMenu();
     expect(screen.getByTestId('clear-drawings-button')).toBeDisabled();
   });
 
@@ -747,6 +754,9 @@ describe('game flow chart', () => {
   it('shows the activity layer on its band toggle, without an analysis', () => {
     renderAnalysis();
 
+    // Expand the band, then enable the layer via the Layers popover.
+    fireEvent.click(screen.getByTestId('timeline-expand'));
+    fireEvent.click(screen.getByTestId('timeline-layers-button'));
     const activityToggle = screen
       .getAllByTestId('timeline-layer-toggle')
       .find((button) => button.dataset.layer === 'activity');
@@ -758,6 +768,8 @@ describe('game flow chart', () => {
   it('shows the moments tab once an analysis exists', () => {
     render(<Analysis tree={tree} analysis={flowEvals} />);
 
+    // Moments is a sub-tab of the Review tab (ADR-0031).
+    fireEvent.click(screen.getByRole('tab', { name: 'Review' }));
     expect(screen.getByRole('tab', { name: 'Moments' })).toBeInTheDocument();
   });
 
@@ -765,6 +777,7 @@ describe('game flow chart', () => {
     renderAnalysis();
 
     expect(screen.getByRole('button', { name: 'Export PGN' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Review' }));
     fireEvent.click(screen.getByRole('tab', { name: 'Game info' }));
     expect(screen.getByRole('button', { name: 'Export PGN' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save to library' })).toBeInTheDocument();
@@ -1057,7 +1070,8 @@ describe('position setup (what-if editing)', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    openBoardMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
     fireEvent.click(screen.getByTestId('square-e4'));
     fireEvent.click(screen.getByTestId('square-h3'));
     fireEvent.click(screen.getByTestId('set-position-button'));
@@ -1076,7 +1090,8 @@ describe('position setup (what-if editing)', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    openBoardMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
     // Replace the black king with the white pawn — no black king left.
     fireEvent.click(screen.getByTestId('square-e4'));
     fireEvent.click(screen.getByTestId('square-e8'));
@@ -1093,7 +1108,8 @@ describe('position setup (what-if editing)', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    openBoardMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
     const grid = document.querySelector('[data-board-grid]') as HTMLElement;
     grid.getBoundingClientRect = () =>
       ({
@@ -1121,7 +1137,8 @@ describe('position setup (what-if editing)', () => {
   it('places a palette drag only where it is released (no sweep off the board)', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    openBoardMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
     const grid = document.querySelector('[data-board-grid]') as HTMLElement;
     grid.getBoundingClientRect = () =>
       ({
@@ -1154,7 +1171,8 @@ describe('position setup (what-if editing)', () => {
   it('paints only the pressed square — moving the pointer paints nothing', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    openBoardMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
     const grid = document.querySelector('[data-board-grid]') as HTMLElement;
     grid.getBoundingClientRect = () =>
       ({
@@ -1189,7 +1207,8 @@ describe('position setup (what-if editing)', () => {
   it('selects a piece on tap and places it on multiple squares', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    openBoardMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
     const kingButton = screen.getByRole('button', { name: 'White king' });
 
     // A tap (pointerdown + up with no movement, then the synthesized
@@ -1214,7 +1233,8 @@ describe('position setup (what-if editing)', () => {
   it('drops the drag ghost without placing when the pointer is canceled (page scrolls)', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    openBoardMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
     fireEvent(
       screen.getByRole('button', { name: 'White king' }),
       new MouseEvent('pointerdown', { button: 0, bubbles: true }),
@@ -1237,7 +1257,8 @@ describe('position setup (what-if editing)', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
+    openBoardMenu();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
     expect(screen.getByTestId('engine-paused')).toBeInTheDocument();
     expect(screen.queryByTestId('engine-readout')).not.toBeInTheDocument();
 

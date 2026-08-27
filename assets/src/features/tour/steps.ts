@@ -5,6 +5,10 @@
  * opens, so one list serves every room state (empty, demo, mid-game).
  * Room-only by design: the landing page is simple enough to not need one.
  * Copy lives in en.json under `tour.*` (ADR-0003: the client owns copy).
+ *
+ * Since ADR-0031 the steps anchor to always-visible chrome (the board, the
+ * sidebar strip, the app bar) — never at tab *content*: hidden tab panels
+ * stay mounted but measure 0, which would misplace the spotlight.
  */
 export type TourStepDef = {
   target: string | null;
@@ -15,25 +19,19 @@ export type TourStepDef = {
 export const roomSteps: TourStepDef[] = [
   { target: '[data-tour="board"]', titleKey: 'tour.boardTitle', bodyKey: 'tour.boardBody' },
   {
-    target: '[data-tour="analysis-panel"]',
+    target: '[data-tour="sidebar"]',
     titleKey: 'tour.analysisPanelTitle',
     bodyKey: 'tour.analysisPanelBody',
   },
-  { target: '[data-tour="viz-box"]', titleKey: 'tour.vizBoxTitle', bodyKey: 'tour.vizBoxBody' },
   {
     target: '[data-tour="timeline-band"]',
     titleKey: 'tour.timelineBandTitle',
     bodyKey: 'tour.timelineBandBody',
   },
   {
-    target: '[data-tour="room-panel"]',
+    target: '[data-tour="share"]',
     titleKey: 'tour.roomPanelTitle',
     bodyKey: 'tour.roomPanelBody',
-  },
-  {
-    target: '[data-tour="game-list"]',
-    titleKey: 'tour.gameListTitle',
-    bodyKey: 'tour.gameListBody',
   },
   {
     target: '[data-tour="member-list"]',

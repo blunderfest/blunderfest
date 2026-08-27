@@ -191,10 +191,16 @@ so clients send nothing and hide the member list.
   (`applyOp`, `replayOps`), games map, presence, roles; selectors derive
   presenter, following, can-edit, activity feed.
 - `assets/src/features/room/` — `RoomView` (layout, join/not-found states),
-  `useRoomChannel` (join, op/role/presence handling, `sendOp`/`sendRole`,
-  10s ping loop → `lagMs`; events from superseded channels are ignored),
-  `RoomPanel` (code/copy/leave + a single-line region/lag readout inside
-  the box), `MemberList` (follow toggle, presenter handoff), `GameList`.
+  `useRoomChannel` (join, op/role handling, `sendOp`/`sendRole`,
+  10s ping loop → `lagMs`; events from superseded channels are ignored;
+  presence is synced through phoenix's `Presence` helper — meta-level
+  diffing by `phx_ref`, so one member's two tabs don't evict each other —
+  and lands in the store as a wholesale `syncMembers` replace),
+  `PresenceStrip` (the app-bar avatar strip + popover with follow /
+  presenter handoff / role management — presence is chrome, ADR-0031),
+  `ShareButton` (the app-bar room-link copy), `RoomTab` (games list +
+  code/copy/leave + region/lag), `ChatPanel` (the Chat tab; the unread
+  badge count lives in `RoomView`, which owns the active tab).
   `RoomView` keeps a per-game cursor memory (`cursorByGame`, fed by
   Analysis' `onLocalCursor` — every local cursor change, presenter or
   not): Analysis unmounts on each game switch, so without it a switch
@@ -217,18 +223,25 @@ so clients send nothing and hide the member list.
   handlers — navigation, comments, present/follow, engine toggles, the
   whole-game analyze job), with the three screen regions as pure
   presentation components: `BoardColumn.tsx` (title row with the
-  find-examples launcher, board, eval bar, edit palettes, nav, comments,
-  board controls), `AnalysisSidebar.tsx`
-  (Moves | Game info | Openings tabs plus the `VizBox`
-  moments/report tabs), and `TimelineBand.tsx`. `legalMoves.ts`
+  find-examples launcher, board, eval bar, edit palettes, one toolbar —
+  nav + flip/comment + the overflow menu holding position edit, drawing
+  colors and clear-drawings — comments), `AnalysisSidebar.tsx`
+  (the room's one tabbed column, ADR-0031: Moves | Review | Reference |
+  Chat | Room — Review nests Moments | Report | Game info; Chat/Room
+  content arrives pre-built from RoomView; the active tab is lifted to
+  RoomView), and `TimelineBand.tsx`. `legalMoves.ts`
   (client-side legal moves + resulting fen/status via chess.js — no
   server round trip), `moveList.ts`/`MoveList.tsx`
-  (variation tree), `nodeMap.ts` (ply ↔ node index), `BoardControls`,
-  `GameInfo`, `NodeComment`. Whole-game visualization (ADR-0024, as
-  amended 2026-08-24) splits by kind: `TimelineBand.tsx` is the full-width
-  band under the board where the game-story charts stack as toggleable
-  layers on one shared move axis (`spanPly` = mainline tip; layer choice
-  is a localStorage preference) — `GameFlow` (eval + quality strip, phase
+  (variation tree), `nodeMap.ts` (ply ↔ node index), `BoardControls` (the
+  toolbar's action cluster + overflow menu), `GameInfo`, `NodeComment`.
+  Whole-game visualization (ADR-0024, as amended 2026-08-24; ADR-0031)
+  splits by kind: `TimelineBand.tsx` is the band under the board, a
+  collapsed **strip** by default — one sparkline-height scrubbable layer
+  (the first enabled layer holding data), layer toggles in a "Layers"
+  popover, an expand chevron for the full stack; expanded, the game-story
+  charts stack as toggleable layers on one shared move axis (`spanPly` =
+  mainline tip; layer choice and the expanded state are localStorage
+  preferences) — `GameFlow` (eval + quality strip, phase
   shading and capture marks via `gamePhases.ts`/`MaterialFlow.capturesOf`),
   `MaterialFlow`, `ActivityFlow`, and `ClocksFlow` (thinking time per move
   from `node.clock` — the parser extracts `[%clk …]` comments into a
@@ -237,10 +250,10 @@ so clients send nothing and hide the member list.
   per-move think time from the clock drops plus the `TimeControl`
   increment). The band header owns the whole-game analyze job's
   lifecycle — "Analyze game" before any evals, live progress, and
-  "Re-analyze" when the mainline outgrew it — so a chip toggle never
-  gates the only path to an analysis; the eval chip wears a gold marker
+  "Re-analyze" when the mainline outgrew it — reachable in both band
+  states; the eval chip wears a gold marker
   until a job has run. The engine box keeps only its line-scoped
-  "Analyze line" action. The sidebar viz box keeps the list views
+  "Analyze line" action. The Review tab keeps the list views
   (`CriticalMoments`, `GameReport`).
 - `assets/src/features/analysis/engine.ts` + `useEngine.ts` + `uci.ts` +
   `EvalBar.tsx` — in-browser Stockfish 18 Lite (WASM, single-threaded, in a
@@ -308,7 +321,10 @@ so clients send nothing and hide the member list.
   noted follow-up.
 - `SidebarTabs` keeps every tab's content mounted and hides inactive
   panels (`hidden` attr + class): tab state survives switches;
-  state-preserving by contract, tested with a counter.
+  state-preserving by contract, tested with a counter. Uncontrolled by
+  default; controlled via `activeId`/`onActivate` when the parent owns the
+  active tab (the room sidebar, for the chat badge + game-switch
+  survival). Tabs accept a `badge` (the chat unread count).
 - `assets/src/components/ui.ts` — `tv()`-based component variants (Tailwind
   v4, dark theme); `<.icon>`-style icons are heroicons via the `.icon` /
   `Icon` components. The visual language (tokens, states, motion) is specced
@@ -322,7 +338,8 @@ so clients send nothing and hide the member list.
 1. Home "Create" → `POST /api/rooms` → navigate to `#/r/<code>` (ADR-0006).
    Join-by-code and deep links go straight to the room.
 2. `useRoomChannel` joins `room:<slug>`; server replies `{ops, roles}`;
-   `replayOps` rebuilds games; presence fills the member list.
+   `replayOps` rebuilds games; presence syncs the member list (phoenix
+   `Presence` → `syncMembers`).
 3. User moves a piece → `sendOp({type: 'move_at_ply', ...})` → server validates
    and appends → broadcasts `new_op` → **every** client applies it. The sender
    never applies locally; the echo is the only path (ADR-0005).

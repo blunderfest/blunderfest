@@ -516,7 +516,7 @@ export default function Board({
     <div
       ref={containerRef}
       data-board-grid
-      className={`relative grid aspect-square self-start grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-board [-webkit-touch-callout:none] [container-type:inline-size] ${width === undefined ? 'w-[min(calc(100vw-4.75rem),34rem)] md:w-[min(calc(100vw-20.25rem),34rem)]' : ''} ${interactive ? 'touch-none' : ''}`}
+      className={`relative grid aspect-square self-start grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-board [-webkit-touch-callout:none] [container-type:inline-size] ${width === undefined ? 'w-[min(calc(100vw-4.75rem),34rem)]' : ''} ${interactive ? 'touch-none' : ''}`}
       style={width !== undefined ? { width } : undefined}
       role={interactive ? 'group' : 'img'}
       aria-label={label}

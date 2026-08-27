@@ -72,3 +72,4 @@ here, or point to the ADR that superseded this one.
 | [0028](adr-0028-room-persistence-anonymous-identity-and-retention.md) | Room persistence: what the durable op log stores, author identity (name snapshots), 1h retention, privacy posture | Accepted (2026-08-26) |
 | [0029](adr-0029-durable-application-data-ecto.md) | Durable application data: one Ecto Repo for profiles, accounts, and the library; secrets stay hash-only; GenServers replaced by Repo-backed modules | Accepted (2026-08-27) |
 | [0030](adr-0030-private-examples-browsing.md) | Historical examples are browsed privately in a carousel dialog; only picked games are shared as ops | Accepted (2026-08-27) |
+| [0031](adr-0031-one-sidebar-room-layout.md) | One-sidebar room layout: presence as app-bar chrome, Share in the header, band as a strip, mobile tabbed sheet, anti-clutter docking contract | Accepted (2026-08-27) |

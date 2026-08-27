@@ -87,3 +87,9 @@ an ambient panel.
 - The band's layers align by sharing one x-axis and one scrub target;
   layer visibility is a per-viewer localStorage preference (like the eval
   cp/win% scale), never a broadcast op.
+- **Amended by ADR-0031 (2026-08-27):** the docking rule here is extended
+  into a full anti-clutter contract (no new permanent panels; a feature is a
+  sidebar tab, band layer, toolbar/overflow item, dialog, or destination).
+  The band becomes a collapsed strip under the board, the viz box folds into
+  the Review tab, and the Reference tab docks in the one-sidebar column
+  (Moves · Review · Reference · Chat · Room).

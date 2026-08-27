@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { button, chip, listRow, panel, panelHeader, statusDot } from '@/components/ui';
+import { button, chip, listRow, statusDot } from '@/components/ui';
 import type { GameTree } from '@/lib/api';
 
 function gameTitle(tree: GameTree, t: (key: string) => string): string {
@@ -68,16 +68,13 @@ export default function GameList({
   const entries = Object.entries(games);
 
   return (
-    <section
-      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-col xl:max-h-[45%]`}
-      data-tour="game-list"
-    >
+    <section className="flex min-h-0 flex-col" data-tour="game-list" aria-label={t('room.games')}>
       {/*
         The actions live in the header as icon buttons (the game header's
-        export/bookmark pattern) — a bottom button row wrapped at the
-        rail's width and wasted vertical space.
+        export/bookmark pattern) — a bottom button row wraps and wastes
+        vertical space. Panel chrome is the tab's job (ADR-0031).
       */}
-      <div className={panelHeader()}>
+      <div className="flex h-8 shrink-0 items-center justify-between gap-2 px-3 text-micro font-semibold uppercase tracking-[0.11em] text-muted">
         <h2 className="m-0">{t('room.games')}</h2>
         <div className="flex items-center gap-1">
           <span className="text-faint tabular-nums">{entries.length}</span>
@@ -107,7 +104,7 @@ export default function GameList({
           )}
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+      <div className="min-h-0 flex-1 overflow-y-auto px-1.5">
         {entries.length === 0 ? (
           <p className="m-0 p-2 text-ui text-faint">{t('room.emptyGames')}</p>
         ) : (

@@ -181,22 +181,55 @@ describe('RoomView', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    document.querySelectorAll('[data-testid="room-test-header-slot"]').forEach((element) => {
+      element.remove();
+    });
   });
 
   function renderRoom(slug = 'abc12', onLeave = vi.fn(), selfId: string | null = null) {
     const store = makeStore();
+    // The app bar's room slot (ADR-0031): Share + the presence strip portal
+    // into it. Tests append one to the body, like the app shell would.
+    const headerSlot = document.createElement('div');
+    headerSlot.dataset.testid = 'room-test-header-slot';
+    document.body.appendChild(headerSlot);
     const view = render(
       <Provider store={store}>
-        <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />
+        <RoomView
+          slug={slug}
+          onLeave={onLeave}
+          selfId={selfId}
+          channelFactory={channelFactory}
+          headerSlot={headerSlot}
+        />
       </Provider>,
     );
-    return { store, onLeave, view };
+    return { store, onLeave, view, headerSlot };
+  }
+
+  /** The presence popover: member rows live behind the header strip. */
+  async function openMembers() {
+    fireEvent.click(await screen.findByRole('button', { name: /\d+ members?/ }));
+  }
+
+  /** The games list and room actions live in the sidebar's Room tab. */
+  function openRoomTab() {
+    fireEvent.click(screen.getByRole('tab', { name: 'Room' }));
   }
 
   it('joins the channel and shows the member list once joined', async () => {
     renderRoom();
     expect(channel.joined).toBe(true);
+
+    // Members live in the header presence strip's popover (ADR-0031).
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+    await openMembers();
     expect(await screen.findByTestId('member-list')).toBeInTheDocument();
+    expect(screen.getByText('Brave Otter 42')).toBeInTheDocument();
   });
 
   it('stores the server region from the join reply', async () => {
@@ -222,7 +255,12 @@ describe('RoomView', () => {
 
   it('shows joining members from presence diffs', async () => {
     renderRoom();
-    await screen.findByTestId('member-list');
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+    await openMembers();
     act(() =>
       channel.emit('presence_diff', {
         joins: { 'profile-2': { metas: [{ name: 'Swift Falcon 17' }] } },
@@ -407,7 +445,8 @@ describe('RoomView', () => {
 
   it('shows the board once the set_game echo arrives', async () => {
     renderRoom();
-    await screen.findByTestId('member-list');
+    // The empty state (a viewer waiting) is the join-complete marker.
+    await screen.findByText('Nothing to analyse yet');
 
     const op: Op = {
       seq: 1,
@@ -418,14 +457,15 @@ describe('RoomView', () => {
     };
     act(() => channel.emit('new_op', op));
 
-    expect(await screen.findAllByText('Alice – Bob')).toHaveLength(2);
+    expect(await screen.findByRole('heading', { name: 'Alice – Bob' })).toBeInTheDocument();
     expect(pieceAt('square-e4')).toBe('wp');
   });
 
   it('shows chat messages from the channel and sends chat ops', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
-    await screen.findByTestId('member-list');
+    // Empty room: the Chat tab is the sidebar's first tab (ADR-0031).
+    await screen.findByTestId('chat-list');
 
     act(() =>
       channel.emit('new_op', {
@@ -452,7 +492,7 @@ describe('RoomView', () => {
   it('hides the chat input for viewers — they read along (ADR-0023)', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-2');
-    await screen.findByTestId('member-list');
+    await screen.findByTestId('chat-list');
 
     act(() =>
       channel.emit('new_op', {
@@ -469,10 +509,52 @@ describe('RoomView', () => {
     expect(screen.getByText('Only the owner and collaborators can chat.')).toBeInTheDocument();
   });
 
+  it('badges the Chat tab with unread messages and clears on open', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    await screen.findByRole('heading', { name: 'Alice – Bob' });
+
+    // A live chat op while another tab is active: the badge counts it.
+    act(() =>
+      channel.emit('new_op', {
+        seq: 2,
+        author: 'profile-2',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'chat',
+        payload: { text: 'hi there' },
+      } as Op),
+    );
+
+    expect(await screen.findByTestId('chat-badge')).toHaveTextContent('1');
+
+    // Opening the Chat tab marks the backlog read.
+    fireEvent.click(screen.getByRole('tab', { name: /Chat/ }));
+    expect(screen.queryByTestId('chat-badge')).not.toBeInTheDocument();
+    expect(screen.getByText('hi there')).toBeInTheDocument();
+  });
+
+  it('does not badge replayed chat history from before the join', async () => {
+    const chatOp: Op = {
+      seq: 2,
+      author: 'profile-2',
+      ts: '2026-01-01T00:00:00Z',
+      type: 'chat',
+      payload: { text: 'old news' },
+    };
+    channel.joinReturn = {
+      ops: [setGameOp(1, gameTree), chatOp],
+      roles: { 'profile-1': 'owner' },
+    };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    await screen.findByRole('heading', { name: 'Alice – Bob' });
+    expect(screen.queryByTestId('chat-badge')).not.toBeInTheDocument();
+  });
+
   it('lets the owner delete a chat message; the echo removes it', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
-    await screen.findByTestId('member-list');
+    await screen.findByTestId('chat-list');
 
     act(() =>
       channel.emit('new_op', {
@@ -516,6 +598,9 @@ describe('RoomView', () => {
     channel.joinReturn = { ops: [op], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
+    // The games list (and its import action) lives in the Room tab.
+    await screen.findByRole('tab', { name: 'Room' });
+    openRoomTab();
     expect(await screen.findByRole('button', { name: 'Alice – Bob' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Import games' }));
     expect(screen.getByLabelText('PGN')).toBeInTheDocument();
@@ -531,10 +616,12 @@ describe('RoomView', () => {
       }),
     );
 
+    await openMembers();
     const list = screen.getByTestId('member-list');
     expect(await within(list).findByText('Brave Otter 42')).toBeInTheDocument();
     expect(screen.getAllByText('Presenting')).toHaveLength(1);
     // …and the games list marks the presented game with a compact gold dot.
+    openRoomTab();
     expect(screen.getByRole('img', { name: 'Presenting' })).toBeInTheDocument();
   });
 
@@ -552,6 +639,7 @@ describe('RoomView', () => {
     );
 
     await waitFor(() => expect(pieceAt('square-e5')).toBe('bp'));
+    await openMembers();
     expect(screen.getByRole('button', { name: 'Following presenter' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -597,6 +685,8 @@ describe('RoomView', () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
+    // The games actions live in the Room tab (the empty room opens on Chat).
+    openRoomTab();
     fireEvent.click(screen.getByRole('button', { name: 'New game' }));
 
     await waitFor(() => expect(channel.pushes.length).toBe(1));
@@ -635,6 +725,9 @@ describe('RoomView', () => {
     act(() => channel.emit('new_op', setGameOp(1, gameTree)));
     act(() => channel.emit('new_op', setGameOp(2, secondTree, 'game-2')));
 
+    // The games list lives in the Room tab (ADR-0031).
+    await screen.findByRole('tab', { name: 'Room' });
+    openRoomTab();
     expect(await screen.findByRole('button', { name: /Carol – Dave/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Alice – Bob' })).toHaveAttribute(
       'aria-pressed',
@@ -666,6 +759,8 @@ describe('RoomView', () => {
       }),
     );
 
+    await screen.findByRole('tab', { name: 'Room' });
+    openRoomTab();
     fireEvent.click(await screen.findByRole('button', { name: 'Alice – Bob' }));
 
     await waitFor(() => expect(channel.pushes.length).toBeGreaterThanOrEqual(2));
@@ -704,6 +799,8 @@ describe('RoomView', () => {
     act(() => channel.emit('new_op', setGameOp(2, secondTree, 'game-2')));
     act(() => channel.emit('new_op', selectOp(3, 'game-2')));
 
+    await screen.findByRole('tab', { name: 'Room' });
+    openRoomTab();
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Carol – Dave/ })).toHaveAttribute(
         'aria-pressed',
@@ -727,6 +824,8 @@ describe('RoomView', () => {
     );
 
     // We follow the presenter (profile-1) to their latest game.
+    await screen.findByRole('tab', { name: 'Room' });
+    openRoomTab();
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Carol – Dave/ })).toHaveAttribute(
         'aria-pressed',
@@ -750,6 +849,7 @@ describe('RoomView', () => {
     act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'owner' }));
     act(() => channel.emit('new_op', selectOp(3, 'game-2', 'profile-2')));
 
+    await openMembers();
     await waitFor(() => expect(screen.getByText('Swift Falcon 17')).toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Alice – Bob' })).toHaveAttribute(
       'aria-pressed',
@@ -864,6 +964,7 @@ describe('RoomView', () => {
       }),
     );
 
+    await openMembers();
     await waitFor(() => expect(screen.getByText('Swift Falcon 17')).toBeInTheDocument());
     expect(screen.getByRole('img', { name: 'Owner' })).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('set-role-profile-2'));
@@ -889,6 +990,7 @@ describe('RoomView', () => {
       }),
     );
 
+    await openMembers();
     const demote = await screen.findByRole('button', { name: 'Demote' });
     fireEvent.click(demote);
 
@@ -910,6 +1012,7 @@ describe('RoomView', () => {
       }),
     );
 
+    await openMembers();
     await waitFor(() => expect(screen.getByText('Swift Falcon 17')).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: 'Promote' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Demote' })).not.toBeInTheDocument();
@@ -936,6 +1039,7 @@ describe('RoomView', () => {
       }),
     );
 
+    await openMembers();
     await waitFor(() => expect(screen.getByText('Proud Raven 65')).toBeInTheDocument());
     const names = within(screen.getByTestId('member-list'))
       .getAllByRole('listitem')
@@ -957,6 +1061,7 @@ describe('RoomView', () => {
       }),
     );
 
+    await openMembers();
     await waitFor(() => expect(screen.getByRole('img', { name: 'Viewer' })).toBeInTheDocument());
     act(() => channel.emit('role_update', { member_id: 'profile-2', role: 'collaborator' }));
 
@@ -1107,6 +1212,11 @@ describe('historical evidence integration', () => {
         <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />
       </Provider>,
     );
+  }
+
+  /** The games list lives in the sidebar's Room tab (ADR-0031). */
+  function openRoomTab() {
+    fireEvent.click(screen.getByRole('tab', { name: 'Room' }));
   }
 
   const E4_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1';
@@ -1314,6 +1424,8 @@ describe('historical evidence integration', () => {
         'Same game — already added',
       ),
     );
+    // The new game appears in the Room tab's games list.
+    openRoomTab();
     expect(await screen.findByRole('button', { name: /Carol – Dave/ })).toBeInTheDocument();
 
     // Opening it starts at the candidate's move (1... d4), not the tail.
@@ -1345,6 +1457,11 @@ describe('per-game cursor memory', () => {
         <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />
       </Provider>,
     );
+  }
+
+  /** The games list lives in the sidebar's Room tab (ADR-0031). */
+  function openRoomTab() {
+    fireEvent.click(screen.getByRole('tab', { name: 'Room' }));
   }
 
   function lineTree(players: [string, string], moveFens: string[]): GameTree {
@@ -1409,6 +1526,8 @@ describe('per-game cursor memory', () => {
 
     // Game A opens at its tail: Nc6 is on c6.
     await waitFor(() => expect(pieceAt('square-c6')).toBe('bn'));
+    // Game switches happen in the Room tab.
+    openRoomTab();
     // Walk A back to move 2 (1... e5).
     fireEvent.click(screen.getByTestId('analysis-move-2'));
     expect(pieceAt('square-e5')).toBe('bp');
