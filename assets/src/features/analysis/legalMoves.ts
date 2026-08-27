@@ -69,9 +69,10 @@ export function uciLineToMoves(fen: string, uciMoves: string[]): LegalMove[] {
 
 /**
  * A SAN list → legal moves, walking the line like `uciLineToMoves` but
- * matching by SAN. Used for the corpus continuations (the Examples tab's
- * "add as variation"): the corpus stores SANs, and the candidate's
- * continuation is guaranteed legal only from the *same* position.
+ * matching by SAN. Used for the corpus continuations (the Examples
+ * dialog's "add as variation"): the corpus stores SANs, and the
+ * candidate's continuation is guaranteed legal only from the *same*
+ * position.
  */
 export function sanLineToMoves(fen: string, sans: string[]): LegalMove[] {
   const moves: LegalMove[] = [];

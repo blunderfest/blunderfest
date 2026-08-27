@@ -12,16 +12,16 @@ import SidebarTabs from '@/features/analysis/SidebarTabs';
 import type { EngineState } from '@/features/analysis/useEngine';
 import type { usePositionEditor } from '@/features/analysis/usePositionEditor';
 import VizBox from '@/features/analysis/VizBox';
-import HistoricalEvidencePanel from '@/features/historicalEvidence/HistoricalEvidencePanel';
 import type { GameNode, GameTree, LegalMove } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
 
 /**
- * The analysis sidebar: the tabbed panel (Moves | Game info | Openings |
- * Historical evidence) plus the viz box (Moments | Report) pinned below.
- * Pure presentation — the orchestrator owns the state; every handler
- * arrives as a prop. The sidebar's height matches the board column's at
- * xl (board 34rem + the nav/controls/hints 13rem, measured) so a long
+ * The analysis sidebar: the tabbed panel (Moves | Game info | Openings)
+ * plus the viz box (Moments | Report) pinned below. Pure presentation —
+ * the orchestrator owns the state; every handler arrives as a prop. The
+ * historical-examples browser is a dialog from the board header now
+ * (ADR-0030), not a tab. The sidebar's height matches the board column's
+ * at xl (board 34rem + the nav/controls/hints 13rem, measured) so a long
  * move list scrolls inside itself instead of stretching the page.
  */
 export default function AnalysisSidebar({
@@ -45,24 +45,17 @@ export default function AnalysisSidebar({
   engineAnalyze,
   linePath,
   linePathText,
-  routeToCurrent,
   canEdit,
   canPlay,
   flipped,
   onNavigate,
   onPlayMove,
   onInsertLine,
-  onAddHistoricalVariation,
-  onAddHistoricalGame,
   onReferenceGhost,
   onFlowSelect,
   onToggleEngine,
   onToggleArrows,
   onEngineLines,
-  variationState,
-  addedGids,
-  sharedEvidenceRun = null,
-  onEvidenceRun,
 }: {
   tree: GameTree;
   current: GameNode;
@@ -88,32 +81,17 @@ export default function AnalysisSidebar({
   } | null;
   linePath: { nodes: GameNode[]; branchId: number } | null;
   linePathText: string | null;
-  routeToCurrent: string[] | null;
   canEdit: boolean;
   canPlay: boolean;
   flipped: boolean;
   onNavigate: (nodeId: number) => void;
   onPlayMove: (move: LegalMove) => void;
   onInsertLine: (pv: string[]) => void;
-  onAddHistoricalVariation: (fen: string, sans: string[], exact: boolean) => void;
-  onAddHistoricalGame?: (tree: GameTree, ply: number, gid: number) => void;
   onReferenceGhost: (move: LegalMove | null) => void;
   onFlowSelect: (ply: number) => void;
   onToggleEngine: () => void;
   onToggleArrows: () => void;
   onEngineLines: (count: number) => void;
-  /** The "Add as variation" button state per candidate (from Analysis). */
-  variationState: (
-    fen: string,
-    moves: LegalMove[],
-    exact: boolean,
-  ) => { addable: boolean; exists: boolean };
-  /** Corpus game ids already in the room (survives panel remounts). */
-  addedGids: ReadonlySet<number>;
-  /** Another member's Examples analysis request (transient broadcast). */
-  sharedEvidenceRun?: { fen: string; route: string[] | null; refPly: number | null } | null;
-  /** Shares this viewer's Examples analysis request with the room. */
-  onEvidenceRun?: (run: { fen: string; route: string[] | null; refPly: number | null }) => void;
 }) {
   const { t } = useTranslation();
 
@@ -193,29 +171,6 @@ export default function AnalysisSidebar({
                   fen={current?.fen ?? null}
                   onPlayMove={canPlay && !editor.editing ? onPlayMove : undefined}
                   onHoverMove={onReferenceGhost}
-                />
-              </section>
-            ),
-          },
-          {
-            id: 'history',
-            label: t('evidence.tab'),
-            content: (
-              <section
-                className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
-              >
-                <HistoricalEvidencePanel
-                  fen={current?.fen ?? null}
-                  route={routeToCurrent}
-                  refPly={current?.ply ?? null}
-                  canAnalyze={canEdit}
-                  onAddGame={canEdit ? onAddHistoricalGame : undefined}
-                  onAddVariation={canEdit ? onAddHistoricalVariation : undefined}
-                  variationState={canEdit ? variationState : undefined}
-                  addedGids={addedGids}
-                  gameHeaders={tree.headers}
-                  sharedEvidenceRun={sharedEvidenceRun}
-                  onEvidenceRun={onEvidenceRun}
                 />
               </section>
             ),

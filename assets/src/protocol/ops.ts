@@ -26,7 +26,7 @@ export type SetGameOp = OpBase & {
     game_id?: string;
     tree: GameTree;
     /**
-     * The corpus game id when the import came from the Examples tab —
+     * The corpus game id when the import came from the Examples dialog —
      * lets every client derive which candidates are already in the room.
      */
     evidence_gid?: number;

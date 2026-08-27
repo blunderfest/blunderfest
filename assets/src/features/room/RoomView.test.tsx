@@ -1222,8 +1222,7 @@ describe('historical evidence integration', () => {
       }),
     );
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Examples' }));
-    fireEvent.click(await screen.findByTestId('historical-evidence-run'));
+    fireEvent.click(await screen.findByTestId('find-examples-button'));
     fireEvent.click(await screen.findByTestId('historical-evidence-add-game'));
 
     // The fingerprint matches a room game: no set_game, no select_game —
@@ -1269,8 +1268,7 @@ describe('historical evidence integration', () => {
       }),
     );
 
-    fireEvent.click(await screen.findByRole('tab', { name: 'Examples' }));
-    fireEvent.click(await screen.findByTestId('historical-evidence-run'));
+    fireEvent.click(await screen.findByTestId('find-examples-button'));
     fireEvent.click(await screen.findByTestId('historical-evidence-add-game'));
 
     // The analyzed game stays on screen — the add never steals the view.

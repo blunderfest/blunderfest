@@ -11,7 +11,6 @@ import {
   leaveRoom,
   replayOps,
   setAnalysisProgress,
-  setEvidenceRun,
   setLag,
   setMemberRole,
   setPresenter,
@@ -107,14 +106,6 @@ export function useRoomChannel(
         dispatch(setMemberRole(update));
       }
     });
-    channel.on(
-      'evidence_run',
-      (run: { fen: string; route: string[] | null; ref_ply: number | null }) => {
-        if (channelRef.current === channel) {
-          dispatch(setEvidenceRun({ fen: run.fen, route: run.route, refPly: run.ref_ply }));
-        }
-      },
-    );
     channel.on('presenter_update', (update: { member_id: string | null }) => {
       if (channelRef.current === channel) {
         dispatch(setPresenter(update.member_id));
@@ -249,21 +240,5 @@ export function useRoomChannel(
     channelRef.current?.push('analyze_game', { game_id: gameId, positions });
   }, []);
 
-  /**
-   * Shares an Examples-tab analysis request (transient, never an op):
-   * other members' panels run the same query when their cursor is on
-   * that position.
-   */
-  const sendEvidenceRun = useCallback(
-    (run: { fen: string; route: string[] | null; refPly: number | null }) => {
-      channelRef.current?.push('evidence_run', {
-        fen: run.fen,
-        route: run.route,
-        ref_ply: run.refPly,
-      });
-    },
-    [],
-  );
-
-  return { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze, sendEvidenceRun };
+  return { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze };
 }

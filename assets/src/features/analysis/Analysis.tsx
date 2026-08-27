@@ -23,6 +23,7 @@ import { useCursor } from '@/features/analysis/useCursor';
 import { useDragFlag } from '@/features/analysis/useDragFlag';
 import { useEngine } from '@/features/analysis/useEngine';
 import { usePositionEditor } from '@/features/analysis/usePositionEditor';
+import HistoricalEvidenceDialog from '@/features/historicalEvidence/HistoricalEvidenceDialog';
 import {
   planFromResolvedMoves,
   planHistoricalVariation,
@@ -74,8 +75,6 @@ export default function Analysis({
   initialNodeId = null,
   onAddHistoricalGame,
   addedEvidenceGids = new Set(),
-  sharedEvidenceRun = null,
-  onEvidenceRun,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -128,17 +127,10 @@ export default function Analysis({
   /** Add a historical game to the room as another game, cursor at `ply`. */
   onAddHistoricalGame?: (tree: GameTree, ply: number, gid: number) => void;
   /**
-   * Corpus game ids already in the room — the Examples cards show
+   * Corpus game ids already in the room — the Examples dialog shows
    * "Added ✓" for them without another round trip.
    */
   addedEvidenceGids?: ReadonlySet<number>;
-  /**
-   * Another member's Examples analysis request (transient broadcast) —
-   * the panel runs it when the cursor is on that position.
-   */
-  sharedEvidenceRun?: { fen: string; route: string[] | null; refPly: number | null } | null;
-  /** Shares this viewer's own Examples analysis request with the room. */
-  onEvidenceRun?: (run: { fen: string; route: string[] | null; refPly: number | null }) => void;
 }) {
   const { t } = useTranslation();
   const [flipped, setFlipped] = useState(false);
@@ -146,6 +138,16 @@ export default function Analysis({
   const [referenceGhost, setReferenceGhost] = useState<LegalMove | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
+  /**
+   * The historical-examples browser's captured request (ADR-0030): set on
+   * open, frozen while the dialog is up, so the query never re-runs if
+   * the cursor moves under the modal (another member's play).
+   */
+  const [evidenceDialog, setEvidenceDialog] = useState<{
+    fen: string;
+    route: string[] | null;
+    refPly: number | null;
+  } | null>(null);
   const [drawColor, setDrawColor] = useState<string>(DRAW_COLORS[0]);
   // Per-viewer engine display toggles; persisted — analysis is a local aid,
   // never shared state.
@@ -458,7 +460,7 @@ export default function Analysis({
     insertLineMoves(uciLineToMoves(current.fen ?? '', pv));
   }
 
-  // The Examples tab: the historical continuation (SANs) becomes a
+  // The Examples dialog: the historical continuation (SANs) becomes a
   // variation under the viewed node. When the candidate's position is the
   // viewed one, it is a plain line; otherwise the candidate's position is
   // attached as a setup child first, and the line grafts onto it — the
@@ -632,6 +634,16 @@ export default function Analysis({
   const handleFlip = useCallback(() => setFlipped((value) => !value), []);
   const openComment = useCallback(() => setCommentOpen(true), []);
 
+  // The board header's "Find examples" (editors): captures the cursor's
+  // request and opens the browsing dialog — a private query, so nothing
+  // is shared with the room until a game is picked (ADR-0030).
+  const openFindExamples = useCallback(() => {
+    if (current === null || current.fen === null) {
+      return;
+    }
+    setEvidenceDialog({ fen: current.fen, route: routeToCurrent, refPly: current.ply });
+  }, [current, routeToCurrent]);
+
   useBoardKeyboard({
     tree,
     byId,
@@ -642,6 +654,9 @@ export default function Analysis({
     onAnnotations,
     onFlip: handleFlip,
     onOpenComment: openComment,
+    // A modal owns the arrow keys while it is open (the examples dialog
+    // pages its carousel with them); the board must not navigate under it.
+    disabled: evidenceDialog !== null,
   });
 
   const nodeAnnotations = (current !== null ? annotations[current.id] : undefined) ?? {
@@ -852,6 +867,7 @@ export default function Analysis({
             }
             onFlip={handleFlip}
             onOpenComment={canEdit ? openComment : undefined}
+            onFindExamples={canEdit ? openFindExamples : undefined}
             onSelect={navigate}
             onSetPosition={onSetPosition !== undefined ? handleSetPosition : undefined}
           />
@@ -884,24 +900,17 @@ export default function Analysis({
             engineAnalyze={engineAnalyze}
             linePath={linePath}
             linePathText={linePathText}
-            routeToCurrent={routeToCurrent}
             canEdit={canEdit}
             canPlay={canPlay}
             flipped={flipped}
             onNavigate={navigate}
             onPlayMove={playMove}
             onInsertLine={handleInsertLine}
-            onAddHistoricalVariation={handleAddHistoricalVariation}
-            onAddHistoricalGame={onAddHistoricalGame}
             onReferenceGhost={setReferenceGhost}
             onFlowSelect={handleFlowSelect}
             onToggleEngine={toggleEngine}
             onToggleArrows={toggleArrows}
             onEngineLines={setEngineLinesCount}
-            variationState={variationState}
-            addedGids={addedEvidenceGids}
-            sharedEvidenceRun={sharedEvidenceRun}
-            onEvidenceRun={onEvidenceRun}
           />
         </div>
 
@@ -957,6 +966,20 @@ export default function Analysis({
             }
           }}
           onClose={() => setCommentOpen(false)}
+        />
+      )}
+
+      {evidenceDialog !== null && (
+        <HistoricalEvidenceDialog
+          fen={evidenceDialog.fen}
+          route={evidenceDialog.route}
+          refPly={evidenceDialog.refPly}
+          gameHeaders={tree.headers}
+          onClose={() => setEvidenceDialog(null)}
+          onAddGame={canEdit ? onAddHistoricalGame : undefined}
+          onAddVariation={canEdit ? handleAddHistoricalVariation : undefined}
+          variationState={canEdit ? variationState : undefined}
+          addedGids={addedEvidenceGids}
         />
       )}
     </div>

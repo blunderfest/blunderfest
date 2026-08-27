@@ -25,6 +25,7 @@ export function useBoardKeyboard({
   onAnnotations,
   onFlip,
   onOpenComment,
+  disabled = false,
 }: {
   tree: GameTree | null;
   byId: Map<number, Entry>;
@@ -35,9 +36,15 @@ export function useBoardKeyboard({
   onAnnotations?: (set: BoardAnnotations, nodeId: number) => void;
   onFlip: () => void;
   onOpenComment: () => void;
+  /**
+   * Suspends the map while a modal owns the keys (the historical-examples
+   * dialog pages its carousel with the same arrows) — the board under the
+   * dialog must not navigate.
+   */
+  disabled?: boolean;
 }) {
   useEffect(() => {
-    if (!tree || !current) {
+    if (disabled || !tree || !current) {
       return;
     }
     const parent = byId.get(current.id)?.parent ?? null;
@@ -90,5 +97,16 @@ export function useBoardKeyboard({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [tree, byId, current, navigate, canEdit, annotations, onAnnotations, onFlip, onOpenComment]);
+  }, [
+    tree,
+    byId,
+    current,
+    navigate,
+    canEdit,
+    annotations,
+    onAnnotations,
+    onFlip,
+    onOpenComment,
+    disabled,
+  ]);
 }

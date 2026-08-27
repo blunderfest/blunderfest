@@ -52,6 +52,7 @@ export default function BoardColumn({
   clearDrawings,
   onFlip,
   onOpenComment,
+  onFindExamples,
   onSelect,
   onSetPosition,
 }: {
@@ -82,6 +83,8 @@ export default function BoardColumn({
   clearDrawings?: { disabled: boolean; onClear: () => void };
   onFlip: () => void;
   onOpenComment?: () => void;
+  /** Opens the historical-examples browser for the cursor position (editors). */
+  onFindExamples?: () => void;
   onSelect: (nodeId: number) => void;
   onSetPosition?: () => void;
 }) {
@@ -101,6 +104,16 @@ export default function BoardColumn({
         </h2>
         <div className="flex shrink-0 items-center gap-2">
           <p className="m-0 whitespace-nowrap text-muted">{tree.result}</p>
+          {onFindExamples !== undefined && (
+            <button
+              type="button"
+              className={button({ intent: 'ghost', size: 'sm' })}
+              onClick={onFindExamples}
+              data-testid="find-examples-button"
+            >
+              {t('evidence.run')}
+            </button>
+          )}
           <GameActions tree={tree} />
         </div>
       </div>

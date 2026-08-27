@@ -302,6 +302,42 @@ drags place **once, on release** (sweep-painting stays a
 board-pressed gesture) — dragging from the palette used to paint
 every square the ghost crossed.
 
+### Session handoff (2026-08-27 — private examples browsing, ADR-0030)
+
+**The Examples tab became a private browsing dialog.** Owner decision
+after living with the shared run for a while: sharing the whole
+candidate list (via the transient `evidence_run` broadcast) was the
+wrong unit — members care about the games someone picks, not what
+someone is still browsing. Implemented:
+
+- **`HistoricalEvidenceDialog`**: "Find examples" moved out of the
+  sidebar (the Examples tab is gone — the sidebar is Moves | Game info
+  | Openings again) into the board header next to Export PGN / Save to
+  library, editors only. It opens a modal carousel over the candidates
+  for the cursor's position: one slide per candidate with a static
+  board at the candidate position (flipped to the side to move) plus
+  the facts card. Prev/next (buttons, ←/→ keys), "i of n" counter,
+  Esc/backdrop close; the query runs privately on open (frozen
+  request, so a remote move can't change it under the dialog) and
+  finished analyses stay in the session cache (`evidenceCache.ts`), so
+  reopening the same position never re-runs the corpus query.
+- **Only picks are shared**, as ordinary ops: "Add to room"
+  (`set_game` + `evidence_gid` + `openAtPly` + fingerprint dedupe) and
+  "Add as variation" — all the existing echo-proven button states
+  ("Adding…" → "Added ✓", "Same game — already added") carry over.
+- **No auto-advance on picks** (owner call: a candidate can be added
+  as a game AND as a variation without navigating back and forth) —
+  the button flips and the user browses on.
+- **Removed the shared-run machinery**: `evidence_run` channel
+  handler + validator, the channel listener/push, the Redux
+  `evidenceRun` state, and the `sharedEvidenceRun`/`onEvidenceRun`
+  prop threading through RoomView/Analysis/AnalysisSidebar. Viewers
+  now see nothing in-place; picked games arrive to them as ops, same
+  as any add.
+- ADR-0030 records the decision; `architecture.md` updated. Follow-up
+  noted: an in-game move browser inside the dialog (fetched PGN
+  playback) is deferred. 622 frontend + 396 backend tests green.
+
 ### Session handoff (2026-08-26 — Analysis split + band owns the analyze job)
 
 **Two design chats settled, both implemented.** (1) The ~1370-line

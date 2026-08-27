@@ -225,7 +225,6 @@ describe('room slice', () => {
       presenterId: null,
       analysisProgress: null,
       chatMessages: [],
-      evidenceRun: null,
     });
   });
 
@@ -249,7 +248,6 @@ describe('room slice', () => {
         presenterId: null,
         analysisProgress: null,
         chatMessages: [],
-        evidenceRun: null,
       },
       enterRoom({ slug: 'room-123' }),
     );
@@ -271,7 +269,6 @@ describe('room slice', () => {
       presenterId: null,
       analysisProgress: null,
       chatMessages: [],
-      evidenceRun: null,
     });
   });
 
@@ -295,7 +292,6 @@ describe('room slice', () => {
         presenterId: null,
         analysisProgress: null,
         chatMessages: [],
-        evidenceRun: null,
       },
       leaveRoom(),
     );
@@ -317,7 +313,6 @@ describe('room slice', () => {
       presenterId: null,
       analysisProgress: null,
       chatMessages: [],
-      evidenceRun: null,
     });
   });
 

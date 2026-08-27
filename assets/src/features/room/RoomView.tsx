@@ -59,8 +59,12 @@ export default function RoomView({
   channelFactory?: (topic: string, params?: Record<string, string>) => Channel;
 }) {
   const { t } = useTranslation();
-  const { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze, sendEvidenceRun } =
-    useRoomChannel(slug, selfId, selfName, channelFactory);
+  const { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze } = useRoomChannel(
+    slug,
+    selfId,
+    selfName,
+    channelFactory,
+  );
   const members = useAppSelector((state) => selectSortedMembers(state.room));
   const roles = useAppSelector((state) => state.room.roles);
   const games = useAppSelector((state) => state.room.games);
@@ -91,9 +95,9 @@ export default function RoomView({
    */
   const [cursorByGame, setCursorByGame] = useState<ReadonlyMap<string, number>>(new Map());
   /**
-   * Corpus game ids already in the room via the Examples tab, derived from
-   * the op log (`evidence_gid` on `set_game`) — every client agrees, so a
-   * card one member added shows "Added ✓" for everyone.
+   * Corpus game ids already in the room via the Examples dialog, derived
+   * from the op log (`evidence_gid` on `set_game`) — every client agrees,
+   * so a candidate one member picked shows "Added ✓" for everyone.
    */
   const evidenceGids = useAppSelector((state) => selectEvidenceGids(state.room));
   /**
@@ -107,8 +111,6 @@ export default function RoomView({
     () => new Set<number>([...evidenceGids, ...dedupedEvidenceGids]),
     [evidenceGids, dedupedEvidenceGids],
   );
-  /** Another member's shared Examples analysis request (transient). */
-  const evidenceRun = useAppSelector((state) => state.room.evidenceRun);
 
   const amPresenter = selfId !== null && presenter?.id === selfId;
 
@@ -292,15 +294,16 @@ export default function RoomView({
     }
   }
 
-  // The Examples tab's "add to room": the historical game joins the room
-  // as another game without stealing the view — the adder may want to
-  // collect several games before looking at any of them. The game appears
-  // in the Games panel; opening it starts on the candidate's move. A game
-  // already in the room (imported earlier, or added in an earlier panel
-  // mount) is never sent again — the fingerprint check makes duplicates a
-  // no-op. A presenting adder must re-point the room at the game being
-  // viewed: `selectPresenterGameId` counts the presenter's own `set_game`
-  // as focus, so without the restore the whole room would follow the add.
+  // The Examples dialog's "add to room": the historical game joins the
+  // room as another game without stealing the view — the adder may want
+  // to collect several games before looking at any of them. The game
+  // appears in the Games panel; opening it starts on the candidate's
+  // move. A game already in the room (imported earlier, or added in an
+  // earlier dialog) is never sent again — the fingerprint check makes
+  // duplicates a no-op. A presenting adder must re-point the room at the
+  // game being viewed: `selectPresenterGameId` counts the presenter's
+  // own `set_game` as focus, so without the restore the whole room would
+  // follow the add.
   function handleAddHistoricalGame(tree: GameTree, ply: number, gid: number) {
     const fingerprint = gameToPgn(tree);
     if (Object.values(games).some((game) => gameToPgn(game) === fingerprint)) {
@@ -512,8 +515,6 @@ export default function RoomView({
               onAnalyze={canEdit ? handleAnalyze : undefined}
               onAddHistoricalGame={canEdit ? handleAddHistoricalGame : undefined}
               addedEvidenceGids={addedEvidenceGids}
-              sharedEvidenceRun={evidenceRun}
-              onEvidenceRun={sendEvidenceRun}
               analyzing={analyzing}
               analysis={analysis?.evals ?? null}
             />

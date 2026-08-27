@@ -216,9 +216,10 @@ so clients send nothing and hide the member list.
   (the orchestrator: all viewer state, derived data and interaction
   handlers — navigation, comments, present/follow, engine toggles, the
   whole-game analyze job), with the three screen regions as pure
-  presentation components: `BoardColumn.tsx` (title row, board, eval bar,
-  edit palettes, nav, comments, board controls), `AnalysisSidebar.tsx`
-  (Moves | Game info | Openings | Examples tabs plus the `VizBox`
+  presentation components: `BoardColumn.tsx` (title row with the
+  find-examples launcher, board, eval bar, edit palettes, nav, comments,
+  board controls), `AnalysisSidebar.tsx`
+  (Moves | Game info | Openings tabs plus the `VizBox`
   moments/report tabs), and `TimelineBand.tsx`. `legalMoves.ts`
   (client-side legal moves + resulting fen/status via chess.js — no
   server round trip), `moveList.ts`/`MoveList.tsx`
@@ -261,26 +262,30 @@ so clients send nothing and hide the member list.
   clicking it plays the move as a real broadcast op — the panel's
   re-anchor on cursor move makes the descent free. Corpus statistics
   upgrade the rows post-spike.
-- `assets/src/features/historicalEvidence/` — the vertical slice's UI: the
-  **Examples** sidebar tab runs `POST /api/historical-evidence` for the
-  board cursor (with the game's own move order as the route) and renders
-  evidence cards — position dims, route divergence, per-side plan
-  membership, appearance/game counts, flags. Facts only (ADR-0027).
-  Finished analyses are remembered per request (position + route + ply)
-  in a small session cache, so game switches — which unmount the panel —
-  never throw a result away. Candidates that ARE the analyzed game (the
-  corpus may contain an imported game) are filtered out via the PGN
-  headers the sidebar passes down; "Find examples" disables once the
-  results for the viewed position are shown (re-enabling when the
-  cursor moves), and the run shows a "Searching the game corpus…" note
-  while the query is in flight. The card headline claims "same position"
-  only when the placement AND side to move match: one piece moved plus a
-  tempo flip means the candidate is a half-move off, and the headline
-  names the move instead (route-aware: "played Nge7" / "one move
-  before"). Card actions report their outcome and de-duplicate: "Add to
-  room" sends a `set_game` op without switching the room's view (the
-  game appears in the Games panel; a presenting adder re-points the room
-  via `select_game` back to the viewed game, because the presenter's own
+- `assets/src/features/historicalEvidence/` — the vertical slice's UI
+  (ADR-0027, ADR-0030): the board header's **Find examples** button
+  (next to Export PGN / Save to library — editors only; the old
+  Examples sidebar tab is gone) opens `HistoricalEvidenceDialog`, a
+  modal carousel over the candidates for the cursor's position. The
+  query (`POST /api/historical-evidence`, with the game's own move
+  order as the route) runs **privately** on open — no channel traffic —
+  and renders one slide per candidate: a static board at the candidate
+  position plus the facts card (position dims, route divergence,
+  per-side plan membership, appearance/game counts, flags; facts only
+  per ADR-0027). Prev/next (buttons, ←/→ keys), "i of n" counter,
+  Esc/backdrop close. Finished analyses are remembered per request
+  (position + route + ply) in the `evidenceCache.ts` session cache, so
+  reopening the dialog for the same position never re-runs the query.
+  Candidates that ARE the analyzed game (the corpus may contain an
+  imported game) are filtered out via the PGN headers. The card
+  headline claims "same position" only when the placement AND side to
+  move match: one piece moved plus a tempo flip means the candidate is
+  a half-move off, and the headline names the move instead
+  (route-aware: "played Nge7" / "one move before"). Only picks are
+  shared with the room, as ordinary ops (ADR-0030): "Add to room"
+  sends a `set_game` op without switching the room's view (the game
+  appears in the Games panel; a presenting adder re-points the room via
+  `select_game` back to the viewed game, because the presenter's own
   `set_game` counts as focus), records the candidate ply in `openAtPly`
   so the game opens at the candidate's move (`Analysis.initialNodeId` →
   `useCursor`'s init order: `startAtRoot` → initial node → last played →
@@ -290,24 +295,20 @@ so clients send nothing and hide the member list.
   every client derives which candidates are already in the room from
   the op log (`selectEvidenceGids`) — "Added ✓" agrees across the room;
   RoomView dedupes by PGN fingerprint before sending, so a game already
-  in the room (imported, or added in an earlier panel mount) never
-  produces a duplicate op (with a local mark for the clicking client).
-  Analyses are shared transiently: a button run pushes `evidence_run`
-  (a channel broadcast, never an op — replays must not re-run corpus
-  queries) and members whose cursor is on that position run the same
-  query, so one member's examples become everyone's. "Add as variation"
-  shows "Adding…" until the echo lands in the tree, then "Added ✓" —
-  the exists state is derived from the tree itself (`variationState` in
-  `Analysis`, plan-identical to the insertion via
+  in the room (imported, or added earlier) never produces a duplicate
+  op (with a local mark for the clicking client). Picks never
+  auto-advance the carousel — the button flips and the user browses on.
+  "Add as variation" shows "Adding…" until the echo lands in the tree,
+  then "Added ✓" — the exists state is derived from the tree itself
+  (`variationState` in `Analysis`, plan-identical to the insertion via
   `planHistoricalVariation` + the same from/to/promotion chain descent
   `applyAddLine` uses), so it can never disagree with reality; the SAN
   resolution behind it is cached module-wide and warmed during the
-  corpus query, and the state check only runs while the results are
-  current (the un-gated version made every cursor move cost ~0.8s with
-  20+ candidates).
+  corpus query. A future in-game move browser inside the dialog is a
+  noted follow-up.
 - `SidebarTabs` keeps every tab's content mounted and hides inactive
-  panels (`hidden` attr + class): the Examples results survive tab
-  switches; state-preserving by contract, tested with a counter.
+  panels (`hidden` attr + class): tab state survives switches;
+  state-preserving by contract, tested with a counter.
 - `assets/src/components/ui.ts` — `tv()`-based component variants (Tailwind
   v4, dark theme); `<.icon>`-style icons are heroicons via the `.icon` /
   `Icon` components. The visual language (tokens, states, motion) is specced
