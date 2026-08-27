@@ -227,7 +227,6 @@
     "next": "Next",
     "last": "Last",
     "flip": "Flip board",
-    "boardMenu": "Board actions",
     "moves": "Moves",
     "reviewTab": "Review",
     "gameFlow": "Game flow chart: engine evaluation by move. Click or drag to jump to a position.",
@@ -332,7 +331,8 @@
     "noAnalysisHint": "No engine analysis yet — run “Analyze game”. It powers Moments, the report and the eval marks.",
     "helpAnalyzeGameTitle": "Analyze game",
     "helpAnalyzeGameBody": "Runs the engine over the whole game; the result powers the eval marks, the Moments tab and the game report.",
-    "aboutAnalyzeGame": "About Analyze game"
+    "aboutAnalyzeGame": "About Analyze game",
+    "stripLayer": "Timeline layer shown"
   },
   "room": {
     "connecting": "Connecting...",

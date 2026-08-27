@@ -29,8 +29,11 @@ import type { AnalysisEval } from '@/protocol/ops';
  * the board header (ADR-0030), not a tab.
  *
  * Pure presentation — the orchestrator owns the state; every handler
- * arrives as a prop. At xl the sidebar stretches to the board column's
- * height so a long move list scrolls inside itself.
+ * arrives as a prop. At xl the sidebar has a fixed height matching the
+ * board column (the board is always 34rem there + ~7.5rem of chrome): a
+ * definite height is what makes the move list scroll inside itself — a
+ * stretched-only flex item grows with a long list and drags the whole
+ * board row down the page.
  */
 export default function AnalysisSidebar({
   tree,
@@ -289,7 +292,7 @@ export default function AnalysisSidebar({
 
   return (
     <aside
-      className="order-3 flex h-[52dvh] w-full max-w-[min(90vw,34rem)] flex-col gap-3 sm:h-[46dvh] xl:h-auto xl:w-[360px]"
+      className="order-3 flex h-[52dvh] w-full max-w-[min(90vw,34rem)] flex-col gap-3 sm:h-[46dvh] xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] 2xl:w-[420px]"
       data-tour="sidebar"
       data-testid="room-sidebar"
     >

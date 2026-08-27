@@ -393,7 +393,11 @@ export default function HistoricalEvidenceDialog({
               </p>
             ) : slide === null ? null : (
               <>
-                <div className="flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto">
+                <div className="flex h-[min(60dvh,34rem)] flex-col items-center gap-3 overflow-y-auto">
+                  {/* Fixed slide height: the carousel frame must not resize
+                      between candidates — a taller card scrolls inside
+                      instead of growing the dialog under the user's
+                      prev/next finger. */}
                   {/* The sized wrapper, not the board itself, is what the
                       column centers: the board carries `self-start` (the
                       main layout needs it), which would otherwise pin it

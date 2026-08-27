@@ -279,9 +279,10 @@ left rail is gone (ADR-0031).
   help, theme, account.
 - **Board column**: title row (players, result, Find examples, export/save
   icons), opening line, eval bar + board, then ONE toolbar: navigation
-  (⏮ ◀ ply ▶ ⏭) + flip/comment + the ⋯ overflow menu (edit position,
-  drawing colors, clear drawings). No hint row — the shortcuts dialog and
-  tour carry the keyboard map.
+  (⏮ ◀ ply ▶ ⏭) + direct icons: flip, comment, Find examples (a
+  per-position action — it lives here, not in the title row), edit
+  position, the drawing-color dots (always visible), clear drawings.
+  No hint row — the shortcuts dialog and tour carry the keyboard map.
 - **Sidebar** (360px): the single tab strip — Moves · Review · Reference ·
   Chat · Room. Moves = engine box fused atop the move list. Review nests
   Moments | Report | Game info. Chat carries an unread-count badge. Room =
@@ -289,11 +290,12 @@ left rail is gone (ADR-0031).
   The active tab survives game switches; all tab panels stay mounted
   (hidden), so a finished analysis or a chat scrollback never resets.
 - **Timeline band**: a collapsed strip by default — one sparkline-height
-  scrubbable layer (the first enabled layer holding data) with its caption
-  dot + label, a Layers popover holding the toggle chips, and the analyze
-  job in the header. The chevron expands the full stacked band (Eval |
-  Material | Activity | Clocks); layer visibility and the expanded state
-  are per-viewer localStorage preferences.
+  scrubbable layer with a fixed-order dot per layer beside the chevron
+  (pick a dot to chart that layer — it enables it first if off — with no
+  text label to jump), a Layers popover holding the on/off chips, and the
+  analyze job in the header. The chevron expands the full stacked band
+  (Eval | Material | Activity | Clocks); layer visibility, the picked
+  layer and the expanded state are per-viewer localStorage preferences.
 
 ### 5.3 Room — Mobile (<1280px)
 
@@ -792,8 +794,10 @@ Board column + sidebar, side by side (`xl:flex-row`, stretched to one row
 height); the timeline strip spans the row below.
 
 - **Board column**: title row → opening line → eval bar + board → one
-  toolbar (navigation + flip/comment + ⋯ overflow). Board width:
-  `min(100vw - 4.75rem, 34rem)` — viewport-minus-chrome, capped.
+  toolbar (navigation + direct icons). Board size is the shared
+  `--board-size` variable (app.css): viewport-minus-chrome below xl;
+  viewport-HEIGHT-driven at xl so board + toolbar + strip fit without a
+  page scrollbar; the sidebar's xl height derives from it.
 - **Sidebar** (360px): the tab strip owns everything that isn't the board;
   only the active tab's lists scroll.
 - **No page-level scrolling** at xl — the board row is sized to fit; the
@@ -814,7 +818,7 @@ No new permanent panels. A new feature is exactly one of:
 | ---------------------- | -------------------------------------------------------- |
 | Per-position reference | The **Reference** sidebar tab (ADR-0024): corpus continuation rows, statistics post-spike; always present, text placeholder when empty. |
 | Whole-game view        | A **timeline-band layer** (a toggle in the Layers popover; renders only when enabled *and* holding data). |
-| Board action           | The board **toolbar** — frequent ones as icons, rare ones in the ⋯ overflow menu. |
+| Board action           | The board **toolbar** — direct icon buttons; the drawing colors are always visible (they're frequent). |
 | Game action            | The title row's icon cluster (export, save) or the Find examples launcher. |
 | Room/social            | The **Room** tab (games, invite, leave) or the **presence strip** popover (members). |
 | Task flow              | A dialog (import, examples) or a destination (`#/search`, ADR-0024). |

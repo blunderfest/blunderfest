@@ -84,11 +84,6 @@ function pieceAt(testId: string): string | null {
   );
 }
 
-/** The board's overflow menu (⋯): edit position, drawing colors, clear. */
-function openBoardMenu() {
-  fireEvent.click(screen.getByRole('button', { name: 'Board actions' }));
-}
-
 describe('Analysis', () => {
   it('opens on the latest mainline position (so a refresh restores the game state)', () => {
     renderAnalysis();
@@ -611,7 +606,6 @@ describe('board annotations', () => {
       />,
     );
 
-    openBoardMenu();
     const button = screen.getByTestId('clear-drawings-button');
     expect(button).toBeEnabled();
     fireEvent.click(button);
@@ -621,7 +615,6 @@ describe('board annotations', () => {
   it('disables the clear button when nothing is drawn', () => {
     render(<Analysis tree={tree} canEdit onAnnotations={vi.fn()} lastPlayedId={4} />);
 
-    openBoardMenu();
     expect(screen.getByTestId('clear-drawings-button')).toBeDisabled();
   });
 
@@ -1070,8 +1063,7 @@ describe('position setup (what-if editing)', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
 
-    openBoardMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
     fireEvent.click(screen.getByTestId('square-e4'));
     fireEvent.click(screen.getByTestId('square-h3'));
     fireEvent.click(screen.getByTestId('set-position-button'));
@@ -1090,8 +1082,7 @@ describe('position setup (what-if editing)', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
 
-    openBoardMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
     // Replace the black king with the white pawn — no black king left.
     fireEvent.click(screen.getByTestId('square-e4'));
     fireEvent.click(screen.getByTestId('square-e8'));
@@ -1108,8 +1099,7 @@ describe('position setup (what-if editing)', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
 
-    openBoardMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
     const grid = document.querySelector('[data-board-grid]') as HTMLElement;
     grid.getBoundingClientRect = () =>
       ({
@@ -1137,8 +1127,7 @@ describe('position setup (what-if editing)', () => {
   it('places a palette drag only where it is released (no sweep off the board)', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
-    openBoardMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
     const grid = document.querySelector('[data-board-grid]') as HTMLElement;
     grid.getBoundingClientRect = () =>
       ({
@@ -1171,8 +1160,7 @@ describe('position setup (what-if editing)', () => {
   it('paints only the pressed square — moving the pointer paints nothing', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
-    openBoardMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
     const grid = document.querySelector('[data-board-grid]') as HTMLElement;
     grid.getBoundingClientRect = () =>
       ({
@@ -1207,8 +1195,7 @@ describe('position setup (what-if editing)', () => {
   it('selects a piece on tap and places it on multiple squares', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
-    openBoardMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
     const kingButton = screen.getByRole('button', { name: 'White king' });
 
     // A tap (pointerdown + up with no movement, then the synthesized
@@ -1233,8 +1220,7 @@ describe('position setup (what-if editing)', () => {
   it('drops the drag ghost without placing when the pointer is canceled (page scrolls)', () => {
     render(<Analysis tree={tree} canEdit onSetPosition={vi.fn()} />);
 
-    openBoardMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
     fireEvent(
       screen.getByRole('button', { name: 'White king' }),
       new MouseEvent('pointerdown', { button: 0, bubbles: true }),
@@ -1257,8 +1243,7 @@ describe('position setup (what-if editing)', () => {
     const onSetPosition = vi.fn();
     render(<Analysis tree={tree} canEdit onSetPosition={onSetPosition} />);
 
-    openBoardMenu();
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit position' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit position' }));
     expect(screen.getByTestId('engine-paused')).toBeInTheDocument();
     expect(screen.queryByTestId('engine-readout')).not.toBeInTheDocument();
 

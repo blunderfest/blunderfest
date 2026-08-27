@@ -219,7 +219,19 @@ describe('TimelineBand strip (collapsed)', () => {
   afterEach(() => {
     localStorage.removeItem('blunderfest.timelineLayers');
     localStorage.removeItem('blunderfest.timelineExpanded');
+    localStorage.removeItem('blunderfest.timelineSpotlight');
   });
+
+  /** A layer's dot in the strip's picker. */
+  function layerDot(id: string): HTMLElement {
+    const dot = screen
+      .getAllByTestId('timeline-layer-dot')
+      .find((button) => button.dataset.layer === id);
+    if (dot === undefined) {
+      throw new Error(`No dot for layer ${id}`);
+    }
+    return dot;
+  }
 
   function renderStrip(overrides: Partial<Parameters<typeof TimelineBand>[0]> = {}) {
     return render(
@@ -242,7 +254,8 @@ describe('TimelineBand strip (collapsed)', () => {
     expect(screen.getByTestId('timeline-strip')).toBeInTheDocument();
     expect(screen.getByTestId('game-flow')).toBeInTheDocument();
     expect(screen.queryByTestId('material-flow')).not.toBeInTheDocument();
-    expect(screen.getByTestId('timeline-strip-caption')).toHaveTextContent('Eval');
+    // The eval dot is the lit one; no text label to jump around.
+    expect(layerDot('eval')).toBeChecked();
     expect(screen.queryByTestId('timeline-layer-eval')).not.toBeInTheDocument();
   });
 
@@ -251,7 +264,35 @@ describe('TimelineBand strip (collapsed)', () => {
 
     expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
     expect(screen.getByTestId('material-flow')).toBeInTheDocument();
-    expect(screen.getByTestId('timeline-strip-caption')).toHaveTextContent('Material');
+    expect(layerDot('material')).toBeChecked();
+  });
+
+  it('switches the strip layer from the dots without moving the controls', () => {
+    renderStrip();
+
+    // Fixed order: eval, material, activity, clocks — regardless of which
+    // layer is charted.
+    const order = screen.getAllByTestId('timeline-layer-dot').map((dot) => dot.dataset.layer);
+    expect(order).toEqual(['eval', 'material', 'activity', 'clocks']);
+
+    // Clicking a dot spotlights it (enabling it first if it was off).
+    fireEvent.click(layerDot('activity'));
+    expect(screen.getByTestId('activity-flow')).toBeInTheDocument();
+    expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
+    expect(layerDot('activity')).toBeChecked();
+    expect(localStorage.getItem('blunderfest.timelineSpotlight')).toBe('activity');
+    // …and the layer joined the enabled set.
+    expect(JSON.parse(localStorage.getItem('blunderfest.timelineLayers') ?? '[]')).toContain(
+      'activity',
+    );
+  });
+
+  it('shows the picked layer’s own empty note when it holds no data', () => {
+    // No clock data in this tree: the clocks layer can’t chart.
+    renderStrip();
+
+    fireEvent.click(layerDot('clocks'));
+    expect(screen.getByTestId('timeline-strip-layer-empty')).toHaveTextContent('No clock data');
   });
 
   it('shows a compact note when no enabled layer holds data', () => {

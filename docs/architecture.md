@@ -222,10 +222,11 @@ so clients send nothing and hide the member list.
   (the orchestrator: all viewer state, derived data and interaction
   handlers — navigation, comments, present/follow, engine toggles, the
   whole-game analyze job), with the three screen regions as pure
-  presentation components: `BoardColumn.tsx` (title row with the
-  find-examples launcher, board, eval bar, edit palettes, one toolbar —
-  nav + flip/comment + the overflow menu holding position edit, drawing
-  colors and clear-drawings — comments), `AnalysisSidebar.tsx`
+  presentation components: `BoardColumn.tsx` (title row (game-level
+  actions: export/save), board, eval bar, edit palettes, one toolbar —
+  nav plus direct icons: flip, comment, Find examples (per-position),
+  edit position, drawing-color dots, clear — comments),
+  `AnalysisSidebar.tsx`
   (the room's one tabbed column, ADR-0031: Moves | Review | Reference |
   Chat | Room — Review nests Moments | Report | Game info; Chat/Room
   content arrives pre-built from RoomView; the active tab is lifted to
@@ -233,14 +234,17 @@ so clients send nothing and hide the member list.
   (client-side legal moves + resulting fen/status via chess.js — no
   server round trip), `moveList.ts`/`MoveList.tsx`
   (variation tree), `nodeMap.ts` (ply ↔ node index), `BoardControls` (the
-  toolbar's action cluster + overflow menu), `GameInfo`, `NodeComment`.
+  toolbar's direct action icons — flip, comment, find examples, edit
+  position, the drawing-color dots, clear), `GameInfo`, `NodeComment`.
   Whole-game visualization (ADR-0024, as amended 2026-08-24; ADR-0031)
   splits by kind: `TimelineBand.tsx` is the band under the board, a
   collapsed **strip** by default — one sparkline-height scrubbable layer
-  (the first enabled layer holding data), layer toggles in a "Layers"
-  popover, an expand chevron for the full stack; expanded, the game-story
+  (a fixed-order dot per layer switches which one charts, enabling it
+  first if off; on/off toggles live in the "Layers" popover), an expand
+  chevron for the full stack; expanded, the game-story
   charts stack as toggleable layers on one shared move axis (`spanPly` =
-  mainline tip; layer choice and the expanded state are localStorage
+  mainline tip; layer choice, the charted (spotlight) layer and the
+  expanded state are localStorage
   preferences) — `GameFlow` (eval + quality strip, phase
   shading and capture marks via `gamePhases.ts`/`MaterialFlow.capturesOf`),
   `MaterialFlow`, `ActivityFlow`, and `ClocksFlow` (thinking time per move

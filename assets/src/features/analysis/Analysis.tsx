@@ -838,7 +838,10 @@ export default function Analysis({
         : null;
 
   return (
-    <div data-testid="analysis-root" className="flex w-full flex-col items-center gap-3 md:gap-6">
+    <div
+      data-testid="analysis-root"
+      className="analysis-scope flex w-full flex-col items-center gap-3 md:gap-6"
+    >
       {/*
         w-full is load-bearing: without it this wrapper shrink-wraps to its
         widest child's max-content (a long PV in the engine readout, a

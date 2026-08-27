@@ -12,6 +12,7 @@ import type { AnalysisEval } from '@/protocol/ops';
 
 const STORAGE_KEY = 'blunderfest.timelineLayers';
 const EXPANDED_KEY = 'blunderfest.timelineExpanded';
+const SPOTLIGHT_KEY = 'blunderfest.timelineSpotlight';
 /** Eval pairs with material; the others join on demand. */
 const DEFAULT_LAYERS = ['eval', 'material'];
 /** The band's expanded layer height: compact — the layers stack (ADR-0024). */
@@ -45,6 +46,10 @@ function readVisibleLayers(): string[] {
 
 function readExpanded(): boolean {
   return localStorage.getItem(EXPANDED_KEY) === '1';
+}
+
+function readSpotlight(): string | null {
+  return localStorage.getItem(SPOTLIGHT_KEY);
 }
 
 /**
@@ -101,6 +106,18 @@ export default function TimelineBand({
   const [visible, setVisible] = useState<string[]>(readVisibleLayers);
   const [expanded, setExpanded] = useState<boolean>(readExpanded);
   const [layersOpen, setLayersOpen] = useState(false);
+  // Which layer the collapsed strip charts (per-viewer, persisted).
+  const [spotlight, setSpotlight] = useState<string | null>(readSpotlight);
+
+  function chooseSpotlight(id: string) {
+    // Off layers switch on when picked (the popover's toggles still rule
+    // on/off) — picking a dot is "show me this layer".
+    if (!visible.includes(id)) {
+      toggleLayer(id);
+    }
+    setSpotlight(id);
+    localStorage.setItem(SPOTLIGHT_KEY, id);
+  }
 
   function toggleLayer(id: string) {
     setVisible((current) => {
@@ -119,8 +136,9 @@ export default function TimelineBand({
     });
   }
 
-  const noMoves = (copy: string) => (
-    <div className="grid h-36 place-items-center">
+  /** A layer's empty-state note, at the height it renders at. */
+  const placeholder = (copy: string, heightClass: string) => (
+    <div className={`grid ${heightClass} place-items-center`}>
       <p className="m-0 text-note text-faint">{copy}</p>
     </div>
   );
@@ -149,7 +167,8 @@ export default function TimelineBand({
     legend?: ReactNode;
     hasData: boolean;
     chart: (heightClass: string, compact: boolean) => ReactNode;
-    placeholder: ReactNode;
+    /** Why the layer is empty, for its placeholders. */
+    emptyCopy: string;
   }[] = [
     {
       id: 'eval',
@@ -172,7 +191,7 @@ export default function TimelineBand({
         />
       ),
       // The action lives in the header; the layer just explains itself.
-      placeholder: noMoves(t('analysis.noAnalysisYet')),
+      emptyCopy: t('analysis.noAnalysisYet'),
     },
     {
       id: 'material',
@@ -189,7 +208,7 @@ export default function TimelineBand({
           onSelectPly={onSelectPly}
         />
       ),
-      placeholder: noMoves(t('analysis.materialEmpty')),
+      emptyCopy: t('analysis.materialEmpty'),
     },
     {
       id: 'activity',
@@ -206,7 +225,7 @@ export default function TimelineBand({
           onSelectPly={onSelectPly}
         />
       ),
-      placeholder: noMoves(t('analysis.activityEmpty')),
+      emptyCopy: t('analysis.activityEmpty'),
     },
     {
       id: 'clocks',
@@ -223,14 +242,16 @@ export default function TimelineBand({
           onSelectPly={onSelectPly}
         />
       ),
-      placeholder: noMoves(t('analysis.clocksEmpty')),
+      emptyCopy: t('analysis.clocksEmpty'),
     },
   ];
 
   const visibleLayers = layers.filter((layer) => visible.includes(layer.id));
-  // The strip charts the first enabled layer that holds data (layer order
-  // is the priority: eval, material, activity, clocks).
-  const stripLayer = visibleLayers.find((layer) => layer.hasData) ?? null;
+  // The strip charts the spotlight layer when it's enabled (a per-viewer
+  // choice — the dots switch it without opening the Layers popover), else
+  // the first enabled layer that holds data.
+  const spotlightLayer = visibleLayers.find((layer) => layer.id === spotlight) ?? null;
+  const stripLayer = spotlightLayer ?? visibleLayers.find((layer) => layer.hasData) ?? null;
 
   const layerToggles = (
     <div className="flex flex-wrap items-center gap-1 p-1">
@@ -298,20 +319,39 @@ export default function TimelineBand({
             </svg>
           </button>
           {/*
-            The strip's caption: a chart is never anonymous, even collapsed —
-            the dot repeats the layer's hue.
+            The strip's layer picker: one dot per layer, fixed order, so
+            switching the chart never moves the controls (a text label
+            would jump as names change length). Hue + tooltip carry the
+            layer's identity; the lit dot is the charted layer.
           */}
-          {!expanded && stripLayer !== null && (
-            <span
-              className="flex min-w-0 items-center gap-1.5 text-micro font-semibold uppercase tracking-[0.08em] text-faint"
-              data-testid="timeline-strip-caption"
-            >
-              <span
-                className={`h-2 w-2 shrink-0 rounded-[2px] ${stripLayer.dot}`}
-                aria-hidden="true"
-              />
-              {stripLayer.label}
-            </span>
+          {!expanded && (
+            <fieldset className="m-0 flex items-center gap-1 border-none p-0">
+              <legend className="sr-only">{t('analysis.stripLayer')}</legend>
+              {layers.map((layer) => {
+                const on = visible.includes(layer.id);
+                const shown = stripLayer?.id === layer.id;
+                return (
+                  <input
+                    key={layer.id}
+                    type="radio"
+                    name="timeline-spotlight"
+                    aria-label={layer.label}
+                    title={layer.label}
+                    checked={shown}
+                    data-testid="timeline-layer-dot"
+                    data-layer={layer.id}
+                    className={`h-2.5 w-2.5 shrink-0 cursor-pointer appearance-none rounded-[2px] transition-all ${
+                      shown
+                        ? `${layer.dot} ring-1 ring-ink ring-offset-1 ring-offset-panel`
+                        : on
+                          ? `${layer.dot} opacity-50 hover:opacity-90`
+                          : 'border border-line-strong opacity-60 hover:opacity-100'
+                    }`}
+                    onChange={() => chooseSpotlight(layer.id)}
+                  />
+                );
+              })}
+            </fieldset>
           )}
           <div className="relative">
             <button
@@ -383,7 +423,9 @@ export default function TimelineBand({
                 </span>
                 {layer.legend}
               </div>
-              {layer.hasData ? layer.chart(LAYER_HEIGHT, false) : layer.placeholder}
+              {layer.hasData
+                ? layer.chart(LAYER_HEIGHT, false)
+                : placeholder(layer.emptyCopy, 'h-36')}
             </div>
           ))}
           {visibleLayers.length === 0 && (
@@ -395,7 +437,15 @@ export default function TimelineBand({
       ) : (
         <div className="p-2" data-testid="timeline-strip">
           {stripLayer !== null ? (
-            stripLayer.chart(STRIP_HEIGHT, true)
+            // A spotlighted layer without data explains itself (the layer's
+            // own empty copy) rather than vanishing under the pick.
+            stripLayer.hasData ? (
+              stripLayer.chart(STRIP_HEIGHT, true)
+            ) : (
+              <div data-testid="timeline-strip-layer-empty">
+                {placeholder(stripLayer.emptyCopy, 'h-10')}
+              </div>
+            )
           ) : (
             <div className="grid h-10 place-items-center" data-testid="timeline-strip-empty">
               <p className="m-0 text-note text-faint">{t('analysis.timelineStripEmpty')}</p>

@@ -34,7 +34,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Multiple games per room: import, new blank game, switch (the Room tab)
 - ✅ Share from the app bar (gold button copies the room link); room code/copy/leave/read-only badge/connection telemetry in the Room tab (ADR-0031)
 - ✅ Read-only demo room at `#/r/chess` (annotated Opera Game), seeded on demand — linked from the home page (ADR-0014)
-- ✅ One-sidebar room layout (ADR-0031): Moves · Review · Reference · Chat · Room tabs; board toolbar with overflow menu; tour landmarks re-pointed
+- ✅ One-sidebar room layout (ADR-0031): Moves · Review · Reference · Chat · Room tabs; board toolbar with direct icons (flip, comment, find examples, edit position, draw colors, clear); tour landmarks re-pointed
 - 💡 Private rooms with owner-approved joins (the `:pending` approval seam already exists — ADR-0006)
 - 💡 Per-member cursor/arrow colors (see who points where)
 - 💡 Share links with preset roles (view-only link vs editor link)
@@ -48,7 +48,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Floating eval badge at the bar's split point; result display on terminal positions
 - ✅ Opening classification (ECO + name under the players, follows the viewed line incl. variations; lichess book, position-keyed)
 - ✅ Server-side UCI worker pool (ADR-0009): whole-game analysis on demand, per-move evals + quality marks in the move list, results synced to all members as a `set_analysis` op; **Re-analyze** when the mainline outgrows the job, and **Analyze line** for the viewed variation — node-keyed evals merge per node, variation rows get their own marks
-- ✅ Whole-game visualization (ADR-0024 as amended; ADR-0031): the **timeline band** under the board — a collapsed, scrubbable strip by default (Layers popover, expand chevron; both states persisted per viewer); expanded = Eval | Material | Activity | Clocks stacked layers on one shared move axis; eval chart with blunder dots, cp/win% toggle, opening book-exit marker, opening/endgame phase shading, capture/exchange marks; material and piece-activity timelines (pure FEN data, no engine); thinking-time bars from `[%clk]` data (extracted at parse time; Lichess imports fetch clocks). The Review tab keeps the list views: Moments (mini boards of the biggest swings), Report, and Game info
+- ✅ Whole-game visualization (ADR-0024 as amended; ADR-0031): the **timeline band** under the board — a collapsed, scrubbable strip by default (fixed-order layer dots switch the charted layer, Layers popover for on/off, expand chevron; all persisted per viewer); expanded = Eval | Material | Activity | Clocks stacked layers on one shared move axis; eval chart with blunder dots, cp/win% toggle, opening book-exit marker, opening/endgame phase shading, capture/exchange marks; material and piece-activity timelines (pure FEN data, no engine); thinking-time bars from `[%clk]` data (extracted at parse time; Lichess imports fetch clocks). The Review tab keeps the list views: Moments (mini boards of the biggest swings), Report, and Game info
 - ✅ Engine lines panel (MultiPV top-N, configurable 1–5, persisted); click a line to insert it as a variation (`add_line` op, atomic)
 - 💡 Cloud eval cache (share computed evals across users/rooms)
 - ✅ "Learn from this game" report (viz-box Report tab): per-side accuracy (lichess's per-move win-share-loss curve), blunder/mistake/inaccuracy counts, every marked move with the eval swing + the engine's best alternative, result + opening header

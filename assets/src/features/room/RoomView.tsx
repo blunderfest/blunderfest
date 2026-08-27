@@ -487,11 +487,12 @@ export default function RoomView({
         )}
 
       {noGames ? (
-        // No game yet: the call-to-action next to a slim sidebar (Chat /
-        // Room tabs), so the room's social surface exists before the
-        // first import.
-        <div className="flex flex-1 flex-col items-center gap-4 xl:flex-row xl:items-stretch xl:justify-center xl:gap-6">
-          <div className="flex flex-1 items-center justify-center p-8">
+        // No game yet: the call-to-action where the board column will be
+        // (same width, same centered row as the real layout — importing a
+        // game swaps the card for the board without moving the sidebar),
+        // next to the slim sidebar (Chat / Room tabs).
+        <div className="analysis-scope flex flex-1 flex-col items-center gap-4 xl:mx-auto xl:w-fit xl:flex-row xl:items-stretch xl:gap-6">
+          <div className="flex flex-1 items-center justify-center p-8 xl:w-[calc(var(--board-size)+3.25rem)] xl:flex-none">
             {canEdit ? (
               <div
                 className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] animate-pop flex-col items-center gap-4 text-center`}
@@ -539,7 +540,7 @@ export default function RoomView({
             )}
           </div>
           <aside
-            className="flex h-[46dvh] w-full max-w-[min(100%,24rem)] flex-col self-center xl:h-auto xl:max-h-[36rem] xl:w-[360px] xl:self-auto"
+            className="flex h-[46dvh] w-full max-w-[min(100%,24rem)] flex-col self-center xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] xl:max-w-none xl:self-auto 2xl:w-[420px]"
             data-tour="sidebar"
             data-testid="room-sidebar"
           >

@@ -505,18 +505,16 @@ export default function Board({
   ];
 
   return (
-    // Board width: viewport minus the page padding (1.5rem), the eval/palette
-    // slot (2.5rem) and the row gap (0.75rem), capped at 34rem — the board row
-    // never overflows a phone. At md the rail joins the row, so another
-    // 15.5rem (236px + gap) comes off — without it the board overlaps the
-    // rail and the out-of-flow eval bar paints over the panels. A fixed
-    // `width` overrides this (mini boards).
+    // Board width: the shared `--board-size` variable (app.css) — viewport
+    // width minus chrome below xl, viewport-HEIGHT-driven at xl so the board
+    // grows with the screen while the strip still fits without page scroll.
+    // A fixed `width` overrides this (mini boards).
     // biome-ignore lint/a11y/useAriaPropsSupportedByRole: role is img or group, both support aria-label
     // biome-ignore lint/a11y/noStaticElementInteractions: grid container handles bubbled keys and pointer gestures; focus stays on the square buttons
     <div
       ref={containerRef}
       data-board-grid
-      className={`relative grid aspect-square self-start grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-board [-webkit-touch-callout:none] [container-type:inline-size] ${width === undefined ? 'w-[min(calc(100vw-4.75rem),34rem)]' : ''} ${interactive ? 'touch-none' : ''}`}
+      className={`relative grid aspect-square self-start grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-board [-webkit-touch-callout:none] [container-type:inline-size] ${width === undefined ? 'w-[var(--board-size)]' : ''} ${interactive ? 'touch-none' : ''}`}
       style={width !== undefined ? { width } : undefined}
       role={interactive ? 'group' : 'img'}
       aria-label={label}

@@ -103,16 +103,6 @@ export default function BoardColumn({
         </h2>
         <div className="flex shrink-0 items-center gap-2">
           <p className="m-0 whitespace-nowrap text-muted">{tree.result}</p>
-          {onFindExamples !== undefined && (
-            <button
-              type="button"
-              className={button({ intent: 'ghost', size: 'sm' })}
-              onClick={onFindExamples}
-              data-testid="find-examples-button"
-            >
-              {t('evidence.run')}
-            </button>
-          )}
           <GameActions tree={tree} />
         </div>
       </div>
@@ -133,10 +123,8 @@ export default function BoardColumn({
         left edge, out of flow, so toggling the engine (or the edit
         palette) never shifts the board. The ml-13 margin reserves that
         slot whenever the bar is shown: centering alone would let it
-        cross the content's left edge (off-screen on phones, over the
-        rail at md) — the board's width formula reserves exactly this
-        slot (100vw - page padding - 2.5rem - gap, minus the rail at
-        md).
+        cross the content's left edge — the board's width formula
+        (`--board-size`, app.css) reserves exactly this slot.
 
         The edit palette sits on each side's home edge (black pieces on
         black's side, white on white's — swapped when flipped), like
@@ -212,7 +200,7 @@ export default function BoardColumn({
       </div>
       {editor.editing && (
         <div
-          className="flex w-full max-w-[min(90vw,34rem)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
+          className="flex w-full max-w-[var(--board-size)] flex-col gap-2 rounded-control border border-line bg-panel p-3"
           data-testid="edit-toolbar"
         >
           <p className="m-0 text-ui text-muted">{t('analysis.editModeHint')}</p>
@@ -273,7 +261,7 @@ export default function BoardColumn({
       */}
       {!editor.editing && (
         <div
-          className="flex w-full max-w-[min(90vw,34rem)] flex-wrap items-center justify-center gap-x-3 gap-y-1.5"
+          className="flex w-full max-w-[calc(var(--board-size)+3.25rem)] flex-wrap items-center justify-center gap-x-3 gap-y-1.5"
           data-testid="board-toolbar"
         >
           <NavControls
@@ -295,6 +283,7 @@ export default function BoardColumn({
                       : editor.enterEditMode(current.fen ?? null)
                 : undefined
             }
+            onFindExamples={canEdit ? onFindExamples : undefined}
             drawColorPicker={canEdit ? drawColorPicker : undefined}
             clearDrawings={canEdit ? clearDrawings : undefined}
           />
@@ -302,7 +291,7 @@ export default function BoardColumn({
       )}
       {current.comment !== null && (
         <div
-          className="w-full max-w-[min(90vw,34rem)] rounded-control border border-line bg-panel p-3 text-body text-ink"
+          className="w-full max-w-[var(--board-size)] rounded-control border border-line bg-panel p-3 text-body text-ink"
           data-testid="comment-bubble"
         >
           {current.comment}
@@ -359,7 +348,7 @@ function PaletteStrip({
               color: t(color === 'w' ? 'analysis.sideWhite' : 'analysis.sideBlack'),
               piece: t(`analysis.pieces.${kind}`),
             })}
-            className={`grid h-[min(calc((100vw-4.75rem)/8),4.25rem)] w-[min(calc((100vw-4.75rem)/8),4.25rem)] place-items-center rounded-control leading-none transition-colors ${
+            className={`grid h-[min(calc(var(--board-size)/8),4.25rem)] w-[min(calc(var(--board-size)/8),4.25rem)] place-items-center rounded-control leading-none transition-colors ${
               active ? 'bg-gold/25 ring-1 ring-gold/60' : 'hover:bg-black/10'
             }`}
             onPointerDown={(event) => editor.handlePalettePointerDown({ color, kind }, event)}

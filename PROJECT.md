@@ -274,6 +274,26 @@ was an information-architecture fix, specced in ADR-0031 and the rewritten
   toolbar → strip → the sidebar as a fixed-height tabbed panel; board
   never scrolls far away; 635 frontend + 396 backend tests green.
 
+**Follow-up round the same evening (owner-driven, all landed):** the ⋯
+overflow menu is gone from the board toolbar (its backdrop swallowed the
+next board gesture) — flip/comment/find-examples/edit/draw-colors/clear
+are direct icons again, and "Find examples" moved out of the title row
+(it's a per-position action, not a game-level one). The collapsed timeline
+strip now shows a fixed-order dot per layer (radio group, persisted
+spotlight) instead of a jumping text caption; picking a dot enables +
+charts that layer, and a dataless layer explains itself in place. The
+examples dialog's slide area has a fixed height (cards no longer resize
+the modal between candidates). The board is viewport-HEIGHT-driven at xl
+(a shared `--board-size` var in app.css; the sidebar height derives from
+it) instead of the 34rem cap, and the sidebar widens to 420px at 2xl.
+Empty rooms prefigure the real layout (CTA where the board will be,
+sidebar in place). Bug fixes: the long-game move list now scrolls inside
+the sidebar (a stretched-only flex item was content-growing the board
+row — the sidebar has an explicit xl height again), and the demo room is
+read-only by slug at init (ADR-0014) — the live #/r/chess had been claimed
+and edited via a registry-race restart path; prod rows purged and the
+process re-seeded.
+
 **Two pre-existing bugs found and fixed along the way** (both user-reported
 symptoms), plus one UI bug: (0) the engine-lines `<select>` popup rendered
 white in dark mode (the UA options list doesn't follow the page
