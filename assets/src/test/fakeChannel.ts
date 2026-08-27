@@ -23,6 +23,11 @@ export class FakeChannel implements Channel {
   state = 'joined' as ChannelState;
   topic = 'room:test';
 
+  /** phoenix's Presence helper reads the join ref to order diffs. */
+  joinRef() {
+    return '1';
+  }
+
   onMessage(_event: string, payload: unknown) {
     return payload;
   }

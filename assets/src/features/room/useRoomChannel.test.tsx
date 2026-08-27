@@ -296,6 +296,40 @@ describe('useRoomChannel', () => {
     );
   });
 
+  it('keeps a member whose other tab leaves (one profile, two presences)', async () => {
+    // Two tabs share one presence key (the profile id). The diff for one
+    // tab closing carries the key in `leaves` with the departed meta — the
+    // member is gone only when the key's last meta is gone. Phoenix's
+    // Presence tracks the metas; we sync its authoritative list.
+    renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
+      wrapper: wrapper(store),
+    });
+
+    // Metas carry phx_ref like the real server (syncDiff matches on it).
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': {
+          metas: [
+            { name: 'Brave Otter 42', phx_ref: 'tab-a' },
+            { name: 'Brave Otter 42', phx_ref: 'tab-b' },
+          ],
+        },
+      }),
+    );
+    act(() =>
+      channel.emit('presence_diff', {
+        joins: {},
+        leaves: { 'profile-1': { metas: [{ name: 'Brave Otter 42', phx_ref: 'tab-b' }] } },
+      }),
+    );
+
+    await waitFor(() =>
+      expect(store.getState().room.presence).toEqual({
+        'profile-1': { id: 'profile-1', name: 'Brave Otter 42' },
+      }),
+    );
+  });
+
   it('removes members on presence leaves', async () => {
     renderHook(() => useRoomChannel('room-a', null, null, channelFactory), {
       wrapper: wrapper(store),
@@ -338,6 +372,10 @@ describe('useRoomChannel', () => {
     await waitFor(() => expect(first.joined).toBe(true));
     rerender({ id: 'profile-1', name: 'Brave Otter 42' });
     await waitFor(() => expect(second.joined).toBe(true));
+
+    // The rejoin's presence state arrives first (real server behavior —
+    // phoenix's Presence queues bare diffs until the state lands).
+    act(() => second.emit('presence_state', {}));
 
     act(() =>
       first.emit('presence_diff', {

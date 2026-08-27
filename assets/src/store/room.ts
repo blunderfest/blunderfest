@@ -800,12 +800,19 @@ const roomSlice = createSlice({
         }
       }
     },
-    joinMember(state, action: PayloadAction<PresenceMember>) {
-      state.presence[action.payload.id] = action.payload;
-      state.names[action.payload.id] = action.payload.name;
-    },
-    leaveMember(state, action: PayloadAction<{ id: string }>) {
-      delete state.presence[action.payload.id];
+    /**
+     * Replaces the member list from the presence layer's authoritative
+     * state. The phoenix Presence helper tracks metas per key (one profile
+     * can hold several tabs), so a diff's "leave" of one tab must not drop
+     * the member — only a full sync stays correct. Names persist for
+     * members who left (chat history, durable snapshots).
+     */
+    syncMembers(state, action: PayloadAction<PresenceMember[]>) {
+      state.presence = {};
+      for (const member of action.payload) {
+        state.presence[member.id] = member;
+        state.names[member.id] = member.name;
+      }
     },
   },
 });
@@ -823,8 +830,7 @@ export const {
   setAnalysisProgress,
   applyOp,
   replayOps,
-  joinMember,
-  leaveMember,
+  syncMembers,
 } = roomSlice.actions;
 
 export default roomSlice.reducer;

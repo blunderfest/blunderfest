@@ -187,6 +187,14 @@
   kbd {
     @apply rounded-chip border border-line-strong bg-raised px-1.5 py-0.5 font-mono text-micro;
   }
+
+  /* The UA options popup doesn't reliably follow the page's color-scheme
+     on every platform (a white options list in dark mode) — pin it to the
+     theme. The closed select keeps its own utility classes. */
+  option {
+    background-color: var(--color-panel);
+    color: var(--color-ink);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

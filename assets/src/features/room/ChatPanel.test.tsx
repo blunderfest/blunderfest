@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { describe, expect, it, vi } from 'vitest';
 import ChatPanel from '@/features/room/ChatPanel';
-import roomReducer, { applyOp, joinMember } from '@/store/room';
+import roomReducer, { applyOp, syncMembers } from '@/store/room';
 
 function renderPanel({
   onSend = vi.fn(),
@@ -39,7 +39,7 @@ describe('ChatPanel', () => {
   it('shows messages with author names', () => {
     const { store } = renderPanel();
     act(() => {
-      store.dispatch(joinMember({ id: 'author-1', name: 'Brave Otter 42' }));
+      store.dispatch(syncMembers([{ id: 'author-1', name: 'Brave Otter 42' }]));
       store.dispatch(applyOp(chatOp(1, 'nice tactic!')));
     });
 

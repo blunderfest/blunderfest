@@ -12,8 +12,6 @@ import type {
 import roomReducer, {
   applyOp,
   enterRoom,
-  joinMember,
-  leaveMember,
   leaveRoom,
   replayOps,
   selectCanEdit,
@@ -29,6 +27,7 @@ import roomReducer, {
   setMemberRole,
   setRoles,
   setupPlyFromFen,
+  syncMembers,
 } from './room';
 
 const tree: GameTree = {
@@ -388,9 +387,9 @@ describe('room slice', () => {
 
   it('tracks presence members', () => {
     const member = { id: 'author-1', name: 'Brave Otter 42' };
-    let state = roomReducer(undefined, joinMember(member));
+    let state = roomReducer(undefined, syncMembers([member]));
     expect(state.presence).toEqual({ 'author-1': member });
-    state = roomReducer(state, leaveMember({ id: 'author-1' }));
+    state = roomReducer(state, syncMembers([]));
     expect(state.presence).toEqual({});
   });
 
@@ -892,7 +891,7 @@ describe('room slice', () => {
 
     function ownerState() {
       let state = roomReducer(undefined, setRoles({ 'author-1': 'owner' }));
-      state = roomReducer(state, joinMember(member));
+      state = roomReducer(state, syncMembers([member]));
       return state;
     }
 
@@ -905,8 +904,8 @@ describe('room slice', () => {
       expect(selectPresenter(initialState())).toBeNull();
 
       let state = roomReducer(undefined, setRoles({ 'author-1': 'owner' }));
-      state = roomReducer(state, joinMember(member));
-      state = roomReducer(state, leaveMember({ id: 'author-1' }));
+      state = roomReducer(state, syncMembers([member]));
+      state = roomReducer(state, syncMembers([]));
       expect(selectPresenter(state)).toBeNull();
     });
 
@@ -984,10 +983,15 @@ describe('room slice', () => {
   describe('selectSortedMembers', () => {
     function stateWith(roles: Record<string, MemberRole>): ReturnType<typeof initialState> {
       let state = roomReducer(undefined, setRoles(roles));
-      state = roomReducer(state, joinMember({ id: 'owner', name: 'Proud Raven 65' }));
-      state = roomReducer(state, joinMember({ id: 'collab-b', name: 'Brave Otter 42' }));
-      state = roomReducer(state, joinMember({ id: 'collab-a', name: 'Swift Falcon 17' }));
-      state = roomReducer(state, joinMember({ id: 'viewer', name: 'Zeta Zulu 77' }));
+      state = roomReducer(
+        state,
+        syncMembers([
+          { id: 'owner', name: 'Proud Raven 65' },
+          { id: 'collab-b', name: 'Brave Otter 42' },
+          { id: 'collab-a', name: 'Swift Falcon 17' },
+          { id: 'viewer', name: 'Zeta Zulu 77' },
+        ]),
+      );
       return state;
     }
 

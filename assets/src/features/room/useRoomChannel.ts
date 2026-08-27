@@ -1,13 +1,11 @@
-import type { Channel } from 'phoenix';
+import { type Channel, Presence } from 'phoenix';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { channelFor } from '@/lib/socket';
-import type { MemberRole, Op, PresenceMember } from '@/protocol/ops';
+import type { MemberRole, Op } from '@/protocol/ops';
 import { useAppDispatch } from '@/store';
 import {
   applyOp,
   enterRoom,
-  joinMember,
-  leaveMember,
   leaveRoom,
   replayOps,
   setAnalysisProgress,
@@ -18,17 +16,8 @@ import {
   setRegion,
   setRoles,
   setRoomRegion,
+  syncMembers,
 } from '@/store/room';
-
-type PresenceState = Record<string, { metas: { name?: string }[] }>;
-type PresenceDiff = { joins: PresenceState; leaves: PresenceState };
-
-function membersFrom(state: PresenceState): PresenceMember[] {
-  return Object.entries(state).map(([id, presence]) => ({
-    id,
-    name: presence.metas[0]?.name ?? 'Anonymous',
-  }));
-}
 
 /**
  * Joins `room:<slug>` and mirrors the room into the Redux store.
@@ -111,21 +100,18 @@ export function useRoomChannel(
         dispatch(setPresenter(update.member_id));
       }
     });
-    channel.on('presence_state', (state: PresenceState) => {
+    // Presence: the phoenix helper tracks metas per profile id (one member
+    // can hold several tabs — a diff's "leave" of one tab is not the member
+    // leaving), so the store syncs the authoritative list on every change
+    // instead of applying joins/leaves itself.
+    const presence = new Presence(channel);
+    presence.onSync(() => {
       if (channelRef.current === channel) {
-        membersFrom(state).forEach((member) => {
-          dispatch(joinMember(member));
-        });
-      }
-    });
-    channel.on('presence_diff', (diff: PresenceDiff) => {
-      if (channelRef.current === channel) {
-        membersFrom(diff.joins).forEach((member) => {
-          dispatch(joinMember(member));
-        });
-        Object.keys(diff.leaves).forEach((id) => {
-          dispatch(leaveMember({ id }));
-        });
+        const members = presence.list((id, meta: { metas: { name?: string }[] }) => ({
+          id,
+          name: meta.metas[0]?.name ?? 'Anonymous',
+        }));
+        dispatch(syncMembers(members));
       }
     });
     channel.on(

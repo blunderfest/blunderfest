@@ -100,9 +100,20 @@ export async function unlinkLichess(device: Device): Promise<{ profile: Profile 
 }
 
 /**
- * Re-heals the device identity: the server keeps profiles in memory, so a
- * redeploy wipes them and every stored device starts 401-ing. Drop it and
- * mint a fresh profile.
+ * Dispatched when the device identity was swapped mid-session (a 401
+ * re-heal): the profile the app holds in state is stale and must be
+ * re-read, or the session keeps acting as the OLD profile — e.g. a room
+ * created in that moment is owned by the new device while the channel
+ * joins as the old one, and the creator lands as a viewer in their own
+ * room.
+ */
+export const DEVICE_REHEALED_EVENT = 'blunderfest:device-rehealed';
+
+/**
+ * Re-heals the device identity: a profile whose row is gone (wiped before
+ * durable profiles, pruned later) makes every stored device start 401-ing.
+ * Drop it and mint a fresh profile, then tell the app so the profile state
+ * follows the device.
  */
 async function rehealDevice(): Promise<Device | null> {
   clearDevice();
@@ -110,6 +121,7 @@ async function rehealDevice(): Promise<Device | null> {
     const { profile, secret } = await createProfile();
     const device = { id: profile.id, secret };
     saveDevice(device);
+    window.dispatchEvent(new CustomEvent(DEVICE_REHEALED_EVENT));
     return device;
   } catch {
     return null;

@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ApiError, createProfile, exchangeAuthCode, fetchProfile, type Profile } from '@/lib/api';
+import {
+  ApiError,
+  createProfile,
+  DEVICE_REHEALED_EVENT,
+  exchangeAuthCode,
+  fetchProfile,
+  type Profile,
+} from '@/lib/api';
 import { clearDevice, loadDevice, saveDevice } from '@/lib/device';
 
 type ProfileState =
@@ -40,6 +47,7 @@ export function useProfile(): ProfileState {
   useEffect(() => {
     const controller = new AbortController();
     const signal = controller.signal;
+    let running = false;
 
     async function bootstrap() {
       // A completed OAuth recovery hands us a one-time code first.
@@ -105,9 +113,30 @@ export function useProfile(): ProfileState {
       }
     }
 
-    void bootstrap();
+    /** The running guard around bootstrap (covers every early return). */
+    async function guardedBootstrap() {
+      if (running) {
+        return;
+      }
+      running = true;
+      try {
+        await bootstrap();
+      } finally {
+        running = false;
+      }
+    }
 
-    return () => controller.abort();
+    void guardedBootstrap();
+
+    // The device was re-healed mid-session (a 401 on a device-authed
+    // call): the profile in state is stale — re-bootstrap with the new one.
+    const onReheal = () => void guardedBootstrap();
+    window.addEventListener(DEVICE_REHEALED_EVENT, onReheal);
+
+    return () => {
+      controller.abort();
+      window.removeEventListener(DEVICE_REHEALED_EVENT, onReheal);
+    };
   }, []);
 
   return state;
