@@ -1,6 +1,9 @@
 # ADR-0031: One-sidebar room layout, presence as chrome, mobile tabbed sheet
 
-Status: Accepted (2026-08-27)
+Status: Accepted (2026-08-27); the region-structure decision ("one sidebar",
+"the left rail is deleted") and the Room-tab scope are superseded by
+[ADR-0032](adr-0032-games-rail-as-chrome.md) — presence-as-chrome, the
+timeline strip, mobile-first design, and the anti-clutter contract survive.
 
 ## Context
 

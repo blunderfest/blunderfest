@@ -6,12 +6,12 @@ import { pieceSrc } from '@/components/board';
 import { button, chip, panel, statusDot } from '@/components/ui';
 import Analysis from '@/features/analysis/Analysis';
 import { gameToPgn } from '@/features/analysis/pgnExport';
-import SidebarTabs from '@/features/analysis/SidebarTabs';
 import ImportDialog from '@/features/import/ImportDialog';
 import ChatPanel from '@/features/room/ChatPanel';
+import GameRail from '@/features/room/GameRail';
 import PresenceStrip from '@/features/room/PresenceStrip';
-import RoomTab from '@/features/room/RoomTab';
-import ShareButton from '@/features/room/ShareButton';
+import RegionChip from '@/features/room/RegionChip';
+import RoomCodeChip from '@/features/room/RoomCodeChip';
 import { useRoomChannel } from '@/features/room/useRoomChannel';
 import { emptyGameTree, type GameTree } from '@/lib/api';
 import type {
@@ -443,9 +443,9 @@ export default function RoomView({
       canModerate={myRole === 'owner'}
     />
   );
-  const roomContent = (
-    <RoomTab
-      slug={slug}
+
+  const rail = (
+    <GameRail
       games={games}
       activeGameId={effectiveGameId}
       presenterGameId={presenterGameId}
@@ -453,22 +453,21 @@ export default function RoomView({
       onSelectGame={handleSelectGame}
       onAddGame={() => setShowImport(true)}
       onNewGame={handleNewGame}
-      onLeave={onLeave}
     />
   );
 
   return (
     <div className="flex flex-1 flex-col items-stretch gap-3 p-3">
       {/*
-        The room's app-bar chrome: the Share button (the room's primary
-        action) and the presence strip — ambient "who's here" as header
-        chrome, not a panel. Portaled so the handlers stay local to the
+        The room's app-bar chrome: the code chip (the invite affordance —
+        click copies the code), the presence strip, and the region chip —
+        all chrome, no panels. Portaled so the handlers stay local to the
         room; the slot is optional so tests can render the room bare.
       */}
       {headerSlot !== null &&
         createPortal(
           <>
-            <ShareButton slug={slug} />
+            <RoomCodeChip slug={slug} readOnly={readOnly} />
             {!readOnly && (
               <PresenceStrip
                 members={members}
@@ -482,102 +481,96 @@ export default function RoomView({
                 onSetPresenter={sendPresenter}
               />
             )}
+            <RegionChip />
           </>,
           headerSlot,
         )}
 
       {noGames ? (
-        // No game yet: the call-to-action where the board column will be
-        // (same width, same centered row as the real layout — importing a
-        // game swaps the card for the board without moving the sidebar),
-        // next to the slim sidebar (Chat / Room tabs).
-        <div className="analysis-scope flex flex-1 flex-col items-center gap-4 xl:mx-auto xl:w-fit xl:flex-row xl:items-stretch xl:gap-6">
-          <div className="flex flex-1 items-center justify-center p-8 xl:w-[calc(var(--board-size)+3.25rem)] xl:flex-none">
-            {canEdit ? (
-              <div
-                className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] animate-pop flex-col items-center gap-4 text-center`}
-              >
-                <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
-                  <img src={pieceSrc({ color: 'w', kind: 'p' })} alt="" className="h-10 w-10" />
-                </div>
-                <h2 className="m-0 text-display font-bold">{t('room.emptyTitle')}</h2>
-                <p className="m-0 text-body text-muted">{t('room.emptyOwner')}</p>
-                <div className="flex flex-col gap-2 self-stretch sm:flex-row sm:justify-center sm:self-auto">
-                  <button
-                    type="button"
-                    id="empty-import-button"
-                    className={button({ intent: 'primary' })}
-                    onClick={() => setShowImport(true)}
-                  >
-                    {t('room.emptyImport')}
-                  </button>
-                  <button
-                    type="button"
-                    id="empty-new-game-button"
-                    className={button({ intent: 'secondary' })}
-                    onClick={handleNewGame}
-                  >
-                    {t('room.emptyFresh')}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div
-                className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] flex-col items-center gap-4 text-center`}
-              >
-                <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
-                  <span className="text-3xl text-muted">⏳</span>
-                </div>
-                <h2 className="m-0 text-display font-bold">{t('room.emptyViewerTitle')}</h2>
-                <p id="viewer-waiting" className="m-0 text-body text-muted">
-                  {t('room.viewerWaiting')}
-                </p>
-                <span className={chip({ tone: 'gold' })}>
-                  <span className={statusDot({ tone: 'warn', pulse: true })} />
-                  {t('room.listening')}
-                </span>
-              </div>
-            )}
-          </div>
-          <aside
-            className="flex h-[46dvh] w-full max-w-[min(100%,24rem)] flex-col self-center xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] xl:max-w-none xl:self-auto 2xl:w-[420px]"
-            data-tour="sidebar"
-            data-testid="room-sidebar"
-          >
-            <SidebarTabs
-              tabs={[
-                ...(chatContent !== undefined
-                  ? [
-                      {
-                        id: 'chat',
-                        label: t('chat.title'),
-                        badge: chatBadge,
-                        content: (
-                          <section
-                            className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
-                          >
-                            {chatContent}
-                          </section>
-                        ),
-                      },
-                    ]
-                  : []),
-                {
-                  id: 'room',
-                  label: t('room.panelTitle'),
-                  content: (
-                    <section
-                      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden py-1.5`}
+        // No game yet: the games rail as a slim region and the board CTA
+        // where it will live (ADR-0032 — rail is chrome, never a tab). The
+        // xl:w-fit + mx-auto center the rail/CTA/dock row exactly like the
+        // populated branch's Analysis row does.
+        <div className="analysis-scope flex w-full max-w-full flex-col items-center gap-3 md:gap-6 xl:mx-auto xl:w-fit xl:max-w-none">
+          <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
+            {rail}
+            <div className="flex min-h-0 flex-1 flex-col gap-3">
+              <div className="flex flex-1 flex-col items-center gap-4 xl:flex-row xl:items-stretch xl:gap-6">
+                <div className="flex flex-1 items-center justify-center p-8 xl:w-[calc(var(--board-size)+3.25rem)] xl:flex-none">
+                  {canEdit ? (
+                    <div
+                      className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] animate-pop flex-col items-center gap-4 text-center`}
                     >
-                      {roomContent}
+                      <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
+                        <img
+                          src={pieceSrc({ color: 'w', kind: 'p' })}
+                          alt=""
+                          className="h-10 w-10"
+                        />
+                      </div>
+                      <h2 className="m-0 text-display font-bold">{t('room.emptyTitle')}</h2>
+                      <p className="m-0 text-body text-muted">{t('room.emptyOwner')}</p>
+                      <div className="flex flex-col gap-2 self-stretch sm:flex-row sm:justify-center sm:self-auto">
+                        <button
+                          type="button"
+                          id="empty-import-button"
+                          className={button({ intent: 'primary' })}
+                          onClick={() => setShowImport(true)}
+                        >
+                          {t('room.emptyImport')}
+                        </button>
+                        <button
+                          type="button"
+                          id="empty-new-game-button"
+                          className={button({ intent: 'secondary' })}
+                          onClick={handleNewGame}
+                        >
+                          {t('room.emptyFresh')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] flex-col items-center gap-4 text-center`}
+                    >
+                      <div className="grid h-16 w-16 place-items-center rounded-full border border-line bg-raised">
+                        <span className="text-3xl text-muted">⏳</span>
+                      </div>
+                      <h2 className="m-0 text-display font-bold">{t('room.emptyViewerTitle')}</h2>
+                      <p id="viewer-waiting" className="m-0 text-body text-muted">
+                        {t('room.viewerWaiting')}
+                      </p>
+                      <span className={chip({ tone: 'gold' })}>
+                        <span className={statusDot({ tone: 'warn', pulse: true })} />
+                        {t('room.listening')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {chatContent !== undefined && (
+                  <aside
+                    className="flex h-[46dvh] w-full max-w-[min(100%,24rem)] flex-col self-center xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] xl:max-w-none xl:self-auto 2xl:w-[420px]"
+                    data-tour="sidebar"
+                    data-testid="room-sidebar"
+                  >
+                    {/*
+                      No games yet: the dock is just the chat — a single
+                      panel with a header, not a one-tab strip.
+                    */}
+                    <section
+                      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+                    >
+                      <div className="flex h-9 shrink-0 items-center border-b border-line px-3 text-micro font-semibold uppercase tracking-[0.11em] text-muted">
+                        {t('chat.title')}
+                        {chatBadge}
+                      </div>
+                      {chatContent}
                     </section>
-                  ),
-                },
-              ]}
-              activeId={sidebarTab}
-              onActivate={setSidebarTab}
-            />
-          </aside>
+                  </aside>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <Analysis
@@ -615,7 +608,7 @@ export default function RoomView({
           onSidebarTabChange={setSidebarTab}
           chatTab={chatContent}
           chatBadge={chatBadge}
-          roomTab={roomContent}
+          rail={rail}
         />
       )}
 

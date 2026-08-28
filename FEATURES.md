@@ -32,9 +32,9 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Room chat: messages ride the op log (history replays on join); owners/collaborators write, viewers read along, and the owner can delete messages (ADR-0023); a sidebar tab with an unread badge (ADR-0031)
 - ✅ Presenter/follow mode: cursor + game-selection sync, break-away/re-follow; the owner can hand the mic to any member (ADR-0021)
 - ✅ Multiple games per room: import, new blank game, switch (the Room tab)
-- ✅ Share from the app bar (gold button copies the room link); room code/copy/leave/read-only badge/connection telemetry in the Room tab (ADR-0031)
-- ✅ Read-only demo room at `#/r/chess` (annotated Opera Game), seeded on demand — linked from the home page (ADR-0014)
-- ✅ One-sidebar room layout (ADR-0031): Moves · Review · Reference · Chat · Room tabs; board toolbar with direct icons (flip, comment, find examples, edit position, draw colors, clear); tour landmarks re-pointed
+- ✅ Share the room code from the app bar (mono chip, click to copy; the deep link lives in the address bar); the games rail (switch/import/new) and a header region chip (server + room region + RTT) are chrome; leaving the room is the logo (ADR-0032)
+- ✅ Read-only demo room at `#/r/chess` (annotated Opera Game), seeded on demand — linked from the home page (ADR-0014); its badge sits on the header code chip
+- ✅ The Study Hall room layout (ADR-0032): games rail (chrome) + board column + one tabbed dock (Moves · Review · Chat); engine box pinned in Moves atop the opening-book reference block; tour landmarks re-pointed
 - 💡 Private rooms with owner-approved joins (the `:pending` approval seam already exists — ADR-0006)
 - 💡 Per-member cursor/arrow colors (see who points where)
 - 💡 Share links with preset roles (view-only link vs editor link)

@@ -18,15 +18,16 @@ import type { GameNode, GameTree, LegalMove } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
 
 /**
- * The room's one sidebar (ADR-0031): a single tabbed column — Moves ·
- * Review · Reference · Chat · Room. Moves = the engine box fused atop the
- * move list (lichess's analysis panel). Review = the whole-game list views
- * (Moments | Report) plus Game info as nested tabs. Reference = the
- * per-position book continuations (ADR-0024). Chat and Room arrive as
- * pre-built content from RoomView (their handlers live there); the active
+ * The room's one sidebar (ADR-0031, amended by ADR-0032): a single tabbed
+ * column — Moves · Review · Chat. Moves = the engine box fused atop
+ * the reference block (opening-book continuations for the viewed position,
+ * ADR-0024 as amended) and the move list. Review = the whole-game list
+ * views (Moments | Report) plus Game info as nested tabs. Chat arrives as
+ * pre-built content from RoomView (its handlers live there); the active
  * tab is lifted to RoomView too, so it survives game switches and drives
- * the chat unread badge. The historical-examples browser is a dialog from
- * the board header (ADR-0030), not a tab.
+ * the chat unread badge. Room chrome (code copy, leave, demo badge) is all
+ * in the app bar now — there is no Room tab. The historical-examples
+ * browser is a dialog from the board header (ADR-0030), not a tab.
  *
  * Pure presentation — the orchestrator owns the state; every handler
  * arrives as a prop. At xl the sidebar has a fixed height matching the
@@ -63,7 +64,6 @@ export default function AnalysisSidebar({
   onTabChange,
   chatTab,
   chatBadge,
-  roomTab,
   onNavigate,
   onPlayMove,
   onInsertLine,
@@ -107,8 +107,6 @@ export default function AnalysisSidebar({
   chatTab?: ReactNode;
   /** The unread badge on the Chat tab (RoomView owns the count). */
   chatBadge?: ReactNode;
-  /** The Room tab's content: games + room actions. */
-  roomTab: ReactNode;
   onNavigate: (nodeId: number) => void;
   onPlayMove: (move: LegalMove) => void;
   onInsertLine: (pv: string[]) => void;
@@ -131,8 +129,10 @@ export default function AnalysisSidebar({
       id: 'moves',
       label: t('analysis.moves'),
       content: (
-        // One coherent panel: the engine section on top, the move
-        // list scrolling below — lichess's analysis panel.
+        // One coherent panel: the engine section on top, the reference
+        // block below it (the per-position opening-book continuations,
+        // ADR-0024 as amended), then the move list scrolling below —
+        // lichess's analysis panel.
         <section
           className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
           data-tour="analysis-panel"
@@ -149,6 +149,12 @@ export default function AnalysisSidebar({
             onLinesCount={onEngineLines}
             onInsertLine={canEdit && !editor.editing ? onInsertLine : undefined}
             analyze={engineAnalyze}
+          />
+          <ReferencePanel
+            book={book}
+            fen={current?.fen ?? null}
+            onPlayMove={canPlay && !editor.editing ? onPlayMove : undefined}
+            onHoverMove={onReferenceGhost}
           />
           {linePath !== null && linePathText !== null && (
             // Off-mainline bearings: the path from the branch
@@ -243,22 +249,6 @@ export default function AnalysisSidebar({
         </section>
       ),
     },
-    {
-      id: 'reference',
-      label: t('analysis.referenceTab'),
-      content: (
-        <section
-          className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
-        >
-          <ReferencePanel
-            book={book}
-            fen={current?.fen ?? null}
-            onPlayMove={canPlay && !editor.editing ? onPlayMove : undefined}
-            onHoverMove={onReferenceGhost}
-          />
-        </section>
-      ),
-    },
     ...(chatTab !== undefined
       ? [
           {
@@ -276,18 +266,6 @@ export default function AnalysisSidebar({
           },
         ]
       : []),
-    {
-      id: 'room',
-      label: t('room.panelTitle'),
-      content: (
-        <section
-          className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden py-1.5`}
-          data-tour="room-panel"
-        >
-          {roomTab}
-        </section>
-      ),
-    },
   ];
 
   return (

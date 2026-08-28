@@ -93,3 +93,7 @@ an ambient panel.
   The band becomes a collapsed strip under the board, the viz box folds into
   the Review tab, and the Reference tab docks in the one-sidebar column
   (Moves · Review · Reference · Chat · Room).
+- **Amended by ADR-0032 (2026-08-28):** the Reference tab folds into the
+  Moves tab as the opening-book block (per-continuation rows, corpus
+  statistics when the corpus lands); the dock's set is Moves · Review ·
+  Chat · Room. Per-position reference docking itself is unchanged.

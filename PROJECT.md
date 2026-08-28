@@ -61,6 +61,7 @@ The feature inventory lives in [`FEATURES.md`](FEATURES.md).
 | Chat needs edit rights; owner deletes via op | [ADR-0023](docs/decisions/adr-0023-chat-permissions-and-moderation.md) |
 | Reference tab for per-position data; search is a `#/search` destination | [ADR-0024](docs/decisions/adr-0024-reference-tab-and-search-destination.md) |
 | Room-first; library supports, never the home | [ADR-0025](docs/decisions/adr-0025-room-first-surface-model.md) |
+| Games rail as chrome; the Study Hall redesign IA | [ADR-0032](docs/decisions/adr-0032-games-rail-as-chrome.md) |
 
 For how it all fits together (state model, channel protocol, data flow, testing), see
 [`docs/architecture.md`](docs/architecture.md).
@@ -238,6 +239,27 @@ out (rooms are `:temporary` and revive via load-on-join, so a handover
 protocol would only shave a reconnect the client socket makes anyway;
 no observable gain, see ADR-0028's consequences). Search (milestone 8)
 is the next spike-gated candidate, awaiting the owner.
+
+### Session handoff (2026-08-28 — redesign direction decided, ADR-0032)
+
+**The room redesign went through an external design loop** — a v0 wireframe
+against a prompt kept in `design/DESIGN-PROMPT.md` (hard requirements:
+`#c9a227`, mobile+desktop, light+dark, **games are chrome not a tab**).
+The frozen spec is `design/DESIGN.md`; the local-only v0 source sits under
+`design/v0/extracted/` (gitignored). Critique cycles settled: games rail as
+chrome + fixed header with Add-game, header region chip
+(`● AMS↔CHI 96ms` incl. tooltip), **Room tab deleted** — the app bar's
+mono code chip copies the code, the demo badge rides it, leaving is the
+logo, and the dock is Moves · Review · Chat; engine box pinned in Moves,
+compact text rows (no miniboards), timeline sparkline.
+**ADR-0032 records the decision**; it supersedes the region-structure of
+ADR-0031 (presence-as-chrome, the timeline strip, anti-clutter docking,
+designed mobile survive). DESIGN-SYSTEM.md §5.2/§5.3/§8 rewritten on the
+three-region frame (rail + board column + dock). **Implemented** in
+`assets/` — `GameRail` (desktop rail + mobile strip), `RoomCodeChip` +
+`RegionChip` in the app bar, Room tab deleted, Reference folded into Moves;
+the named acceptance test (rail scrollability at 32 games) passes in the
+browser. 642 frontend + 396 backend tests green.
 
 ### Session handoff (2026-08-27, evening — the one-sidebar redesign, ADR-0031)
 

@@ -35,7 +35,7 @@ describe('Tour', () => {
     expect(screen.queryByText('Who is here')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByText('Share the room')).toBeInTheDocument();
+    expect(screen.getByText('Invite with the code')).toBeInTheDocument();
     expect(screen.getByText(progressText('2 of 2'))).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Done' }));
@@ -63,7 +63,7 @@ describe('Tour', () => {
   it('advances with the arrow keys', () => {
     renderTour();
     fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(screen.getByText('Share the room')).toBeInTheDocument();
+    expect(screen.getByText('Invite with the code')).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'ArrowLeft' });
     expect(screen.getByText('The shared board')).toBeInTheDocument();
   });

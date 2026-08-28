@@ -79,7 +79,7 @@ export default function Analysis({
   onSidebarTabChange,
   chatTab,
   chatBadge,
-  roomTab,
+  rail,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -146,8 +146,8 @@ export default function Analysis({
   chatTab?: ReactNode;
   /** The unread badge on the Chat tab (the room owns the count). */
   chatBadge?: ReactNode;
-  /** The Room tab's content (games + room actions). */
-  roomTab?: ReactNode;
+  /** The games rail (ADR-0032): games as chrome, left of the board. */
+  rail?: ReactNode;
 }) {
   const { t } = useTranslation();
   /**
@@ -858,6 +858,8 @@ export default function Analysis({
       */}
       <div className="flex w-full max-w-full flex-col items-center gap-3 md:gap-6 xl:w-fit">
         <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
+          {rail}
+
           <BoardColumn
             tree={tree}
             current={current}
@@ -935,7 +937,6 @@ export default function Analysis({
             onTabChange={handleSidebarTabChange}
             chatTab={chatTab}
             chatBadge={chatBadge}
-            roomTab={roomTab ?? null}
             onNavigate={navigate}
             onPlayMove={playMove}
             onInsertLine={handleInsertLine}

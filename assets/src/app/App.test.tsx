@@ -235,7 +235,7 @@ describe('App', () => {
       }),
     );
     expect(await screen.findByText('Empty room')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Import games' })).toBeInTheDocument();
+    expect(document.getElementById('add-game-button')).toBeInTheDocument();
   });
 
   it('joins a room from the code input', async () => {
@@ -291,10 +291,9 @@ describe('App', () => {
     );
 
     expect(await screen.findByText('ABCDE')).toBeInTheDocument();
-    // Copy/leave live in the sidebar's Room tab (ADR-0031).
-    fireEvent.click(screen.getByRole('tab', { name: 'Room' }));
-    expect(screen.getByRole('button', { name: 'Leave room' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+    // Code copy is header chrome (ADR-0032); leaving is the logo.
+    expect(screen.getByRole('button', { name: 'Room code' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Blunderfest' })).toBeInTheDocument();
   });
 
   it('waits for the identity before joining the room channel', async () => {
@@ -430,8 +429,7 @@ describe('App', () => {
       </Provider>,
     );
 
-    // In room A, select the second game explicitly (the Room tab lists games).
-    fireEvent.click(await screen.findByRole('tab', { name: 'Room' }));
+    // In room A, select the second game explicitly (the games rail is chrome).
     fireEvent.click(await screen.findByRole('button', { name: 'Carol – Bob' }));
     expect(await screen.findByRole('heading', { name: 'Carol – Bob' })).toBeInTheDocument();
 
@@ -460,9 +458,9 @@ describe('App', () => {
       </Provider>,
     );
 
-    // Leave lives in the sidebar's Room tab (ADR-0031).
-    fireEvent.click(await screen.findByRole('tab', { name: 'Room' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Leave room' }));
+    // Leaving the room is the logo (ADR-0032): it navigates home, which
+    // unmounts the room and drops the channel.
+    fireEvent.click(await screen.findByRole('link', { name: 'Blunderfest' }));
 
     await waitFor(() => expect(window.location.hash).toBe('#/'));
     expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();
@@ -526,9 +524,9 @@ describe('App', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Help' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Take the guided tour' }));
 
-    expect(await screen.findByText('Everything else, in one sidebar')).toBeInTheDocument();
+    expect(await screen.findByText('The games rail')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Skip tour' }));
-    expect(screen.queryByText('Everything else, in one sidebar')).not.toBeInTheDocument();
+    expect(screen.queryByText('The games rail')).not.toBeInTheDocument();
   });
 
   it('does not offer the tour on the landing page', async () => {

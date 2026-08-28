@@ -8,7 +8,9 @@
  *
  * Since ADR-0031 the steps anchor to always-visible chrome (the board, the
  * sidebar strip, the app bar) — never at tab *content*: hidden tab panels
- * stay mounted but measure 0, which would misplace the spotlight.
+ * stay mounted but measure 0, which would misplace the spotlight. ADR-0032
+ * adds the games rail as chrome; the sidebar strip still owns the tabbed
+ * panels.
  */
 export type TourStepDef = {
   target: string | null;
@@ -18,6 +20,11 @@ export type TourStepDef = {
 
 export const roomSteps: TourStepDef[] = [
   { target: '[data-tour="board"]', titleKey: 'tour.boardTitle', bodyKey: 'tour.boardBody' },
+  {
+    target: '[data-tour="games-rail"]',
+    titleKey: 'tour.gamesRailTitle',
+    bodyKey: 'tour.gamesRailBody',
+  },
   {
     target: '[data-tour="sidebar"]',
     titleKey: 'tour.analysisPanelTitle',

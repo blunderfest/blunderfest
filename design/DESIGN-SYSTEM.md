@@ -248,64 +248,70 @@ The mascot is a knight caught mid-blunder — the badge drops below 20px renderi
 
 ### 5.2 Room (`/room/[code]`) — Desktop ≥1280px
 
-Two regions — board column + one tabbed sidebar — **no page scroll** (the
-board row fits the viewport; only lists scroll, inside their panels). The
-left rail is gone (ADR-0031).
+The redesign IA (ADR-0032, supersedes the region structure of ADR-0031):
+three chrome regions — a **games rail** left, the **board column** center, and
+a **tabbed dock** right — **no page scroll** (the board row fits the
+viewport; only lists scroll, inside their regions).
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ [K] Blunderfest        [Share] (avatars: BR SN PA +2)  ? ◐  Brave Otter 42   │
-├───────────────────────────────────────────────┬──────────────────────────────┤
-│ Carlsen – Nepo  1-0        Find examples ⬇ 🔖 │ MOVES REVIEW REF CHAT(2) ROOM│
-│ C88 · Ruy Lopez                               │──────────────────────────────│
-│ ┌─ eval bar ─┐ ┌──────────────────────────┐   │ ENGINE ● · Depth 12  3 ▾ ↗ ◐ │
-│ │            │ │                          │   │ +1.25  Nf3                 │
-│ │  ▓▓▓▓▓▓▓▓▓ │ │                          │   │ +1.31  Bb5 a6 O-O ...      │
-│ │            │ │                          │   │──────────────────────────────│
-│ │  +1.25     │ │                          │   │ 1. e4 e5 2. Nf3 Nc6        │
-│ │  ░░░░░░░░░ │ │                          │   │ 3. Bb5 a6 4. Ba4 Nf6       │
-│ │  (white)   │ │                          │   │ 5. O-O Be7 6. Re1 b5       │
-│ └────────────┘ └──────────────────────────┘   │  (8... Bb7 9. d3 d6)       │
-│                ⏮ ◀ ply 16/20 ▶ ⏭  ⇅ 💬 ⋯      │  ...                         │
-├───────────────────────────────────────────────┴──────────────────────────────┤
-│ ▾ MATERIAL  Layers ▾                                    [Analyze game] ?     │
-│ ▔▔▔▔▔▔▔▔▔▔▔▔▔ timeline strip (sparkline, scrubbable) ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ │
-└──────────────────────────────────────────────────────────────────────────────┘
+│ [K] Blunderfest     [XWRYV ⧉] (avatars: BR SN PA +2)  ● AMS↔CHI 96ms ◐ ?│
+├──────────┬────────────────────────────────────────┬────────────────────────────┤
+│ BOARDS·3 │ Marmot v Heron — Giuoco Pianissimo +0.4│ MOVES REVIEW CHAT(2) ROOM  │
+│ ──────── │ Add game +                             │────────────────────────────│
+│ Marmot ⇒ │ ┌─ eval ──┐ ┌─────────────────────┐   │ ENGINE ● Depth 21 · PV 3   │
+│ Heron ⇒  │ │ ▓▓▓▓▓▓▓▓ │ │                     │   │ +0.8  Nf1 Be6 ...          │
+│ Rook ⇒   │ │ ░░░░░░░░ │ │                     │   │ +0.5  a4 a5 ...            │
+│ (rows:   │ │ +0.4     │ │                     │   │────────────────────────────│
+│  title·  │ └──────────┘ └─────────────────────┘   │ 1. e4 e5 2. Nf3 Nc6       │
+│  eval·   │              ⏮ ◀ 10/22 ▶ ⏭  ⇅ ✎ ◌ ⌁    │ 3. Bb5 a6 ...             │
+│  meta)   │                                          │ ...                       │
+├──────────┴────────────────────────────────────────┴────────────────────────────┤
+│ ▾ Eval · Material · Activity · Clocks            [Analyze game / ─── progress] │
+│ ▔▔▔▔▔▔▔▔▔▔▔▔▔▔ timeline strip (sparkline, scrubbable) ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ │
+└───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **App bar**: brand, then the room's chrome — the gold **Share** button
-  (copies the room link) and the **presence strip** (overlapping avatars,
-  "+N" past four; its popover holds follow/presenter/role actions) — then
-  help, theme, account.
-- **Board column**: title row (players, result, Find examples, export/save
-  icons), opening line, eval bar + board, then ONE toolbar: navigation
-  (⏮ ◀ ply ▶ ⏭) + direct icons: flip, comment, Find examples (a
-  per-position action — it lives here, not in the title row), edit
-  position, the drawing-color dots (always visible), clear drawings.
-  No hint row — the shortcuts dialog and tour carry the keyboard map.
-- **Sidebar** (360px): the single tab strip — Moves · Review · Reference ·
-  Chat · Room. Moves = engine box fused atop the move list. Review nests
-  Moments | Report | Game info. Chat carries an unread-count badge. Room =
-  games list (import/new icon buttons) + room code/copy/leave + region/lag.
-  The active tab survives game switches; all tab panels stay mounted
-  (hidden), so a finished analysis or a chat scrollback never resets.
-- **Timeline band**: a collapsed strip by default — one sparkline-height
-  scrubbable layer with a fixed-order dot per layer beside the chevron
-  (pick a dot to chart that layer — it enables it first if off — with no
-  text label to jump), a Layers popover holding the on/off chips, and the
-  analyze job in the header. The chevron expands the full stacked band
-  (Eval | Material | Activity | Clocks); layer visibility, the picked
-  layer and the expanded state are per-viewer localStorage preferences.
+- **App bar**: brand, then chrome — the **room-code chip** (mono, click to
+  copy the code; read-only rooms wear the demo badge here), the presence
+  strip (avatars, "+N"; popover holds follow/presenter/role), the **region
+  chip** (`● AMS↔CHI 96ms` — tooltip: connected region, room region,
+  measured RTT; it degrades on service failure), theme, help, account.
+  Leaving the room is the logo. No engine "Ready" dot here — engine status
+  lives in the engine box.
+- **Games rail** (≈260px): fixed header "Boards · N" + **Add game** (+) —
+  import/new actions live here; the list below scrolls its own rows
+  (`min-h-0` + `overflow-y-auto`). Rows are text-only: **title + eval
+  badge**, secondary line = opening · move · watching avatars. Position-
+  setup games wear a "position" chip and no eval badge/fake thumb. This is
+  the revived left rail — it is *only* the games inventory; the old
+  four-panel rail (ADR-0031) is not reintroduced.
+- **Board column**: title row (players, export/save) → eval bar + board →
+  one toolbar (navigation + direct icons: flip, comment, find examples,
+  drawing colors, clear, edit position) → timeline strip — unchanged in
+  concept from ADR-0031.
+- **Dock** (≈360–420px): the tab strip now **Moves · Review · Chat**
+  (the reference content lives under Moves as the opening-book block; the
+  Room tab is gone — code/leave/demo are all app-bar chrome). Moves =
+  engine box pinned atop (consistent single home) + move list; Review nests
+  Moments | Report | Game info; Chat carries an unread badge. All tab
+  panels stay mounted (hidden) so analyses and chat scrollbacks survive
+  switches.
+- **Timeline band**: the ADR-0031 strip — collapsed sparkline + layer dots +
+  Layers popover + expand chevron; the analyze job's lifecycle
+  (pre-analyze CTA / live progress / re-analyze) lives in the header of the
+  strip.
 
 ### 5.3 Room — Mobile (<1280px)
 
-A designed layout, not a stack: slim header (Share + avatars + help/theme) →
-one-line truncated title → board + eval bar → the merged toolbar → the
-timeline strip → the same tabbed sidebar as a fixed-height panel (~52dvh,
-internal scroll). The board stays near-visible when a move is tapped in the
-list; the page scrolls at most a little. The board's width formula
-(`min(100vw - 4.75rem, 34rem)`) is rail-free; below xl the sidebar matches
-the board block's width, ≥xl they sit side by side.
+A designed layout, not a stack: slim header (code chip, avatars, **region chip**,
+help/theme) → the games rail as a **horizontal scrollable strip** under the
+header (same row grammar) → one-line truncated title → board + eval bar →
+the merged toolbar → the timeline strip → the same tabbed dock as a
+fixed-height panel (~52dvh, internal scroll). The board stays near-visible
+when a move is tapped in the list; the page scrolls at most a little. The
+rail's rows widen to fixed tiles on the strip; on portrait the dock's tabs
+sit at the bottom with the same order (Moves · Review · Chat).
 
 ### 5.4 Import Dialog
 
@@ -790,39 +796,46 @@ explicitly discard or save — remote updates do not clobber your draft.
 
 ### Room Layout (Desktop ≥1280px)
 
-Board column + sidebar, side by side (`xl:flex-row`, stretched to one row
-height); the timeline strip spans the row below.
+The redesign IA (ADR-0032): three chrome regions side by side
+(`xl:flex-row`, stretched to one row height) — the **games rail** (~260px),
+the **board column**, and the **tabbed dock** (~360–420px). The timeline
+strip spans the row below.
 
-- **Board column**: title row → opening line → eval bar + board → one
-  toolbar (navigation + direct icons). Board size is the shared
-  `--board-size` variable (app.css): viewport-minus-chrome below xl;
-  viewport-HEIGHT-driven at xl so board + toolbar + strip fit without a
-  page scrollbar; the sidebar's xl height derives from it.
-- **Sidebar** (360px): the tab strip owns everything that isn't the board;
-  only the active tab's lists scroll.
-- **No page-level scrolling** at xl — the board row is sized to fit; the
-  strip's collapsed height keeps it that way.
+- **Games rail**: fixed "Boards · N / Add game" header; the list area
+  scrolls (`min-h-0` + `overflow-y-auto`) so game count doesn't clip;
+  on smaller widths it becomes a horizontal strip. Adds no page-scroll
+  burden — the board column sizes itself within the row just as ADR-0031's
+  sidebar did.
+- **Board column**: title row → eval bar + board → one toolbar →
+  timeline strip; `--board-size` in app.css is still viewport-HEIGHT-driven
+  at xl; the dock's xl height derives from it.
+- **Dock**: the tab strip owns what the old sidebar did, minus the games
+  cluster; only the active tab's lists scroll.
+- **No page-level scrolling** at xl — the three regions fit the viewport
+  together.
 
 ### Mobile Layout (<1280px)
 
-Board-first, one thumb-reach surface: header → title → board → toolbar →
-timeline strip → the tabbed sidebar as a fixed-height panel (~52dvh) with
-internal scroll. The same five tabs; nothing is hidden behind desktop-only
-menus.
+Board-first, thumb-reach: header → games rail as a horizontal scroll strip
+→ title → board → toolbar → timeline strip → the tabbed dock as a
+fixed-height panel (~52dvh). The same four tabs (Moves · Review · Chat ·
+Room); nothing is hidden behind desktop-only chrome.
 
-### Extensibility — the docking contract (ADR-0024 + ADR-0031)
+### Extensibility — the docking contract (ADR-0024/0031/0032)
 
-No new permanent panels. A new feature is exactly one of:
+No new permanent panels — and the one rewindable one is a **games rail**,
+never a repeat of the old all-purpose rail. A new feature is exactly one
+of:
 
 | Feature kind           | Docked where                                             |
 | ---------------------- | -------------------------------------------------------- |
-| Per-position reference | The **Reference** sidebar tab (ADR-0024): corpus continuation rows, statistics post-spike; always present, text placeholder when empty. |
+| Per-position reference | A **dock tab** (e.g. Moves' opening-book block): continuation rows, stats post-spike; text placeholders when empty. |
 | Whole-game view        | A **timeline-band layer** (a toggle in the Layers popover; renders only when enabled *and* holding data). |
-| Board action           | The board **toolbar** — direct icon buttons; the drawing colors are always visible (they're frequent). |
-| Game action            | The title row's icon cluster (export, save) or the Find examples launcher. |
-| Room/social            | The **Room** tab (games, invite, leave) or the **presence strip** popover (members). |
+| Board action           | The board **toolbar** — direct icon buttons. |
+| Game action            | The **games rail** (switch/import/new in its fixed header), or the title row's icon cluster (export, save). |
+| Room/social            | **Chrome**: the presence strip popover (members/roles), the header's code chip (copy) + region chip (telemetry); leaving is the logo. |
 | Task flow              | A dialog (import, examples) or a destination (`#/search`, ADR-0024). |
-| Ambient status         | App-bar chrome (avatars, Share) — never a panel.         |
+| Ambient status         | App-bar chrome (avatars, Share, region chip) — never a panel. |
 
 Empty states take no space: placeholders render only inside the active tab;
 band layers render only when enabled and holding data. One tab idiom

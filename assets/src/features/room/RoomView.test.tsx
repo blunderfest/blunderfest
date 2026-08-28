@@ -212,11 +212,6 @@ describe('RoomView', () => {
     fireEvent.click(await screen.findByRole('button', { name: /\d+ members?/ }));
   }
 
-  /** The games list and room actions live in the sidebar's Room tab. */
-  function openRoomTab() {
-    fireEvent.click(screen.getByRole('tab', { name: 'Room' }));
-  }
-
   it('joins the channel and shows the member list once joined', async () => {
     renderRoom();
     expect(channel.joined).toBe(true);
@@ -598,11 +593,10 @@ describe('RoomView', () => {
     channel.joinReturn = { ops: [op], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
-    // The games list (and its import action) lives in the Room tab.
-    await screen.findByRole('tab', { name: 'Room' });
-    openRoomTab();
+    // The games list is chrome (the games rail, ADR-0032).
+    await screen.findByRole('tab', { name: 'Chat' });
     expect(await screen.findByRole('button', { name: 'Alice – Bob' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Import games' }));
+    fireEvent.click(document.getElementById('add-game-button') as HTMLElement);
     expect(screen.getByLabelText('PGN')).toBeInTheDocument();
   });
 
@@ -621,7 +615,6 @@ describe('RoomView', () => {
     expect(await within(list).findByText('Brave Otter 42')).toBeInTheDocument();
     expect(screen.getAllByText('Presenting')).toHaveLength(1);
     // …and the games list marks the presented game with a compact gold dot.
-    openRoomTab();
     expect(screen.getByRole('img', { name: 'Presenting' })).toBeInTheDocument();
   });
 
@@ -685,9 +678,8 @@ describe('RoomView', () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
 
-    // The games actions live in the Room tab (the empty room opens on Chat).
-    openRoomTab();
-    fireEvent.click(screen.getByRole('button', { name: 'New game' }));
+    // The games rail shows the actions directly (empty room included).
+    fireEvent.click(document.getElementById('new-game-button') as HTMLElement);
 
     await waitFor(() => expect(channel.pushes.length).toBe(1));
     const pushed = channel.pushes[0] as {
@@ -725,9 +717,8 @@ describe('RoomView', () => {
     act(() => channel.emit('new_op', setGameOp(1, gameTree)));
     act(() => channel.emit('new_op', setGameOp(2, secondTree, 'game-2')));
 
-    // The games list lives in the Room tab (ADR-0031).
-    await screen.findByRole('tab', { name: 'Room' });
-    openRoomTab();
+    // The games rail is chrome (ADR-0032).
+    await screen.findByRole('tab', { name: 'Chat' });
     expect(await screen.findByRole('button', { name: /Carol – Dave/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Alice – Bob' })).toHaveAttribute(
       'aria-pressed',
@@ -759,8 +750,7 @@ describe('RoomView', () => {
       }),
     );
 
-    await screen.findByRole('tab', { name: 'Room' });
-    openRoomTab();
+    await screen.findByRole('tab', { name: 'Chat' });
     fireEvent.click(await screen.findByRole('button', { name: 'Alice – Bob' }));
 
     await waitFor(() => expect(channel.pushes.length).toBeGreaterThanOrEqual(2));
@@ -799,8 +789,7 @@ describe('RoomView', () => {
     act(() => channel.emit('new_op', setGameOp(2, secondTree, 'game-2')));
     act(() => channel.emit('new_op', selectOp(3, 'game-2')));
 
-    await screen.findByRole('tab', { name: 'Room' });
-    openRoomTab();
+    await screen.findByRole('tab', { name: 'Chat' });
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Carol – Dave/ })).toHaveAttribute(
         'aria-pressed',
@@ -824,8 +813,7 @@ describe('RoomView', () => {
     );
 
     // We follow the presenter (profile-1) to their latest game.
-    await screen.findByRole('tab', { name: 'Room' });
-    openRoomTab();
+    await screen.findByRole('tab', { name: 'Chat' });
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Carol – Dave/ })).toHaveAttribute(
         'aria-pressed',
@@ -1214,11 +1202,6 @@ describe('historical evidence integration', () => {
     );
   }
 
-  /** The games list lives in the sidebar's Room tab (ADR-0031). */
-  function openRoomTab() {
-    fireEvent.click(screen.getByRole('tab', { name: 'Room' }));
-  }
-
   const E4_FEN = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1';
 
   function evidenceCandidate(): import('@/features/historicalEvidence/types').EvidenceCandidate {
@@ -1424,8 +1407,7 @@ describe('historical evidence integration', () => {
         'Same game — already added',
       ),
     );
-    // The new game appears in the Room tab's games list.
-    openRoomTab();
+    // The new game appears in the games rail (ADR-0032).
     expect(await screen.findByRole('button', { name: /Carol – Dave/ })).toBeInTheDocument();
 
     // Opening it starts at the candidate's move (1... d4), not the tail.
@@ -1457,11 +1439,6 @@ describe('per-game cursor memory', () => {
         <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />
       </Provider>,
     );
-  }
-
-  /** The games list lives in the sidebar's Room tab (ADR-0031). */
-  function openRoomTab() {
-    fireEvent.click(screen.getByRole('tab', { name: 'Room' }));
   }
 
   function lineTree(players: [string, string], moveFens: string[]): GameTree {
@@ -1526,8 +1503,7 @@ describe('per-game cursor memory', () => {
 
     // Game A opens at its tail: Nc6 is on c6.
     await waitFor(() => expect(pieceAt('square-c6')).toBe('bn'));
-    // Game switches happen in the Room tab.
-    openRoomTab();
+    // Game switches happen in the games rail (ADR-0032).
     // Walk A back to move 2 (1... e5).
     fireEvent.click(screen.getByTestId('analysis-move-2'));
     expect(pieceAt('square-e5')).toBe('bp');
