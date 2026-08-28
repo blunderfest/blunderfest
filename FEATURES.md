@@ -20,7 +20,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Draw arrows/highlights on the board (`set_annotations` op): right-drag / right-click on desktop, long-press on touch/pen, `h`/`a` + `1`-`4` keys; engine hint arrows render as translucent ghosts so they can't be confused with user drawings; `Esc` or the ⌫ button clears a position's drawings
 - ✅ NAG glyphs (`!`, `?`, `!?`, `?!`, `!!`, `??`) — shown in the move list (they win over analysis marks), set from the annotation popup (the `c` key)
 - ✅ Blunder flags *while dragging* (the milestone-4 engine scope): a dedicated second engine instance live-evals the dragged candidate, the ??/?/?! badge rides the move list's own thresholds
-- 💡 Tablebase (Syzygy) probe for ≤7-piece positions — deferred (ADR-0024); docks in the Reference tab when built, source TBD (a corpus can't provide it)
+- 💡 Tablebase (Syzygy) probe for ≤7-piece positions — deferred (ADR-0024); docks in the Moves tab's opening-book block when built, source TBD (a corpus can't provide it)
 - 💡 Keyboard move input (type SAN/uci) — complements the square grid for keyboard/AT users
 - 💡 Board themes / piece sets
 
@@ -31,7 +31,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - ✅ Presence (who's here, names) and roles: owner / collaborator / viewer, server-enforced edit rights, promote/demote — rendered as the app-bar avatar strip with a management popover (ADR-0031); a member's extra tabs no longer evict them (meta-level presence sync via `phx_ref`)
 - ✅ Room chat: messages ride the op log (history replays on join); owners/collaborators write, viewers read along, and the owner can delete messages (ADR-0023); a sidebar tab with an unread badge (ADR-0031)
 - ✅ Presenter/follow mode: cursor + game-selection sync, break-away/re-follow; the owner can hand the mic to any member (ADR-0021)
-- ✅ Multiple games per room: import, new blank game, switch (the Room tab)
+- ✅ Multiple games per room: import, new blank game, switch — all chrome in the games rail (ADR-0032)
 - ✅ Share the room code from the app bar (mono chip, click to copy; the deep link lives in the address bar); the games rail (switch/import/new) and a header region chip (server + room region + RTT) are chrome; leaving the room is the logo (ADR-0032)
 - ✅ Read-only demo room at `#/r/chess` (annotated Opera Game), seeded on demand — linked from the home page (ADR-0014); its badge sits on the header code chip
 - ✅ The Study Hall room layout (ADR-0032): games rail (chrome) + board column + one tabbed dock (Moves · Review · Chat); engine box pinned in Moves atop the opening-book reference block; tour landmarks re-pointed
@@ -74,9 +74,9 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 - 🚧 Position search: exact *and* similar (shift/substitute/add/remove/color flip), user-configurable weights, weight-agnostic index — its own `#/search` destination, results open into rooms as a game or variation (ADR-0024)
 - 🚧 Result labels decomposed from the winning transformation ("pawn h3→h2", "colors reversed")
 - 🚧 Bulk corpus import (e.g. Millionbase) — a search feature is meaningless on a tiny corpus
-- ✅ Reference tab (ADR-0024): per-position continuation rows that play the move on click (broadcast, like the board) and preview it as a ghost arrow on hover; placeholder when off-book — v0 runs on the static opening book (named continuations, no statistics)
-- 🚧 Reference tab corpus upgrade: games · W/D/B% statistics per continuation (spike-gated)
-- 💡 Reference game lists (who played this position, best-rated games) — extends the Reference tab
+- ✅ Reference (ADR-0024, as amended by ADR-0032): per-position continuation rows in the Moves tab's opening-book block — they play the move on click (broadcast, like the board) and preview it as a ghost arrow on hover; placeholder when off-book — v0 runs on the static opening book (named continuations, no statistics)
+- 🚧 Reference corpus upgrade: games · W/D/B% statistics per continuation (spike-gated)
+- 💡 Reference game lists (who played this position, best-rated games) — extends the Moves opening-book block
 - 💡 Search by player/event/opening across the corpus
 
 ## Identity

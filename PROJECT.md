@@ -59,7 +59,7 @@ The feature inventory lives in [`FEATURES.md`](FEATURES.md).
 | Weight-agnostic search index | [ADR-0010](docs/decisions/adr-0010-weight-agnostic-search-index.md) |
 | External identity accounts (Lichess OAuth) | [ADR-0022](docs/decisions/adr-0022-external-identity-accounts.md) |
 | Chat needs edit rights; owner deletes via op | [ADR-0023](docs/decisions/adr-0023-chat-permissions-and-moderation.md) |
-| Reference tab for per-position data; search is a `#/search` destination | [ADR-0024](docs/decisions/adr-0024-reference-tab-and-search-destination.md) |
+| Reference data in Moves' opening-book block; search is a `#/search` destination | [ADR-0024](docs/decisions/adr-0024-reference-tab-and-search-destination.md) |
 | Room-first; library supports, never the home | [ADR-0025](docs/decisions/adr-0025-room-first-surface-model.md) |
 | Games rail as chrome; the Study Hall redesign IA | [ADR-0032](docs/decisions/adr-0032-games-rail-as-chrome.md) |
 

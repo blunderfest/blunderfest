@@ -1020,9 +1020,10 @@ Adopted after review of `design/analysis1.html` / `analysis2.html`:
 - **Edit mode**: a translucent piece palette column beside the board (white
   pieces over black pieces + an eraser), Clear/Reset/Done actions, and an
   "engine paused" banner replacing the readout while editing.
-- **Sidebar tabs**: panels beyond the move list (the Reference tab,
-  ADR-0024) dock as tabs in the right sidebar. The tab strip renders only
-  when more than one tab exists — no placeholder tabs.
+- **Sidebar tabs**: panels beyond the move list (the Moves opening-book
+  block — per-position continuations, ADR-0024) dock as tabs in the right
+  sidebar. The tab strip renders only when more than one tab exists — no
+  placeholder tabs.
 
 Not adopted: the mockups' top-nav chrome, Material Symbols font icons, and
 Geist/JetBrains Mono (we stay with Open Sans + system mono + unicode glyphs).
