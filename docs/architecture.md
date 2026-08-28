@@ -190,17 +190,26 @@ so clients send nothing and hide the member list.
 - `assets/src/store/room.ts` — Redux Toolkit room store: mirrors the op log
   (`applyOp`, `replayOps`), games map, presence, roles; selectors derive
   presenter, following, can-edit, activity feed.
-- `assets/src/features/room/` — `RoomView` (layout, join/not-found states),
-  `useRoomChannel` (join, op/role handling, `sendOp`/`sendRole`,
-  10s ping loop → `lagMs`; events from superseded channels are ignored;
-  presence is synced through phoenix's `Presence` helper — meta-level
-  diffing by `phx_ref`, so one member's two tabs don't evict each other —
-  and lands in the store as a wholesale `syncMembers` replace),
-  `PresenceStrip` (the app-bar avatar strip + popover with follow /
+- `assets/src/features/room/` — `RoomView` (layout, join/not-found states,
+  the games rail's handlers, the chat unread count, per-game cursor memory),
+  `GameRail` (the games rail, ADR-0032: chrome — fixed "Boards · N" header
+  with the import/new icons, a self-scrolling list of text rows (title +
+  eval + opening + watching avatars), a "position" chip for setup games;
+  vertical rail on desktop, horizontal strip on mobile), `RegionChip` (the
+  app bar's connection telemetry: server region + room region + measured
+  RTT, tooltip with the full sentence; renders nothing until the join reply
+  supplies a region), `useRoomChannel` (join, op/role handling,
+  `sendOp`/`sendRole`, 10s ping loop → `lagMs`; events from superseded
+  channels are ignored; presence is synced through phoenix's `Presence`
+  helper — meta-level diffing by `phx_ref`, so one member's two tabs don't
+  evict each other — and lands in the store as a wholesale `syncMembers`
+  replace), `PresenceStrip` (the app-bar avatar strip + popover with follow /
   presenter handoff / role management — presence is chrome, ADR-0031),
-  `ShareButton` (the app-bar room-link copy), `RoomTab` (games list +
-  code/copy/leave + region/lag), `ChatPanel` (the Chat tab; the unread
-  badge count lives in `RoomView`, which owns the active tab).
+  `ShareButton`'s successor `RoomCodeChip` (the app bar's mono room code —
+  click copies the code; read-only rooms wear the demo badge on it;
+  leaving the room is the logo, ADR-0032), `ChatPanel` (the Chat tab; the
+  unread badge count lives in `RoomView`, which also owns the active tab so
+  it survives game switches).
   `RoomView` keeps a per-game cursor memory (`cursorByGame`, fed by
   Analysis' `onLocalCursor` — every local cursor change, presenter or
   not): Analysis unmounts on each game switch, so without it a switch
@@ -227,10 +236,11 @@ so clients send nothing and hide the member list.
   nav plus direct icons: flip, comment, Find examples (per-position),
   edit position, drawing-color dots, clear — comments),
   `AnalysisSidebar.tsx`
-  (the room's one tabbed column, ADR-0031: Moves | Review | Reference |
-  Chat | Room — Review nests Moments | Report | Game info; Chat/Room
-  content arrives pre-built from RoomView; the active tab is lifted to
-  RoomView), and `TimelineBand.tsx`. `legalMoves.ts`
+  (the room's one tabbed column, ADR-0031 as amended by ADR-0032: Moves |
+  Review | Chat — Moves = engine box pinned atop the opening-book
+  reference block (ADR-0024 as amended) + the move list; Review nests
+  Moments | Report | Game info; Chat content arrives pre-built from
+  RoomView; the active tab is lifted to RoomView), and `TimelineBand.tsx`. `legalMoves.ts`
   (client-side legal moves + resulting fen/status via chess.js — no
   server round trip), `moveList.ts`/`MoveList.tsx`
   (variation tree), `nodeMap.ts` (ply ↔ node index), `BoardControls` (the
