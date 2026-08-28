@@ -1,5 +1,12 @@
 defmodule BlunderfestWeb.RoomSweeperTest do
-  use ExUnit.Case, async: true
+  # NOT async: the sweeper's backstop reasons about the *global* durable
+  # table — `stale_slugs` returns every row, and liveness is checked in the
+  # default scope (cluster-wide in production, ADR-0028). Other async tests
+  # (RoomsTest's durable-mirror block) park fresh rows in that table from
+  # their per-test scopes; a ttl-0 backstop sweep mid-test would see them
+  # as orphans and delete them out from under `wait_load`. Serializing this
+  # module keeps the global-table reasoning honest.
+  use ExUnit.Case, async: false
   alias Blunderfest.Rooms
   alias BlunderfestWeb.Presence
 
