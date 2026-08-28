@@ -80,12 +80,14 @@ export default function HelpPopover({
       {open &&
         createPortal(
           <>
-            {/* Click-outside backdrop. */}
-            <div className="fixed inset-0 z-20" aria-hidden="true" onClick={() => setOpen(false)} />
+            {/* Click-outside backdrop. z-indices sit above the app modals
+                (z-50): the popover portaled to document.body would
+                otherwise render *under* a dialog like Find examples. */}
+            <div className="fixed inset-0 z-[60]" aria-hidden="true" onClick={() => setOpen(false)} />
             <div
               role="dialog"
               aria-label={label}
-              className="fixed z-30 flex w-96 flex-col gap-2 overflow-hidden rounded-panel border border-line bg-panel p-3 shadow-panel"
+              className="fixed z-[70] flex w-96 flex-col gap-2 overflow-hidden rounded-panel border border-line bg-panel p-3 shadow-panel"
               style={{ top, right, maxHeight }}
             >
               <div className="flex shrink-0 items-center justify-between gap-2">
