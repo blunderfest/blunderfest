@@ -272,6 +272,20 @@ protocol would only shave a reconnect the client socket makes anyway;
 no observable gain, see ADR-0028's consequences). Search (milestone 8)
 is the next spike-gated candidate, awaiting the owner.
 
+### Session handoff (2026-08-29 — full v0 convergence, all catalog items)
+
+**Everything on the difference catalog landed.** The layout goes
+full-width (rail pinned to the left edge, dock to the right, centered
+board in the remaining space; no page horizontal overflow — verified at
+1530px). The header subtitle shows "Boards · N" next to the code chip.
+The title row's meta line now names the viewed move too
+("Giuoco Pianissimo · 5... d6"); the games rail marks the presenter
+with avatar initials (G3). The timeline's analyze action keeps its
+stale/Re-analyze label and now shows a thin progress **fill bar** in the
+strip's header row while the job runs (T2) — always reachable. 650
+frontend + 405 backend tests green. The catalog itself lives at
+`docs/v0-vs-live-difference-catalog.md`.
+
 ### Session handoff (2026-08-29 — visual/token convergence onto the v0 palette)
 
 **The study-hall token convergence landed.** ADR-0032 deliberately shipped

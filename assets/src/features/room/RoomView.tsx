@@ -453,6 +453,7 @@ export default function RoomView({
       onSelectGame={handleSelectGame}
       onAddGame={() => setShowImport(true)}
       onNewGame={handleNewGame}
+      presenterName={presenter?.name ?? null}
     />
   );
 
@@ -468,6 +469,9 @@ export default function RoomView({
         createPortal(
           <>
             <RoomCodeChip slug={slug} readOnly={readOnly} />
+            <span className="hidden text-note text-muted sm:inline" data-testid="room-subtitle">
+              {t('room.boardsWithCount', { count: Object.keys(games).length })}
+            </span>
             {!readOnly && (
               <PresenceStrip
                 members={members}
@@ -489,9 +493,9 @@ export default function RoomView({
       {noGames ? (
         // No game yet: the games rail as a slim region and the board CTA
         // where it will live (ADR-0032 — rail is chrome, never a tab). The
-        // xl:w-fit + mx-auto center the rail/CTA/dock row exactly like the
-        // populated branch's Analysis row does.
-        <div className="analysis-scope flex w-full max-w-full flex-col items-center gap-3 md:gap-6 xl:mx-auto xl:w-fit xl:max-w-none">
+        // row stretches full-width; the CTA stays centered in the middle
+        // region so the empty room prefigures the populated layout.
+        <div className="analysis-scope flex w-full max-w-full flex-col gap-3 md:gap-6">
           <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
             {rail}
             <div className="flex min-h-0 flex-1 flex-col gap-3">

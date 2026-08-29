@@ -840,7 +840,7 @@ export default function Analysis({
   return (
     <div
       data-testid="analysis-root"
-      className="analysis-scope flex w-full flex-col items-center gap-3 md:gap-6"
+      className="analysis-scope flex w-full flex-col items-stretch gap-3 md:gap-6"
     >
       {/*
         w-full is load-bearing: without it this wrapper shrink-wraps to its
@@ -853,10 +853,10 @@ export default function Analysis({
         cell and the sidebar become direct children of this column and
         the timeline band slots between them (board → band → sidebar).
         At xl the row re-forms (board and sidebar side by side) and the
-        band drops below it — the w-fit wrapper makes the band exactly
-        as wide as the row above it, both centered as one block.
+        band drops below it. The row stretches full-width (games rail left,
+        dock right — the v0 frame).
       */}
-      <div className="flex w-full max-w-full flex-col items-center gap-3 md:gap-6 xl:w-fit">
+      <div className="flex w-full max-w-full flex-col items-stretch gap-3 md:gap-6">
         <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
           {rail}
 

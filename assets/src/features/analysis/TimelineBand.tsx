@@ -384,7 +384,7 @@ export default function TimelineBand({
           </div>
         </div>
         {analyzeAction !== null && (
-          <div className="flex shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
               id="analyze-game-button"
@@ -392,13 +392,31 @@ export default function TimelineBand({
               disabled={analyzeAction.progress !== null}
               onClick={analyzeAction.onClick}
             >
-              {analyzeAction.progress !== null
-                ? t('room.analyzing', {
-                    done: analyzeAction.progress.done,
-                    total: analyzeAction.progress.total,
-                  })
-                : analyzeAction.label}
+              {analyzeAction.label}
             </button>
+            {/* The analyze job's progress — a fill under the header, not a
+                number: it sweeps while it runs (v0's strip header model). */}
+            {analyzeAction.progress !== null && (
+              <span
+                role="progressbar"
+                aria-label={t('room.analyzing', {
+                  done: analyzeAction.progress.done,
+                  total: analyzeAction.progress.total,
+                })}
+                data-testid="analyze-progress-bar"
+                className="relative h-1.5 w-16 overflow-hidden rounded-full bg-line"
+              >
+                <span
+                  className="absolute inset-y-0 left-0 rounded-full bg-gold transition-[width] duration-300"
+                  style={{
+                    width: `${Math.round(
+                      (analyzeAction.progress.done / Math.max(analyzeAction.progress.total, 1)) *
+                        100,
+                    )}%`,
+                  }}
+                />
+              </span>
+            )}
             <HelpPopover label={t('analysis.aboutAnalyzeGame')}>
               <p className="m-0 text-note text-muted">{t('analysis.helpAnalyzeGameBody')}</p>
             </HelpPopover>

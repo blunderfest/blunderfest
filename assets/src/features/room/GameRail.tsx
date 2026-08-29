@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { button, chip, statusDot } from '@/components/ui';
+import { button, chip } from '@/components/ui';
 import type { GameTree } from '@/lib/api';
 
 /**
@@ -39,7 +39,7 @@ function ImportIcon() {
       aria-hidden="true"
       className="h-4 w-4"
     >
-      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12M12 16.5V3" />
     </svg>
   );
 }
@@ -61,6 +61,16 @@ function NewGameIcon() {
   );
 }
 
+/** Initials for the presenter's sub-row marker. */
+function initialsOf(name: string): string {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((word) => word[0] ?? '')
+    .join('')
+    .toUpperCase();
+}
+
 export default function GameRail({
   games,
   activeGameId,
@@ -69,6 +79,7 @@ export default function GameRail({
   onSelectGame,
   onAddGame,
   onNewGame,
+  presenterName = null,
 }: {
   games: Record<string, GameTree>;
   activeGameId: string | null;
@@ -77,6 +88,7 @@ export default function GameRail({
   onSelectGame: (id: string) => void;
   onAddGame: () => void;
   onNewGame: () => void;
+  presenterName?: string | null;
 }) {
   const { t } = useTranslation();
   const entries = Object.entries(games);
@@ -152,13 +164,15 @@ export default function GameRail({
                   >
                     {gameTitle(tree, t)}
                   </span>
-                  {presenterGameId === id && (
+                  {presenterGameId === id && presenterName !== null && (
                     <span
                       role="img"
                       aria-label={t('room.presenting')}
                       title={t('room.presenting')}
-                      className={`${statusDot({ tone: 'warn' })} ml-auto shrink-0`}
-                    />
+                      className="ml-auto inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-line text-[7px] font-bold text-gold-hi"
+                    >
+                      {initialsOf(presenterName)}
+                    </span>
                   )}
                 </span>
                 <span className="mt-0.5 flex min-w-0 items-center gap-1">

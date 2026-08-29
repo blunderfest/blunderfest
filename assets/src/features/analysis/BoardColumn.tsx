@@ -96,7 +96,7 @@ export default function BoardColumn({
   const evalBarLabel = evalAriaLabel(engineState.eval, t);
 
   return (
-    <div className="order-1 flex max-w-full flex-col items-center gap-4">
+    <div className="order-1 flex min-w-0 flex-1 flex-col items-center gap-4">
       <div className="flex w-full items-baseline justify-between gap-4">
         <h2 className="m-0 min-w-0 truncate text-display font-bold tracking-[-0.02em]">
           {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
@@ -107,15 +107,24 @@ export default function BoardColumn({
         </div>
       </div>
       {/*
-        Fixed-height slot: the board must never shift when the name
-        appears or changes — empty at the start position.
-      */}
+          Meta line: opening (when on book) + the viewed move. Fixed-height
+          slot — empty at the start position, so the board never shifts
+          when a name appears or the cursor moves.
+        */}
       <p
         data-testid="opening-name"
         aria-hidden={opening === null}
         className="m-0 -mt-2 h-[1.125rem] w-full text-note font-semibold text-gold-hi"
       >
-        {opening === null ? '' : `${opening.eco} · ${opening.name}`}
+        {opening === null
+          ? current.ply > 0
+            ? `${t('room.move', { ply: current.ply, san: current.san ?? '' })}`
+            : ''
+          : `${opening.eco} · ${opening.name}${
+              current.ply > 0
+                ? ` · ${t('room.move', { ply: current.ply, san: current.san ?? '' })}`
+                : ''
+            }`}
       </p>
 
       {/*

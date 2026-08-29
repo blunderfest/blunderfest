@@ -12,7 +12,7 @@ import {
 } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
 
-function DownloadIcon() {
+function ExportIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -24,7 +24,7 @@ function DownloadIcon() {
       aria-hidden="true"
       className="h-4 w-4"
     >
-      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
     </svg>
   );
 }
@@ -156,7 +156,7 @@ export default function GameActions({ tree }: { tree: GameTree }) {
         title={t('room.exportPgn')}
         onClick={() => downloadPgn(tree)}
       >
-        <DownloadIcon />
+        <ExportIcon />
       </button>
       <button
         type="button"
