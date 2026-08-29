@@ -386,6 +386,67 @@ describe('RoomView', () => {
     });
   });
 
+  it('keeps the viewed game on the first import while the batch echoes land (no flip-flop)', async () => {
+    const other = { ...gameTree, headers: { White: 'Carol', Black: 'Dave' } };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ trees: [gameTree, other], failures: [] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        ),
+      ),
+    );
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    act(() =>
+      channel.emit('presence_state', {
+        'profile-1': { metas: [{ name: 'Brave Otter 42' }] },
+      }),
+    );
+
+    fireEvent.click(document.getElementById('empty-import-button') as HTMLElement);
+    fireEvent.change(await screen.findByLabelText('PGN'), {
+      target: { value: '1. e4 e5 *\n\n[Event "G2"]\n\n1. d4 d5 *\n' },
+    });
+    await screen.findByText('2 games found');
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+
+    await waitFor(() => expect(channel.pushes.length).toBe(3));
+    const firstId = (channel.pushes[0].payload as { payload: { game_id: string } }).payload.game_id;
+    const secondId = (channel.pushes[1].payload as { payload: { game_id: string } }).payload
+      .game_id;
+    const seqBase = 1;
+
+    // The first echo lands: the viewed game shows it.
+    act(() =>
+      channel.emit('new_op', {
+        seq: seqBase,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'set_game',
+        payload: { game_id: firstId, tree: gameTree },
+      } as Op),
+    );
+    expect(await screen.findByRole('heading', { name: 'Alice – Bob' })).toBeInTheDocument();
+
+    // The second game's echo lands — the view must stay on the first game,
+    // not flip to Carol – Dave (a remount) and back when the re-point lands.
+    act(() =>
+      channel.emit('new_op', {
+        seq: seqBase + 1,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'set_game',
+        payload: { game_id: secondId, tree: other },
+      } as Op),
+    );
+    expect(screen.getByRole('heading', { name: 'Alice – Bob' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Carol – Dave' })).toBeNull();
+  });
+
   it('starts a freshly imported game at the initial position, not the tail', async () => {
     vi.stubGlobal(
       'fetch',

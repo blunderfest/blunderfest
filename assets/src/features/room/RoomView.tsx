@@ -183,6 +183,14 @@ function RoomViewInner({
   /** The game just imported here — it opens on the initial position. */
   const [freshImportId, setFreshImportId] = useState<string | null>(null);
   /**
+   * An in-flight multi-game import: the batch's first game (the pinned view)
+   * plus all its game ids. Pins the importer's view until every echo lands —
+   * `selectPresenterGameId` resolves the presenter's focus to the latest
+   * `set_game`, so without the pin the viewed game (and the board) would flip
+   * once per imported game. Cleared once the last echo is in the store.
+   */
+  const [importBatch, setImportBatch] = useState<{ firstId: string; ids: string[] } | null>(null);
+  /**
    * Added historical games, keyed by room game id → the candidate's ply:
    * when such a game is opened it starts on the candidate's move, so it
    * can be compared against the analyzed position directly.
@@ -224,11 +232,15 @@ function RoomViewInner({
 
   /**
    * The game shown: the presenter's while following, otherwise the viewer's
-   * own selection, defaulting to the first imported game.
+   * own selection, defaulting to the first imported game. During a multi-game
+   * import the importer's view is pinned to the batch's first game
+   * (`importAnchorId`): `selectPresenterGameId` resolves the presenter's
+   * focus to the latest `set_game`, so without the anchor each echo would
+   * flip the viewed game (and remount the board) once per imported game.
    */
   const effectiveGameId = following
     ? (presenterGameId ?? firstGameId)
-    : (activeGameId ?? firstGameId);
+    : (importBatch?.firstId ?? activeGameId ?? firstGameId);
   const game = effectiveGameId === null ? null : (games[effectiveGameId] ?? null);
   const analysis = useRoomSelector((ctx) =>
     effectiveGameId === null ? undefined : ctx.analysis[effectiveGameId],
@@ -245,6 +257,17 @@ function RoomViewInner({
       ? (ctx.annotations[effectiveGameId] ?? NO_ANNOTATIONS)
       : NO_ANNOTATIONS,
   );
+
+  // Release the import pin once every game in the batch has landed in the
+  // store — from then on the normal selection/presenter logic owns the view.
+  useEffect(() => {
+    if (importBatch === null) {
+      return;
+    }
+    if (importBatch.ids.every((id) => id in games)) {
+      setImportBatch(null);
+    }
+  }, [importBatch, games]);
 
   const handleCursorChange = useCallback(
     (nodeId: number) => {
@@ -356,12 +379,13 @@ function RoomViewInner({
   const handleImported = useCallback(
     (trees: GameTree[]) => {
       setFollowOverride(false);
-      let firstId: string | null = null;
+      const ids: string[] = [];
       for (const tree of trees) {
         const gameId = crypto.randomUUID();
-        firstId ??= gameId;
+        ids.push(gameId);
         sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
       }
+      const firstId = ids[0] ?? null;
       if (firstId !== null) {
         // The op log leaves the presenter focus on the LAST set_game — so
         // after a multi-game import the room would watch game N while the
@@ -371,6 +395,11 @@ function RoomViewInner({
         }
         setActiveGameId(firstId);
         setFreshImportId(firstId);
+        // Pin the view to the first game until every echo lands, so the
+        // board doesn't flip (remount) through each imported game in turn.
+        if (trees.length > 1) {
+          setImportBatch({ firstId, ids });
+        }
       }
       setShowImport(false);
     },
