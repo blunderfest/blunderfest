@@ -689,7 +689,8 @@ function RoomViewInner({
             </div>
           ) : (
             <Analysis
-              key={effectiveGameId ?? 'none'}
+              key={slug}
+              gameId={effectiveGameId}
               tree={game}
               presenterId={presenter?.id ?? null}
               selfId={selfId}

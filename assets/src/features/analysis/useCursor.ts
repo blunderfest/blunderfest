@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import type { Entry } from '@/features/analysis/nodeMap';
 import type { GameNode, GameTree } from '@/lib/api';
 
@@ -11,6 +11,7 @@ type CursorState = {
 type CursorAction =
   | { type: 'navigate'; id: number }
   | { type: 'init'; id: number }
+  | { type: 'reset' }
   | { type: 'follow_tail'; lastPlayedId: number | null; lastPlayedParentId: number | null }
   | { type: 'add_pending'; node: GameNode }
   | { type: 'prune_pending'; ids: number[] }
@@ -23,6 +24,12 @@ function cursorReducer(state: CursorState, action: CursorAction): CursorState {
 
     case 'init':
       return state.currentId === null ? { ...state, currentId: action.id } : state;
+
+    // A game switch (Analysis is no longer keyed by game, so the cursor
+    // survives): start the new game fresh — the init below re-opens it at
+    // the right node (memory / last played / tip).
+    case 'reset':
+      return { currentId: null, pending: new Map() };
 
     case 'follow_tail': {
       const { lastPlayedId, lastPlayedParentId } = action;
@@ -87,6 +94,7 @@ function cursorReducer(state: CursorState, action: CursorAction): CursorState {
  *   rejected op is rolled back (`rollbackPending`).
  */
 export function useCursor({
+  gameId,
   tree,
   byId,
   following,
@@ -100,6 +108,12 @@ export function useCursor({
   onLocalCursor,
   onFollowChange,
 }: {
+  /**
+   * The active game. A change resets the cursor (Analysis is keyed on the
+   * room, not the game, so the cursor survives a switch — the new game
+   * re-opens at its own position via the init below).
+   */
+  gameId: string | null;
   tree: GameTree | null;
   byId: Map<number, Entry>;
   following: boolean;
@@ -133,6 +147,14 @@ export function useCursor({
 }) {
   const [state, dispatch] = useReducer(cursorReducer, { currentId: null, pending: new Map() });
   const { currentId, pending } = state;
+
+  // A game switch: reset so the new game re-opens at its own position. Done
+  // during render (adjust-state pattern) so it lands before the init below.
+  const [prevGameId, setPrevGameId] = useState(gameId);
+  if (gameId !== prevGameId) {
+    setPrevGameId(gameId);
+    dispatch({ type: 'reset' });
+  }
 
   /**
    * Start at the requested opening node when the room view has one — the

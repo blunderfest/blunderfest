@@ -54,6 +54,7 @@ import { type BoardAnnotations, setupPlyFromFen } from '@/store/roomStore';
  * provider would re-render everything on every eval tick anyway.
  */
 export default function Analysis({
+  gameId = null,
   tree,
   presenterId = null,
   selfId = null,
@@ -85,6 +86,13 @@ export default function Analysis({
   chatTab,
   chatBadge,
 }: {
+  /**
+   * The active game. Identifies which game the cursor/engine act on; a change
+   * resets the cursor to the new game's opening position (no remount — the
+   * component is keyed on the room, not the game). Optional: a standalone
+   * Analysis (tests, stories) renders one game and never switches.
+   */
+  gameId?: string | null;
   tree: GameTree | null;
   presenterId?: string | null;
   selfId?: string | null;
@@ -231,6 +239,7 @@ export default function Analysis({
   }, []);
 
   const { current, navigate, maxNodeId, addPending, rollbackPending } = useCursor({
+    gameId,
     tree,
     byId,
     following,
