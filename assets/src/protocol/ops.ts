@@ -23,7 +23,7 @@ export type OpBase = {
 export type SetGameOp = OpBase & {
   type: 'set_game';
   payload: {
-    game_id?: string;
+    game_id: string;
     tree: GameTree;
     /**
      * The corpus game id when the import came from the Examples dialog —
@@ -35,6 +35,16 @@ export type SetGameOp = OpBase & {
 
 export type SelectGameOp = OpBase & {
   type: 'select_game';
+  payload: { game_id: string };
+};
+
+/**
+ * Removes a game from the room — the inverse of `set_game`, with the same
+ * edit rights (owner + collaborators). The op log stays append-only: the
+ * game is filtered from view on replay, like a deleted chat (ADR-0023).
+ */
+export type RemoveGameOp = OpBase & {
+  type: 'remove_game';
   payload: { game_id: string };
 };
 
@@ -204,6 +214,7 @@ export type SetAnalysisOp = OpBase & {
 export type Op =
   | SetGameOp
   | SelectGameOp
+  | RemoveGameOp
   | MoveAtPlyOp
   | ReplaceLineOp
   | AddLineOp

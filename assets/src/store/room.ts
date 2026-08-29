@@ -10,15 +10,9 @@ import type {
   MoveAtPlyOp,
   Op,
   PresenceMember,
-  SetGameOp,
   SetNagsOp,
   SetPositionOp,
 } from '@/protocol/ops';
-
-/**
- * `game_id` for `set_game` ops from before games had ids.
- */
-export const LEGACY_GAME_ID = 'main';
 
 export type BoardAnnotations = { arrows: DrawnArrow[]; highlights: DrawnHighlight[] };
 
@@ -415,18 +409,34 @@ function applyOpToGame(
   }
 }
 
-export function gameIdOf(op: SetGameOp): string {
-  return op.payload.game_id ?? LEGACY_GAME_ID;
+/**
+ * Drops a game and every per-game slice keyed by it (annotations, analysis,
+ * last-played). The op log keeps the full history (append-only, ADR-0005) —
+ * the game is simply no longer materialized, and selectors that scan the log
+ * (selection, presenter focus, evidence gids) skip it because its `set_game`
+ * was never applied. Any later re-import works on a fresh tree.
+ */
+function removeGame(state: RoomState, gameId: string): void {
+  delete state.games[gameId];
+  delete state.annotations[gameId];
+  delete state.analysis[gameId];
+  delete state.lastPlayed[gameId];
+  delete state.lastPlayedBy[gameId];
+  if (state.analysisProgress?.gameId === gameId) {
+    state.analysisProgress = null;
+  }
 }
 
 /**
- * The first game imported into the room (lowest-seg `set_game` op) — the
- * default selection for a member who has not chosen a game themselves.
+ * The first game present in the room (lowest-seq `set_game` whose game was
+ * not removed) — the default selection for a member who has not chosen a
+ * game themselves. The log is append-only, so removal (`remove_game`) is
+ * detected by the game being absent from the materialized games map.
  */
 export function selectFirstGameId(state: RoomState): string | null {
   for (const op of state.ops) {
-    if (op.type === 'set_game') {
-      return gameIdOf(op);
+    if (op.type === 'set_game' && state.games[op.payload.game_id] !== undefined) {
+      return op.payload.game_id;
     }
   }
   return null;
@@ -549,21 +559,25 @@ export const selectPresenter = createSelector(
  * dispatch (cursor ops make dispatches frequent).
  */
 export const selectPresenterGameId = createSelector(
-  [(state: RoomState) => state.ops, selectPresenter],
-  (ops, presenter) => {
+  [(state: RoomState) => state.ops, (state: RoomState) => state.games, selectPresenter],
+  (ops, games, presenter) => {
     if (presenter === null) {
       return null;
     }
     let focus: string | null = null;
     let newest: string | null = null;
     for (const op of ops) {
-      if (op.type === 'set_game') {
-        newest = gameIdOf(op);
+      if (op.type === 'set_game' && games[op.payload.game_id] !== undefined) {
+        newest = op.payload.game_id;
         if (op.author === presenter.id) {
-          focus = gameIdOf(op);
+          focus = op.payload.game_id;
         }
       }
-      if (op.type === 'select_game' && op.author === presenter.id) {
+      if (
+        op.type === 'select_game' &&
+        op.author === presenter.id &&
+        games[op.payload.game_id] !== undefined
+      ) {
         focus = op.payload.game_id;
       }
     }
@@ -706,7 +720,10 @@ const roomSlice = createSlice({
           }
         }
         if (op.type === 'set_game') {
-          state.games[gameIdOf(op)] = op.payload.tree;
+          state.games[op.payload.game_id] = op.payload.tree;
+        }
+        if (op.type === 'remove_game') {
+          removeGame(state, op.payload.game_id);
         }
         if (op.type === 'set_annotations') {
           const byNode = state.annotations[op.payload.game_id] ?? {};
@@ -769,15 +786,23 @@ const roomSlice = createSlice({
           );
         }
         if (op.type === 'set_game') {
-          state.games[gameIdOf(op)] = op.payload.tree;
+          state.games[op.payload.game_id] = op.payload.tree;
+        }
+        if (op.type === 'remove_game') {
+          // The game is filtered from view on replay (ADR-0023 pattern):
+          // its set_game/moves are skipped in the loop below because the
+          // tree is gone, so it never materializes.
+          removeGame(state, op.payload.game_id);
         }
         if (op.type === 'set_annotations') {
-          const byNode = state.annotations[op.payload.game_id] ?? {};
-          state.annotations[op.payload.game_id] = byNode;
-          byNode[op.payload.node_id] = {
-            arrows: op.payload.arrows,
-            highlights: op.payload.highlights,
-          };
+          if (state.games[op.payload.game_id] !== undefined) {
+            const byNode = state.annotations[op.payload.game_id] ?? {};
+            state.annotations[op.payload.game_id] = byNode;
+            byNode[op.payload.node_id] = {
+              arrows: op.payload.arrows,
+              highlights: op.payload.highlights,
+            };
+          }
         }
       }
       for (const op of state.ops) {

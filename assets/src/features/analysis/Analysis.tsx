@@ -188,10 +188,12 @@ export default function Analysis({
     () => localStorage.getItem('blunderfest.hints') !== 'off',
   );
   /** How many MultiPV lines the engine reports (1–3, persisted; older
-      stored values above 3 are floored). */
+      stored values above 3 are floored). Defaults to the engine's own
+      MultiPV default (3): an unset localStorage key is `Number(null)` = 0,
+      which clamped to 1 while the engine still showed 3 lines. */
   const [engineLines, setEngineLines] = useState(() => {
     const stored = Number(localStorage.getItem('blunderfest.engineLines'));
-    return Math.min(Math.max(stored, 1), 3);
+    return stored >= 1 && stored <= 3 ? stored : 3;
   });
 
   function setEngineLinesCount(count: number) {

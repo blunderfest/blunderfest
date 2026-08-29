@@ -360,6 +360,7 @@
     "emptyGames": "No games yet",
     "addGame": "Import games",
     "newGame": "New game",
+    "removeGame": "Remove from room",
     "untitledGame": "Untitled game",
     "move": "{{ply}}. {{san}}",
     "comment": "Comment on move {{ply}}: {{text}}",

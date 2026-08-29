@@ -22,6 +22,7 @@ function renderRail(games: Record<string, ReturnType<typeof treeWithHeaders>>, o
     onSelectGame: vi.fn(),
     onAddGame: vi.fn(),
     onNewGame: vi.fn(),
+    onRemoveGame: vi.fn(),
     ...over,
   };
   return { ...render(<GameRail {...props} />), props };
@@ -66,5 +67,23 @@ describe('GameRail', () => {
     renderRail({ g1: treeWithHeaders('Alice', 'Bob') }, { canEdit: false });
     expect(screen.queryByRole('button', { name: 'Import games' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'New game' })).toBeNull();
+  });
+
+  it('removes a game via its row button without selecting it', () => {
+    const { props } = renderRail({
+      g1: treeWithHeaders('Alice', 'Bob'),
+      g2: treeWithHeaders('Carol', 'Dan'),
+    });
+    const removeButtons = screen.getAllByRole('button', { name: 'Remove from room' });
+    expect(removeButtons).toHaveLength(2);
+    fireEvent.click(removeButtons[1]);
+    expect(props.onRemoveGame).toHaveBeenCalledWith('g2');
+    // The remove click must not also select the game being removed.
+    expect(props.onSelectGame).not.toHaveBeenCalled();
+  });
+
+  it('hides the remove button from read-only viewers', () => {
+    renderRail({ g1: treeWithHeaders('Alice', 'Bob') }, { canEdit: false });
+    expect(screen.queryByRole('button', { name: 'Remove from room' })).toBeNull();
   });
 });

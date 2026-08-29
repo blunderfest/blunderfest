@@ -44,6 +44,23 @@ function ImportIcon() {
   );
 }
 
+function RemoveIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="h-3.5 w-3.5"
+    >
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
 function NewGameIcon() {
   return (
     <svg
@@ -79,6 +96,7 @@ export default function GameRail({
   onSelectGame,
   onAddGame,
   onNewGame,
+  onRemoveGame,
   presenterName = null,
 }: {
   games: Record<string, GameTree>;
@@ -88,6 +106,7 @@ export default function GameRail({
   onSelectGame: (id: string) => void;
   onAddGame: () => void;
   onNewGame: () => void;
+  onRemoveGame: (id: string) => void;
   presenterName?: string | null;
 }) {
   const { t } = useTranslation();
@@ -143,52 +162,71 @@ export default function GameRail({
         ) : (
           entries.map(([id, tree]) => {
             const active = id === activeGameId;
+            const presenting = presenterGameId === id && presenterName !== null;
             return (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={active}
-                aria-current={active ? 'true' : undefined}
-                onClick={() => onSelectGame(id)}
-                className={`relative shrink-0 rounded-control border px-2 py-1.5 text-left transition-colors max-xl:w-44 ${
-                  active
-                    ? 'border-gold-hi/60 bg-gold/10'
-                    : 'border-transparent hover:border-line hover:bg-raised'
-                }`}
-              >
-                <span className="flex min-w-0 items-baseline gap-1.5">
-                  <span
-                    className={`min-w-0 truncate text-ui font-semibold ${
-                      active ? 'text-ink' : 'text-muted'
-                    }`}
-                  >
-                    {gameTitle(tree, t)}
-                  </span>
-                  {presenterGameId === id && presenterName !== null && (
+              <div key={id} className="group relative shrink-0 max-xl:w-44">
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  aria-current={active ? 'true' : undefined}
+                  onClick={() => onSelectGame(id)}
+                  className={`flex w-full flex-col rounded-control border px-2 py-1.5 text-left transition-colors ${
+                    active
+                      ? 'border-gold-hi/60 bg-gold/10'
+                      : 'border-transparent hover:border-line hover:bg-raised'
+                  }`}
+                >
+                  <span className="flex min-w-0 items-baseline gap-1.5">
                     <span
-                      role="img"
-                      aria-label={t('room.presenting')}
-                      title={t('room.presenting')}
-                      className="ml-auto inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-line text-[7px] font-bold text-gold-hi"
+                      className={`min-w-0 truncate text-ui font-semibold ${
+                        active ? 'text-ink' : 'text-muted'
+                      }`}
                     >
-                      {initialsOf(presenterName)}
+                      {gameTitle(tree, t)}
                     </span>
-                  )}
-                </span>
-                <span className="mt-0.5 flex min-w-0 items-center gap-1">
-                  {isSetup(tree) && (
-                    <span className={chip({ tone: 'outline' })}>{t('room.positionChip')}</span>
-                  )}
-                  <span className="min-w-0 truncate text-micro text-faint">
-                    {tree.headers.Opening ?? tree.headers.ECO ?? ''}
+                    {presenting && (
+                      <span
+                        role="img"
+                        aria-label={t('room.presenting')}
+                        title={t('room.presenting')}
+                        className="ml-auto inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-line text-[7px] font-bold text-gold-hi"
+                      >
+                        {initialsOf(presenterName)}
+                      </span>
+                    )}
+                    {/* Reserve the remove button's slot on desktop so the
+                        title never reflows when it appears on hover. */}
+                    {canEdit && !presenting && (
+                      <span className="ml-auto w-4 shrink-0 max-xl:hidden" />
+                    )}
                   </span>
-                  {tree.result !== '*' && (
-                    <span className={`${chip({ tone: 'outline' })} ml-auto shrink-0`}>
-                      {tree.result}
+                  <span className="mt-0.5 flex min-w-0 items-center gap-1">
+                    {isSetup(tree) && (
+                      <span className={chip({ tone: 'outline' })}>{t('room.positionChip')}</span>
+                    )}
+                    <span className="min-w-0 truncate text-micro text-faint">
+                      {tree.headers.Opening ?? tree.headers.ECO ?? ''}
                     </span>
-                  )}
-                </span>
-              </button>
+                    {tree.result !== '*' && (
+                      <span className={`${chip({ tone: 'outline' })} ml-auto shrink-0`}>
+                        {tree.result}
+                      </span>
+                    )}
+                  </span>
+                </button>
+                {canEdit && (
+                  <button
+                    type="button"
+                    aria-label={t('room.removeGame')}
+                    title={t('room.removeGame')}
+                    data-testid={`remove-game-${id}`}
+                    onClick={() => onRemoveGame(id)}
+                    className="absolute top-1 right-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-faint opacity-0 transition-opacity hover:bg-bad/20 hover:text-bad-hi focus-visible:opacity-100 group-hover:opacity-100"
+                  >
+                    <RemoveIcon />
+                  </button>
+                )}
+              </div>
             );
           })
         )}

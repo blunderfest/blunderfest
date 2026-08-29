@@ -343,6 +343,26 @@ export default function RoomView({
     }
   }
 
+  /**
+   * Removes a game from the room (owner/collaborators). The store drops the
+   * tree when the echo lands; here we only fix the local selection — a
+   * non-presenter viewing the removed game falls back to the next one so the
+   * board never shows a game that is gone. Followers of the presenter get
+   * the same fallback from `selectPresenterGameId`/`selectFirstGameId`,
+   * which scan the applied log.
+   */
+  function handleRemoveGame(gameId: string) {
+    if (!canEdit) {
+      return;
+    }
+    sendOp({ type: 'remove_game', payload: { game_id: gameId } });
+    if (activeGameId === gameId) {
+      const fallback = Object.keys(games).find((id) => id !== gameId) ?? null;
+      setActiveGameId(fallback);
+      setFreshImportId((current) => (current === gameId ? null : current));
+    }
+  }
+
   // The Examples dialog's "add to room": the historical game joins the
   // room as another game without stealing the view — the adder may want
   // to collect several games before looking at any of them. The game
@@ -453,6 +473,7 @@ export default function RoomView({
       onSelectGame={handleSelectGame}
       onAddGame={() => setShowImport(true)}
       onNewGame={handleNewGame}
+      onRemoveGame={handleRemoveGame}
       presenterName={presenter?.name ?? null}
     />
   );
@@ -493,14 +514,18 @@ export default function RoomView({
       {noGames ? (
         // No game yet: the games rail as a slim region and the board CTA
         // where it will live (ADR-0032 — rail is chrome, never a tab). The
-        // row stretches full-width; the CTA stays centered in the middle
-        // region so the empty room prefigures the populated layout.
+        // row matches the populated layout (rail | flex-1 middle | dock), and
+        // the middle slot is the same flex-1 the board column takes — NOT a
+        // width derived from --board-size (that var is viewport-height-driven
+        // and under-measures the slot, which shoved the dock ~200px left of
+        // its populated position). The CTA centers in the middle region so
+        // the empty room prefigures the populated layout.
         <div className="analysis-scope flex w-full max-w-full flex-col gap-3 md:gap-6">
           <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
             {rail}
-            <div className="flex min-h-0 flex-1 flex-col gap-3">
-              <div className="flex flex-1 flex-col items-center gap-4 xl:flex-row xl:items-stretch xl:gap-6">
-                <div className="flex flex-1 items-center justify-center p-8 xl:w-[calc(var(--board-size)+3.25rem)] xl:flex-none">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+              <div className="flex min-w-0 flex-1 flex-col items-center gap-4 xl:flex-row xl:items-stretch xl:gap-6">
+                <div className="flex min-w-0 flex-1 items-center justify-center p-8">
                   {canEdit ? (
                     <div
                       className={`${panel({ layout: 'none', pad: 'lg' })} flex w-full max-w-[min(100%,24rem)] animate-pop flex-col items-center gap-4 text-center`}

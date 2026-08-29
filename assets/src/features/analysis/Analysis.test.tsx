@@ -990,6 +990,22 @@ describe('engine box', () => {
     expect(localStorage.getItem('blunderfest.engineLines')).toBe('3');
     await waitFor(() => expect(engine.setMultiPV).toHaveBeenCalledWith(3));
   });
+
+  it('defaults to the engine’s 3 lines when no preference is stored', async () => {
+    // Regression: a fresh join (unset key → Number(null) = 0) clamped to 1
+    // while the engine still showed its MultiPV default of 3.
+    const engine = {
+      init: vi.fn(() => Promise.resolve()),
+      analyze: vi.fn(async () => RESULT),
+      terminate: vi.fn(),
+      setMultiPV: vi.fn(),
+    };
+    render(<Analysis tree={tree} engine={engine} />);
+
+    const select = (await screen.findByTestId('engine-lines-select')) as HTMLSelectElement;
+    expect(select.value).toBe('3');
+    await waitFor(() => expect(engine.setMultiPV).toHaveBeenCalledWith(3));
+  });
 });
 
 describe('engine analysis', () => {

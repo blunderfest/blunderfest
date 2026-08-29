@@ -15,7 +15,7 @@ defmodule Blunderfest.Ops do
   @max_tree_nodes 2_000
   @max_tree_depth 1_500
 
-  @edit_op_types ~w(set_game move_at_ply replace_line add_line comment_at_ply set_annotations set_nags set_position)
+  @edit_op_types ~w(set_game remove_game move_at_ply replace_line add_line comment_at_ply set_annotations set_nags set_position)
 
   @square ~r/^[a-h][1-8]$/
   @color ~r/^#[0-9a-f]{6}$/
@@ -57,6 +57,7 @@ defmodule Blunderfest.Ops do
     # a 256 KB op can otherwise nest deep enough to overflow a client's call
     # stack on replay. `evidence_gid` marks Examples-tab imports (optional).
     with %{"tree" => tree} <- payload,
+         :ok <- string_field(payload, "game_id"),
          :ok <- optional_int(payload, "evidence_gid") do
       if valid_game_tree?(tree), do: :ok, else: {:error, :invalid_op}
     else
@@ -65,6 +66,11 @@ defmodule Blunderfest.Ops do
   end
 
   defp check_type("select_game", payload), do: string_field(payload, "game_id")
+
+  # Removing a game from the room: the inverse of `set_game`, same edit
+  # rights (owner + collaborators). The op log stays append-only — the game
+  # is filtered from view on replay, like deleted chat (ADR-0023).
+  defp check_type("remove_game", payload), do: string_field(payload, "game_id")
 
   defp check_type("set_cursor", payload), do: int_field(payload, "node_id")
 

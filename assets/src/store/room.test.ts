@@ -361,14 +361,6 @@ describe('room slice', () => {
     expect(selectFirstGameId(state)).toBe('game-1');
   });
 
-  it('set_game ops without a game_id land in the legacy game', () => {
-    const legacy = { ...setGameOp(1, 'Alice') };
-    delete legacy.payload.game_id;
-    const state = roomReducer(undefined, applyOp(legacy));
-    expect(state.games.main.headers.White).toBe('Alice');
-    expect(selectFirstGameId(state)).toBe('main');
-  });
-
   it('replayOps rebuilds games from the op log', () => {
     const state = roomReducer(
       undefined,
@@ -515,18 +507,9 @@ describe('room slice', () => {
       });
     });
 
-    it('ignores move ops for unknown games and legacy payloads without game_id', () => {
-      let state = roomReducer(undefined, applyOp(moveAtPly(1, 3, { game_id: 'nope' })));
+    it('ignores move ops for unknown games', () => {
+      const state = roomReducer(undefined, applyOp(moveAtPly(1, 3, { game_id: 'nope' })));
       expect(state.games).toEqual({});
-
-      const legacy = moveAtPly(2, 3) as Op & { payload: { game_id?: string } };
-      delete legacy.payload.game_id;
-      state = roomReducer(undefined, applyOp(playedGameOp(1)));
-      state = roomReducer(state, applyOp(legacy));
-
-      const game = state.games['game-1'];
-      expect(game.mainline_ply_count).toBe(2);
-      expect(game.node_count).toBe(3);
     });
   });
 
@@ -774,6 +757,55 @@ describe('room slice', () => {
     });
   });
 
+  describe('remove_game transforms', () => {
+    function removeGameOp(seq: number, gameId: string, author = 'author-1'): Op {
+      return {
+        seq,
+        author,
+        ts: '2026-01-01T00:00:00Z',
+        type: 'remove_game',
+        payload: { game_id: gameId },
+      };
+    }
+
+    it('drops the game and its per-game state; the op log keeps the history', () => {
+      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice', 'game-1')));
+      state = roomReducer(state, applyOp(setGameOp(2, 'Bob', 'game-2')));
+      state = roomReducer(state, applyOp(moveOp(3, 1, 'game-1')));
+      state = roomReducer(state, applyOp(removeGameOp(4, 'game-1')));
+
+      expect(state.games['game-1']).toBeUndefined();
+      expect(state.games['game-2']).toBeDefined();
+      expect(state.lastPlayed['game-1']).toBeUndefined();
+      // The ops themselves stay in the log — removal is a view filter.
+      expect(state.ops.map((op) => op.type)).toContain('remove_game');
+      // The next remaining game becomes the default selection.
+      expect(selectFirstGameId(state)).toBe('game-2');
+    });
+
+    it('keeps the game removed on replay (the filter survives a rejoin)', () => {
+      const state = roomReducer(
+        undefined,
+        replayOps([
+          setGameOp(1, 'Alice', 'game-1'),
+          setGameOp(2, 'Bob', 'game-2'),
+          removeGameOp(3, 'game-1'),
+        ]),
+      );
+
+      expect(state.games['game-1']).toBeUndefined();
+      expect(state.games['game-2']).toBeDefined();
+      expect(selectFirstGameId(state)).toBe('game-2');
+    });
+
+    it('ignores a remove_game naming an unknown game', () => {
+      let state = roomReducer(undefined, applyOp(setGameOp(1, 'Alice', 'game-1')));
+      state = roomReducer(state, applyOp(removeGameOp(2, 'nope')));
+
+      expect(state.games['game-1']).toBeDefined();
+    });
+  });
+
   describe('set_nags transforms', () => {
     function setNags(seq: number, nodeId: number, nags: number[], gameId = 'game-1'): Op {
       return {
@@ -918,7 +950,8 @@ describe('room slice', () => {
       let state = ownerState();
       state = roomReducer(state, applyOp(setGameOp(1, 'Alice')));
       expect(selectPresenterGameId(state)).toBe('game-1');
-      state = roomReducer(state, applyOp(selectOp(2, 'game-2')));
+      state = roomReducer(state, applyOp(setGameOp(2, 'Bob', 'game-2')));
+      state = roomReducer(state, applyOp(selectOp(3, 'game-2')));
       expect(selectPresenterGameId(state)).toBe('game-2');
     });
 

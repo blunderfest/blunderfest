@@ -448,7 +448,7 @@ describe('RoomView', () => {
       author: 'profile-1',
       ts: '2026-01-01T00:00:00Z',
       type: 'set_game',
-      payload: { tree: gameTree },
+      payload: { game_id: 'game-1', tree: gameTree },
     };
     act(() => channel.emit('new_op', op));
 
@@ -482,6 +482,39 @@ describe('RoomView', () => {
     expect(channel.pushes).toEqual([
       { event: 'op', payload: { type: 'chat', payload: { text: 'yes!' } } },
     ]);
+  });
+
+  it('removes the viewed game via its rail button and falls back to the next game', async () => {
+    channel.joinReturn = {
+      ops: [setGameOp(1, gameTree, 'game-1'), setGameOp(2, followTree, 'game-2')],
+      roles: { 'profile-1': 'owner' },
+    };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    // game-1 is the default selection; its remove button carries its id.
+    await screen.findByTestId('remove-game-game-1');
+
+    fireEvent.click(await screen.findByTestId('remove-game-game-1'));
+    // The removal is one op; the board updates only when the echo lands.
+    await waitFor(() =>
+      expect(channel.pushes).toContainEqual({
+        event: 'op',
+        payload: { type: 'remove_game', payload: { game_id: 'game-1' } },
+      }),
+    );
+
+    act(() =>
+      channel.emit('new_op', {
+        seq: 3,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'remove_game',
+        payload: { game_id: 'game-1' },
+      } as Op),
+    );
+
+    // game-1 is gone from the rail and the view fell back to game-2.
+    await waitFor(() => expect(screen.queryByTestId('remove-game-game-1')).toBeNull());
+    expect(screen.getByTestId('remove-game-game-2')).toBeInTheDocument();
   });
 
   it('hides the chat input for viewers — they read along (ADR-0023)', async () => {
