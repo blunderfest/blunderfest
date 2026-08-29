@@ -886,7 +886,11 @@ describe('RoomView', () => {
     const gameId = pushed.payload.payload.game_id;
     expect(gameId).toEqual(expect.any(String));
     expect(pushed.payload.payload.tree).toEqual(
-      expect.objectContaining({ headers: {}, result: '*', node_count: 1 }),
+      expect.objectContaining({
+        headers: { Title: 'Game 1' },
+        result: '*',
+        node_count: 1,
+      }),
     );
 
     act(() =>
@@ -905,6 +909,23 @@ describe('RoomView', () => {
       'true',
     );
     expect(pieceAt('square-e2')).toBe('wp');
+  });
+
+  it('numbers new games by the room size (Game N = count + 1)', async () => {
+    channel.joinReturn = {
+      ops: [setGameOp(1, gameTree, 'g1'), setGameOp(2, secondTree, 'g2')],
+      roles: { 'profile-1': 'owner' },
+    };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    act(() => channel.emit('presence_state', { 'profile-1': { metas: [{ name: 'Me' }] } }));
+    await screen.findByRole('button', { name: /Alice – Bob/ });
+
+    // A new game gets count + 1 = 3 (two already in the room).
+    fireEvent.click(document.getElementById('new-game-button') as HTMLElement);
+    const pushed = channel.pushes.find(
+      (p) => (p.payload as { type?: string }).type === 'set_game',
+    ) as { payload: { payload: { tree: GameTree } } } | undefined;
+    expect(pushed?.payload.payload.tree.headers.Title).toBe('Game 3');
   });
 
   it('adds a second game without yanking the current view', async () => {

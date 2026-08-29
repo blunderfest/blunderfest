@@ -444,7 +444,14 @@ function RoomViewInner({
   function handleNewGame() {
     setFollowOverride(false);
     const gameId = crypto.randomUUID();
-    const tree = emptyGameTree();
+    // Auto-numbered default name: "Game N" where N = (games in room) + 1,
+    // counting pending (not-yet-echoed) creates too. Written as the tree's
+    // initial Title header — no numbering lives anywhere else.
+    const number = gameEntries.length + pendingTrees.size + 1;
+    const tree = {
+      ...emptyGameTree(),
+      headers: { Title: `${t('room.unnamedGame')} ${number}` },
+    };
     sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
     setPendingTrees((current) => new Map(current).set(gameId, tree));
     setActiveGameId(gameId);

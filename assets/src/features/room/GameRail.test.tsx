@@ -91,14 +91,17 @@ describe('GameRail', () => {
     expect(screen.queryByRole('button', { name: 'Remove from room' })).toBeNull();
   });
 
-  it('derives stable numbered labels for untitled games (Game 1, Game 2)', () => {
+  it('keeps title- and player-named games stable; headerless trees fall back to "Untitled game"', () => {
+    const titled = treeWithHeaders('', '');
+    titled.headers.Title = 'Custom name';
     renderRail({
-      g1: treeWithHeaders('', ''),
+      g1: titled,
       g2: treeWithHeaders('Alice', 'Bob'),
       g3: treeWithHeaders('', ''),
     });
-    expect(screen.getByText('Game 1')).toBeInTheDocument();
-    expect(screen.getByText('Game 2')).toBeInTheDocument();
+    expect(screen.getByText('Custom name')).toBeInTheDocument();
+    expect(screen.getByText('Alice – Bob')).toBeInTheDocument();
+    expect(screen.getByText('Untitled game')).toBeInTheDocument();
   });
 
   it('falls back to Event when there are no players or custom title', () => {

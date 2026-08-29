@@ -191,16 +191,10 @@ export default function GameRail({
           entries.map(([id, tree]) => {
             const active = id === activeGameId;
             const presenting = presenterGameId === id && presenterName !== null;
-            // "Game N" counts only untitled games before this one, so the
-            // number is stable when a player-named game exists (deterministic
-            // for every client by the set_game order).
-            const untitledIndex = entries
-              .slice(0, entries.findIndex(([eId]) => eId === id) + 1)
-              .filter(([, eTree]) => {
-                const t2 = eTree.headers;
-                return !(t2.Title?.trim() || t2.White || t2.Black || t2.Event?.trim());
-              }).length;
-            const title = gameTitle(tree, t('room.unnamedGame'), untitledIndex);
+            // Names are baked at creation ("Game N" written as the Title
+            // header); the rail only derives a fallback for headerless
+            // imports.
+            const title = gameTitle(tree, t('room.untitledGame'));
             return (
               <div key={id} className="group relative shrink-0 max-xl:w-44">
                 <button

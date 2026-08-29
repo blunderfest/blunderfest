@@ -101,7 +101,7 @@ export default function GameList({
           <p className="m-0 p-2 text-ui text-faint">{t('room.emptyGames')}</p>
         ) : (
           <ul className="m-0 flex flex-col gap-0.5 p-0">
-            {entries.map(([id, tree], index) => (
+            {entries.map(([id, tree]) => (
               <li key={id}>
                 <button
                   type="button"
@@ -111,7 +111,7 @@ export default function GameList({
                   onClick={() => onSelectGame(id)}
                 >
                   <span className="min-w-0 flex-1 truncate">
-                    {gameTitle(tree, t('room.unnamedGame'), index + 1)}
+                    {gameTitle(tree, t('room.untitledGame'))}
                   </span>
                   {presenterGameId === id && (
                     <span
