@@ -1,18 +1,17 @@
-import { configureStore } from '@reduxjs/toolkit';
 import { render, screen } from '@testing-library/react';
-import { Provider } from 'react-redux';
 import { describe, expect, it } from 'vitest';
 import RegionChip from '@/features/room/RegionChip';
-import roomReducer, { setRegion, setRoomRegion } from '@/store/room';
+import { RoomStoreProvider } from '@/store/roomContext';
+import { createRoomStore } from '@/store/roomStore';
 
 function renderChip(region: string | null, roomRegion: string | null = null) {
-  const store = configureStore({ reducer: { room: roomReducer } });
-  store.dispatch(setRegion(region));
-  store.dispatch(setRoomRegion(roomRegion));
+  const store = createRoomStore('test-room');
+  store.send({ type: 'region.set', value: region });
+  store.send({ type: 'roomRegion.set', value: roomRegion });
   return render(
-    <Provider store={store}>
+    <RoomStoreProvider value={store}>
       <RegionChip />
-    </Provider>,
+    </RoomStoreProvider>,
   );
 }
 

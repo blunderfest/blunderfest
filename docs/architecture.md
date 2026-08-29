@@ -187,9 +187,21 @@ so clients send nothing and hide the member list.
   device secret in `localStorage` (`device.ts`,
   `blunderfest.device`), profile hook (`useProfile.ts`), room code helpers
   (`roomCode.ts`), Phoenix socket wiring (`socket.ts`).
-- `assets/src/store/room.ts` — Redux Toolkit room store: mirrors the op log
-  (`applyOp`, `replayOps`), games map, presence, roles; selectors derive
-  presenter, following, can-edit, activity feed.
+- `assets/src/store/roomStore.ts` — the room store, an `@xstate/store`: the
+  `Op` union is its event type, so ops are sent directly
+  (`store.send(op)`) rather than wrapped in adapter actions; join-time replay
+  folds the log through the same `store.transition` used live, so replay and
+  live apply share one code path. One store per room (`createRoomStore`),
+  holding the op-log projection (games, annotations, analysis, lastPlayed)
+  plus ephemeral UI state (presence, roles, regions, lag, presenter) in a
+  single context, so every read observes one coherent snapshot. Selectors
+  (`selectFirstGameId`, `selectPresenterGameId`, …) read the context;
+  allocating ones (`selectSortedMembers`, `selectEvidenceGids`) are memoized
+  for a stable reference (the store hook compares selected values with `===`).
+- `assets/src/store/roomContext.ts` — the React bindings: `RoomStoreProvider`
+  (the per-room store, injected so tests/concurrent rooms never share state)
+  and `useRoomSelector` for reads. The channel (`useRoomChannel`) is the only
+  writer — components never send events.
 - `assets/src/features/room/` — `RoomView` (layout, join/not-found states,
   the games rail's handlers, the chat unread count, per-game cursor memory),
   `GameRail` (the games rail, ADR-0032: chrome — fixed "Boards · N" header
@@ -351,9 +363,10 @@ so clients send nothing and hide the member list.
 
 1. Home "Create" → `POST /api/rooms` → navigate to `#/r/<code>` (ADR-0006).
    Join-by-code and deep links go straight to the room.
-2. `useRoomChannel` joins `room:<slug>`; server replies `{ops, roles}`;
-   `replayOps` rebuilds games; presence syncs the member list (phoenix
-   `Presence` → `syncMembers`).
+2. `useRoomChannel` joins `room:<slug>` and creates the room's store; the
+   server replies `{ops, roles}` — the ops replay into the store
+   (`room.replayed`, folding the log through the same transition used live);
+   presence syncs the member list (phoenix `Presence` → `members.synced`).
 3. User moves a piece → `sendOp({type: 'move_at_ply', ...})` → server validates
    and appends → broadcasts `new_op` → **every** client applies it. The sender
    never applies locally; the echo is the only path (ADR-0005).

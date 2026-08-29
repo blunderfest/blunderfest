@@ -1,12 +1,9 @@
-import { configureStore } from '@reduxjs/toolkit';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { axe } from 'jest-axe';
-import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RoomView from '@/features/room/RoomView';
 import type { GameNode, GameTree } from '@/lib/api';
 import type { Op } from '@/protocol/ops';
-import roomReducer from '@/store/room';
 import { FakeChannel } from '@/test/fakeChannel';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -58,10 +55,6 @@ const gameTree: GameTree = {
     ],
   }),
 };
-
-function makeStore() {
-  return configureStore({ reducer: { room: roomReducer } });
-}
 
 function setGameOp(seq: number, tree: GameTree, gameId = 'game-1', evidenceGid?: number): Op {
   return {
@@ -187,24 +180,21 @@ describe('RoomView', () => {
   });
 
   function renderRoom(slug = 'abc12', onLeave = vi.fn(), selfId: string | null = null) {
-    const store = makeStore();
     // The app bar's room slot (ADR-0031): Share + the presence strip portal
     // into it. Tests append one to the body, like the app shell would.
     const headerSlot = document.createElement('div');
     headerSlot.dataset.testid = 'room-test-header-slot';
     document.body.appendChild(headerSlot);
     const view = render(
-      <Provider store={store}>
-        <RoomView
-          slug={slug}
-          onLeave={onLeave}
-          selfId={selfId}
-          channelFactory={channelFactory}
-          headerSlot={headerSlot}
-        />
-      </Provider>,
+      <RoomView
+        slug={slug}
+        onLeave={onLeave}
+        selfId={selfId}
+        channelFactory={channelFactory}
+        headerSlot={headerSlot}
+      />,
     );
-    return { store, onLeave, view, headerSlot };
+    return { onLeave, view, headerSlot };
   }
 
   /** The presence popover: member rows live behind the header strip. */
@@ -227,11 +217,11 @@ describe('RoomView', () => {
     expect(screen.getByText('Brave Otter 42')).toBeInTheDocument();
   });
 
-  it('stores the server region from the join reply', async () => {
+  it('shows the server region from the join reply in the header chip', async () => {
     channel.joinReturn = { ops: [], region: 'ord' };
-    const { store } = renderRoom();
+    renderRoom();
 
-    await waitFor(() => expect(store.getState().room.region).toBe('ord'));
+    expect(await screen.findByTestId('region-chip')).toHaveTextContent('ord');
   });
 
   it('shows a not-found screen and a way home when the join is rejected', async () => {
@@ -559,6 +549,28 @@ describe('RoomView', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Chat/ }));
     expect(screen.queryByTestId('chat-badge')).not.toBeInTheDocument();
     expect(screen.getByText('hi there')).toBeInTheDocument();
+  });
+
+  it('never badges your own messages — even while another tab is active', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    await screen.findByRole('heading', { name: 'Alice – Bob' });
+
+    // The echo of your own message (author === selfId) must not badge, in
+    // any tab sharing your identity.
+    act(() =>
+      channel.emit('new_op', {
+        seq: 2,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'chat',
+        payload: { text: 'my own message' },
+      } as Op),
+    );
+
+    // A render settles after the echo; the badge never appears.
+    await screen.findByText('my own message');
+    expect(screen.queryByTestId('chat-badge')).not.toBeInTheDocument();
   });
 
   it('does not badge replayed chat history from before the join', async () => {
@@ -1094,12 +1106,9 @@ describe('RoomView', () => {
 
   it('has no axe violations with a game loaded', async () => {
     channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
-    const store = makeStore();
     const view = render(
       <main>
-        <Provider store={store}>
-          <RoomView slug="abc12" onLeave={vi.fn()} selfId={null} channelFactory={channelFactory} />
-        </Provider>
+        <RoomView slug="abc12" onLeave={vi.fn()} selfId={null} channelFactory={channelFactory} />
       </main>,
     );
 
@@ -1227,11 +1236,8 @@ describe('historical evidence integration', () => {
   });
 
   function renderRoom(slug = 'abc12', onLeave = vi.fn(), selfId: string | null = null) {
-    const store = makeStore();
     render(
-      <Provider store={store}>
-        <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />
-      </Provider>,
+      <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />,
     );
   }
 
@@ -1466,11 +1472,8 @@ describe('per-game cursor memory', () => {
   });
 
   function renderRoom(slug = 'abc12', onLeave = vi.fn(), selfId: string | null = null) {
-    const store = makeStore();
     render(
-      <Provider store={store}>
-        <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />
-      </Provider>,
+      <RoomView slug={slug} onLeave={onLeave} selfId={selfId} channelFactory={channelFactory} />,
     );
   }
 

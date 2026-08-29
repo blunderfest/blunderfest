@@ -43,7 +43,7 @@ import type {
   SetNagsOp,
   SetPositionOp,
 } from '@/protocol/ops';
-import { type BoardAnnotations, setupPlyFromFen } from '@/store/room';
+import { type BoardAnnotations, setupPlyFromFen } from '@/store/roomStore';
 
 /**
  * The analysis screen's orchestrator: every piece of viewer state, all
@@ -84,7 +84,6 @@ export default function Analysis({
   onSidebarTabChange,
   chatTab,
   chatBadge,
-  rail,
 }: {
   tree: GameTree | null;
   presenterId?: string | null;
@@ -151,8 +150,6 @@ export default function Analysis({
   chatTab?: ReactNode;
   /** The unread badge on the Chat tab (the room owns the count). */
   chatBadge?: ReactNode;
-  /** The games rail (ADR-0032): games as chrome, left of the board. */
-  rail?: ReactNode;
 }) {
   const { t } = useTranslation();
   /**
@@ -897,8 +894,6 @@ export default function Analysis({
       */}
       <div className="flex w-full max-w-full flex-col items-stretch gap-3 md:gap-6">
         <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
-          {rail}
-
           <BoardColumn
             tree={tree}
             current={current}

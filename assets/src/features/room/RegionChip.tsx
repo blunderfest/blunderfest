@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { statusDot } from '@/components/ui';
 import { formatRegion } from '@/lib/region';
-import { useAppSelector } from '@/store';
+import { useRoomSelector } from '@/store/roomContext';
 
 /**
  * The header's connection chip (ADR-0032): server region + room region +
@@ -12,9 +12,9 @@ import { useAppSelector } from '@/store';
  */
 export default function RegionChip() {
   const { t } = useTranslation();
-  const region = useAppSelector((state) => state.room.region);
-  const roomRegion = useAppSelector((state) => state.room.roomRegion);
-  const lagMs = useAppSelector((state) => state.room.lagMs);
+  const region = useRoomSelector((ctx) => ctx.region);
+  const roomRegion = useRoomSelector((ctx) => ctx.roomRegion);
+  const lagMs = useRoomSelector((ctx) => ctx.lagMs);
 
   if (region === null) {
     return null;

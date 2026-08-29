@@ -1,9 +1,8 @@
-import { configureStore } from '@reduxjs/toolkit';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { Provider } from 'react-redux';
 import { describe, expect, it, vi } from 'vitest';
 import ChatPanel from '@/features/room/ChatPanel';
-import roomReducer, { applyOp, syncMembers } from '@/store/room';
+import { RoomStoreProvider } from '@/store/roomContext';
+import { createRoomStore } from '@/store/roomStore';
 
 function renderPanel({
   onSend = vi.fn(),
@@ -16,11 +15,11 @@ function renderPanel({
   canChat?: boolean;
   canModerate?: boolean;
 } = {}) {
-  const store = configureStore({ reducer: { room: roomReducer } });
+  const store = createRoomStore('test-room');
   render(
-    <Provider store={store}>
+    <RoomStoreProvider value={store}>
       <ChatPanel onSend={onSend} onDelete={onDelete} canChat={canChat} canModerate={canModerate} />
-    </Provider>,
+    </RoomStoreProvider>,
   );
   return { store, onSend, onDelete };
 }
@@ -39,8 +38,8 @@ describe('ChatPanel', () => {
   it('shows messages with author names', () => {
     const { store } = renderPanel();
     act(() => {
-      store.dispatch(syncMembers([{ id: 'author-1', name: 'Brave Otter 42' }]));
-      store.dispatch(applyOp(chatOp(1, 'nice tactic!')));
+      store.send({ type: 'members.synced', members: [{ id: 'author-1', name: 'Brave Otter 42' }] });
+      store.send(chatOp(1, 'nice tactic!'));
     });
 
     expect(screen.getByText('Brave Otter 42')).toBeInTheDocument();
@@ -81,7 +80,7 @@ describe('ChatPanel', () => {
   it('lets the owner delete messages, but not collaborators or viewers', () => {
     const { store, onDelete } = renderPanel({ canModerate: true });
     act(() => {
-      store.dispatch(applyOp(chatOp(1, 'oops')));
+      store.send(chatOp(1, 'oops'));
     });
 
     fireEvent.click(screen.getByTestId('chat-delete-1'));
@@ -91,7 +90,7 @@ describe('ChatPanel', () => {
   it('renders no delete buttons without moderation rights', () => {
     const { store } = renderPanel({ canModerate: false });
     act(() => {
-      store.dispatch(applyOp(chatOp(1, 'hello')));
+      store.send(chatOp(1, 'hello'));
     });
 
     expect(screen.queryByTestId('chat-delete-1')).not.toBeInTheDocument();

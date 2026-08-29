@@ -22,8 +22,8 @@ import type {
   SetNagsOp,
   SetPositionOp,
 } from '@/protocol/ops';
-import { useAppSelector } from '@/store';
-import type { BoardAnnotations } from '@/store/room';
+import { RoomStoreProvider, useRoomSelector } from '@/store/roomContext';
+import type { BoardAnnotations } from '@/store/roomStore';
 import {
   selectCanEdit,
   selectEvidenceGids,
@@ -35,12 +35,12 @@ import {
   selectPresenterGameId,
   selectRoleOf,
   selectSortedMembers,
-} from '@/store/room';
+} from '@/store/roomStore';
 
 /**
  * Shared empty fallback for the annotations lookup below. Allocating `{}`
- * inside the selector would return a new reference on every dispatch,
- * causing spurious re-renders (and react-redux dev warnings).
+ * inside the selector would return a new reference on every update, causing
+ * spurious re-renders.
  */
 const NO_ANNOTATIONS: Record<number, BoardAnnotations> = {};
 
@@ -66,24 +66,69 @@ export default function RoomView({
    */
   headerSlot?: HTMLElement | null;
 }) {
-  const { t } = useTranslation();
-  const { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze } = useRoomChannel(
+  const { joined, joinError, store, sendOp, sendRole, sendPresenter, sendAnalyze } = useRoomChannel(
     slug,
     selfId,
     selfName,
     channelFactory,
   );
-  const members = useAppSelector((state) => selectSortedMembers(state.room));
-  const roles = useAppSelector((state) => state.room.roles);
-  const games = useAppSelector((state) => state.room.games);
-  const presenter = useAppSelector((state) => selectPresenter(state.room));
-  const presenterGameId = useAppSelector((state) => selectPresenterGameId(state.room));
-  const presenterCursor = useAppSelector((state) => selectPresenterCursor(state.room));
-  const myRole: MemberRole = useAppSelector((state) => selectRoleOf(state.room, selfId));
-  const canEdit = useAppSelector((state) => selectCanEdit(state.room, selfId));
-  const readOnly = useAppSelector((state) => state.room.readOnly);
-  const analysisProgress = useAppSelector((state) => state.room.analysisProgress);
-  const firstGameId = useAppSelector((state) => selectFirstGameId(state.room));
+
+  return (
+    <RoomStoreProvider value={store}>
+      <RoomViewInner
+        slug={slug}
+        onLeave={onLeave}
+        selfId={selfId}
+        lichessLinked={lichessLinked}
+        headerSlot={headerSlot}
+        joined={joined}
+        joinError={joinError}
+        sendOp={sendOp}
+        sendRole={sendRole}
+        sendPresenter={sendPresenter}
+        sendAnalyze={sendAnalyze}
+      />
+    </RoomStoreProvider>
+  );
+}
+
+function RoomViewInner({
+  slug,
+  onLeave,
+  selfId = null,
+  lichessLinked = false,
+  headerSlot = null,
+  joined,
+  joinError,
+  sendOp,
+  sendRole,
+  sendPresenter,
+  sendAnalyze,
+}: {
+  slug: string;
+  onLeave: () => void;
+  selfId?: string | null;
+  lichessLinked?: boolean;
+  headerSlot?: HTMLElement | null;
+  joined: boolean;
+  joinError: string | null;
+  sendOp: ReturnType<typeof useRoomChannel>['sendOp'];
+  sendRole: ReturnType<typeof useRoomChannel>['sendRole'];
+  sendPresenter: ReturnType<typeof useRoomChannel>['sendPresenter'];
+  sendAnalyze: ReturnType<typeof useRoomChannel>['sendAnalyze'];
+}) {
+  const { t } = useTranslation();
+  const members = useRoomSelector(selectSortedMembers);
+  const roles = useRoomSelector((ctx) => ctx.roles);
+  const games = useRoomSelector((ctx) => ctx.games);
+  const presenter = useRoomSelector(selectPresenter);
+  const presenterGameId = useRoomSelector(selectPresenterGameId);
+  const presenterCursor = useRoomSelector(selectPresenterCursor);
+  const myRole: MemberRole = useRoomSelector((ctx) => selectRoleOf(ctx, selfId));
+  const canEdit = useRoomSelector((ctx) => selectCanEdit(ctx, selfId));
+  const readOnly = useRoomSelector((ctx) => ctx.readOnly);
+  const analysisProgress = useRoomSelector((ctx) => ctx.analysisProgress);
+  const firstGameId = useRoomSelector(selectFirstGameId);
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [followOverride, setFollowOverride] = useState<boolean | null>(null);
   const [showImport, setShowImport] = useState(false);
@@ -97,7 +142,7 @@ export default function RoomView({
    * marker starts at the join-time tail; opening the Chat tab marks read.
    */
   const [chatReadSeq, setChatReadSeq] = useState<number | null>(null);
-  const chatMessages = useAppSelector((state) => state.room.chatMessages);
+  const chatMessages = useRoomSelector((ctx) => ctx.chatMessages);
   const maxChatSeq = chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].seq : 0;
 
   // joined flips true only after the op-log replay lands (useRoomChannel),
@@ -115,10 +160,17 @@ export default function RoomView({
     }
   }, [sidebarTab, maxChatSeq]);
 
+  // Your own messages are never unread to you — otherwise the echo would
+  // flash a badge on the Chat tab even when you just sent (and are looking
+  // at) the message, in every tab that shares your identity.
   const chatUnread =
     chatReadSeq === null
       ? 0
-      : chatMessages.reduce((count, message) => (message.seq > chatReadSeq ? count + 1 : count), 0);
+      : chatMessages.reduce(
+          (count, message) =>
+            message.seq > chatReadSeq && message.author !== selfId ? count + 1 : count,
+          0,
+        );
   const chatBadge =
     chatUnread > 0 ? (
       <span
@@ -148,7 +200,7 @@ export default function RoomView({
    * from the op log (`evidence_gid` on `set_game`) — every client agrees,
    * so a candidate one member picked shows "Added ✓" for everyone.
    */
-  const evidenceGids = useAppSelector((state) => selectEvidenceGids(state.room));
+  const evidenceGids = useRoomSelector(selectEvidenceGids);
   /**
    * Duplicate adds — the game was already in the room via another path
    * (an import, the analyzed game itself): no op is sent, so nothing
@@ -178,19 +230,19 @@ export default function RoomView({
     ? (presenterGameId ?? firstGameId)
     : (activeGameId ?? firstGameId);
   const game = effectiveGameId === null ? null : (games[effectiveGameId] ?? null);
-  const analysis = useAppSelector((state) =>
-    effectiveGameId === null ? undefined : state.room.analysis[effectiveGameId],
+  const analysis = useRoomSelector((ctx) =>
+    effectiveGameId === null ? undefined : ctx.analysis[effectiveGameId],
   );
-  const lastPlayedId = useAppSelector((state) => selectLastPlayed(state.room, effectiveGameId));
-  const lastPlayedBy = useAppSelector((state) => selectLastPlayedBy(state.room, effectiveGameId));
+  const lastPlayedId = useRoomSelector((ctx) => selectLastPlayed(ctx, effectiveGameId));
+  const lastPlayedBy = useRoomSelector((ctx) => selectLastPlayedBy(ctx, effectiveGameId));
   // Follow-the-tail only reacts to OTHER members' plays: your own variation
   // inserts (setup + line ops update lastPlayed too) must never yank the
   // cursor off the position being analyzed. The initial cursor on open
   // still uses the unfiltered `lastPlayedId`.
   const remoteLastPlayedId = lastPlayedBy !== null && lastPlayedBy !== selfId ? lastPlayedId : null;
-  const gameAnnotations = useAppSelector((state) =>
+  const gameAnnotations = useRoomSelector((ctx) =>
     effectiveGameId !== null
-      ? (state.room.annotations[effectiveGameId] ?? NO_ANNOTATIONS)
+      ? (ctx.annotations[effectiveGameId] ?? NO_ANNOTATIONS)
       : NO_ANNOTATIONS,
   );
 
@@ -452,9 +504,8 @@ export default function RoomView({
     );
   }
 
-  // The sidebar's Chat and Room tab contents (ADR-0031). Their handlers
-  // live here; Analysis just slots them into its tabs. Chat is absent in
-  // read-only rooms (the demo, ADR-0014) — same gating as the old rail.
+  // The sidebar's Chat tab content (ADR-0031). Its handlers live here; the
+  // dock slots it in. Chat is absent in read-only rooms (the demo, ADR-0014).
   const chatContent = readOnly ? undefined : (
     <ChatPanel
       onSend={handleChatSend}
@@ -464,6 +515,10 @@ export default function RoomView({
     />
   );
 
+  // The games rail is hoisted OUT of the board region (empty CTA vs Analysis)
+  // so it renders as the same element in the same position whether or not the
+  // room has games. Before this, the first game added swapped the whole
+  // empty-state tree for Analysis, remounting the rail — the "flicker".
   const rail = (
     <GameRail
       games={games}
@@ -511,18 +566,22 @@ export default function RoomView({
           headerSlot,
         )}
 
-      {noGames ? (
-        // No game yet: the games rail as a slim region and the board CTA
-        // where it will live (ADR-0032 — rail is chrome, never a tab). The
-        // row matches the populated layout (rail | flex-1 middle | dock), and
-        // the middle slot is the same flex-1 the board column takes — NOT a
-        // width derived from --board-size (that var is viewport-height-driven
-        // and under-measures the slot, which shoved the dock ~200px left of
-        // its populated position). The CTA centers in the middle region so
-        // the empty room prefigures the populated layout.
-        <div className="analysis-scope flex w-full max-w-full flex-col gap-3 md:gap-6">
-          <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
-            {rail}
+      {/*
+        The games rail is rendered once, OUTSIDE the empty/populated branch,
+        as the first child of the shared xl row — so adding the first game
+        swaps only the board region (CTA ↔ Analysis), never the rail (the
+        "flicker" was the rail remounting with the whole tree).
+      */}
+      <div className="analysis-scope flex w-full max-w-full flex-col gap-3 md:gap-6">
+        <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
+          {rail}
+          {noGames ? (
+            // No game yet: the board CTA where it will live. The middle slot is
+            // the same flex-1 the board column takes — NOT a width derived from
+            // --board-size (that var is viewport-height-driven and under-measures
+            // the slot, which shoved the dock ~200px left of its populated
+            // position). The CTA centers in the middle region so the empty room
+            // prefigures the populated layout.
             <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
               <div className="flex min-w-0 flex-1 flex-col items-center gap-4 xl:flex-row xl:items-stretch xl:gap-6">
                 <div className="flex min-w-0 flex-1 items-center justify-center p-8">
@@ -599,47 +658,46 @@ export default function RoomView({
                 )}
               </div>
             </div>
-          </div>
+          ) : (
+            <Analysis
+              key={effectiveGameId ?? 'none'}
+              tree={game}
+              presenterId={presenter?.id ?? null}
+              selfId={selfId}
+              presenterCursorId={presenterCursor}
+              following={following}
+              canEdit={canEdit}
+              startAtRoot={effectiveGameId !== null && effectiveGameId === freshImportId}
+              initialNodeId={
+                effectiveGameId !== null
+                  ? (cursorByGame.get(effectiveGameId) ?? openAtPly.get(effectiveGameId) ?? null)
+                  : null
+              }
+              onFollowChange={setFollowOverride}
+              onCursorChange={handleCursorChange}
+              onLocalCursor={handleLocalCursor}
+              onPlayMove={handlePlayMove}
+              onComment={handleComment}
+              onSetPosition={handleSetPosition}
+              onAddLine={handleAddLine}
+              onSetNags={handleSetNags}
+              lastPlayedId={lastPlayedId}
+              remoteLastPlayedId={remoteLastPlayedId}
+              annotations={gameAnnotations}
+              onAnnotations={handleAnnotations}
+              onAnalyze={canEdit ? handleAnalyze : undefined}
+              onAddHistoricalGame={canEdit ? handleAddHistoricalGame : undefined}
+              addedEvidenceGids={addedEvidenceGids}
+              analyzing={analyzing}
+              analysis={analysis?.evals ?? null}
+              activeSidebarTab={sidebarTab}
+              onSidebarTabChange={setSidebarTab}
+              chatTab={chatContent}
+              chatBadge={chatBadge}
+            />
+          )}
         </div>
-      ) : (
-        <Analysis
-          key={effectiveGameId ?? 'none'}
-          tree={game}
-          presenterId={presenter?.id ?? null}
-          selfId={selfId}
-          presenterCursorId={presenterCursor}
-          following={following}
-          canEdit={canEdit}
-          startAtRoot={effectiveGameId !== null && effectiveGameId === freshImportId}
-          initialNodeId={
-            effectiveGameId !== null
-              ? (cursorByGame.get(effectiveGameId) ?? openAtPly.get(effectiveGameId) ?? null)
-              : null
-          }
-          onFollowChange={setFollowOverride}
-          onCursorChange={handleCursorChange}
-          onLocalCursor={handleLocalCursor}
-          onPlayMove={handlePlayMove}
-          onComment={handleComment}
-          onSetPosition={handleSetPosition}
-          onAddLine={handleAddLine}
-          onSetNags={handleSetNags}
-          lastPlayedId={lastPlayedId}
-          remoteLastPlayedId={remoteLastPlayedId}
-          annotations={gameAnnotations}
-          onAnnotations={handleAnnotations}
-          onAnalyze={canEdit ? handleAnalyze : undefined}
-          onAddHistoricalGame={canEdit ? handleAddHistoricalGame : undefined}
-          addedEvidenceGids={addedEvidenceGids}
-          analyzing={analyzing}
-          analysis={analysis?.evals ?? null}
-          activeSidebarTab={sidebarTab}
-          onSidebarTabChange={setSidebarTab}
-          chatTab={chatContent}
-          chatBadge={chatBadge}
-          rail={rail}
-        />
-      )}
+      </div>
 
       {showImport && (
         <ImportDialog

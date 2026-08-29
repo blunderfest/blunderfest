@@ -1,10 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { axe } from 'jest-axe';
-import { Provider } from 'react-redux';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '@/app/App';
-import { store } from '@/store';
-import { leaveRoom } from '@/store/room';
 import { FakeChannel } from '@/test/fakeChannel';
 
 const socketMocks = vi.hoisted(() => ({
@@ -44,7 +41,6 @@ beforeEach(() => {
   localStorage.clear();
   window.location.hash = '';
   socketMocks.channelFor.mockReset();
-  store.dispatch(leaveRoom());
 });
 
 afterEach(() => {
@@ -57,11 +53,7 @@ describe('App', () => {
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles': () => new Promise(() => {}),
     });
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(screen.getByRole('heading', { name: 'Blunderfest' })).toBeInTheDocument();
     expect(screen.getByText('Collaborative chess analysis.')).toBeInTheDocument();
@@ -72,11 +64,7 @@ describe('App', () => {
       '/api/healthz': () => Promise.resolve(new Response(null, { status: 200 })),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     const status = await screen.findByText('Analysis service online');
     expect(status).toHaveAttribute('data-status', 'ok');
@@ -87,11 +75,7 @@ describe('App', () => {
       '/api/healthz': () => Promise.resolve(new Response(null, { status: 503 })),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     const status = await waitFor(() => screen.getByText('Analysis service unreachable'));
     expect(status).toHaveAttribute('data-status', 'down');
@@ -102,11 +86,7 @@ describe('App', () => {
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.device')).toBe(
@@ -124,11 +104,7 @@ describe('App', () => {
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles/profile-1': () => jsonResponse({ profile: profileBody.profile }),
     });
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
   });
@@ -144,11 +120,7 @@ describe('App', () => {
       '/api/profiles/stale-profile': () => jsonResponse({ errors: { code: 'unauthorized' } }, 401),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.device')).toBe(
@@ -165,11 +137,7 @@ describe('App', () => {
     const channel = new FakeChannel();
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     socketMocks.channelFor.mockReturnValue(channel);
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     // Creating waits for the resolved profile (owner recorded at creation).
     expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
@@ -216,11 +184,7 @@ describe('App', () => {
     const channel = new FakeChannel();
     channel.joinReturn = { ops: [], roles: { 'profile-2': 'owner' } };
     socketMocks.channelFor.mockReturnValue(channel);
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Create a room' }));
 
@@ -246,11 +210,7 @@ describe('App', () => {
     const channel = new FakeChannel();
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     socketMocks.channelFor.mockReturnValue(channel);
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     fireEvent.change(screen.getByPlaceholderText('Room code'), { target: { value: 'xyz99' } });
     fireEvent.click(screen.getByRole('button', { name: 'Join' }));
@@ -268,11 +228,7 @@ describe('App', () => {
     const channel = new FakeChannel();
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     socketMocks.channelFor.mockReturnValue(channel);
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(await screen.findByText('ABCDE')).toBeInTheDocument();
   });
@@ -284,11 +240,7 @@ describe('App', () => {
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
     socketMocks.channelFor.mockReturnValue(new FakeChannel());
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(await screen.findByText('ABCDE')).toBeInTheDocument();
     // Code copy is header chrome (ADR-0032); leaving is the logo.
@@ -312,11 +264,7 @@ describe('App', () => {
         }),
     });
     socketMocks.channelFor.mockReturnValue(new FakeChannel());
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(screen.getAllByText('Preparing your identity...').length).toBeGreaterThan(0);
     expect(socketMocks.channelFor).not.toHaveBeenCalled();
@@ -347,11 +295,7 @@ describe('App', () => {
     const channel = new FakeChannel();
     channel.joinError = { reason: 'room_not_found' };
     socketMocks.channelFor.mockReturnValue(channel);
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(await screen.findByText('Room not found')).toBeInTheDocument();
   });
@@ -363,11 +307,7 @@ describe('App', () => {
       '/api/profiles': () => new Promise(() => {}),
     });
     socketMocks.channelFor.mockReturnValue(new FakeChannel());
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();
     expect(socketMocks.channelFor).not.toHaveBeenCalled();
@@ -423,11 +363,7 @@ describe('App', () => {
     socketMocks.channelFor.mockImplementation((topic: string) =>
       topic === 'room:aaaaa' ? channelA : channelB,
     );
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     // In room A, select the second game explicitly (the games rail is chrome).
     fireEvent.click(await screen.findByRole('button', { name: 'Carol – Bob' }));
@@ -452,11 +388,7 @@ describe('App', () => {
     const channel = new FakeChannel();
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     socketMocks.channelFor.mockReturnValue(channel);
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     // Leaving the room is the logo (ADR-0032): it navigates home, which
     // unmounts the room and drops the channel.
@@ -472,11 +404,7 @@ describe('App', () => {
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Theme: dark' }));
     // System follows the OS (light in tests, per the matchMedia stub).
@@ -495,11 +423,7 @@ describe('App', () => {
       '/api/healthz': () => Promise.resolve(new Response(null, { status: 200 })),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    const view = render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    const view = render(<App />);
 
     await screen.findByText('Analysis service online');
     const results = await axe(view.container);
@@ -515,11 +439,7 @@ describe('App', () => {
     const channel = new FakeChannel();
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     socketMocks.channelFor.mockReturnValue(channel);
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Help' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Take the guided tour' }));
@@ -534,11 +454,7 @@ describe('App', () => {
       '/api/healthz': () => new Promise(() => {}),
       '/api/profiles': () => jsonResponse(profileBody, 201),
     });
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Help' }));
     expect(screen.queryByRole('menuitem', { name: 'Take the guided tour' })).toBeNull();
@@ -550,11 +466,7 @@ describe('App', () => {
       '/api/healthz': () => new Promise(() => {}),
       '/api/auth/exchange': () => jsonResponse(profileBody, 200),
     });
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>,
-    );
+    render(<App />);
 
     expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.device')).toBe(

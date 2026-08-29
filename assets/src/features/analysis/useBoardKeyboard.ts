@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { Entry } from '@/features/analysis/nodeMap';
 import type { GameNode, GameTree } from '@/lib/api';
-import type { BoardAnnotations } from '@/store/room';
+import type { BoardAnnotations } from '@/store/roomStore';
 
 function lastChild(node: GameNode): GameNode {
   return node.children[0] ? lastChild(node.children[0]) : node;

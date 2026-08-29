@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button } from '@/components/ui';
-import { useAppSelector } from '@/store';
+import { useRoomSelector } from '@/store/roomContext';
 
 /**
  * The room's chat: op-log-backed history (replays on join), live for
@@ -29,8 +29,8 @@ export default function ChatPanel({
 }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState('');
-  const messages = useAppSelector((state) => state.room.chatMessages);
-  const names = useAppSelector((state) => state.room.names);
+  const messages = useRoomSelector((ctx) => ctx.chatMessages);
+  const names = useRoomSelector((ctx) => ctx.names);
   const listRef = useRef<HTMLUListElement | null>(null);
   const lastSeq = messages.length > 0 ? messages[messages.length - 1].seq : 0;
 

@@ -2,35 +2,21 @@ import { type Channel, Presence } from 'phoenix';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { channelFor } from '@/lib/socket';
 import type { MemberRole, Op } from '@/protocol/ops';
-import { useAppDispatch } from '@/store';
-import {
-  applyOp,
-  enterRoom,
-  leaveRoom,
-  replayOps,
-  setAnalysisProgress,
-  setLag,
-  setMemberRole,
-  setPresenter,
-  setReadOnly,
-  setRegion,
-  setRoles,
-  setRoomRegion,
-  syncMembers,
-} from '@/store/room';
+import { createRoomStore, type RoomStore } from '@/store/roomStore';
 
 /**
- * Joins `room:<slug>` and mirrors the room into the Redux store.
+ * Joins `room:<slug>` and mirrors the room into the room store.
  *
- * Inbound: `new_op` echoes are applied strictly in `seq` order; the join
- * payload replays the op log; presence diffs update the member list.
- * Outbound: `sendOp` pushes an op to the server — it is applied on the
- * client only via the server echo, so there is exactly one application path.
+ * The store is created fresh for this room and returned for the provider:
+ * inbound `new_op` echoes are sent to it strictly in `seq` order, the join
+ * payload replays the op log, presence syncs the member list. Outbound
+ * `sendOp` pushes an op to the server — it reaches the store only via the
+ * server echo, so there is exactly one application path.
  *
  * An echo arriving with a `seq` gap means an op was lost or reordered in
  * transit (Phoenix PubSub only orders per publisher process). The client
- * resyncs by rejoining — replay is the one application path (ADR-0005), so
- * a fresh join replays the authoritative log.
+ * resyncs by rejoining — replay is the one application path (ADR-0005), so a
+ * fresh join replays the authoritative log.
  *
  * Event handlers ignore events from a channel that has been superseded by a
  * rejoin, so late arrivals from a previous connection cannot mutate the new
@@ -45,10 +31,17 @@ export function useRoomChannel(
   selfName: string | null = null,
   channelFactory: (topic: string, params?: Record<string, string>) => Channel = channelFor,
 ) {
-  const dispatch = useAppDispatch();
   const channelRef = useRef<Channel | null>(null);
   const channelFactoryRef = useRef(channelFactory);
   channelFactoryRef.current = channelFactory;
+  // The store is created during render (lazy, one per slug) so the provider
+  // has it on the very first frame — creating it in the effect rendered one
+  // null-store frame first and remounted the whole room (the "flicker").
+  const storeRef = useRef<{ slug: string; store: RoomStore } | null>(null);
+  if (storeRef.current === null || storeRef.current.slug !== slug) {
+    storeRef.current = { slug, store: createRoomStore(slug) };
+  }
+  const store = storeRef.current.store;
   const [joined, setJoined] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   // Bump to force the effect below to leave and rejoin (the gap resync).
@@ -60,6 +53,7 @@ export function useRoomChannel(
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: rejoinNonce re-runs the effect (leave + rejoin) without being referenced inside
   useEffect(() => {
+    const roomStore = store;
     const params: Record<string, string> = {};
     if (selfId !== null) {
       params.profile_id = selfId;
@@ -72,8 +66,6 @@ export function useRoomChannel(
     let retryTimer: number | null = null;
     let lagTimer: number | null = null;
 
-    dispatch(enterRoom({ slug }));
-
     // The highest seq known to be in the store (the join replay below sets
     // the baseline). Echoes must succeed it exactly; anything higher is a
     // gap, anything at or below is a stale duplicate.
@@ -85,19 +77,19 @@ export function useRoomChannel(
       }
       if (op.seq === lastSeq + 1) {
         lastSeq = op.seq;
-        dispatch(applyOp(op));
+        roomStore.send(op);
       } else if (op.seq > lastSeq + 1) {
         setRejoinNonce((n) => n + 1);
       }
     });
     channel.on('role_update', (update: { member_id: string; role: MemberRole }) => {
       if (channelRef.current === channel) {
-        dispatch(setMemberRole(update));
+        roomStore.send({ type: 'role.changed', ...update });
       }
     });
     channel.on('presenter_update', (update: { member_id: string | null }) => {
       if (channelRef.current === channel) {
-        dispatch(setPresenter(update.member_id));
+        roomStore.send({ type: 'presenter.set', value: update.member_id });
       }
     });
     // Presence: the phoenix helper tracks metas per profile id (one member
@@ -111,20 +103,17 @@ export function useRoomChannel(
           id,
           name: meta.metas[0]?.name ?? 'Anonymous',
         }));
-        dispatch(syncMembers(members));
+        roomStore.send({ type: 'members.synced', members });
       }
     });
     channel.on(
       'analysis_progress',
       (progress: { game_id: string; done: number; total: number }) => {
         if (channelRef.current === channel) {
-          dispatch(
-            setAnalysisProgress({
-              gameId: progress.game_id,
-              done: progress.done,
-              total: progress.total,
-            }),
-          );
+          roomStore.send({
+            type: 'analysisProgress.set',
+            value: { gameId: progress.game_id, done: progress.done, total: progress.total },
+          });
         }
       },
     );
@@ -143,12 +132,12 @@ export function useRoomChannel(
         }) => {
           if (channelRef.current === channel) {
             setJoinError(null);
-            dispatch(replayOps(payload.ops));
-            dispatch(setRoles(payload.roles ?? {}));
-            dispatch(setPresenter(payload.presenter ?? null));
-            dispatch(setRegion(payload.region ?? null));
-            dispatch(setRoomRegion(payload.room_region ?? null));
-            dispatch(setReadOnly(payload.read_only ?? false));
+            roomStore.send({ type: 'room.replayed', ops: payload.ops });
+            roomStore.send({ type: 'roles.set', roles: payload.roles ?? {} });
+            roomStore.send({ type: 'presenter.set', value: payload.presenter ?? null });
+            roomStore.send({ type: 'region.set', value: payload.region ?? null });
+            roomStore.send({ type: 'roomRegion.set', value: payload.room_region ?? null });
+            roomStore.send({ type: 'readOnly.set', value: payload.read_only ?? false });
             lastSeq = payload.ops.reduce((max, op) => Math.max(max, op.seq), 0);
             setJoined(true);
 
@@ -160,7 +149,7 @@ export function useRoomChannel(
               const start = Date.now();
               channel.push('ping', {}).receive('ok', () => {
                 if (channelRef.current === channel) {
-                  dispatch(setLag({ ms: Date.now() - start }));
+                  roomStore.send({ type: 'lag.set', ms: Date.now() - start });
                 }
               });
             };
@@ -180,13 +169,11 @@ export function useRoomChannel(
         }
         setJoined(false);
         setJoinError(payload?.reason ?? 'unknown');
-        dispatch(leaveRoom());
       })
       .receive('timeout', () => {
         if (channelRef.current === channel) {
           setJoined(false);
           setJoinError('timeout');
-          dispatch(leaveRoom());
         }
       });
 
@@ -199,11 +186,11 @@ export function useRoomChannel(
       }
       channel.leave();
       channelRef.current = null;
-      dispatch(leaveRoom());
+      roomStore.send({ type: 'room.left' });
       setJoined(false);
       setJoinError(null);
     };
-  }, [dispatch, slug, selfId, selfName, rejoinNonce]);
+  }, [slug, selfId, selfName, rejoinNonce]);
 
   const sendOp = useCallback((op: Omit<Op, 'seq' | 'author' | 'ts'>, onError?: () => void) => {
     const push = channelRef.current?.push('op', op);
@@ -226,5 +213,5 @@ export function useRoomChannel(
     channelRef.current?.push('analyze_game', { game_id: gameId, positions });
   }, []);
 
-  return { joined, joinError, sendOp, sendRole, sendPresenter, sendAnalyze };
+  return { joined, joinError, store, sendOp, sendRole, sendPresenter, sendAnalyze };
 }

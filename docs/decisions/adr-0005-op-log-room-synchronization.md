@@ -27,9 +27,15 @@ conflict resolution (complex, overkill for a canvas of moves and annotations).
   changes.
 - Presence (who is in the room, names) uses **Phoenix Presence**; cursor
   movement is throttled.
-- Frontend state mirrors the log via **Redux Toolkit** (`applyOp`, `replayOps`),
-  with op types shared between server and client as TypeScript unions in
-  `assets/src/protocol/ops.ts`.
+- Frontend state mirrors the log via a single `@xstate/store` room store
+  (`assets/src/store/roomStore.ts`): the `Op` union is the store's event type,
+  ops are sent directly, and join-time replay folds the log through the same
+  `store.transition` used live — so replay and live apply share one code path.
+  Op types are shared between server and client as TypeScript unions in
+  `assets/src/protocol/ops.ts`. (Originally Redux Toolkit's `applyOp` /
+  `replayOps`; replaced 2026-08-29 — the event-sourced fold fits an
+  event-based store directly, and RTK's two apply/replay paths had already
+  diverged once.)
 
 ## Consequences
 

@@ -14,7 +14,7 @@ import type { DragFlag } from '@/features/analysis/useDragFlag';
 import type { EngineState } from '@/features/analysis/useEngine';
 import type { usePositionEditor } from '@/features/analysis/usePositionEditor';
 import type { GameNode, GameTree } from '@/lib/api';
-import type { BoardAnnotations } from '@/store/room';
+import type { BoardAnnotations } from '@/store/roomStore';
 
 /**
  * The board column: the game title, the board with its eval bar and edit
