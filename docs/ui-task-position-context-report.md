@@ -60,10 +60,10 @@ shape, one interpretation of data, shared by the panel and the dialog.
 ## Position safety
 
 `previousFen` compares the current cursor's FEN to the one the panel last
-resolved; any change nulls `resolved` and returns the CTA to idle. A
-stale promise never overwrites the live position's state — the resolution
-carries through `RESULT_CACHE` and the visible summary reflects
-the current position's lookup on every render.
+resolved; any change nulls `resolved` and returns the CTA to idle. **Open
+issue:** the compare path resets but the local `resolved` state survives
+on repeated navigation, so the summary sticks to the OLD position. See
+the Open issues entry below.
 
 ## Tablebase extension point
 
@@ -81,3 +81,11 @@ reserved seam, no provider or WDL/DTZ logic.
   cache (module-wide, LRU) and the session `RESULT_CACHE` (LRU 20) —
   a user's overwrite: positions sequentially exceed 20 cached
   entries, the re-run re-fetches.
+
+## Open issues
+
+- **Stale resolution on cursor move:** `PositionContext`'s `previousFen`
+  compare fails to reset when it should and the result appears pinned.
+  Diagnose via the reset logic in `PositionContext.tsx:64–86`; a test in
+  `PositionContext.test.tsx` should then cover find→resolve→move→find.
+
