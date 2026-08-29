@@ -187,10 +187,11 @@ export default function Analysis({
   const [arrowsOn, setArrowsOn] = useState(
     () => localStorage.getItem('blunderfest.hints') !== 'off',
   );
-  /** How many MultiPV lines the engine reports (1–5, persisted). */
+  /** How many MultiPV lines the engine reports (1–3, persisted; older
+      stored values above 3 are floored). */
   const [engineLines, setEngineLines] = useState(() => {
     const stored = Number(localStorage.getItem('blunderfest.engineLines'));
-    return stored >= 1 && stored <= 5 ? stored : 3;
+    return Math.min(Math.max(stored, 1), 3);
   });
 
   function setEngineLinesCount(count: number) {

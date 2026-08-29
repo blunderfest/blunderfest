@@ -96,7 +96,7 @@ export default function EngineBox({
             value={linesCount}
             onChange={(event) => onLinesCount(Number(event.target.value))}
           >
-            {[1, 2, 3, 4, 5].map((n) => (
+            {[1, 2, 3].map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>

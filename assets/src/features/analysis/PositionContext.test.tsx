@@ -125,7 +125,12 @@ describe('PositionContext', () => {
     fireEvent.click(screen.getByTestId('position-context-find-button'));
     await waitFor(() => screen.getByText('d4'));
     rerender(
-      <PositionContext book={book} fen={START} onFindEvidence={onFindEvidence} onHoverMove={vi.fn()} />,
+      <PositionContext
+        book={book}
+        fen={START}
+        onFindEvidence={onFindEvidence}
+        onHoverMove={vi.fn()}
+      />,
     );
     expect(screen.getByText('e4')).toBeInTheDocument();
     rerender(

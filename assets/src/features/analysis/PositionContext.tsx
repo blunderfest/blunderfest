@@ -178,11 +178,11 @@ export default function PositionContext({
 
   return (
     <section
-      className="flex min-h-0 flex-col border-b border-line"
+      className="flex h-64 shrink-0 flex-col overflow-y-auto border-b border-line"
       data-testid="position-context"
       aria-label={t('positionContext.title')}
     >
-      <h3 className="m-0 flex shrink-0 items-center gap-2 px-3 py-1.5 text-micro font-semibold uppercase tracking-[0.11em] text-muted">
+      <h3 className="sticky top-0 m-0 flex shrink-0 items-center gap-2 bg-panel px-3 py-1.5 text-micro font-semibold uppercase tracking-[0.11em] text-muted">
         {t('positionContext.title')}
       </h3>
       {content}

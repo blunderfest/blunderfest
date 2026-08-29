@@ -985,10 +985,10 @@ describe('engine box', () => {
     render(<Analysis tree={tree} engine={engine} />);
     expect(await screen.findByTestId('engine-readout')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByTestId('engine-lines-select'), { target: { value: '5' } });
+    fireEvent.change(screen.getByTestId('engine-lines-select'), { target: { value: '3' } });
 
-    expect(localStorage.getItem('blunderfest.engineLines')).toBe('5');
-    await waitFor(() => expect(engine.setMultiPV).toHaveBeenCalledWith(5));
+    expect(localStorage.getItem('blunderfest.engineLines')).toBe('3');
+    await waitFor(() => expect(engine.setMultiPV).toHaveBeenCalledWith(3));
   });
 });
 
