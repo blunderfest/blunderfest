@@ -243,6 +243,63 @@ defmodule Blunderfest.PGNTest do
     end
   end
 
+  describe "null moves" do
+    test "a pass is a real mainline node with null squares and flipped STM" do
+      tree = parse!("1. e4 c5 -- a6 *\n")
+
+      [e4] = tree.root.children
+      [c5] = e4.children
+      [pass] = c5.children
+      [a6] = pass.children
+
+      assert pass.san == "--"
+      assert pass.from == nil and pass.to == nil
+      assert pass.ply == 3
+      # The pass flips white-to-black, so 3... a6 lands on ply 4 with the
+      # same board as c5.
+      assert a6.ply == 4
+      assert a6.from == "a7" and a6.to == "a6"
+      [board_before, _] = String.split(c5.fen, " ", parts: 2)
+      [board_after, _] = String.split(pass.fen, " ", parts: 2)
+      assert board_before == board_after
+      assert String.contains?(pass.fen, " b ")
+      assert String.contains?(a6.fen, " w ")
+    end
+
+    test "a black pass advances the fullmove only across itself" do
+      tree = parse!("1. e4 e5 2... -- a6 *\n")
+
+      [e4] = tree.root.children
+      [e5] = e4.children
+      [pass] = e5.children
+      [a6] = pass.children
+      assert a6.ply == 4
+      assert String.contains?(a6.fen, " w ")
+    end
+
+    test "passes stack: -- Nc6 lets BLACK play immediately after the pass" do
+      tree = parse!("1. e4 e5 -- Nc6 *\n")
+      [e4] = tree.root.children
+      [e5] = e4.children
+      [p1] = e5.children
+      [nc6] = p1.children
+      assert nc6.san == "Nc6" and nc6.from == "b8" and nc6.to == "c6"
+      # white passed, so the flipped pass-parent is black-to-move.
+      assert String.contains?(p1.fen, " b ")
+    end
+
+    test "a pass inside a RAV resolves against the flipped parent game" do
+      tree = parse!("1. e4 (1... c5 -- e6) 1... e5 *\n")
+      [e4] = tree.root.children
+      c5 = Enum.find(e4.children, &(&1.san == "c5"))
+      assert c5
+      [pass] = c5.children
+      assert pass.san == "--"
+      [e6] = pass.children
+      assert e6.san == "e6" and e6.from == "e7" and e6.to == "e6"
+    end
+  end
+
   describe "setup" do
     test "starts from the FEN header" do
       tree =

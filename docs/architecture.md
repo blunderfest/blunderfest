@@ -160,7 +160,9 @@ Clients apply echoes strictly in `seq` order; a `seq` gap
 means an echo was lost or reordered, so the client resyncs by rejoining
 (replay is the one application path, ADR-0005). Presence events
 `presence_state` / `presence_diff` carry member names. Ops are type-tagged
-payloads (`move_at_ply`, `add_line` (a whole line in one op — engine lines
+payloads (`move_at_ply` (also carries pass/null-moves: san `'--'` with
+`from/to: nil`, created on a drag/tap that fails on the side-to-move but
+matches once flipped — ADR-0033), `add_line` (a whole line in one op — engine lines
 become variations atomically), `comment_at_ply`, `set_nags`, `set_game`,
 `rename_game` (a game title stored on the tree's custom `Title` header —
 exports carry it), `select_game`, `set_cursor`, `set_role`, `chat` (room

@@ -17,6 +17,7 @@ import {
   type OpeningBook,
   openingExitPly,
 } from '@/features/analysis/openings';
+import { buildPass, type PassMove } from '@/features/analysis/passMove';
 import TimelineBand from '@/features/analysis/TimelineBand';
 import { useBoardKeyboard } from '@/features/analysis/useBoardKeyboard';
 import { useCursor } from '@/features/analysis/useCursor';
@@ -337,7 +338,11 @@ export default function Analysis({
       if (node.san === null) {
         return null;
       }
-      sans.unshift(node.san);
+      // Passes never touch the position — they must not enter the route
+      // (the corpus resolver can't make sense of '--').
+      if (node.san !== '--') {
+        sans.unshift(node.san);
+      }
       node = parent;
     }
     return sans;
@@ -419,6 +424,22 @@ export default function Analysis({
     [selected, legalMoves],
   );
 
+  /**
+   * Highlights when the selected square has no legal moves from the side to
+   * move but could move after an implicit pass — the tap gesture towers
+   * both groups (first the legal set, then these).
+   */
+  const selectedPassMoves = useMemo(() => {
+    if (selected === null || selectedMoves.length > 0 || current === null) {
+      return [];
+    }
+    const pass = buildPass(current.fen ?? '');
+    if (pass === null) {
+      return [];
+    }
+    return legalMovesFor(pass.fen).filter((move) => move.from === selected);
+  }, [selected, selectedMoves.length, current]);
+
   const legalTargets = selectedMoves.map((move) => move.to);
 
   /**
@@ -461,6 +482,74 @@ export default function Analysis({
     });
     setSelected(null);
     navigate(nodeId);
+  }
+
+  /**
+   * Auto-pass then play: the drag didn't match the side-to-move's legal
+   * moves, so a null move is inserted first and the drag lands under it —
+   * e.g. 1. e4 c5 -- a6 with the whole thing one gesture. The pass op and
+   * move op are dispatched in order (op echo applies FIFO); the pending
+   * tracks both ids so a server rejection of either rolls back to the pre-
+   * pass position.
+   */
+  function playPassAndMove(pass: PassMove, move: LegalMove) {
+    if (current === null || onPlayMove === undefined) {
+      return;
+    }
+    const passId = maxNodeId + 1;
+    const childId = maxNodeId + 2;
+    onPlayMove({
+      ply: current.ply + 1,
+      san: '--',
+      from: null,
+      to: null,
+      promotion: null,
+      fen: pass.fen,
+      status: pass.status,
+      parent_id: current.id,
+    });
+    onPlayMove(
+      {
+        ply: current.ply + 2,
+        san: move.san,
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion,
+        fen: move.fen,
+        status: move.status,
+        parent_id: passId,
+      },
+      () => rollbackPending(childId, current.id),
+    );
+    addPending({
+      id: passId,
+      ply: current.ply + 1,
+      san: '--',
+      from: null,
+      to: null,
+      promotion: null,
+      comment: null,
+      nags: [],
+      status: pass.status,
+      fen: pass.fen,
+      children: [
+        {
+          id: childId,
+          ply: current.ply + 2,
+          san: move.san,
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion,
+          comment: null,
+          nags: [],
+          status: move.status,
+          fen: move.fen,
+          children: [],
+        },
+      ],
+    });
+    setSelected(null);
+    navigate(childId);
   }
 
   /**
@@ -569,9 +658,11 @@ export default function Analysis({
   }
 
   /**
-   * Drag & drop. Play mode: a drag to a legal target plays the move; a drag
-   * anywhere else falls back to selecting the piece. Edit mode: free-form
-   * placement, and dropping off the board deletes the piece.
+   * Drag & drop. Play mode: a drag to a legal target plays the move. A drag
+   * that misses — say black moves a piece while it's white's turn — falls
+   * through to an implicit pass: null-move first, drag under it. Any other
+   * drag selects the piece. Edit mode: free-form placement, and dropping
+   * off the board deletes the piece.
    */
   function handleDragMove(from: string, to: string | null) {
     if (editor.editing) {
@@ -586,6 +677,18 @@ export default function Analysis({
       playMove(move);
       return;
     }
+    // Implicit pass attempt: flip the side to move and see if the drag
+    // becomes legal. Only when it resolves does the gesture commit.
+    if (current !== null) {
+      const pass = buildPass(current.fen ?? '');
+      if (pass !== null) {
+        const passMove = legalMovesFor(pass.fen).find((m) => m.from === from && m.to === to);
+        if (passMove !== undefined) {
+          playPassAndMove(pass, passMove);
+          return;
+        }
+      }
+    }
     if ((legalMoves ?? []).some((m) => m.from === from)) {
       setSelected(from);
     }
@@ -595,16 +698,47 @@ export default function Analysis({
     if (!canPlay) {
       return;
     }
-    const target = selectedMoves.find((move) => move.to === square);
+    const target = selectedPassMoves.find((move) => move.to === square);
     if (target !== undefined) {
-      playMove(target);
+      // The pass inserts itself under the viewed node, and the tap lands
+      // under that pass — the same two-op chain as the drag fallback.
+      const pass = buildPass(current?.fen ?? '');
+      if (pass !== null) {
+        playPassAndMove(pass, target);
+        return;
+      }
+    }
+    const legalTarget = selectedMoves.find((move) => move.to === square);
+    if (legalTarget !== undefined) {
+      playMove(legalTarget);
       return;
     }
-    if ((legalMoves ?? []).some((move) => move.from === square)) {
-      setSelected(square);
-    } else {
-      setSelected(null);
+    setSelected((currentSelection) => {
+      if (currentSelection === square) {
+        return null;
+      }
+      if (nearestMoves(square).length > 0) {
+        return square;
+      }
+      return null;
+    });
+  }
+
+  /**
+   * The squares a tap could select: legal from the board side to move, else
+   * legal against the flipped pass (tap onto a hostile piece selects it for
+   * a second tap that commits the implicit pass).
+   */
+  function nearestMoves(square: string): LegalMove[] {
+    const direct = (legalMoves ?? []).filter((move) => move.from === square);
+    if (direct.length > 0) {
+      return direct;
     }
+    const pass = buildPass(current?.fen ?? '');
+    if (pass === null) {
+      return [];
+    }
+    return legalMovesFor(pass.fen).filter((move) => move.from === square);
   }
 
   const rows = useMemo(() => buildRows(tree), [tree]);

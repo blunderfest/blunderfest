@@ -365,55 +365,139 @@ defmodule Blunderfest.PGN do
   end
 
   defp parse_moves([{:san, san} | rest], game, ply, st, {nodes, alts}) do
-    if san == "e.p." do
-      parse_moves(rest, game, ply, st, {nodes, alts})
-    else
-      case resolve_san(game, san) do
-        {:error, reason} ->
-          {:error, %{reason: reason, san: san, ply: ply + 1}}
+    cond do
+      san == "e.p." ->
+        parse_moves(rest, game, ply, st, {nodes, alts})
 
-        {:ok, move} ->
-          new_game = Echecs.Game.make_move(game, move)
+      # Null move (pass): flips the side to move without touching a piece.
+      # Exported PGNs emit '--' and it must round-trip — unlike "e.p.",
+      # which is a turn-marker and can be dropped, a pass is real content.
+      san == "--" ->
+        pass_node(rest, game, ply, st, {nodes, alts})
 
-          node = %Node{
-            ply: ply + 1,
-            san: san,
-            from: square_name(move.from),
-            to: square_name(move.to),
-            promotion: promotion_letter(move.promotion),
-            comment: st.pending,
-            nags: [],
-            status: Echecs.status(new_game),
-            fen: Echecs.FEN.to_string(new_game),
-            children: []
-          }
+      true ->
+        case resolve_san(game, san) do
+          {:error, reason} ->
+            {:error, %{reason: reason, san: san, ply: ply + 1}}
 
-          {rest1, node} = attach_post_tokens(rest, node)
-          node = extract_clock(node)
+          {:ok, move} ->
+            new_game = Echecs.Game.make_move(game, move)
 
-          # Nested parses can fail (a bad SAN deeper in the game or in a
-          # variation): propagate the error instead of crashing the match.
-          with {:ok, rav_from_game, alt_children, rav_result, rest2} <-
-                 parse_ravs(rest1, game, new_game, ply, node.ply, {[], [], nil}),
-               {:ok, continuation, continuation_alts, result, rest3} <-
-                 parse_moves(rest2, new_game, node.ply, st, {[], []}) do
-            children =
-              case continuation do
-                [mainline | _] -> [mainline]
-                [] -> []
-              end
+            node = %Node{
+              ply: ply + 1,
+              san: san,
+              from: square_name(move.from),
+              to: square_name(move.to),
+              promotion: promotion_letter(move.promotion),
+              comment: st.pending,
+              nags: [],
+              status: Echecs.status(new_game),
+              fen: Echecs.FEN.to_string(new_game),
+              children: []
+            }
 
-            node = %{node | children: children ++ alt_children ++ continuation_alts}
+            {rest1, node} = attach_post_tokens(rest, node)
+            node = extract_clock(node)
 
-            parse_moves(
-              rest3,
-              game,
-              ply,
-              %{st | result: rav_result || result || st.result},
-              {[node | nodes], Enum.reverse(rav_from_game) ++ alts}
-            )
-          end
-      end
+            # Nested parses can fail (a bad SAN deeper in the game or in a
+            # variation): propagate the error instead of crashing the match.
+            with {:ok, rav_from_game, alt_children, rav_result, rest2} <-
+                   parse_ravs(rest1, game, new_game, ply, node.ply, {[], [], nil}),
+                 {:ok, continuation, continuation_alts, result, rest3} <-
+                   parse_moves(rest2, new_game, node.ply, st, {[], []}) do
+              children =
+                case continuation do
+                  [mainline | _] -> [mainline]
+                  [] -> []
+                end
+
+              node = %{node | children: children ++ alt_children ++ continuation_alts}
+
+              parse_moves(
+                rest3,
+                game,
+                ply,
+                %{st | result: rav_result || result || st.result},
+                {[node | nodes], Enum.reverse(rav_from_game) ++ alts}
+              )
+            end
+        end
+    end
+  end
+
+  # Continuation resolution on a pass-parent needs a Game whose side-to-move
+  # matches its flipped FEN; EChecs always transmits valid positions, so we
+  # reuse the chess-library's iterator path to turn the parent around, then
+  # parse the rest normally against it.
+  defp pass_node(rest, game, ply, st, {nodes, alts}) do
+    fen_raw = Echecs.FEN.to_string(game)
+
+    case flip_fen_side(fen_raw) do
+      nil ->
+        {:error, %{reason: "invalid FEN for pass", san: "--", ply: ply + 1}}
+
+      fen ->
+        node = %Node{
+          ply: ply + 1,
+          san: "--",
+          from: nil,
+          to: nil,
+          promotion: nil,
+          comment: st.pending,
+          nags: [],
+          status: "active",
+          fen: fen,
+          children: []
+        }
+
+        {rest1, node} = attach_post_tokens(rest, node)
+        flipped_game = game_from_fen(fen) || game
+
+        with {:ok, rav_from_game, alt_children, rav_result, rest2} <-
+               parse_ravs(rest1, game, flipped_game, ply, node.ply, {[], [], nil}),
+             {:ok, continuation, continuation_alts, result, rest3} <-
+               parse_moves(rest2, flipped_game, node.ply, st, {[], []}) do
+          children =
+            case continuation do
+              [mainline | _] -> [mainline]
+              [] -> []
+            end
+
+          node = %{node | children: children ++ alt_children ++ continuation_alts}
+
+          # Continue from the flipped game (the post-pass position): stacked
+          # passes flip back and forth, and moves following the pass resolve
+          # from the pass itself.
+          parse_moves(
+            rest3,
+            flipped_game,
+            node.ply,
+            %{st | result: rav_result || result || st.result},
+            {[node | nodes], Enum.reverse(rav_from_game) ++ alts}
+          )
+        end
+    end
+  end
+
+  # EChecs Game restoring from FEN (used by pass flips where the game's
+  # flipped FEN is the only channel to reconstructed position).
+  defp game_from_fen(fen) do
+    Echecs.Game.new(fen)
+  rescue
+    _ -> nil
+  end
+
+  defp flip_fen_side(fen) do
+    case String.split(fen, " ", parts: 6) do
+      [board, side, castling, _ep, halfmove, fullmove] ->
+        new_side = if side == "w", do: "b", else: "w"
+
+        # A pass is not a move: never bump the fullmove counter. Ply parity
+        # carries numbering in the tree; stacked passes stay at one move.
+        Enum.join([board, new_side, castling, "-", halfmove, fullmove], " ")
+
+      _ ->
+        nil
     end
   end
 

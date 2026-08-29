@@ -384,6 +384,52 @@ describe('Analysis', () => {
     );
   });
 
+  it('implicit pass: black taps a black piece while white-to-move → pass op then move op', async () => {
+    const onPlayMove = vi.fn();
+    render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);
+
+    // The shared test tree opens on its tail (Nc6); reset to the root
+    // position — white-to-move — so the e7 pawn exists for the pass test.
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(screen.getByTestId('square-e7'));
+    fireEvent.click(screen.getByTestId('square-e6'));
+
+    await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(2));
+    const [passPayload, movePayload] = onPlayMove.mock.calls.map((call) => call[0]);
+    expect(passPayload.san).toBe('--');
+    expect(passPayload.from).toBeNull();
+    expect(passPayload.to).toBeNull();
+    expect(passPayload.fen.split(' ')[1]).toBe('b');
+    expect(movePayload.san).toBe('e6');
+    expect(movePayload.from).toBe('e7');
+    expect(movePayload.to).toBe('e6');
+    // The pass lands as the max-id child; the move's parent is the pass.
+    expect(passPayload.parent_id).toBe(tree.root.id);
+    expect(movePayload.parent_id).toBe(5);
+  });
+
+  it('implicit pass plays under a CLICKED target (drag semantics same as tap)', async () => {
+    const onPlayMove = vi.fn();
+    render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);
+    // Both taps funnel through handleSquareClick; this asserts the second
+    // branch (selectedPassMoves) resolves the target, not the re-select.
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(screen.getByTestId('square-e7'));
+    fireEvent.click(screen.getByTestId('square-e6'));
+    await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(2));
+  });
+
+  it('a move that is not legal even after the flip still falls back to selection', () => {
+    const onPlayMove = vi.fn();
+    render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(screen.getByTestId('square-e7'));
+    // Nonsense destination for the pawn — even flipped it never reaches e8.
+    fireEvent.click(screen.getByTestId('square-e8'));
+    expect(onPlayMove).not.toHaveBeenCalled();
+  });
+
   it('does not let viewers play moves', () => {
     const onPlayMove = vi.fn();
     render(<Analysis tree={tree} presenterId="p1" selfId="me" onPlayMove={onPlayMove} />);

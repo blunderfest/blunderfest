@@ -160,6 +160,20 @@ export default function BoardColumn({
           </div>
         )}
         {editor.editing && <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} side="top" />}
+        {!editor.editing && (
+          <span
+            data-testid="stm-indicator"
+            title={
+              (current.fen ?? '').split(/\s+/u)[1] === 'w'
+                ? t('analysis.whiteToMove')
+                : t('analysis.blackToMove')
+            }
+            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 z-10 ml-2 h-2.5 w-2.5 rounded-full border border-line ${
+              (current.fen ?? '').split(/\s+/u)[1] === 'w' ? 'bg-white' : 'bg-ink'
+            } -right-3.5`}
+            aria-hidden="true"
+          />
+        )}
         <Board
           position={editor.editing ? editor.editPos : parseFen(current.fen ?? '')}
           lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}

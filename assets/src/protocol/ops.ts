@@ -64,8 +64,13 @@ export type MoveAtPlyOp = OpBase & {
     game_id: string;
     ply: number;
     san: string;
-    from: string;
-    to: string;
+    /**
+     * Null squares describe a null move (pass): san `'--'` and no origin or
+     * destination. Server validation treats them as optional for exactly
+     * this reason (ADR-0033).
+     */
+    from: string | null;
+    to: string | null;
     promotion: string | null;
     fen: string;
     status: string;
