@@ -165,6 +165,29 @@ defmodule Blunderfest.OpsTest do
     assert :ok = Ops.validate(%{"type" => "remove_game", "payload" => %{"game_id" => "game-1"}})
   end
 
+  test "accepts a well-formed rename_game op" do
+    assert :ok =
+             Ops.validate(%{
+               "type" => "rename_game",
+               "payload" => %{"game_id" => "game-1", "title" => "Custom name"}
+             })
+  end
+
+  test "rejects malformed rename_game ops" do
+    assert {:error, :invalid_op} =
+             Ops.validate(%{"type" => "rename_game", "payload" => %{"game_id" => "game-1"}})
+
+    assert {:error, :invalid_op} =
+             Ops.validate(%{"type" => "rename_game", "payload" => %{"title" => "x"}})
+
+    # Game titles are capped (like comments) — and empty would be dropped client-side as clearing.
+    assert {:error, :invalid_op} =
+             Ops.validate(%{
+               "type" => "rename_game",
+               "payload" => %{"game_id" => "game-1", "title" => String.duplicate("x", 81)}
+             })
+  end
+
   test "rejects malformed remove_game ops" do
     assert {:error, :invalid_op} = Ops.validate(%{"type" => "remove_game", "payload" => %{}})
 
@@ -176,6 +199,7 @@ defmodule Blunderfest.OpsTest do
     assert Ops.edit_op?(%{"type" => "move_at_ply"})
     assert Ops.edit_op?(%{"type" => "set_game"})
     assert Ops.edit_op?(%{"type" => "remove_game"})
+    assert Ops.edit_op?(%{"type" => "rename_game"})
     assert Ops.edit_op?(%{"type" => "comment_at_ply"})
     assert Ops.edit_op?(%{"type" => "set_annotations"})
     assert Ops.edit_op?(%{"type" => "replace_line"})

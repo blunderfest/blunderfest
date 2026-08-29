@@ -48,6 +48,16 @@ export type RemoveGameOp = OpBase & {
   payload: { game_id: string };
 };
 
+/**
+ * A game's display title. The rename rides the op log as a custom `Title`
+ * header on the game tree — it becomes part of the PGN headers, so exports
+ * keep it and every client resolves it identically.
+ */
+export type RenameGameOp = OpBase & {
+  type: 'rename_game';
+  payload: { game_id: string; title: string };
+};
+
 export type MoveAtPlyOp = OpBase & {
   type: 'move_at_ply';
   payload: {
@@ -215,6 +225,7 @@ export type Op =
   | SetGameOp
   | SelectGameOp
   | RemoveGameOp
+  | RenameGameOp
   | MoveAtPlyOp
   | ReplaceLineOp
   | AddLineOp

@@ -162,7 +162,9 @@ means an echo was lost or reordered, so the client resyncs by rejoining
 `presence_state` / `presence_diff` carry member names. Ops are type-tagged
 payloads (`move_at_ply`, `add_line` (a whole line in one op — engine lines
 become variations atomically), `comment_at_ply`, `set_nags`, `set_game`,
-`select_game`, `set_cursor`, `set_role`, `chat` (room chat — replay is the
+`rename_game` (a game title stored on the tree's custom `Title` header —
+exports carry it), `select_game`, `set_cursor`, `set_role`, `chat` (room
+chat — replay is the
 history), `delete_chat` (owner moderation; the chat op stays in the log,
 clients filter it from view), ...) with `seq`,
 `author`, `ts` —

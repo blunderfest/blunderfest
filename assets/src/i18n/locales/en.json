@@ -362,6 +362,8 @@
     "newGame": "New game",
     "removeGame": "Remove from room",
     "untitledGame": "Untitled game",
+    "unnamedGame": "Game",
+    "renameGame": "Rename game",
     "move": "{{ply}}. {{san}}",
     "comment": "Comment on move {{ply}}: {{text}}",
     "line": "Line from move {{ply}}",

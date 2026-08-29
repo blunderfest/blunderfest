@@ -1,6 +1,8 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { button, chip } from '@/components/ui';
 import type { GameTree } from '@/lib/api';
+import { gameTitle } from '@/lib/gameTitle';
 
 /**
  * The games rail (ADR-0032): the room's games as chrome — a dedicated,
@@ -11,15 +13,6 @@ import type { GameTree } from '@/lib/api';
  * strip under the header (same row grammar). Position-setup games wear a
  * "position" chip instead of an eval badge — a mid-tree setup would lie.
  */
-
-function gameTitle(tree: GameTree, t: (key: string) => string): string {
-  const white = tree.headers.White;
-  const black = tree.headers.Black;
-  if (white && black) {
-    return `${white} – ${black}`;
-  }
-  return white ?? black ?? t('room.untitledGame');
-}
 
 /** Whether the tree is a position setup (ADR-0011) — its setup marker, not
     just a root FEN (every parsed tree carries the root's FEN). */
@@ -97,9 +90,12 @@ export default function GameRail({
   onAddGame,
   onNewGame,
   onRemoveGame,
+  onRenameGame,
   presenterName = null,
 }: {
-  games: Record<string, GameTree>;
+  /** Game entries in deterministic set_game seq order, so "Game N" counts
+      the same on every client. */
+  games: [string, GameTree][];
   activeGameId: string | null;
   presenterGameId: string | null;
   canEdit: boolean;
@@ -107,10 +103,42 @@ export default function GameRail({
   onAddGame: () => void;
   onNewGame: () => void;
   onRemoveGame: (id: string) => void;
+  onRenameGame: (id: string, title: string) => void;
   presenterName?: string | null;
 }) {
   const { t } = useTranslation();
-  const entries = Object.entries(games);
+  const entries = games;
+  /** Inline rename (double-click the title): the op rides the log, so every
+      client — and exports — see the new custom `Title` header. */
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (renamingId !== null) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [renamingId]);
+
+  function startRename(id: string, tree: GameTree) {
+    if (!canEdit) {
+      return;
+    }
+    setRenamingId(id);
+    setDraft(tree.headers.Title?.trim() ?? '');
+  }
+
+  function commitRename() {
+    if (renamingId === null) {
+      return;
+    }
+    const title = draft.trim().slice(0, 80);
+    if (title !== (games.find(([id]) => id === renamingId)?.[1].headers.Title?.trim() ?? '')) {
+      onRenameGame(renamingId, title === '' ? '' : title);
+    }
+    setRenamingId(null);
+  }
 
   return (
     <nav
@@ -163,6 +191,16 @@ export default function GameRail({
           entries.map(([id, tree]) => {
             const active = id === activeGameId;
             const presenting = presenterGameId === id && presenterName !== null;
+            // "Game N" counts only untitled games before this one, so the
+            // number is stable when a player-named game exists (deterministic
+            // for every client by the set_game order).
+            const untitledIndex = entries
+              .slice(0, entries.findIndex(([eId]) => eId === id) + 1)
+              .filter(([, eTree]) => {
+                const t2 = eTree.headers;
+                return !(t2.Title?.trim() || t2.White || t2.Black || t2.Event?.trim());
+              }).length;
+            const title = gameTitle(tree, t('room.unnamedGame'), untitledIndex);
             return (
               <div key={id} className="group relative shrink-0 max-xl:w-44">
                 <button
@@ -170,6 +208,7 @@ export default function GameRail({
                   aria-pressed={active}
                   aria-current={active ? 'true' : undefined}
                   onClick={() => onSelectGame(id)}
+                  onDoubleClick={() => startRename(id, tree)}
                   className={`flex w-full flex-col rounded-control border px-2 py-1.5 text-left transition-colors ${
                     active
                       ? 'border-gold-hi/60 bg-gold/10'
@@ -177,13 +216,32 @@ export default function GameRail({
                   }`}
                 >
                   <span className="flex min-w-0 items-baseline gap-1.5">
-                    <span
-                      className={`min-w-0 truncate text-ui font-semibold ${
-                        active ? 'text-ink' : 'text-muted'
-                      }`}
-                    >
-                      {gameTitle(tree, t)}
-                    </span>
+                    {canEdit && renamingId === id ? (
+                      <input
+                        ref={inputRef}
+                        className="min-w-0 flex-1 rounded-control border border-line bg-background text-ui font-semibold text-ink"
+                        data-testid={`rename-input-${id}`}
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
+                        onBlur={commitRename}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            commitRename();
+                          } else if (event.key === 'Escape') {
+                            setRenamingId(null);
+                          }
+                        }}
+                        aria-label={t('room.renameGame')}
+                      />
+                    ) : (
+                      <span
+                        className={`min-w-0 truncate text-ui font-semibold ${
+                          active ? 'text-ink' : 'text-muted'
+                        }`}
+                      >
+                        {title}
+                      </span>
+                    )}
                     {presenting && (
                       <span
                         role="img"

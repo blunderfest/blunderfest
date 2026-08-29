@@ -13,9 +13,12 @@ function treeWithHeaders(white: string, black: string, setup = false) {
   return tree;
 }
 
-function renderRail(games: Record<string, ReturnType<typeof treeWithHeaders>>, over = {}) {
+type Tree = ReturnType<typeof treeWithHeaders>;
+
+function renderRail(games: Record<string, Tree> | [string, Tree][], over = {}) {
+  const entries = Array.isArray(games) ? games : Object.entries(games);
   const props = {
-    games,
+    games: entries as [string, Tree][],
     activeGameId: 'g1',
     presenterGameId: null as string | null,
     canEdit: true,
@@ -23,6 +26,7 @@ function renderRail(games: Record<string, ReturnType<typeof treeWithHeaders>>, o
     onAddGame: vi.fn(),
     onNewGame: vi.fn(),
     onRemoveGame: vi.fn(),
+    onRenameGame: vi.fn(),
     ...over,
   };
   return { ...render(<GameRail {...props} />), props };
@@ -85,5 +89,58 @@ describe('GameRail', () => {
   it('hides the remove button from read-only viewers', () => {
     renderRail({ g1: treeWithHeaders('Alice', 'Bob') }, { canEdit: false });
     expect(screen.queryByRole('button', { name: 'Remove from room' })).toBeNull();
+  });
+
+  it('derives stable numbered labels for untitled games (Game 1, Game 2)', () => {
+    renderRail({
+      g1: treeWithHeaders('', ''),
+      g2: treeWithHeaders('Alice', 'Bob'),
+      g3: treeWithHeaders('', ''),
+    });
+    expect(screen.getByText('Game 1')).toBeInTheDocument();
+    expect(screen.getByText('Game 2')).toBeInTheDocument();
+  });
+
+  it('falls back to Event when there are no players or custom title', () => {
+    const tree = treeWithHeaders('', '');
+    tree.headers.Event = 'Blunder open';
+    renderRail({ g1: tree });
+    expect(screen.getByText('Blunder open')).toBeInTheDocument();
+  });
+
+  it('opens an inline editor on double-click and sends rename_game', () => {
+    const { props } = renderRail({ g1: treeWithHeaders('Alice', 'Bob') });
+    fireEvent.doubleClick(screen.getByText('Alice – Bob'));
+    const input = screen.getByRole('textbox', { name: 'Rename game' });
+    fireEvent.change(input, { target: { value: 'The immortal game' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(props.onRenameGame).toHaveBeenCalledWith('g1', 'The immortal game');
+    expect(screen.queryByRole('textbox', { name: 'Rename game' })).toBeNull();
+  });
+
+  it('escape cancels editing without sending', () => {
+    const { props } = renderRail({ g1: treeWithHeaders('Alice', 'Bob') });
+    fireEvent.doubleClick(screen.getByText('Alice – Bob'));
+    const input = screen.getByRole('textbox', { name: 'Rename game' });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(props.onRenameGame).not.toHaveBeenCalled();
+    expect(screen.queryByRole('textbox', { name: 'Rename game' })).toBeNull();
+  });
+
+  it('an empty rename clears the custom title back to derivations', () => {
+    const tree = treeWithHeaders('Alice', 'Bob');
+    tree.headers.Title = 'Old name';
+    const { props } = renderRail({ g1: tree });
+    fireEvent.doubleClick(screen.getByText('Old name'));
+    const input = screen.getByRole('textbox', { name: 'Rename game' });
+    fireEvent.change(input, { target: { value: '  ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(props.onRenameGame).toHaveBeenCalledWith('g1', '');
+  });
+
+  it('viewers never get the rename affordance', () => {
+    renderRail({ g1: treeWithHeaders('Alice', 'Bob') }, { canEdit: false });
+    fireEvent.doubleClick(screen.getByText('Alice – Bob'));
+    expect(screen.queryByRole('textbox', { name: 'Rename game' })).toBeNull();
   });
 });

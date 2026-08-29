@@ -1,15 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { button, chip, listRow, statusDot } from '@/components/ui';
 import type { GameTree } from '@/lib/api';
-
-function gameTitle(tree: GameTree, t: (key: string) => string): string {
-  const white = tree.headers.White;
-  const black = tree.headers.Black;
-  if (white && black) {
-    return `${white} – ${black}`;
-  }
-  return white ?? black ?? t('room.untitledGame');
-}
+import { gameTitle } from '@/lib/gameTitle';
 
 /** Bring games in — the header's import icon (heroicons arrow-down-tray). */
 function ImportIcon() {
@@ -109,7 +101,7 @@ export default function GameList({
           <p className="m-0 p-2 text-ui text-faint">{t('room.emptyGames')}</p>
         ) : (
           <ul className="m-0 flex flex-col gap-0.5 p-0">
-            {entries.map(([id, tree]) => (
+            {entries.map(([id, tree], index) => (
               <li key={id}>
                 <button
                   type="button"
@@ -118,7 +110,9 @@ export default function GameList({
                   className={`${listRow({ state: id === activeGameId ? 'selected' : 'default' })} rounded-control`}
                   onClick={() => onSelectGame(id)}
                 >
-                  <span className="min-w-0 flex-1 truncate">{gameTitle(tree, t)}</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    {gameTitle(tree, t('room.unnamedGame'), index + 1)}
+                  </span>
                   {presenterGameId === id && (
                     <span
                       role="img"

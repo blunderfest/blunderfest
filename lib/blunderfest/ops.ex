@@ -10,12 +10,13 @@ defmodule Blunderfest.Ops do
   @max_san_bytes 16
   @max_comment_bytes 2_000
   @max_chat_bytes 500
+  @max_title_bytes 80
   @max_annotations 64
   @max_line_moves 64
   @max_tree_nodes 2_000
   @max_tree_depth 1_500
 
-  @edit_op_types ~w(set_game remove_game move_at_ply replace_line add_line comment_at_ply set_annotations set_nags set_position)
+  @edit_op_types ~w(set_game remove_game rename_game move_at_ply replace_line add_line comment_at_ply set_annotations set_nags set_position)
 
   @square ~r/^[a-h][1-8]$/
   @color ~r/^#[0-9a-f]{6}$/
@@ -71,6 +72,15 @@ defmodule Blunderfest.Ops do
   # rights (owner + collaborators). The op log stays append-only — the game
   # is filtered from view on replay, like deleted chat (ADR-0023).
   defp check_type("remove_game", payload), do: string_field(payload, "game_id")
+
+  # A game's display title. The rename lands on the tree's `Title` header
+  # on every client, so exports carry it too.
+  defp check_type("rename_game", payload) do
+    with :ok <- string_field(payload, "game_id"),
+         :ok <- string_field(payload, "title", @max_title_bytes) do
+      :ok
+    end
+  end
 
   defp check_type("set_cursor", payload), do: int_field(payload, "node_id")
 

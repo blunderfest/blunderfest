@@ -28,6 +28,7 @@ import {
   selectCanEdit,
   selectEvidenceGids,
   selectFirstGameId,
+  selectGameEntries,
   selectLastPlayed,
   selectLastPlayedBy,
   selectPresenter,
@@ -121,6 +122,7 @@ function RoomViewInner({
   const members = useRoomSelector(selectSortedMembers);
   const roles = useRoomSelector((ctx) => ctx.roles);
   const games = useRoomSelector((ctx) => ctx.games);
+  const gameEntries = useRoomSelector(selectGameEntries);
   const presenter = useRoomSelector(selectPresenter);
   const presenterGameId = useRoomSelector(selectPresenterGameId);
   const presenterCursor = useRoomSelector(selectPresenterCursor);
@@ -479,6 +481,14 @@ function RoomViewInner({
     }
   }
 
+  /** Title-edit (own/co-owned games) rides the op log like any other edit. */
+  function handleRenameGame(gameId: string, title: string) {
+    if (!canEdit) {
+      return;
+    }
+    sendOp({ type: 'rename_game', payload: { game_id: gameId, title } });
+  }
+
   // The Examples dialog's "add to room": the historical game joins the
   // room as another game without stealing the view — the adder may want
   // to collect several games before looking at any of them. The game
@@ -585,7 +595,7 @@ function RoomViewInner({
   // empty-state tree for Analysis, remounting the rail — the "flicker".
   const rail = (
     <GameRail
-      games={games}
+      games={gameEntries}
       activeGameId={effectiveGameId}
       presenterGameId={presenterGameId}
       canEdit={canEdit}
@@ -593,6 +603,7 @@ function RoomViewInner({
       onAddGame={() => setShowImport(true)}
       onNewGame={handleNewGame}
       onRemoveGame={handleRemoveGame}
+      onRenameGame={handleRenameGame}
       presenterName={presenter?.name ?? null}
     />
   );

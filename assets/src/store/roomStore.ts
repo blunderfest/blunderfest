@@ -338,6 +338,24 @@ export function applySetNags(tree: GameTree, payload: SetNagsOp['payload']): Gam
   };
 }
 
+function renameHelper(
+  games: Record<string, GameTree>,
+  gameId: string,
+  title: string,
+): Record<string, GameTree> {
+  const tree = games[gameId];
+  if (tree === undefined) {
+    return games;
+  }
+  const headers = { ...tree.headers };
+  if (title === '') {
+    delete headers.Title;
+  } else {
+    headers.Title = title;
+  }
+  return { ...games, [gameId]: { ...tree, headers } };
+}
+
 function removeGame(ctx: RoomContext, gameId: string): RoomContext {
   const games = { ...ctx.games };
   const annotations = { ...ctx.annotations };
@@ -440,6 +458,15 @@ function fold(ctx: RoomContext, op: Op): RoomContext {
     case 'remove_game':
       next = removeGame(next, op.payload.game_id);
       break;
+    case 'rename_game':
+      // The title is a custom PGN header (like Event — not one of the
+      // standard seven tags): exports carry it and the derivation helper
+      // reads it first.
+      next = {
+        ...next,
+        games: renameHelper(next.games, op.payload.game_id, op.payload.title),
+      };
+      break;
     case 'set_annotations':
       // Annotations for a removed game are a no-op (consistent live + replay).
       if (next.games[op.payload.game_id] !== undefined) {
@@ -517,6 +544,7 @@ export function createRoomStore(slug: string | null = null) {
       // Op events fold into the projection.
       set_game: (ctx, op: SetGameOp) => fold(ctx, op),
       remove_game: (ctx, op: Extract<Op, { type: 'remove_game' }>) => fold(ctx, op),
+      rename_game: (ctx, op: Extract<Op, { type: 'rename_game' }>) => fold(ctx, op),
       select_game: (ctx, op: Extract<Op, { type: 'select_game' }>) => fold(ctx, op),
       move_at_ply: (ctx, op: MoveAtPlyOp) => fold(ctx, op),
       replace_line: (ctx, op: Extract<Op, { type: 'replace_line' }>) => fold(ctx, op),
@@ -605,6 +633,21 @@ export function selectFirstGameId(ctx: RoomContext): string | null {
   }
   return null;
 }
+
+/**
+ * The room's games in deterministic `set_game` seq order, so the title
+ * derivation ("Game N") counts the same on every client — `Object.entries`
+ * order is not shared knowledge.
+ */
+export const selectGameEntries = memo((ctx: RoomContext): [string, GameTree][] => {
+  const ordered: string[] = [];
+  for (const op of ctx.ops) {
+    if (op.type === 'set_game' && ctx.games[op.payload.game_id] !== undefined) {
+      ordered.push(op.payload.game_id);
+    }
+  }
+  return ordered.map((id) => [id, ctx.games[id]]);
+});
 
 export function selectLastPlayed(ctx: RoomContext, gameId: string | null): number | null {
   if (gameId === null) {

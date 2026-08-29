@@ -832,6 +832,43 @@ describe('RoomView', () => {
     expect(pieceAt('square-e2')).toBe('wp');
   });
 
+  it('renames the active game — the rename_game op updates every client', async () => {
+    channel.joinReturn = { ops: [setGameOp(1, gameTree)], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+    act(() => channel.emit('presence_state', { 'profile-1': { metas: [{ name: 'Me' }] } }));
+    await screen.findByRole('button', { name: /Alice – Bob/ });
+
+    // Double-click the title; the op goes out.
+    fireEvent.doubleClick(screen.getByRole('button', { name: /Alice – Bob/ }));
+    const input = screen.getByRole('textbox', { name: 'Rename game' });
+    fireEvent.change(input, { target: { value: 'The Vogt-Kern blunder' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => expect(channel.pushes.length).toBe(2));
+    const pushed = channel.pushes[1] as {
+      payload: { type: string; payload: { game_id: string; title: string } };
+    };
+    expect(pushed.payload.type).toBe('rename_game');
+    expect(pushed.payload.payload.title).toBe('The Vogt-Kern blunder');
+
+    // The echo lands: the custom Title header drives the rail label.
+    act(() =>
+      channel.emit('new_op', {
+        seq: 2,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'rename_game',
+        payload: {
+          game_id: pushed.payload.payload.game_id,
+          title: 'The Vogt-Kern blunder',
+        },
+      } as Op),
+    );
+    await screen.findByText('The Vogt-Kern blunder');
+    // Rename affranchised — the input for the game has closed.
+    expect(screen.queryByRole('textbox', { name: 'Rename game' })).toBeNull();
+  });
+
   it('creates an empty game with the New game button', async () => {
     channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
     renderRoom('abc12', vi.fn(), 'profile-1');
@@ -862,7 +899,8 @@ describe('RoomView', () => {
       }),
     );
 
-    expect(await screen.findByRole('button', { name: 'Untitled game' })).toHaveAttribute(
+    // Untitled games fall back to a stable numbered label (Game N).
+    expect(await screen.findByRole('button', { name: 'Game 1' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
