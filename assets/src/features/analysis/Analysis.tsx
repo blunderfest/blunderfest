@@ -521,6 +521,10 @@ export default function Analysis({
       },
       () => rollbackPending(childId, current.id),
     );
+    // Pending is keyed by node id: BOTH the pass and its nested move land
+    // under their own key, so the cursor's `pending.get(childId)` finds the
+    // move and the board never falls back to the pre-pass position (the
+    // double-flip).
     addPending({
       id: passId,
       ply: current.ply + 1,
@@ -532,21 +536,20 @@ export default function Analysis({
       nags: [],
       status: pass.status,
       fen: pass.fen,
-      children: [
-        {
-          id: childId,
-          ply: current.ply + 2,
-          san: move.san,
-          from: move.from,
-          to: move.to,
-          promotion: move.promotion,
-          comment: null,
-          nags: [],
-          status: move.status,
-          fen: move.fen,
-          children: [],
-        },
-      ],
+      children: [],
+    });
+    addPending({
+      id: childId,
+      ply: current.ply + 2,
+      san: move.san,
+      from: move.from,
+      to: move.to,
+      promotion: move.promotion,
+      comment: null,
+      nags: [],
+      status: move.status,
+      fen: move.fen,
+      children: [],
     });
     setSelected(null);
     navigate(childId);
