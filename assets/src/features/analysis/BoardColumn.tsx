@@ -103,6 +103,22 @@ export default function BoardColumn({
           {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
         </h2>
         <div className="flex shrink-0 items-center gap-2">
+          {!editor.editing && (
+            <span
+              data-testid="stm-chip"
+              title="Side to move"
+              aria-live="polite"
+              className="mr-1 flex items-center whitespace-nowrap gap-1.5 rounded-chip border border-line px-2 py-0.5 text-micro font-semibold uppercase tracking-[0.11em] text-muted"
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${(current.fen ?? '').split(/\s+/u)[1] === 'w' ? 'bg-white' : 'bg-ink'} border border-line`}
+                aria-hidden="true"
+              />
+              {(current.fen ?? '').split(/\s+/u)[1] === 'w'
+                ? t('analysis.whiteToMove')
+                : t('analysis.blackToMove')}
+            </span>
+          )}
           <p className="m-0 whitespace-nowrap text-muted">{tree.result}</p>
           <GameActions tree={tree} />
         </div>
@@ -159,20 +175,25 @@ export default function BoardColumn({
           </div>
         )}
         {editor.editing && <PaletteStrip editor={editor} color={flipped ? 'w' : 'b'} side="top" />}
-        {!editor.editing && (
-          <span
-            data-testid="stm-indicator"
-            title={
-              (current.fen ?? '').split(/\s+/u)[1] === 'w'
-                ? t('analysis.whiteToMove')
-                : t('analysis.blackToMove')
-            }
-            className={`pointer-events-none absolute top-1/2 -translate-y-1/2 z-10 ml-2 h-2.5 w-2.5 rounded-full border border-line ${
-              (current.fen ?? '').split(/\s+/u)[1] === 'w' ? 'bg-white' : 'bg-ink'
-            } -right-3.5`}
-            aria-hidden="true"
-          />
-        )}
+        {/*
+          Side-to-move edge strip: the mover "owns" their board edge (white
+          = bottom, black = top, swapped when flipped). Sits OUTSIDE the
+          board's border so it never covers squares.
+        */}
+        {!editor.editing &&
+          (() => {
+            const whiteStm = (current.fen ?? '').split(/\s+/u)[1] === 'w';
+            const atBottom = whiteStm !== flipped; // white bottom; swap when flipped
+            return (
+              <span
+                data-testid="stm-edge"
+                aria-hidden="true"
+                className={`pointer-events-none absolute inset-x-0 z-10 h-1 rounded-full ${
+                  atBottom ? '-bottom-1.5' : '-top-1.5'
+                } ${whiteStm ? 'bg-white' : 'bg-ink'} border border-line`}
+              />
+            );
+          })()}
         <Board
           position={editor.editing ? editor.editPos : parseFen(current.fen ?? '')}
           lastMove={current.from ? { from: current.from, to: current.to ?? '' } : null}

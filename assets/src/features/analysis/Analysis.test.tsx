@@ -472,6 +472,40 @@ describe('Analysis', () => {
     expect(header.textContent).toContain('1... --');
   });
 
+  it('side-to-move chip and edge strip track the mover through navigation', () => {
+    const startFw: GameTree = {
+      ...tree,
+      root: {
+        ...tree.root,
+        children: [
+          node({
+            id: 10,
+            ply: 1,
+            san: 'e4',
+            from: 'e2',
+            to: 'e4',
+            fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+          }),
+        ],
+      },
+    };
+    render(<Analysis tree={startFw} />);
+
+    // opens on the tail (black to move at e4 node)
+    const chip = screen.getByTestId('stm-chip');
+    expect(chip.textContent).toBe('Black to move');
+    const edge = screen.getByTestId('stm-edge');
+    expect(edge.className).toContain('bg-ink');
+    expect(edge.className).toContain('-top-1.5');
+
+    // The root: white to move, edge back at board bottom in white.
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    expect(screen.getByTestId('stm-chip').textContent).toBe('White to move');
+    const edgeRoot = screen.getByTestId('stm-edge');
+    expect(edgeRoot.className).toContain('bg-white');
+    expect(edgeRoot.className).toContain('-bottom-1.5');
+  });
+
   it('a move that is not legal even after the flip still falls back to selection', () => {
     const onPlayMove = vi.fn();
     render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);
