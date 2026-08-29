@@ -97,9 +97,9 @@ export default function BoardColumn({
   const evalBarLabel = evalAriaLabel(engineState.eval, t);
 
   return (
-    <div className="order-1 flex min-w-0 flex-1 flex-col items-center gap-4">
+    <div className="order-1 flex min-w-0 flex-1 flex-col items-center gap-2 px-3 py-3">
       <div className="flex w-full items-baseline justify-between gap-4">
-        <h2 className="m-0 min-w-0 truncate text-display font-bold tracking-[-0.02em]">
+        <h2 className="m-0 min-w-0 truncate text-lead font-semibold tracking-[-0.01em]">
           {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
         </h2>
         <div className="flex shrink-0 items-center gap-2">
@@ -131,7 +131,7 @@ export default function BoardColumn({
       <p
         data-testid="opening-name"
         aria-hidden={opening === null}
-        className="m-0 -mt-2 h-[1.125rem] w-full text-note font-semibold text-gold-hi"
+        className="m-0 -mt-1 h-[1.125rem] w-full text-note font-semibold text-gold-hi"
       >
         {opening === null
           ? current.ply > 0

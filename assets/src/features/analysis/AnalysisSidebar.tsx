@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import ArrowIcon from '@/components/ArrowIcon';
-import { panel } from '@/components/ui';
 import CriticalMoments from '@/features/analysis/CriticalMoments';
 import EngineBox from '@/features/analysis/EngineBox';
 import GameInfo from '@/features/analysis/GameInfo';
@@ -141,7 +140,7 @@ export default function AnalysisSidebar({
         // ADR-0024 as amended), then the move list scrolling below —
         // lichess's analysis panel.
         <section
-          className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
           data-tour="analysis-panel"
         >
           <EngineBox
@@ -203,7 +202,7 @@ export default function AnalysisSidebar({
       label: t('analysis.reviewTab'),
       content: (
         <section
-          className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
           data-testid="viz-box"
           data-tour="viz-box"
         >
@@ -267,7 +266,7 @@ export default function AnalysisSidebar({
             badge: chatBadge,
             content: (
               <section
-                className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
+                className="flex min-h-0 flex-1 flex-col overflow-hidden"
                 data-tour="chat-panel"
               >
                 {chatTab}
@@ -280,7 +279,7 @@ export default function AnalysisSidebar({
 
   return (
     <aside
-      className="order-3 flex h-[52dvh] w-full max-w-[min(90vw,34rem)] flex-col gap-3 sm:h-[46dvh] xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] 2xl:w-[420px]"
+      className="order-3 flex h-[52dvh] w-full flex-col bg-panel max-xl:border-line max-xl:border-t sm:h-[46dvh] xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] xl:border-l xl:border-line 2xl:w-[420px]"
       data-tour="sidebar"
       data-testid="room-sidebar"
     >

@@ -189,15 +189,16 @@
   }
   @media (min-width: 1280px) {
     .analysis-scope {
-      /* width budget: page padding + eval slot + row gap + sidebar;
-         height budget: header, title/opening, toolbar, strip, paddings */
-      --board-size: min(calc(100vw - 28.75rem), calc(100dvh - 20.5rem), 46rem);
+      /* width budget: rail (260) + dock (360) + eval slot (52); height
+         budget: header, title/meta, board padding, toolbar, and the
+         EXPANDED strip (header + h-36 chart) so the page never scrolls */
+      --board-size: min(calc(100vw - 26rem), calc(100dvh - 24.5rem), 46rem);
     }
   }
   @media (min-width: 1536px) {
     .analysis-scope {
-      /* the sidebar widens at 2xl (360px → 420px) */
-      --board-size: min(calc(100vw - 32.5rem), calc(100dvh - 20.5rem), 46rem);
+      /* the dock widens at 2xl (360px → 420px) */
+      --board-size: min(calc(100vw - 29.75rem), calc(100dvh - 24.5rem), 46rem);
     }
   }
 

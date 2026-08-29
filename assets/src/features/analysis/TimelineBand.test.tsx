@@ -65,12 +65,7 @@ const analyzeAction = {
   onClick: vi.fn(),
 };
 
-/**
- * Renders the band expanded (the stacked layer view): most assertions below
- * target the layers, and the strip is covered by its own describe block.
- */
 function renderBand(overrides: Partial<Parameters<typeof TimelineBand>[0]> = {}) {
-  localStorage.setItem('blunderfest.timelineExpanded', '1');
   return render(
     <TimelineBand
       tree={tree}
@@ -85,243 +80,120 @@ function renderBand(overrides: Partial<Parameters<typeof TimelineBand>[0]> = {})
   );
 }
 
-function layerToggle(id: string): HTMLElement {
-  // The layer toggles live in the "Layers" popover — open it once.
-  const popoverButton = screen.getByTestId('timeline-layers-button');
-  if (popoverButton.getAttribute('aria-expanded') !== 'true') {
-    fireEvent.click(popoverButton);
-  }
-  const toggle = screen
-    .getAllByTestId('timeline-layer-toggle')
+/** A layer's tab in the header. */
+function layerTab(id: string): HTMLElement {
+  const tab = screen
+    .getAllByTestId('timeline-layer-tab')
     .find((button) => button.dataset.layer === id);
-  if (toggle === undefined) {
-    throw new Error(`No toggle for layer ${id}`);
+  if (tab === undefined) {
+    throw new Error(`No tab for layer ${id}`);
   }
-  return toggle;
+  return tab;
 }
 
 describe('TimelineBand', () => {
   afterEach(() => {
-    localStorage.removeItem('blunderfest.timelineLayers');
     localStorage.removeItem('blunderfest.timelineExpanded');
+    localStorage.removeItem('blunderfest.timelineActiveLayer');
   });
 
-  it('renders the eval and material layers by default', () => {
+  it('shows the eval layer by default, one chart at a time', () => {
     renderBand();
 
     expect(screen.getByTestId('game-flow')).toBeInTheDocument();
-    expect(screen.getByTestId('material-flow')).toBeInTheDocument();
-    expect(screen.queryByTestId('activity-flow')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('material-flow')).not.toBeInTheDocument();
+    expect(layerTab('eval')).toHaveAttribute('aria-selected', 'true');
+    expect(layerTab('material')).toHaveAttribute('aria-selected', 'false');
   });
 
-  it('marks the eval chip as needing an analysis until one exists', () => {
+  it('marks the eval tab as needing an analysis until one exists', () => {
     renderBand({ hasAnalysis: false });
 
-    expect(layerToggle('eval')).toHaveAttribute(
-      'title',
-      'This layer needs an analysis — run “Analyze game”.',
-    );
     expect(screen.getByTestId('eval-layer-needs-analysis')).toBeInTheDocument();
+    // The eval chart itself is a note, not a chart.
+    expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
+    expect(screen.getByTestId('timeline-layer-eval')).toHaveTextContent('No analysis yet');
   });
 
-  it('drops the eval chip marker once an analysis exists', () => {
+  it('drops the eval marker once an analysis exists', () => {
     renderBand({ hasAnalysis: true });
 
-    layerToggle('eval');
     expect(screen.queryByTestId('eval-layer-needs-analysis')).not.toBeInTheDocument();
   });
 
-  it('aligns every layer on the shared span, not each chart\u2019s own last ply', () => {
-    // Both charts' own data ends at ply 2; the shared span is 4. The
-    // current ply (2) must sit at the halfway line of both — without the
-    // span each chart would put it at its own right edge.
-    renderBand({ currentPly: 2, spanPly: 4 });
+  it('switches layers from the tab row, persisting the choice', () => {
+    renderBand();
 
-    expect(screen.getByTestId('game-flow-marker')).toHaveAttribute('x1', '50');
-    expect(screen.getByTestId('material-flow-marker')).toHaveAttribute('x1', '50');
-  });
+    // Fixed order: eval, material, activity, clocks.
+    const order = screen.getAllByTestId('timeline-layer-tab').map((tab) => tab.dataset.layer);
+    expect(order).toEqual(['eval', 'material', 'activity', 'clocks']);
 
-  it('holds the analyze action in the header, eval layer explains itself', () => {
-    renderBand({ hasAnalysis: false, analyzeAction });
-
-    // The button rides the header — no layer has to be on to reach it.
-    const headerButton = screen.getByRole('button', { name: 'Analyze game' });
-    fireEvent.click(headerButton);
-    expect(analyzeAction.onClick).toHaveBeenCalledTimes(1);
-    // The eval layer itself is a note, not a button.
-    expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
-    expect(screen.getByTestId('timeline-layer-eval')).toHaveTextContent('No analysis yet');
-    // The pure-FEN layer still charts.
+    fireEvent.click(layerTab('material'));
     expect(screen.getByTestId('material-flow')).toBeInTheDocument();
-  });
-
-  it('hides the header action once an analysis exists (even with the eval layer off)', () => {
-    renderBand({ hasAnalysis: true });
-
-    expect(screen.queryByRole('button', { name: 'Analyze game' })).not.toBeInTheDocument();
-
-    // With every layer off, the header still renders (chips + no button).
-    fireEvent.click(layerToggle('eval'));
-    fireEvent.click(layerToggle('material'));
-    expect(screen.getByTestId('timeline-band-empty')).toBeInTheDocument();
-  });
-
-  it('captions every visible layer with its label', () => {
-    renderBand();
-
-    expect(screen.getByTestId('timeline-layer-eval')).toHaveTextContent('Eval');
-    expect(screen.getByTestId('timeline-layer-material')).toHaveTextContent('Material');
-  });
-
-  it('explains the clocks bar colors with a side legend', () => {
-    renderBand();
-
-    fireEvent.click(layerToggle('clocks'));
-    const layer = screen.getByTestId('timeline-layer-clocks');
-    expect(layer).toHaveTextContent('White');
-    expect(layer).toHaveTextContent('Black');
-  });
-
-  it('toggles a layer off and on, persisting the choice', () => {
-    renderBand();
-
-    fireEvent.click(layerToggle('material'));
-    expect(screen.queryByTestId('material-flow')).not.toBeInTheDocument();
-    expect(localStorage.getItem('blunderfest.timelineLayers')).toBe('["eval"]');
-
-    fireEvent.click(layerToggle('activity'));
-    expect(screen.getByTestId('activity-flow')).toBeInTheDocument();
-    expect(localStorage.getItem('blunderfest.timelineLayers')).toBe('["eval","activity"]');
+    expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
+    expect(layerTab('material')).toHaveAttribute('aria-selected', 'true');
+    expect(localStorage.getItem('blunderfest.timelineActiveLayer')).toBe('material');
   });
 
   it('honors a stored layer choice from a previous session', () => {
-    localStorage.setItem('blunderfest.timelineLayers', '["activity"]');
+    localStorage.setItem('blunderfest.timelineActiveLayer', 'activity');
 
     renderBand();
 
     expect(screen.getByTestId('activity-flow')).toBeInTheDocument();
     expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('material-flow')).not.toBeInTheDocument();
-  });
-
-  it('shows a hint when every layer is off', () => {
-    renderBand();
-
-    fireEvent.click(layerToggle('eval'));
-    fireEvent.click(layerToggle('material'));
-
-    expect(screen.getByTestId('timeline-band-empty')).toBeInTheDocument();
-    expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
-  });
-});
-
-describe('TimelineBand strip (collapsed)', () => {
-  afterEach(() => {
-    localStorage.removeItem('blunderfest.timelineLayers');
-    localStorage.removeItem('blunderfest.timelineExpanded');
-    localStorage.removeItem('blunderfest.timelineSpotlight');
-  });
-
-  /** A layer's dot in the strip's picker. */
-  function layerDot(id: string): HTMLElement {
-    const dot = screen
-      .getAllByTestId('timeline-layer-dot')
-      .find((button) => button.dataset.layer === id);
-    if (dot === undefined) {
-      throw new Error(`No dot for layer ${id}`);
-    }
-    return dot;
-  }
-
-  function renderStrip(overrides: Partial<Parameters<typeof TimelineBand>[0]> = {}) {
-    return render(
-      <TimelineBand
-        tree={tree}
-        evals={evals}
-        currentPly={2}
-        spanPly={3}
-        hasAnalysis
-        analyzeAction={null}
-        onSelectPly={vi.fn()}
-        {...overrides}
-      />,
-    );
-  }
-
-  it('is the default: one sparkline layer — the first enabled layer holding data', () => {
-    renderStrip();
-
-    expect(screen.getByTestId('timeline-strip')).toBeInTheDocument();
-    expect(screen.getByTestId('game-flow')).toBeInTheDocument();
-    expect(screen.queryByTestId('material-flow')).not.toBeInTheDocument();
-    // The eval dot is the lit one; no text label to jump around.
-    expect(layerDot('eval')).toBeChecked();
-    expect(screen.queryByTestId('timeline-layer-eval')).not.toBeInTheDocument();
-  });
-
-  it('skips layers without data (the eval chart needs an analysis)', () => {
-    renderStrip({ hasAnalysis: false });
-
-    expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
-    expect(screen.getByTestId('material-flow')).toBeInTheDocument();
-    expect(layerDot('material')).toBeChecked();
-  });
-
-  it('switches the strip layer from the dots without moving the controls', () => {
-    renderStrip();
-
-    // Fixed order: eval, material, activity, clocks — regardless of which
-    // layer is charted.
-    const order = screen.getAllByTestId('timeline-layer-dot').map((dot) => dot.dataset.layer);
-    expect(order).toEqual(['eval', 'material', 'activity', 'clocks']);
-
-    // Clicking a dot spotlights it (enabling it first if it was off).
-    fireEvent.click(layerDot('activity'));
-    expect(screen.getByTestId('activity-flow')).toBeInTheDocument();
-    expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
-    expect(layerDot('activity')).toBeChecked();
-    expect(localStorage.getItem('blunderfest.timelineSpotlight')).toBe('activity');
-    // …and the layer joined the enabled set.
-    expect(JSON.parse(localStorage.getItem('blunderfest.timelineLayers') ?? '[]')).toContain(
-      'activity',
-    );
   });
 
   it('shows the picked layer’s own empty note when it holds no data', () => {
     // No clock data in this tree: the clocks layer can’t chart.
-    renderStrip();
+    renderBand();
 
-    fireEvent.click(layerDot('clocks'));
-    expect(screen.getByTestId('timeline-strip-layer-empty')).toHaveTextContent('No clock data');
+    fireEvent.click(layerTab('clocks'));
+    expect(screen.getByTestId('timeline-layer-clocks')).toHaveTextContent('No clock data');
   });
 
-  it('shows a compact note when no enabled layer holds data', () => {
-    const emptyTree: GameTree = {
-      ...tree,
-      mainline_ply_count: 0,
-      root: { ...tree.root, children: [] },
-    };
-    renderStrip({ tree: emptyTree, hasAnalysis: false, spanPly: 0, currentPly: 0 });
+  it('explains the clocks bar colors with a side legend on its tab', () => {
+    renderBand();
 
-    expect(screen.getByTestId('timeline-strip-empty')).toBeInTheDocument();
-    expect(screen.queryByTestId('material-flow')).not.toBeInTheDocument();
+    fireEvent.click(layerTab('clocks'));
+    expect(screen.getByText('White')).toBeInTheDocument();
+    expect(screen.getByText('Black')).toBeInTheDocument();
   });
 
-  it('expands to the stacked layers and persists the choice', () => {
-    renderStrip();
+  it('aligns the shared span, not the chart’s own last ply', () => {
+    // The chart's own data ends at ply 2; the shared span is 4. The current
+    // ply (2) must sit at the halfway line — without the span the chart
+    // would put it at its own right edge.
+    renderBand({ currentPly: 2, spanPly: 4 });
+
+    expect(screen.getByTestId('game-flow-marker')).toHaveAttribute('x1', '50');
+  });
+
+  it('holds the analyze action in the header', () => {
+    renderBand({ hasAnalysis: false, analyzeAction });
+
+    const headerButton = screen.getByRole('button', { name: 'Analyze game' });
+    fireEvent.click(headerButton);
+    expect(analyzeAction.onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the header action once an analysis exists', () => {
+    renderBand({ hasAnalysis: true });
+
+    expect(screen.queryByRole('button', { name: 'Analyze game' })).not.toBeInTheDocument();
+  });
+
+  it('expands and collapses the chart, persisting the choice', () => {
+    renderBand();
+
+    // Collapsed by default: the strip sparkline.
+    expect(document.querySelector('.h-10')).not.toBeNull();
 
     fireEvent.click(screen.getByTestId('timeline-expand'));
-
-    expect(screen.getByTestId('timeline-layer-eval')).toBeInTheDocument();
-    expect(screen.getByTestId('timeline-layer-material')).toBeInTheDocument();
     expect(localStorage.getItem('blunderfest.timelineExpanded')).toBe('1');
-  });
+    expect(document.querySelector('.h-28')).not.toBeNull();
 
-  it('keeps the analyze action reachable while collapsed', () => {
-    const action = { label: 'Analyze game', progress: null, onClick: vi.fn() };
-    renderStrip({ hasAnalysis: false, analyzeAction: action });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Analyze game' }));
-    expect(action.onClick).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId('timeline-expand'));
+    expect(localStorage.getItem('blunderfest.timelineExpanded')).toBe('0');
   });
 });

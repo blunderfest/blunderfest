@@ -33,7 +33,7 @@ export default function RegionChip() {
 
   return (
     <span
-      className="flex items-center gap-1 rounded-chip border border-line px-1.5 py-0.5 font-mono text-micro whitespace-nowrap uppercase text-muted"
+      className="flex items-center gap-1 font-mono text-micro whitespace-nowrap uppercase text-faint"
       title={tooltip}
       data-testid="region-chip"
     >

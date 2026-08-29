@@ -869,25 +869,18 @@ describe('game flow chart', () => {
     expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
   });
 
-  it('shows the material layer even without an analysis (no engine needed)', () => {
+  it('shows the material layer on its band tab, even without an analysis (no engine needed)', () => {
     renderAnalysis();
 
-    // Material is a default-visible timeline band layer, not a tab.
     expect(screen.getByTestId('timeline-band')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Material' }));
     expect(screen.getByTestId('material-flow')).toBeInTheDocument();
   });
 
-  it('shows the activity layer on its band toggle, without an analysis', () => {
+  it('shows the activity layer on its band tab, without an analysis', () => {
     renderAnalysis();
 
-    // Expand the band, then enable the layer via the Layers popover.
-    fireEvent.click(screen.getByTestId('timeline-expand'));
-    fireEvent.click(screen.getByTestId('timeline-layers-button'));
-    const activityToggle = screen
-      .getAllByTestId('timeline-layer-toggle')
-      .find((button) => button.dataset.layer === 'activity');
-    expect(activityToggle).toBeDefined();
-    fireEvent.click(activityToggle as HTMLElement);
+    fireEvent.click(screen.getByRole('tab', { name: 'Activity' }));
     expect(screen.getByTestId('activity-flow')).toBeInTheDocument();
   });
 

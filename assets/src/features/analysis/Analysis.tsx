@@ -1020,10 +1020,7 @@ export default function Analysis({
         : null;
 
   return (
-    <div
-      data-testid="analysis-root"
-      className="analysis-scope flex w-full flex-col items-stretch gap-3 md:gap-6"
-    >
+    <div data-testid="analysis-root" className="analysis-scope flex w-full flex-col items-stretch">
       {/*
         w-full is load-bearing: without it this wrapper shrink-wraps to its
         widest child's max-content (a long PV in the engine readout, a
@@ -1038,8 +1035,8 @@ export default function Analysis({
         band drops below it. The row stretches full-width (games rail left,
         dock right — the v0 frame).
       */}
-      <div className="flex w-full max-w-full flex-col items-stretch gap-3 md:gap-6">
-        <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
+      <div className="flex w-full max-w-full flex-col items-stretch">
+        <div className="contents xl:flex xl:flex-row xl:items-stretch">
           <BoardColumn
             tree={tree}
             current={current}
@@ -1135,7 +1132,7 @@ export default function Analysis({
           stacked layers on one shared move axis, full width under the
           board+sidebar row at xl and right under the board below it.
         */}
-        <div className="order-2 w-full max-w-[min(90vw,34rem)] xl:max-w-none">
+        <div className="order-2 w-full">
           <TimelineBand
             tree={tree}
             evals={mainlineEvals}

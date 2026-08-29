@@ -619,7 +619,7 @@ function RoomViewInner({
   );
 
   return (
-    <div className="flex flex-1 flex-col items-stretch gap-3 p-3">
+    <div className="flex flex-1 flex-col items-stretch">
       {/*
         The room's app-bar chrome: the code chip (the invite affordance —
         click copies the code), the presence strip, and the region chip —
@@ -657,8 +657,8 @@ function RoomViewInner({
         swaps only the board region (CTA ↔ Analysis), never the rail (the
         "flicker" was the rail remounting with the whole tree).
       */}
-      <div className="analysis-scope flex w-full max-w-full flex-col gap-3 md:gap-6">
-        <div className="contents xl:flex xl:flex-row xl:items-stretch xl:gap-6">
+      <div className="analysis-scope flex w-full max-w-full flex-col">
+        <div className="contents xl:flex xl:flex-row xl:items-stretch">
           {rail}
           {noGames ? (
             // No game yet: the board CTA where it will live. The middle slot is
@@ -722,7 +722,7 @@ function RoomViewInner({
                 </div>
                 {chatContent !== undefined && (
                   <aside
-                    className="flex h-[46dvh] w-full max-w-[min(100%,24rem)] flex-col self-center xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] xl:max-w-none xl:self-auto 2xl:w-[420px]"
+                    className="flex h-[46dvh] w-full max-w-[min(100%,24rem)] flex-col self-center border border-line bg-panel xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] xl:max-w-none xl:self-auto xl:border-l xl:border-y-0 xl:border-r-0 2xl:w-[420px]"
                     data-tour="sidebar"
                     data-testid="room-sidebar"
                   >
@@ -730,9 +730,7 @@ function RoomViewInner({
                       No games yet: the dock is just the chat — a single
                       panel with a header, not a one-tab strip.
                     */}
-                    <section
-                      className={`${panel({ layout: 'none', pad: 'none' })} flex min-h-0 flex-1 flex-col overflow-hidden`}
-                    >
+                    <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
                       <div className="flex h-9 shrink-0 items-center border-b border-line px-3 text-micro font-semibold uppercase tracking-[0.11em] text-muted">
                         {t('chat.title')}
                         {chatBadge}

@@ -132,7 +132,7 @@ export default function ActivityFlow({
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           preserveAspectRatio="none"
           aria-hidden="true"
-          className="block h-full w-full rounded-control border border-line bg-[#1a1d24]"
+          className="block h-full w-full"
         >
           <path
             d={areaPath(chartPoints, flipped)}

@@ -210,7 +210,7 @@ so clients send nothing and hide the member list.
   the games rail's handlers, the chat unread count, per-game cursor memory),
   `GameRail` (the games rail, ADR-0032: chrome — fixed "Boards · N" header
   with the import/new icons, a self-scrolling list of text rows (title +
-  eval + opening + watching avatars), a "position" chip for setup games;
+  opening + a presenter-initials marker), a "position" chip for setup games;
   vertical rail on desktop, horizontal strip on mobile), `RegionChip` (the
   app bar's connection telemetry: server region + room region + measured
   RTT, tooltip with the full sentence; renders nothing until the join reply
@@ -262,16 +262,17 @@ so clients send nothing and hide the member list.
   (variation tree), `nodeMap.ts` (ply ↔ node index), `BoardControls` (the
   toolbar's direct action icons — flip, comment, find examples, edit
   position, the drawing-color dots, clear), `GameInfo`, `NodeComment`.
-  Whole-game visualization (ADR-0024, as amended 2026-08-24; ADR-0031)
+  Whole-game visualization (ADR-0024, as amended 2026-08-24; ADR-0031;
+  tabbed per ADR-0034)
   splits by kind: `TimelineBand.tsx` is the band under the board, a
-  collapsed **strip** by default — one sparkline-height scrubbable layer
-  (a fixed-order dot per layer switches which one charts, enabling it
-  first if off; on/off toggles live in the "Layers" popover), an expand
-  chevron for the full stack; expanded, the game-story
-  charts stack as toggleable layers on one shared move axis (`spanPly` =
-  mainline tip; layer choice, the charted (spotlight) layer and the
-  expanded state are localStorage
-  preferences) — `GameFlow` (eval + quality strip, phase
+  collapsed **strip** by default and an expand chevron for a taller view —
+  either way it shows **one chart at a time**, switched by a tab row in the
+  strip header (Eval · Material · Activity · Clocks) with the same accent-
+  underline grammar as the dock tabs. All charts share one move axis
+  (`spanPly` = mainline tip); the active layer and the expanded state are
+  localStorage preferences
+  (`blunderfest.timelineActiveLayer` / `blunderfest.timelineExpanded`) —
+  `GameFlow` (eval + quality strip, phase
   shading and capture marks via `gamePhases.ts`/`MaterialFlow.capturesOf`),
   `MaterialFlow`, `ActivityFlow`, and `ClocksFlow` (thinking time per move
   from `node.clock` — the parser extracts `[%clk …]` comments into a

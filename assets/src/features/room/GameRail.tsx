@@ -145,7 +145,7 @@ export default function GameRail({
       aria-label={t('room.games')}
       data-tour="games-rail"
       data-testid="games-rail"
-      className="flex w-full shrink-0 items-stretch gap-1.5 overflow-x-auto border-line xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[260px] xl:flex-col xl:gap-0 xl:overflow-x-visible xl:rounded-panel xl:border xl:bg-panel"
+      className="flex w-full shrink-0 items-stretch gap-1.5 overflow-x-auto border-line bg-void max-xl:border-b max-xl:p-1.5 xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[260px] xl:flex-col xl:gap-0 xl:overflow-x-visible xl:border-r"
     >
       {/* Fixed rail header — the import/new icons stay reachable at any
           game count; the list scrolls beneath them. The rail's xl height
