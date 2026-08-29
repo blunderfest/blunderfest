@@ -20,7 +20,13 @@ const mockFetchGame = vi.mocked(fetchHistoricalGame);
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
 const result: HistoricalEvidenceResult = {
-  reference: { fen: START, occurrences: 11, games: 8, families: [] },
+  reference: {
+    fen: START,
+    occurrences: 11,
+    games: 8,
+    families: [],
+    next_moves: [],
+  },
   candidates: [],
   timings: { candidates_ms: 1, menu_ms: 1, evidence_ms: 1, total_ms: 3 },
 };
@@ -183,6 +189,42 @@ describe('HistoricalEvidenceDialog', () => {
     await waitFor(() => {
       expect(mockAnalyze).toHaveBeenCalledWith(START, { route: ['e4', 'e5'], refPly: 2 });
     });
+  });
+
+  it('renders the decision menu before the example carousel', async () => {
+    mockAnalyze.mockResolvedValue({
+      ...result,
+      reference: {
+        ...result.reference,
+        fen: 'r1bqk2r/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1 b kq - 0 7',
+        next_moves: [
+          { move: 'O-O', games: 43 },
+          { move: 'd6', games: 28 },
+        ],
+      },
+      candidates: [candidate(), secondCandidate],
+    });
+
+    renderDialog();
+
+    // The menu is between the header and the first slide — heading names Black.
+    expect(await screen.findByTestId('evidence-decision-menu')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /what did Black play next/i })).toBeInTheDocument();
+
+    const menu = screen.getByTestId('evidence-decision-menu');
+    const slide = screen.getByTestId('historical-evidence-card');
+    expect(menu.compareDocumentPosition(slide)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // The carousel still works below the menu.
+    expect(screen.getByText('1 of 2')).toBeInTheDocument();
+  });
+
+  it('no menu when the response carries no next moves', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [candidate()] });
+
+    renderDialog();
+
+    expect(await screen.findByTestId('historical-evidence-card')).toBeInTheDocument();
+    expect(screen.queryByTestId('evidence-decision-menu')).toBeNull();
   });
 
   it('explains itself while the corpus query runs', async () => {

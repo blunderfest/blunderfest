@@ -118,12 +118,19 @@ export type EvidenceCandidate = {
   flags: string[];
 };
 
+export type NextMoveRow = {
+  move: string;
+  /** Independent games that played this move next (never raw occurrences). */
+  games: number;
+};
+
 export type HistoricalEvidenceResult = {
   reference: {
     fen: string;
     occurrences: number;
     games: number;
     families: FamilySummary[];
+    next_moves: NextMoveRow[];
   };
   candidates: EvidenceCandidate[];
   timings: {

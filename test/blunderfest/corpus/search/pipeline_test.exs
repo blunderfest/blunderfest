@@ -36,7 +36,7 @@ defmodule Blunderfest.Corpus.Search.PipelineTest do
     )
   end
 
-  test "the reference block carries counts and the decision menu" do
+  test "the reference block carries counts, the decision menu, and the next-move distribution" do
     result = run_analyze()
 
     assert result.reference.key == TestFixtures.tabiya_key()
@@ -46,6 +46,55 @@ defmodule Blunderfest.Corpus.Search.PipelineTest do
     assert result.timings.menu_ms >= 0
     assert result.timings.evidence_ms >= 0
     assert result.timings.total_ms >= 0
+
+    # gid 12 reaches the tabiya at plies 16 ("Ne1") and 20 ("Bd2") — it
+    # contributes once to each move. gid 13 reaches it at plies 16/20 ("Rb1")
+    # and 24 ("Bd2"), same treatment.
+    counts = Map.new(result.reference.next_moves, &{&1.move, &1.games})
+    # gids 1, 2, 12
+    assert counts["Ne1"] == 3
+    # gids 3, 4, 12 (ply 20), 13 (ply 24)
+    assert counts["Bd2"] == 4
+    # gid 6
+    assert counts["Qc2"] == 1
+    # gid 7
+    assert counts["Nd2"] == 1
+    # gid 13 (plies 16/20)
+    assert counts["Rb1"] == 1
+  end
+
+  test "the sum of next-move games counts each (gid, first-move) pair once" do
+    result = run_analyze()
+    # gid 12 reach es the tabiya at plies 16 ("Ne1") and 20 ("Bd2") and gid 13
+    # reaches it at plies 16/20 ("Rb1") and 24 ("Bd2") — so each gid counts
+    # once per distinct first move. 3 ("Ne1": gids 1,2,12) + 4 ("Bd2": gids
+    # 3,4,12,13) + 1 ("Qc2": gid 6) + 1 ("Nd2": gid 7) + 1 ("Rb1": gid 13).
+    total = Enum.reduce(result.reference.next_moves, 0, &(&1.games + &2))
+    assert total == 10
+  end
+
+  test "the DTO exposes next_moves on the reference (wire shape)" do
+    dto =
+      TestFixtures.tabiya_key()
+      |> Blunderfest.HistoricalEvidence.analyze(
+        route: ref_moves_gid1(),
+        ref_ply: 16
+      )
+
+    assert {:ok, %{reference: %{next_moves: rows}}} = dto
+
+    first_moves = Enum.map(rows, & &1.move)
+    assert "Ne1" in first_moves
+    assert "Bd2" in first_moves
+  end
+
+  test "A2: the next-move distribution keeps Marshall and Closed separated" do
+    result =
+      Pipeline.analyze(TestFixtures.a2_key(), limit: 100, scan_limit: 200, exact_limit: 100)
+
+    counts = Map.new(result.reference.next_moves, &{&1.move, &1.games})
+    assert counts["O-O"] == 2
+    assert counts["d6"] == 2
   end
 
   test "B1: tempo twin with the route divergence and a black-side family join" do

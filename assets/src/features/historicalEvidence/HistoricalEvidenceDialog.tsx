@@ -4,6 +4,7 @@ import Board from '@/components/Board';
 import { parseFen } from '@/components/board';
 import HelpPopover from '@/components/HelpPopover';
 import { button, statusDot } from '@/components/ui';
+import DecisionMenu from '@/features/historicalEvidence/DecisionMenu';
 import {
   cachedResult,
   rememberResult,
@@ -387,6 +388,10 @@ export default function HistoricalEvidenceDialog({
                 {t('evidence.openError')}
               </p>
             )}
+            <DecisionMenu
+              fen={status.result.reference.fen}
+              nextMoves={status.result.reference.next_moves}
+            />
             {count === 0 ? (
               <p className="m-0 py-6 text-center text-note text-faint">
                 {t('evidence.noCandidates')}

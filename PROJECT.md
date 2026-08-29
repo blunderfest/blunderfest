@@ -209,6 +209,20 @@ next experiment: render the already-returned menu as an overview in front
 of the carousel (frontend + one additive ★ref family marker). Report:
 [`docs/technical-spike-07-from-historical-examples-to-historical-evidence-report.md`](docs/technical-spike-07-from-historical-examples-to-historical-evidence-report.md).
 
+**Product Experiment 01 (historical decision menu) is shipped** — Spike 07's
+smallest experiment, implemented behind the vertical slice. A new
+`Blunderfest.Corpus.Analysis.DecisionMenu` computes the next-move
+distribution with **independent-game counts** alongside (never behind) the
+deliberately untouched continuation families; the dialog renders it between
+its header and the carousel. F1 returns `Ne1 14 · b4 9 · a3 2 · …`, A2
+`O-O 43 · d6 28` — so it corrects Spike 07's chained-menu failure at the
+overview level without touching family construction or candidate ranking.
+Verified against the 100k corpus (F1 white, A2 black) and on `localhost:5173`;
+backend + frontend suites green. Docs: brief
+[`docs/product-experiment01-historical-decision-menu.md`](docs/product-experiment01-historical-decision-menu.md)
+and result
+[`docs/product-experiment-01-historical-decision-menu.md`](docs/product-experiment-01-historical-decision-menu.md).
+
 **Spike 03 (persistence architecture) is done** — one PostgreSQL
 (Fly Postgres, Ecto) for **application data** (profiles, accounts,
 library) and the **canonical corpus** (games as validated PGN, sha256

@@ -18,7 +18,16 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
   talks to the facade.
   """
 
-  alias Blunderfest.Corpus.Analysis.{Counts, Differences, Families, Features, Route, Skeleton}
+  alias Blunderfest.Corpus.Analysis.{
+    Counts,
+    DecisionMenu,
+    Differences,
+    Families,
+    Features,
+    Route,
+    Skeleton
+  }
+
   alias Blunderfest.Corpus.Search.Candidates
 
   @window_cap 12
@@ -72,6 +81,12 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
         |> Families.build(family_cfg)
       end)
 
+    # The raw next-move distribution (independent games per first move).
+    # Computed alongside the family menu — families chain hot menus into
+    # one blob (Spike 07), so this correct-by-construction distribution is
+    # the reliable overview; families stay untouched per experiment §13.
+    next_moves = DecisionMenu.from_occurrences(gen.exact_occurrences, &Blunderfest.Corpus.moves/1)
+
     ref_window =
       if ref_moves do
         ref_moves |> drop_ply(ref_ply) |> cap()
@@ -95,7 +110,8 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
         fen: Features.fen(ref_key),
         stm: ref.stm,
         historical: ref_counts,
-        families: menu
+        families: menu,
+        next_moves: next_moves
       },
       candidates: candidates,
       timings: %{

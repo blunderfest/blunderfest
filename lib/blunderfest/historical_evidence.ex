@@ -88,7 +88,8 @@ defmodule Blunderfest.HistoricalEvidence do
         fen: result.reference.fen,
         occurrences: result.reference.historical.occurrences,
         games: result.reference.historical.games,
-        families: Enum.map(result.reference.families, &family_dto(&1, stm))
+        families: Enum.map(result.reference.families, &family_dto(&1, stm)),
+        next_moves: result.reference.next_moves
       },
       candidates: Enum.map(result.candidates, &candidate_dto/1),
       timings: result.timings

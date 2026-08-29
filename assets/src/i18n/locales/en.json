@@ -490,7 +490,16 @@
     "addedToRoom": "Added ✓",
     "addedVariation": "Added ✓",
     "sameGameInRoom": "Same game — already added",
-    "variationNotPlayable": "This continuation can't be played from the current position."
+    "variationNotPlayable": "This continuation can't be played from the current position.",
+    "menuWhat": "What did {{side}} play next?",
+    "menuSide": {
+      "white": "White",
+      "black": "Black"
+    },
+    "menuShowMore": "Show {{count}} more",
+    "menuHideMore": "Show less",
+    "menuGames": "{{count}} games",
+    "menuGame": "{{count}} game"
   },
   "update": {
     "available": "A new version of Blunderfest is available.",
