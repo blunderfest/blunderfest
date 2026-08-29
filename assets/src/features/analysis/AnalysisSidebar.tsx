@@ -10,7 +10,7 @@ import MoveList from '@/features/analysis/MoveList';
 import type { Row } from '@/features/analysis/moveList';
 import type { Entry } from '@/features/analysis/nodeMap';
 import type { Opening, OpeningBook } from '@/features/analysis/openings';
-import ReferencePanel from '@/features/analysis/ReferencePanel';
+import PositionContext from '@/features/analysis/PositionContext';
 import SidebarTabs from '@/features/analysis/SidebarTabs';
 import type { EngineState } from '@/features/analysis/useEngine';
 import type { usePositionEditor } from '@/features/analysis/usePositionEditor';
@@ -67,6 +67,8 @@ export default function AnalysisSidebar({
   onNavigate,
   onPlayMove,
   onInsertLine,
+  onFindEvidence,
+  onViewEvidence,
   onReferenceGhost,
   onFlowSelect,
   onToggleEngine,
@@ -110,6 +112,11 @@ export default function AnalysisSidebar({
   onNavigate: (nodeId: number) => void;
   onPlayMove: (move: LegalMove) => void;
   onInsertLine: (pv: string[]) => void;
+  /** Position-context callbacks (the find-evidence CTA, view evidence). */
+  onFindEvidence?: () => Promise<
+    import('@/features/historicalEvidence/types').HistoricalEvidenceResult | null
+  >;
+  onViewEvidence?: () => void;
   onReferenceGhost: (move: LegalMove | null) => void;
   onFlowSelect: (ply: number) => void;
   onToggleEngine: () => void;
@@ -150,12 +157,6 @@ export default function AnalysisSidebar({
             onInsertLine={canEdit && !editor.editing ? onInsertLine : undefined}
             analyze={engineAnalyze}
           />
-          <ReferencePanel
-            book={book}
-            fen={current?.fen ?? null}
-            onPlayMove={canPlay && !editor.editing ? onPlayMove : undefined}
-            onHoverMove={onReferenceGhost}
-          />
           {linePath !== null && linePathText !== null && (
             // Off-mainline bearings: the path from the branch
             // point; clicking returns to it.
@@ -184,6 +185,15 @@ export default function AnalysisSidebar({
             parentOf={(id) => byId.get(id)?.parent ?? null}
             bookExitPly={bookExitPly}
             bestMoves={bestMoves}
+          />
+          <PositionContext
+            book={book}
+            fen={current.fen ?? null}
+            canPlay={canPlay && !editor.editing}
+            onPlayMove={canPlay && !editor.editing ? onPlayMove : undefined}
+            onHoverMove={onReferenceGhost}
+            onFindEvidence={onFindEvidence}
+            onViewEvidence={onViewEvidence}
           />
         </section>
       ),

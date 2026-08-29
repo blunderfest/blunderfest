@@ -272,6 +272,22 @@ protocol would only shave a reconnect the client socket makes anyway;
 no observable gain, see ADR-0028's consequences). Search (milestone 8)
 is the next spike-gated candidate, awaiting the owner.
 
+### Session handoff (2026-08-29 — Position context panel (UI task))
+
+**The OPENINGS section became POSITION CONTEXT** per
+`docs/ui-task-contextual-position-context-panel.md`. The Moves tab now
+layers Engine → MoveList → Positional context; the panel is an explicit
+small union (tablebase extension point > opening book > historical
+evidence | find-CTA | failed-retry). **Find historical evidence** refuses
+to auto-run; a remembered result renders the DecisionMenu summary + its
+explicit View button (which opens the existing dialog on the same frozen
+request — an instant cache hit). `cachedResult(requestKey(fen,route,refPly))`
+is read synchronously every render; Analysis owns the `runFindEvidence`
+callback that writes the session cache (`RESULT_CACHE`). Report:
+`docs/ui-task-position-context-report.md`. Tests (PositionContext.test):
+book branch / find / cached-nav / fail-retry / View / loading-disabled.
+656 frontend + 405 backend green.
+
 ### Session handoff (2026-08-29 — full v0 convergence, all catalog items)
 
 **Everything on the difference catalog landed.** The layout goes

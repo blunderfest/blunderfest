@@ -23,12 +23,17 @@ import { useCursor } from '@/features/analysis/useCursor';
 import { useDragFlag } from '@/features/analysis/useDragFlag';
 import { useEngine } from '@/features/analysis/useEngine';
 import { usePositionEditor } from '@/features/analysis/usePositionEditor';
+import {
+  rememberResult,
+  requestKey,
+  resolvedLineMoves,
+} from '@/features/historicalEvidence/evidenceCache';
 import HistoricalEvidenceDialog from '@/features/historicalEvidence/HistoricalEvidenceDialog';
 import {
   planFromResolvedMoves,
   planHistoricalVariation,
 } from '@/features/historicalEvidence/variationPlan';
-import type { GameNode, GameTree, LegalMove } from '@/lib/api';
+import { analyzeHistoricalEvidence, type GameNode, type GameTree, type LegalMove } from '@/lib/api';
 import type {
   AddLineOp,
   AnalysisEval,
@@ -669,6 +674,37 @@ export default function Analysis({
     setEvidenceDialog({ fen: current.fen, route: routeToCurrent, refPly: current.ply });
   }, [current, routeToCurrent]);
 
+  /**
+   * The position-context's find-evidence CTA (editors): runs the query for
+   * the current cursor and writes the result into the session cache —
+   * never auto-runs.
+   */
+  const runFindEvidence = useCallback(async () => {
+    if (current === null || current.fen === null) {
+      return null;
+    }
+    const key = requestKey(current.fen, routeToCurrent ?? null, current.ply);
+    const request = { fen: current.fen, route: routeToCurrent, refPly: current.ply };
+    try {
+      const result = await analyzeHistoricalEvidence(request.fen, {
+        route: request.route ?? undefined,
+        refPly: request.refPly ?? undefined,
+      });
+      rememberResult(key, result);
+      for (const candidate of result.candidates) {
+        // Warm the line-resolution cache like the dialog does, so a later
+        // open and the panel's own variation buttons stay cheap.
+        resolvedLineMoves(
+          candidate.strategy === 'exact' ? current.fen : candidate.fen,
+          candidate.continuation.moves,
+        );
+      }
+      return result;
+    } catch {
+      return null;
+    }
+  }, [current, routeToCurrent]);
+
   useBoardKeyboard({
     tree,
     byId,
@@ -940,6 +976,8 @@ export default function Analysis({
             onNavigate={navigate}
             onPlayMove={playMove}
             onInsertLine={handleInsertLine}
+            onFindEvidence={canEdit ? runFindEvidence : undefined}
+            onViewEvidence={canEdit ? openFindExamples : undefined}
             onReferenceGhost={setReferenceGhost}
             onFlowSelect={handleFlowSelect}
             onToggleEngine={toggleEngine}
