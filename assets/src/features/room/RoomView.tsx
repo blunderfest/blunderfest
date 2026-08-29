@@ -204,6 +204,13 @@ function RoomViewInner({
    */
   const [cursorByGame, setCursorByGame] = useState<ReadonlyMap<string, number>>(new Map());
   /**
+   * Optimistic trees for freshly added games, held until their `set_game`
+   * echo lands in the store. Switching to a pending game without this
+   * would pass `tree = null` to Analysis for a frame — the empty-state
+   * flash seen when clicking "+".
+   */
+  const [pendingTrees, setPendingTrees] = useState<ReadonlyMap<string, GameTree>>(new Map());
+  /**
    * Corpus game ids already in the room via the Examples dialog, derived
    * from the op log (`evidence_gid` on `set_game`) — every client agrees,
    * so a candidate one member picked shows "Added ✓" for everyone.
@@ -241,7 +248,10 @@ function RoomViewInner({
   const effectiveGameId = following
     ? (presenterGameId ?? firstGameId)
     : (importBatch?.firstId ?? activeGameId ?? firstGameId);
-  const game = effectiveGameId === null ? null : (games[effectiveGameId] ?? null);
+  const game =
+    effectiveGameId === null
+      ? null
+      : (games[effectiveGameId] ?? pendingTrees.get(effectiveGameId) ?? null);
   const analysis = useRoomSelector((ctx) =>
     effectiveGameId === null ? undefined : ctx.analysis[effectiveGameId],
   );
@@ -268,6 +278,26 @@ function RoomViewInner({
       setImportBatch(null);
     }
   }, [importBatch, games]);
+
+  // Drop optimistic trees once their echo lands (the store wins from then
+  // on); the fallback below never reads them again. A failed op is cleared
+  // from the same pass via the pruned id never resolving — harmless either
+  // way, since the map only grows for ids that may still come.
+  useEffect(() => {
+    if (pendingTrees.size === 0) {
+      return;
+    }
+    const landed = [...pendingTrees.keys()].filter((id) => id in games);
+    if (landed.length > 0) {
+      setPendingTrees((current) => {
+        const next = new Map(current);
+        for (const id of landed) {
+          next.delete(id);
+        }
+        return next;
+      });
+    }
+  }, [games, pendingTrees]);
 
   const handleCursorChange = useCallback(
     (nodeId: number) => {
@@ -380,11 +410,14 @@ function RoomViewInner({
     (trees: GameTree[]) => {
       setFollowOverride(false);
       const ids: string[] = [];
+      const pending = new Map<string, GameTree>();
       for (const tree of trees) {
         const gameId = crypto.randomUUID();
         ids.push(gameId);
+        pending.set(gameId, tree);
         sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
       }
+      setPendingTrees((current) => new Map([...current, ...pending]));
       const firstId = ids[0] ?? null;
       if (firstId !== null) {
         // The op log leaves the presenter focus on the LAST set_game — so
@@ -409,7 +442,9 @@ function RoomViewInner({
   function handleNewGame() {
     setFollowOverride(false);
     const gameId = crypto.randomUUID();
-    sendOp({ type: 'set_game', payload: { game_id: gameId, tree: emptyGameTree() } });
+    const tree = emptyGameTree();
+    sendOp({ type: 'set_game', payload: { game_id: gameId, tree } });
+    setPendingTrees((current) => new Map(current).set(gameId, tree));
     setActiveGameId(gameId);
     setFreshImportId(null);
     setShowImport(false);
@@ -494,7 +529,7 @@ function RoomViewInner({
       ? analysisProgress
       : null;
 
-  const noGames = Object.keys(games).length === 0;
+  const noGames = Object.keys(games).length === 0 && pendingTrees.size === 0;
 
   if (joinError !== null) {
     return (

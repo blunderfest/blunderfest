@@ -377,8 +377,9 @@ describe('RoomView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
     // set_game ×2, then select_game back to the first — otherwise the
-    // op-log presenter focus stays on the last imported game.
-    await waitFor(() => expect(channel.pushes.length).toBe(3));
+    // op-log presenter focus stays on the last imported game. (A
+    // set_cursor from the just-opened board may follow.)
+    await waitFor(() => expect(channel.pushes.length).toBeGreaterThanOrEqual(3));
     const firstId = (channel.pushes[0].payload as { payload: { game_id: string } }).payload.game_id;
     expect(channel.pushes[2].payload).toEqual({
       type: 'select_game',
@@ -414,7 +415,8 @@ describe('RoomView', () => {
     await screen.findByText('2 games found');
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
 
-    await waitFor(() => expect(channel.pushes.length).toBe(3));
+    // (A set_cursor from the just-opened board may follow the import batch.)
+    await waitFor(() => expect(channel.pushes.length).toBeGreaterThanOrEqual(3));
     const firstId = (channel.pushes[0].payload as { payload: { game_id: string } }).payload.game_id;
     const secondId = (channel.pushes[1].payload as { payload: { game_id: string } }).payload
       .game_id;
@@ -778,6 +780,56 @@ describe('RoomView', () => {
     );
     act(() => channel.emit('new_op', cursorOp(4, 2)));
     await waitFor(() => expect(pieceAt('square-e5')).toBe('bp'));
+  });
+
+  it('opens the new game immediately — its tree renders before the set_game echo lands', async () => {
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    renderRoom('abc12', vi.fn(), 'profile-1');
+
+    fireEvent.click(document.getElementById('new-game-button') as HTMLElement);
+
+    // No echo yet: the optimistic tree must stand in, so the empty-state
+    // (Analysis' "Import a game to start analyzing.") never flashes.
+    const pushed = channel.pushes[0] as {
+      payload: { type: string; payload: { game_id: string } };
+    };
+    expect(pushed.payload.type).toBe('set_game');
+    expect(pieceAt('square-e2')).toBe('wp');
+    expect(screen.queryByText('Import a game to start analyzing.')).toBeNull();
+
+    // The echo lands: the pending tree is superseded by the store copy.
+    act(() =>
+      channel.emit('new_op', {
+        seq: 1,
+        author: 'profile-1',
+        ts: '2026-01-01T00:00:00Z',
+        type: 'set_game',
+        payload: {
+          game_id: pushed.payload.payload.game_id,
+          tree: {
+            headers: {},
+            root: {
+              id: 0,
+              ply: 0,
+              san: null,
+              from: null,
+              to: null,
+              promotion: null,
+              comment: null,
+              nags: [],
+              status: 'active',
+              fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+              children: [],
+            },
+            result: '*',
+            mainline_ply_count: 0,
+            node_count: 1,
+            setup: null,
+          } as GameTree,
+        },
+      }),
+    );
+    expect(pieceAt('square-e2')).toBe('wp');
   });
 
   it('creates an empty game with the New game button', async () => {
