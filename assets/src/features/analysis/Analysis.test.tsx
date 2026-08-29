@@ -419,6 +419,59 @@ describe('Analysis', () => {
     await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(2));
   });
 
+  it('the header labels a pass with its black-slot number ("1... --"), not its ply', async () => {
+    // A tree whose mainline is 1. e4 -- 2. e5 (pass in black's slot at
+    // ply 2). The header must read chess notation, not raw ply numbers.
+    const passTree: GameTree = {
+      ...tree,
+      root: {
+        ...tree.root,
+        children: [
+          {
+            ...node({
+              id: 10,
+              ply: 1,
+              san: 'e4',
+              from: 'e2',
+              to: 'e4',
+              fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+            }),
+            children: [
+              {
+                ...node({
+                  id: 11,
+                  ply: 2,
+                  san: '--',
+                  from: null,
+                  to: null,
+                  fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1',
+                }),
+                children: [
+                  node({
+                    id: 12,
+                    ply: 3,
+                    san: 'e5',
+                    from: 'e4',
+                    to: 'e5',
+                    fen: 'rnbqkbnr/pppppppp/8/4P3/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+                  }),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+    render(<Analysis tree={passTree} />);
+
+    const header = screen.getByTestId('opening-name');
+    // Opens on the tail: 2. e5 — NOT "3. e5".
+    expect(header.textContent).toContain('2. e5');
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    // The pass is black's move-1 slot.
+    expect(header.textContent).toContain('1... --');
+  });
+
   it('a move that is not legal even after the flip still falls back to selection', () => {
     const onPlayMove = vi.fn();
     render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);

@@ -4,7 +4,7 @@ import { tv } from 'tailwind-variants';
 
 import BookExitIcon from '@/features/analysis/BookExitIcon';
 import { evalText, moveMark } from '@/features/analysis/evalMarks';
-import type { Row } from '@/features/analysis/moveList';
+import { moveNumber, type Row } from '@/features/analysis/moveList';
 import { nagGlyph } from '@/features/analysis/nags';
 import type { GameNode } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
@@ -22,9 +22,6 @@ const moveButton = tv({
     },
   },
 });
-
-const moveNumber = (node: GameNode) =>
-  `${Math.ceil(node.ply / 2)}${node.ply % 2 === 1 ? '.' : '...'}`;
 
 /**
  * block:'nearest', but scoped to the list itself: element.scrollIntoView

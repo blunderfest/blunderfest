@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GameNode, GameTree } from '@/lib/api';
-import { buildRows } from './moveList';
+import { buildRows, moveNumber } from './moveList';
 
 function node(id: number, ply: number, partial: Partial<GameNode> = {}): GameNode {
   return {
@@ -86,5 +86,21 @@ describe('buildRows', () => {
     expect(
       rows.map((row) => (row.type === 'pair' ? row.white.san : `var:${row.root.san}`)),
     ).toEqual(['e4', 'var:d4', 'var:c5', 'var:Nc3', 'Nf3']);
+  });
+});
+
+describe('moveNumber', () => {
+  it('numbers by move and side (white slot N., black slot N...)', () => {
+    expect(moveNumber(node(1, 1, { san: 'e4' }))).toBe('1.');
+    expect(moveNumber(node(2, 2, { san: 'e5' }))).toBe('1...');
+    expect(moveNumber(node(3, 3, { san: 'Nf3' }))).toBe('2.');
+  });
+
+  it('passes pair by ply parity — "1. e4 -- 2. e5" stays numbered', () => {
+    // 1. e4 (ply 1), -- (ply 2, black's slot), e5 (ply 3, white's move 2).
+    expect(moveNumber(node(1, 1, { san: 'e4' }))).toBe('1.');
+    expect(moveNumber(node(2, 2, { san: '--' }))).toBe('1...');
+    expect(moveNumber(node(3, 3, { san: 'e5' }))).toBe('2.');
+    expect(moveNumber(node(4, 4, { san: '--' }))).toBe('2...');
   });
 });

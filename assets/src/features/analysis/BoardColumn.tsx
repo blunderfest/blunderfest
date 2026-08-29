@@ -7,6 +7,7 @@ import { button } from '@/components/ui';
 import BoardControls from '@/features/analysis/BoardControls';
 import EvalBar from '@/features/analysis/EvalBar';
 import GameActions from '@/features/analysis/GameActions';
+import { moveNumber } from '@/features/analysis/moveList';
 import NavControls, { type NavTargets } from '@/features/analysis/NavControls';
 import type { Opening } from '@/features/analysis/openings';
 import type { WhiteEval } from '@/features/analysis/uci';
@@ -118,12 +119,10 @@ export default function BoardColumn({
       >
         {opening === null
           ? current.ply > 0
-            ? `${t('room.move', { ply: current.ply, san: current.san ?? '' })}`
+            ? `${moveNumber(current)} ${current.san ?? ''}`
             : ''
           : `${opening.eco} · ${opening.name}${
-              current.ply > 0
-                ? ` · ${t('room.move', { ply: current.ply, san: current.san ?? '' })}`
-                : ''
+              current.ply > 0 ? ` · ${moveNumber(current)} ${current.san ?? ''}` : ''
             }`}
       </p>
 

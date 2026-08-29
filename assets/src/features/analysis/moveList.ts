@@ -1,5 +1,11 @@
 import type { GameNode, GameTree } from '@/lib/api';
 
+/** Chess move reference for a node: `N.` (white slot) or `N…` (black
+    slot) computed from ply parity — passes pair by parity like real moves,
+    so numbering stays correct through null moves. */
+export const moveNumber = (node: GameNode) =>
+  `${Math.ceil(node.ply / 2)}${node.ply % 2 === 1 ? '.' : '...'}`;
+
 export type Row =
   | { type: 'pair'; white: GameNode; black: GameNode | null }
   | { type: 'variation'; root: GameNode };
