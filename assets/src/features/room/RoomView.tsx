@@ -31,6 +31,7 @@ import {
   selectGameEntries,
   selectLastPlayed,
   selectLastPlayedBy,
+  selectNextGameNumber,
   selectPresenter,
   selectPresenterCursor,
   selectPresenterGameId,
@@ -123,6 +124,7 @@ function RoomViewInner({
   const roles = useRoomSelector((ctx) => ctx.roles);
   const games = useRoomSelector((ctx) => ctx.games);
   const gameEntries = useRoomSelector(selectGameEntries);
+  const nextGameNumber = useRoomSelector((ctx) => selectNextGameNumber(ctx, t('room.unnamedGame')));
   const presenter = useRoomSelector(selectPresenter);
   const presenterGameId = useRoomSelector(selectPresenterGameId);
   const presenterCursor = useRoomSelector(selectPresenterCursor);
@@ -444,10 +446,11 @@ function RoomViewInner({
   function handleNewGame() {
     setFollowOverride(false);
     const gameId = crypto.randomUUID();
-    // Auto-numbered default name: "Game N" where N = (games in room) + 1,
-    // counting pending (not-yet-echoed) creates too. Written as the tree's
-    // initial Title header — no numbering lives anywhere else.
-    const number = gameEntries.length + pendingTrees.size + 1;
+    // Auto-numbered default name, persisted as the tree's initial Title
+    // header. The room-scoped counter is monotonic across the whole op log
+    // (removed games included), and pending creates bump it too, so a
+    // double "+"" never duplicates a number.
+    const number = nextGameNumber + pendingTrees.size;
     const tree = {
       ...emptyGameTree(),
       headers: { Title: `${t('room.unnamedGame')} ${number}` },

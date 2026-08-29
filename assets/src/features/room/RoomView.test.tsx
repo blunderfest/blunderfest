@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { axe } from 'jest-axe';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RoomView from '@/features/room/RoomView';
-import type { GameNode, GameTree } from '@/lib/api';
+import { emptyGameTree, type GameNode, type GameTree } from '@/lib/api';
 import type { Op } from '@/protocol/ops';
 import { FakeChannel } from '@/test/fakeChannel';
 
@@ -911,21 +911,35 @@ describe('RoomView', () => {
     expect(pieceAt('square-e2')).toBe('wp');
   });
 
-  it('numbers new games by the room size (Game N = count + 1)', async () => {
+  it('numbers new games monotonically above every Title ever used (removed games included)', async () => {
+    const numberedTree = (title: string): GameTree => ({
+      ...emptyGameTree(),
+      headers: { Title: title },
+    });
     channel.joinReturn = {
-      ops: [setGameOp(1, gameTree, 'g1'), setGameOp(2, secondTree, 'g2')],
+      ops: [setGameOp(1, numberedTree('Game 1'), 'g1'), setGameOp(2, numberedTree('Game 2'), 'g2')],
       roles: { 'profile-1': 'owner' },
     };
     renderRoom('abc12', vi.fn(), 'profile-1');
     act(() => channel.emit('presence_state', { 'profile-1': { metas: [{ name: 'Me' }] } }));
-    await screen.findByRole('button', { name: /Alice – Bob/ });
+    await screen.findByRole('button', { name: /Game 1/ });
 
-    // A new game gets count + 1 = 3 (two already in the room).
-    fireEvent.click(document.getElementById('new-game-button') as HTMLElement);
+    // Remove Game 1, then a new one must still be "Game 3" — the log of
+    // removed games keeps the counter pinned.
+    fireEvent.click(screen.getByTestId('remove-game-g1'));
     const pushed = channel.pushes.find(
-      (p) => (p.payload as { type?: string }).type === 'set_game',
-    ) as { payload: { payload: { tree: GameTree } } } | undefined;
-    expect(pushed?.payload.payload.tree.headers.Title).toBe('Game 3');
+      (p) => (p.payload as { type?: string }).type === 'remove_game',
+    ) as { payload: { payload: { game_id: string } } } | undefined;
+    expect(pushed?.payload.payload.game_id).toBe('g1');
+
+    fireEvent.click(document.getElementById('new-game-button') as HTMLElement);
+    const setPush = channel.pushes
+      .slice()
+      .reverse()
+      .find((p) => (p.payload as { type?: string } | undefined)?.type === 'set_game') as
+      | { payload: { payload: { tree: GameTree } } }
+      | undefined;
+    expect(setPush?.payload.payload.tree.headers.Title).toBe('Game 3');
   });
 
   it('adds a second game without yanking the current view', async () => {

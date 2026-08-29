@@ -649,6 +649,29 @@ export const selectGameEntries = memo((ctx: RoomContext): [string, GameTree][] =
   return ordered.map((id) => [id, ctx.games[id]]);
 });
 
+/**
+ * The next free default-number for a new game, from the WHOLE op log
+ * (including removed games): the count is a monotonically increasing
+ * room-scoped counter, so "Game 1 · Game 2 → remove Game 1 → + new game"
+ * never reuses a number that existed before. Matches the exact i18n
+ * label shape "Game N" only, so arbitrary renames or event headers can't
+ * poison the counter; a user explicitly typing "Game 5" does bump it
+ * (intentional — that's their chosen number).
+ */
+export function selectNextGameNumber(ctx: RoomContext, label: string): number {
+  const pattern = new RegExp(`^${label.trim()}\\s+(\\d+)$`);
+  let used = 0;
+  for (const op of ctx.ops) {
+    if (op.type === 'set_game') {
+      const match = pattern.exec(op.payload.tree.headers.Title?.trim() ?? '');
+      if (match !== null) {
+        used = Math.max(used, Number.parseInt(match[1] ?? '0', 10));
+      }
+    }
+  }
+  return used + 1;
+}
+
 export function selectLastPlayed(ctx: RoomContext, gameId: string | null): number | null {
   if (gameId === null) {
     return null;
