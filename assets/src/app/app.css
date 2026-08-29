@@ -10,44 +10,46 @@
     "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", monospace;
 
-  /* Surfaces (elevation steps, dark → light) */
-  --color-void: #0b0d11;
-  --color-surface: #14161b;
-  --color-panel: #191c23;
-  --color-raised: #1f232c;
-  --color-overlay: #232833;
+  /* Surfaces (elevation steps, dark → light) — values converge on the
+     study-hall palette (DESIGN.md §3): lighter and flatter, closer to
+     graphite than blue-black. */
+  --color-void: #141619;
+  --color-surface: #1b1e23;
+  --color-panel: #22262d;
+  --color-raised: #22262d;
+  --color-overlay: #2a2f38;
 
   /* Hairlines */
-  --color-line: #262a33;
-  --color-line-strong: #363c48;
+  --color-line: #2e333b;
+  --color-line-strong: #3d434e;
 
   /* Ink (text) */
-  --color-ink: #e8eaf0;
-  --color-muted: #9aa1b0;
-  --color-faint: #737b8b;
+  --color-ink: #e9ebee;
+  --color-muted: #a6adb8;
+  --color-faint: #8e96a3; /* ≥4.5:1 on every surface (DESIGN.md's ink floor rule) */
 
   /* Brand + semantics */
   --color-gold: #c9a227;
-  --color-gold-hi: #e8c14f;
+  --color-gold-hi: #d4b13c;
   --color-gold-dim: #7a641a;
-  --color-ok: #4caf50;
+  --color-ok: #58a86c;
   --color-ok-hi: #7ed081;
-  --color-bad: #e05a4e;
+  --color-bad: #d96c66;
   --color-bad-hi: #ff8a7d;
-  --color-info: #6ea8fe;
+  --color-info: #6ba3d6;
   --color-silver: #b6bdcc;
 
-  /* Board */
-  --color-board-light: #f0d9b5;
-  --color-board-dark: #b58863;
-  --color-board-edge: #2a2e38;
+  /* Board — v0's calmer squares (DESIGN.md §3, theme-independent) */
+  --color-board-light: #e8d9b7;
+  --color-board-dark: #a97e50;
+  --color-board-edge: #3d434e;
   --color-move-from: #cdd26a;
   --color-move-to: #aaa23a;
   --color-select: #6ea8fe;
   --color-check: #e05a4e;
 
-  /* Gold text on dark surfaces (light theme darkens it) */
-  --color-gold-text: #ffe9a8;
+  /* Gold text on dark surfaces — the interactive gold (DESIGN.md's accent) */
+  --color-gold-text: #d4b13c;
 
   /* The edit-palette tray: a muted slate on dark, a soft gray on light —
      quiet, but the solid-black pawn still reads on both. */
@@ -127,39 +129,40 @@
   color-scheme: dark;
 }
 
-/* Light theme: same tokens, daylight values. The board and piece colors are
-   theme-independent and deliberately not overridden. */
+/* Light theme: same tokens, daylight values — converged on DESIGN.md §3.2's
+   cool paper. The board and piece colors are theme-independent and
+   deliberately not overridden. */
 :root[data-theme="light"] {
   color-scheme: light;
 
   /* Surfaces (elevation steps, light → darker) */
-  --color-void: #e8eaf0;
-  --color-surface: #f4f6fb;
+  --color-void: #f2f3f5;
+  --color-surface: #fafbfc;
   --color-panel: #ffffff;
-  --color-raised: #eceff5;
-  --color-overlay: #e2e6ee;
+  --color-raised: #ffffff;
+  --color-overlay: #ffffff;
 
   /* Hairlines */
-  --color-line: #d9dee7;
-  --color-line-strong: #b6bdcc;
+  --color-line: #e2e5e9;
+  --color-line-strong: #c6ccd4;
 
-  /* Ink (text) */
-  --color-ink: #1a1d24;
-  --color-muted: #5a6472;
-  --color-faint: #8a93a3;
+  /* Ink (text) — ink-3-class faint holds ≥4.5:1 like dark */
+  --color-ink: #1c1f24;
+  --color-muted: #4d545e;
+  --color-faint: #626a76;
 
   /* Brand + semantics (deepened for contrast on white) */
   --color-gold: #c9a227;
-  --color-gold-hi: #8a6d1a;
+  --color-gold-hi: #8a6d10;
   --color-gold-dim: #7a641a;
-  --color-ok: #2f9e4f;
-  --color-ok-hi: #1e7d34;
-  --color-bad: #d63f31;
+  --color-ok: #2c7a43;
+  --color-ok-hi: #2f9e4f;
+  --color-bad: #b23e38;
   --color-bad-hi: #c22f22;
-  --color-info: #2f6fd8;
+  --color-info: #2b6cb0;
   --color-silver: #6b7688;
 
-  --color-gold-text: #7a641a;
+  --color-gold-text: #8a6d10;
   --color-tray: #dde3ec;
 
   --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.7) inset, 0 8px 24px -16px rgb(15 23 42 / 0.25);

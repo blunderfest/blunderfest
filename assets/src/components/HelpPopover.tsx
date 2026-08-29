@@ -83,7 +83,11 @@ export default function HelpPopover({
             {/* Click-outside backdrop. z-indices sit above the app modals
                 (z-50): the popover portaled to document.body would
                 otherwise render *under* a dialog like Find examples. */}
-            <div className="fixed inset-0 z-[60]" aria-hidden="true" onClick={() => setOpen(false)} />
+            <div
+              className="fixed inset-0 z-[60]"
+              aria-hidden="true"
+              onClick={() => setOpen(false)}
+            />
             <div
               role="dialog"
               aria-label={label}

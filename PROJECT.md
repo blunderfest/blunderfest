@@ -191,6 +191,24 @@ Next: the first vertical slice (one FEN → candidates → diffs → route →
 families with per-side membership → card), architecture in the report
 §9.
 
+**Spike 07 (from historical examples to historical evidence) is done** —
+product/UX spike over the live vertical slice (docs-only; no product code
+touched). Six positions exercised in the real UI against the 100k corpus
+(F1/A2 tabiyas, Najdorf, and the cold B2/D1/F2 cases) plus read-only
+pipeline probes. Answer to "is the individual-example card the correct
+primary UI unit": **mostly no.** The card is a good terminal unit (typed
+differences + route + per-side continuations all work), but the carousel
+fails as the primary unit for three measured reasons: the same game repeats
+across cards with no identity (F1: 19 cards / 11 games; D1: 4 cards / 1
+game); the slice-wide family setting chains hot menus into one blob (A2
+68/71, Najdorf 445/477), so the verdict "followed the most common
+continuation" is true of every card and says nothing; and the position's
+decision menu (F1 `Ne1 14× · b4 9×`, A2 `O-O 43× · d6 28×`, Najdorf
+`Bg5 120 · Be3 81 · …`) is returned by the API and never shown. Smallest
+next experiment: render the already-returned menu as an overview in front
+of the carousel (frontend + one additive ★ref family marker). Report:
+[`docs/technical-spike-07-from-historical-examples-to-historical-evidence-report.md`](docs/technical-spike-07-from-historical-examples-to-historical-evidence-report.md).
+
 **Spike 03 (persistence architecture) is done** — one PostgreSQL
 (Fly Postgres, Ecto) for **application data** (profiles, accounts,
 library) and the **canonical corpus** (games as validated PGN, sha256
@@ -239,6 +257,18 @@ out (rooms are `:temporary` and revive via load-on-join, so a handover
 protocol would only shave a reconnect the client socket makes anyway;
 no observable gain, see ADR-0028's consequences). Search (milestone 8)
 is the next spike-gated candidate, awaiting the owner.
+
+### Session handoff (2026-08-29 — visual/token convergence onto the v0 palette)
+
+**The study-hall token convergence landed.** ADR-0032 deliberately shipped
+the IA with the old visual language; this pass maps DESIGN.md §3's palette
+onto our existing token names (no rename, so the component layer is
+untouched): graphite surfaces (`#141619/#1b1e23/#2e333b`), the interactive
+gold `#d4b13c`, ink floor `#8e96a3` (DESIGN.md's ≥4.5:1 rule), calmer board
+squares (`#e8d9b7`/`#a97e50`), light theme on cool paper. Open Sans stays
+(the mock's Inter is deliberately not adopted). 642 frontend + 397 backend
+green; DESIGN-SYSTEM.md's token table updated. Also shipped this pass:
+the HelpPopover z-index fix (z-60/70 over dialogs' z-50).
 
 ### Session handoff (2026-08-28 — redesign direction decided, ADR-0032)
 

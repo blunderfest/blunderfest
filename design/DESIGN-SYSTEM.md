@@ -49,6 +49,10 @@ red/green reserved for evaluation and errors.
 
 ### Colour Palette
 
+Converged on the study-hall values (DESIGN.md §3) over our existing token
+names; brighten-then-retint avoids a full rename. Board and presence hues
+stay theme-independent.
+
 All tokens are declared via Tailwind v4 `@theme` in `globals.css` and available
 as utilities (`bg-panel`, `text-muted`, `border-line`, etc.).
 
@@ -56,48 +60,48 @@ as utilities (`bg-panel`, `text-muted`, `border-line`, etc.).
 
 | Token           | Hex       | Role                              |
 | --------------- | --------- | --------------------------------- |
-| `void`          | `#0b0d11` | Page backdrop behind everything   |
-| `surface`       | `#14161b` | App surface, header               |
-| `panel`         | `#191c23` | Panel fill, +1 step               |
-| `raised`        | `#1f232c` | Rows, inputs, hover fill, +2 step |
-| `overlay`       | `#232833` | Dialogs / popovers, +3 step       |
+| `void`          | `#141619` | Page backdrop behind everything   |
+| `surface`       | `#1b1e23` | App surface, header               |
+| `panel`         | `#22262d` | Panel fill, +1 step               |
+| `raised`        | `#22262d` | Rows, inputs, hover fill, +2 step |
+| `overlay`       | `#2a2f38` | Dialogs / popovers, +3 step       |
 
 #### Hairlines
 
 | Token          | Hex       | Role                            |
 | -------------- | --------- | ------------------------------- |
-| `line`         | `#262a33` | Default 1px panel border        |
-| `line-strong`  | `#363c48` | Dividers that must read at a glance |
+| `line`         | `#2e333b` | Default 1px panel border        |
+| `line-strong`  | `#3d434e` | Dividers that must read at a glance |
 
 #### Ink (text)
 
 | Token    | Hex       | WCAG on `surface` | Role                              |
 | -------- | --------- | ------------------ | --------------------------------- |
-| `ink`    | `#e8eaf0` | 14.4:1             | Primary text                      |
-| `muted`  | `#9aa1b0` | 6.9:1              | Secondary text                    |
-| `faint`  | `#737b8b` | 4.1:1              | Tertiary / metadata ≥16px or non-essential |
+| `ink`    | `#e9ebee` | 14.3:1             | Primary text                      |
+| `muted`  | `#a6adb8` | ~6.9:1             | Secondary text                    |
+| `faint`  | `#8e96a3` | ≥4.5:1 everywhere (DESIGN.md's ink floor) | Tertiary / metadata |
 
 #### Brand + Semantics
 
 | Token     | Hex       | Role                                       |
 | --------- | --------- | ------------------------------------------ |
 | `gold`    | `#c9a227` | Accent: owner, brand, active               |
-| `gold-hi` | `#e8c14f` | Accent text on dark (7.6:1)                |
+| `gold-hi` | `#d4b13c` | Interactive gold on dark (DESIGN.md's accent, ~8:1) |
 | `gold-dim`| `#7a641a` | Muted gold for gradients                   |
-| `ok`      | `#4caf50` | Positive / saved                           |
+| `ok`      | `#58a86c` | Positive / saved                           |
 | `ok-hi`   | `#7ed081` | Lighter ok                                 |
-| `bad`     | `#e05a4e` | Negative / errors                          |
+| `bad`     | `#d96c66` | Negative / errors                          |
 | `bad-hi`  | `#ff8a7d` | Lighter bad                                |
-| `info`    | `#6ea8fe` | Presence / links / "someone else did this" |
+| `info`    | `#6ba3d6` | Presence / links / "someone else did this" |
 | `silver`  | `#b6bdcc` | Collaborator role icon                     |
 
 #### Board
 
 | Token          | Hex       | Role                        |
 | -------------- | --------- | --------------------------- |
-| `board-light`  | `#f0d9b5` | Light square                |
-| `board-dark`   | `#b58863` | Dark square                 |
-| `board-edge`   | `#2a2e38` | Outer board border          |
+| `board-light`  | `#e8d9b7` | Light square                |
+| `board-dark`   | `#a97e50` | Dark square                 |
+| `board-edge`   | `#3d434e` | Outer board border (= line-strong) |
 | `move-from`    | `#cdd26a` | Last move, light square     |
 | `move-to`      | `#aaa23a` | Last move, dark square      |
 | `select`       | `#6ea8fe` | Selected square ring        |
