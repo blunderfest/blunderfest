@@ -272,25 +272,21 @@ protocol would only shave a reconnect the client socket makes anyway;
 no observable gain, see ADR-0028's consequences). Search (milestone 8)
 is the next spike-gated candidate, awaiting the owner.
 
-### Open bug (2026-08-29 — positional context doesn't refresh on position change)
+### Bug fixed (2026-08-29 — positional context refreshes on position change)
 
-Once **Find historical evidence** runs on a position, its summary stays
-visible when the cursor moves to a new position, and the new position
-can't re-run (`IDLE` never resets). Suspected cause:
-`PositionContext.tsx:64–86` — `previousFen.current` compares but the
-reset fires only on the first non-null compare. `Analysis.tsx`'s
-`runFindEvidence` (`useCallback(async () → flashMemorized	result)`) is
-also stale-closed over `current`.
-
-**Next-session hints:** fix the render-time compare in `PositionContext`
-(reset `findStatus` and the `resolved`Local state whenever
-`fen`/`route`/`refPly` actually change; construct the key shape in the
-same render so the guaranteed read is just `cachedResult`).`Then
-`runFindEvidence` — keep its own `useCallback` dependency list equal to
-`[current, routeToCurrent]`. Extend `PositionContext.test.tsx` with a
-move-after-resolution test: find at OFF_BOOK, resolve summary, rerender
-to START, expect find-CTA available and the prior summary hidden (with
-the existing cached-nav behavior preserved).
+The **Find historical evidence** summary no longer sticks across cursor
+moves. Root cause: `PositionContext`'s render-time compare kept its
+`previousFen` ref at `null` forever — it was only assigned inside a
+guard that required it non-null — so the reset never fired and the
+resolved summary + CTA state survived navigation. Fix: the request key
+(`requestKey(fen, route, refPly)`) is built once per render and compared
+via the adjust-state-during-render `useState` pattern; any change resets
+`findStatus` and the local `resolved`, and the cache read goes through
+the same key. `Analysis.tsx`'s `runFindEvidence` already closed over
+`[current, routeToCurrent]` — kept as-is. The cached-nav test had been
+passing *through* the bug (its mock never wrote the session cache); it
+now mirrors the `rememberResult` contract. New regression test covers
+find → resolve → move → find. 657 frontend tests green.
 
 ### Session handoff (2026-08-29 — Position context panel (UI task))
 

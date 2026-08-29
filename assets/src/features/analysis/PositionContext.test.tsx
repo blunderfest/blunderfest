@@ -2,22 +2,27 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpeningBook } from '@/features/analysis/openings';
 import PositionContext from '@/features/analysis/PositionContext';
-import { resetHistoricalEvidenceCache } from '@/features/historicalEvidence/evidenceCache';
+import {
+  rememberResult,
+  requestKey,
+  resetHistoricalEvidenceCache,
+} from '@/features/historicalEvidence/evidenceCache';
 import type { HistoricalEvidenceResult } from '@/features/historicalEvidence/types';
 import type { LegalMove } from '@/lib/api';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const OFF_BOOK = 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1';
+const OFF_BOOK_2 = 'rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2';
 
 const book: OpeningBook = {
   'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq': 'B00|King Pawn',
   'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq': 'A40|Queen Pawn',
 };
 
-function evidenceResult(games = 3): HistoricalEvidenceResult {
+function evidenceResult(games = 3, fen: string = OFF_BOOK): HistoricalEvidenceResult {
   return {
     reference: {
-      fen: OFF_BOOK,
+      fen,
       occurrences: 1,
       games,
       families: [],
@@ -117,10 +122,45 @@ describe('PositionContext', () => {
     expect(retry).toBeEnabled();
   });
 
-  it('renders evidence from the cache on cursor return (cached navigation)', async () => {
-    const onFindEvidence = vi.fn<() => Promise<HistoricalEvidenceResult | null>>(() =>
-      Promise.resolve(evidenceResult(5)),
+  it('resets to the find-CTA when the cursor moves after a resolution', async () => {
+    const onFindEvidence = vi
+      .fn<() => Promise<HistoricalEvidenceResult | null>>()
+      .mockResolvedValueOnce(evidenceResult(5, OFF_BOOK))
+      .mockResolvedValueOnce(evidenceResult(7, OFF_BOOK_2));
+    const { rerender } = renderPanel({ fen: OFF_BOOK, onFindEvidence });
+    fireEvent.click(screen.getByTestId('position-context-find-button'));
+    await screen.findByText('5 games');
+    expect(screen.getByTestId('position-context-evidence')).toBeInTheDocument();
+
+    // The cursor moves to a new off-book position: the old summary must go
+    // and the CTA must be runnable again.
+    rerender(
+      <PositionContext
+        book={book}
+        fen={OFF_BOOK_2}
+        onFindEvidence={onFindEvidence}
+        onHoverMove={vi.fn()}
+      />,
     );
+    expect(screen.queryByTestId('position-context-evidence')).not.toBeInTheDocument();
+    expect(screen.queryByText('5 games')).not.toBeInTheDocument();
+    const button = screen.getByTestId('position-context-find-button');
+    expect(button).toBeEnabled();
+
+    fireEvent.click(button);
+    await screen.findByText('7 games');
+    expect(onFindEvidence).toHaveBeenCalledTimes(2);
+    expect(screen.getByTestId('position-context-evidence')).toBeInTheDocument();
+  });
+
+  it('renders evidence from the cache on cursor return (cached navigation)', async () => {
+    // Mirrors Analysis.runFindEvidence's contract: the query's result is
+    // remembered in the session cache before the promise resolves.
+    const onFindEvidence = vi.fn<() => Promise<HistoricalEvidenceResult | null>>(() => {
+      const result = evidenceResult(5);
+      rememberResult(requestKey(OFF_BOOK, null, null), result);
+      return Promise.resolve(result);
+    });
     const { rerender } = renderPanel({ fen: OFF_BOOK, onFindEvidence });
     fireEvent.click(screen.getByTestId('position-context-find-button'));
     await waitFor(() => screen.getByText('d4'));

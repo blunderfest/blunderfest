@@ -40,8 +40,8 @@ Positional context); OPENINGS folds inside it.
 - **View evidence:** the summary's View button opens the existing dialog
   (`openFindExamples`) — the same frozen request, so it's an instant
   cache hit rather than a re-run.
-- **Staleness:** a render-time `previousFen` compare resets the local
-  resolution and the CTA state on any cursor change; the previous
+- **Staleness:** a render-time compare on the request key resets the
+  local resolution and the CTA state on any cursor change; the previous
   position's state is discarded, never "stale-guarded."
 
 ## Opening Book cutoff
@@ -59,11 +59,11 @@ shape, one interpretation of data, shared by the panel and the dialog.
 
 ## Position safety
 
-`previousFen` compares the current cursor's FEN to the one the panel last
-resolved; any change nulls `resolved` and returns the CTA to idle. **Open
-issue:** the compare path resets but the local `resolved` state survives
-on repeated navigation, so the summary sticks to the OLD position. See
-the Open issues entry below.
+`previousKey` (adjust-state-during-render `useState`) compares the
+request key — `requestKey(fen, route, refPly)`, built once per render —
+to the one the panel last rendered; any change nulls `resolved` and
+returns the CTA to idle. The same key feeds the `cachedResult` read, so
+a remembered result for the position landed on still renders instantly.
 
 ## Tablebase extension point
 
@@ -84,8 +84,11 @@ reserved seam, no provider or WDL/DTZ logic.
 
 ## Open issues
 
-- **Stale resolution on cursor move:** `PositionContext`'s `previousFen`
-  compare fails to reset when it should and the result appears pinned.
-  Diagnose via the reset logic in `PositionContext.tsx:64–86`; a test in
-  `PositionContext.test.tsx` should then cover find→resolve→move→find.
+None. (Fixed 2026-08-29: **stale resolution on cursor move** — the
+`previousFen` ref was only assigned inside a guard requiring it
+non-null, so the reset never fired and the resolved summary pinned
+itself to whatever position the cursor moved to. The request key is now
+built once per render and compared via the adjust-state-during-render
+pattern; `PositionContext.test.tsx` covers find→resolve→move→find, and
+the cached-navigation test now exercises the session cache for real.)
 

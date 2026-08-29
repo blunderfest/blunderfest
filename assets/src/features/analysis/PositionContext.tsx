@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type BookContinuation,
@@ -64,23 +64,26 @@ export default function PositionContext({
   /** The last successful result — local state so the cache write re-renders. */
   const [resolved, setResolved] = useState<HistoricalEvidenceResult | null>(null);
 
-  // Reset the local resolved state whenever the cursor position changes —
-  // a resolved result belongs to the position that produced it, not the
-  // one currently rendered. Render-time compare avoids an effect round.
-  const previousFen = useRef<string | null>(null);
-  if (previousFen.current !== null && previousFen.current !== (fen ?? null)) {
-    previousFen.current = fen ?? null;
+  // The request identity for the rendered position — one key shape, built
+  // once per render, shared by the reset compare and the cache read.
+  const key = fen !== null ? requestKey(fen, route ?? null, refPly ?? null) : null;
+
+  // Reset the local resolution whenever the cursor's request changes (fen,
+  // route, or refPly) — a resolved result belongs to the position that
+  // produced it, not the one currently rendered. Render-time compare (the
+  // documented adjust-state-during-render pattern) avoids an effect round.
+  const [previousKey, setPreviousKey] = useState<string | null>(key);
+  if (previousKey !== key) {
+    setPreviousKey(key);
     setFindStatus({ kind: 'idle' });
-    setResolved(() => null);
+    setResolved(null);
   }
 
   const continuations = bookContinuations ?? (book === null ? [] : continuationsFor(book, fen));
   const bookAvailable = continuations.length > 0;
   // `resolved` re-renders here even though the cache writes outside React:
   // it carries the same value the cache lookup would find.
-  const cached =
-    resolved ??
-    (fen !== null ? cachedResult(requestKey(fen, route ?? null, refPly ?? null)) : undefined);
+  const cached = resolved ?? (key !== null ? cachedResult(key) : undefined);
 
   async function runFind() {
     if (onFindEvidence === undefined) {
