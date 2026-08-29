@@ -329,22 +329,23 @@ export default function HistoricalEvidenceDialog({
   );
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop click-to-close; Esc closes too
+    // biome-ignore lint/a11y/useKeyWithClickEvents: Esc closes too (see the keydown listener below)
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('evidence.dialogTitle')}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-void/75 p-4 backdrop-blur-[2px]"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+      data-testid="historical-evidence-backdrop"
     >
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: backdrop click-to-close; Esc closes too */}
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: Esc closes too (see the keydown listener below) */}
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={onClose}
-        data-testid="historical-evidence-backdrop"
-      />
       <div
         ref={panelRef}
         tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('evidence.dialogTitle')}
         className="relative flex max-h-full w-full max-w-2xl flex-col gap-3 rounded-panel border border-line bg-surface p-4 shadow-panel outline-none"
         data-testid="historical-evidence-dialog"
       >
