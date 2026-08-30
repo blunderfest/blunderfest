@@ -29,8 +29,11 @@ decision — they're still listed, because they're visible.
 > **Resolved 2026-08-30 (§6.12, corpus statistics landed):** the opening book is
 > phase-aware and corpus-backed — each named book row carries the corpus game count and a
 > W/D/B rate bar (`Blunderfest.Corpus.Book` → `GET /api/book`; ReferencePanel merges them;
-> rows without corpus data stay plain). Out of book, the panel names endgame territory
-> (v0's tablebase extension point — no tablebase source yet, so no endgame book).
+> rows without corpus data stay plain). Out of book, the panel resolves through an explicit
+> order: one-ply transpositions back into the book (interactive rows, batched
+> `POST /api/book/counts` for the candidates' game counts) → endgame/tablebase label (v0's
+> extension point, unified with the eval chart via the shared `phaseOf` model) → cached
+> historical evidence → find-CTA.
 
 ---
 

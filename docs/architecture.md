@@ -301,10 +301,20 @@ so clients send nothing and hide the member list.
   line, so it refines going deeper, sticks off-book, and follows variations.
   The same book backs the **Openings tab** (`ReferencePanel.tsx`,
   ADR-0024): `continuationsFor` lists the named book moves of the cursor
-  position; hovering a row previews the move as a ghost arrow (local), and
-  clicking it plays the move as a real broadcast op — the panel's
-  re-anchor on cursor move makes the descent free. Corpus statistics
-  upgrade the rows post-spike.
+  position, each with its corpus game count + W/D/B rate bar
+  (`GET /api/book?fen=…`); hovering a row previews the move as a ghost
+  arrow (local), and clicking it plays the move as a real broadcast op —
+  the panel's re-anchor on cursor move makes the descent free.
+- `assets/src/features/analysis/PositionContext.tsx` — the positional-
+  context panel (ADR-0024 as amended). An explicit resolution order:
+  tablebase-eligible (a label; no source yet) → in-book (the ReferencePanel)
+  → one-ply transposition back into book (local child-position check against
+  the book + one batched `POST /api/book/counts` for the candidates'
+  independent-game support; the rows are interactive like the book rows) →
+  likely-endgame → cached evidence summary + View → the find-CTA. The phase
+  model (`phaseOf` in `gamePhases.ts`: material/24 with pawns counted,
+  `tablebaseEligible` ≤ 7 pieces, `likelyEndgame` ≤ 0.5) is shared with the
+  eval chart's endgame shading (`endgameStart`).
 - `assets/src/features/historicalEvidence/` — the vertical slice's UI
   (ADR-0027, ADR-0030): the board header's **Find examples** button
   (next to Export PGN / Save to library — editors only; the old

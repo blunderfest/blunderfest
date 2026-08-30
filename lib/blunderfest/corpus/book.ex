@@ -78,6 +78,26 @@ defmodule Blunderfest.Corpus.Book do
     |> Enum.sort_by(fn row -> {-row.games, row.move} end)
   end
 
+  @doc """
+  Independent-game counts for a batch of canonical keys, in one query —
+  the transposition candidates' support (`%{key => games}`). Keys with no
+  occurrences are absent from the map.
+  """
+  @spec counts_for_keys(Postgrex.conn(), [String.t()]) :: %{String.t() => non_neg_integer()}
+  def counts_for_keys(_conn, []), do: %{}
+
+  def counts_for_keys(conn, keys) do
+    %Postgrex.Result{rows: rows} =
+      Postgrex.query!(
+        conn,
+        "SELECT key, COUNT(DISTINCT gid) FROM corpus_occurrences WHERE key = ANY($1) GROUP BY key",
+        [keys],
+        timeout: :infinity
+      )
+
+    Map.new(rows, fn [key, count] -> {key, count} end)
+  end
+
   # The move played next: the SAN at index `ply` of the game's mainline
   # (the occurrence's ply is the 0-indexed position, so the next move is
   # `sans[ply]`). Terminal positions (no next move) contribute nothing.

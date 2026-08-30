@@ -482,3 +482,17 @@ export type BookMove = {
 export async function fetchBook(fen: string): Promise<{ moves: BookMove[] }> {
   return request(`/api/book?fen=${encodeURIComponent(fen)}`);
 }
+
+/**
+ * Independent-game counts for a batch of FENs, one query (the
+ * transposition candidates' support). Returns `fen => games`; positions
+ * with no occurrences are absent.
+ */
+export async function fetchBookCounts(fens: string[]): Promise<Record<string, number>> {
+  const body = await request<{ counts: Record<string, number> }>('/api/book/counts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fens }),
+  });
+  return body.counts;
+}

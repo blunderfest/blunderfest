@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { endgameStart } from '@/features/analysis/gamePhases';
+import { endgameStart, phaseOf } from '@/features/analysis/gamePhases';
 import type { GameNode } from '@/lib/api';
 
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -40,6 +40,29 @@ function line(fens: string[]): GameNode {
   }
   return root;
 }
+
+describe('phaseOf', () => {
+  it('scores the start position as full material (phase 1)', () => {
+    const phase = phaseOf(START_FEN);
+    expect(phase.materialPhase).toBe(1);
+    expect(phase.likelyEndgame).toBe(false);
+    expect(phase.tablebaseEligible).toBe(false);
+  });
+
+  it('keeps the Kxd1 queen-trade position a middlegame', () => {
+    // Queens off but a full board otherwise: phase well above 0.5.
+    const phase = phaseOf(KXD1_FEN);
+    expect(phase.materialPhase).toBeGreaterThan(0.5);
+    expect(phase.likelyEndgame).toBe(false);
+  });
+
+  it('marks bare kings + a pawn as tablebase-eligible endgame', () => {
+    // Kings + one white pawn: 3 pieces, phase 1/24.
+    const phase = phaseOf('8/8/4k3/8/8/4K3/4P3/8 w - - 0 1');
+    expect(phase.tablebaseEligible).toBe(true);
+    expect(phase.likelyEndgame).toBe(true);
+  });
+});
 
 describe('endgameStart', () => {
   it('reports no endgame while queens and material stay middlegame-sized', () => {

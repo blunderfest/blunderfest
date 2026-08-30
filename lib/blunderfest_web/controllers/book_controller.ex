@@ -29,4 +29,28 @@ defmodule BlunderfestWeb.BookController do
     |> put_status(422)
     |> json(%{errors: %{code: "invalid_fen", detail: "fen is required"}})
   end
+
+  @doc """
+  `POST /api/book/counts` — independent-game counts for a batch of FENs
+  (the transposition candidates' support). Body: `{"fens": [...]}`.
+  Returns `%{fen => games}`; positions with no occurrences are absent.
+  503 when no corpus is configured.
+  """
+  def counts(conn, %{"fens" => fens}) when is_list(fens) do
+    case Blunderfest.Corpus.book_counts(fens) do
+      {:error, :not_configured} ->
+        conn
+        |> put_status(503)
+        |> json(%{errors: %{code: "corpus_unavailable"}})
+
+      counts ->
+        json(conn, %{counts: counts})
+    end
+  end
+
+  def counts(conn, _params) do
+    conn
+    |> put_status(422)
+    |> json(%{errors: %{code: "invalid_fens", detail: "fens is required"}})
+  end
 end

@@ -75,6 +75,23 @@ defmodule Blunderfest.Corpus.BookTest do
     assert {:error, :invalid_fen} = Corpus.book("not a fen")
   end
 
+  test "book_counts batches keys into one per-FEN count map", %{data_dir: dir} do
+    assert Corpus.rebuild(dir, 10).games == 2
+
+    # The after-e4 position has 2 independent games; the start position and
+    # an unseen position have none (absent from the map). An invalid FEN is
+    # skipped, not an error.
+    counts =
+      Corpus.book_counts([
+        @fen_after_e4,
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "8/8/8/8/8/8/8/K6k w - - 0 1",
+        "not a fen"
+      ])
+
+    assert counts == %{@fen_after_e4 => 2}
+  end
+
   # The book query reads the shared configured corpus (the app boots with it).
   defp fetch(_dir) do
     case Corpus.book(@fen_after_e4) do

@@ -105,3 +105,13 @@ an ambient panel.
   corpus data stay plain). The endgame/tablebase source decision from the
   "Endgame table: deferred" line above is still open — the panel currently
   only names endgame territory (the reserved hook), no tablebase truth.
+- **Phase model + one-ply transpositions (2026-08-30):** the panel's
+  resolution order is now explicit — tablebase-eligible (a label; no
+  source) → in-book (ReferencePanel + bars) → one-ply transposition back
+  into book → likely-endgame → cached evidence → find-CTA. The phase model
+  (`phaseOf`: material/24, pawns included; `tablebaseEligible` ≤ 7 pieces;
+  `likelyEndgame` ≤ 0.5) is unified with the eval chart's endgame shading
+  (`endgameStart`). Transpositions are local (the client holds the book) +
+  one batched `POST /api/book/counts` for the candidates' independent-game
+  support; the rows are interactive (ghost preview + click-to-play, like
+  the book rows).

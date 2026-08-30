@@ -1,18 +1,67 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isEndgameFen } from '@/features/analysis/gamePhases';
-import {
-  type BookContinuation,
-  continuationsFor,
-  type OpeningBook,
-} from '@/features/analysis/openings';
+import { phaseOf } from '@/features/analysis/gamePhases';
+import { legalMovesFor } from '@/features/analysis/legalMoves';
+import { isBookPosition, type OpeningBook } from '@/features/analysis/openings';
 import ReferencePanel from '@/features/analysis/ReferencePanel';
 import DecisionMenu from '@/features/historicalEvidence/DecisionMenu';
 import { cachedResult, requestKey } from '@/features/historicalEvidence/evidenceCache';
 import type { HistoricalEvidenceResult } from '@/features/historicalEvidence/types';
-import type { LegalMove } from '@/lib/api';
+import { fetchBookCounts, type LegalMove } from '@/lib/api';
 
 type FindStatus = { kind: 'idle' } | { kind: 'loading' } | { kind: 'failed' };
+
+/** The per-fen transposition-counts cache — module-scoped (one batched call). */
+const transpositionCache = new Map<string, Record<string, number>>();
+
+/** Test seam: drop the cached transposition counts. */
+export function resetTranspositionCache(): void {
+  transpositionCache.clear();
+}
+
+/**
+ * The corpus game counts for the transposition candidate FENs (one batched
+ * query per position). Returns a `fen → games` map, or null until it lands.
+ */
+function useTranspositionCounts(fens: string[]): Record<string, number> | null {
+  // The sorted-join key is the list's identity; the array identity would
+  // re-run the effect on every render.
+  const key = fens.slice().sort().join('|');
+  const [counts, setCounts] = useState<Record<string, number> | null>(
+    key !== '' ? (transpositionCache.get(key) ?? null) : null,
+  );
+
+  useEffect(() => {
+    const list = key === '' ? [] : key.split('|');
+    if (list.length === 0) {
+      setCounts(null);
+      return;
+    }
+    const cached = transpositionCache.get(key);
+    if (cached !== undefined) {
+      setCounts(cached);
+      return;
+    }
+    let cancelled = false;
+    fetchBookCounts(list)
+      .then((result) => {
+        if (!cancelled) {
+          transpositionCache.set(key, result);
+          setCounts(result);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCounts(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key]);
+
+  return counts;
+}
 
 /**
  * Positional context — what Blunderfest knows about the current board
@@ -33,7 +82,6 @@ type FindStatus = { kind: 'idle' } | { kind: 'loading' } | { kind: 'failed' };
  */
 export default function PositionContext({
   book,
-  bookContinuations = null,
   fen,
   route = null,
   refPly = null,
@@ -44,9 +92,6 @@ export default function PositionContext({
   onViewEvidence,
 }: {
   book: OpeningBook | null;
-  /** Pre-computed continuations (optional — avoids a rerender loop
-      between sidebar render and lookup). */
-  bookContinuations?: BookContinuation[] | null;
   fen: string | null;
   route?: string[] | null;
   refPly?: number | null;
@@ -80,11 +125,26 @@ export default function PositionContext({
     setResolved(null);
   }
 
-  const continuations = bookContinuations ?? (book === null ? [] : continuationsFor(book, fen));
-  const bookAvailable = continuations.length > 0;
   // `resolved` re-renders here even though the cache writes outside React:
   // it carries the same value the cache lookup would find.
   const cached = resolved ?? (key !== null ? cachedResult(key) : undefined);
+
+  // The position's phase (unified with the eval chart's endgame shading).
+  const phase = fen !== null ? phaseOf(fen) : null;
+  // In-book means the position itself is keyed (a position can have book
+  // continuations without being in the book — the transposition case).
+  const inBook = book !== null && isBookPosition(book, fen);
+  // One-ply transpositions back into the book: legal children whose
+  // resulting position is in the book. Local — the client holds the book.
+  const transpositions = useMemo(() => {
+    if (fen === null || book === null || inBook) {
+      return [];
+    }
+    return legalMovesFor(fen).filter((move) => isBookPosition(book, move.fen));
+  }, [fen, book, inBook]);
+
+  // The corpus support for the transposing children (one batched call).
+  const transpositionCounts = useTranspositionCounts(transpositions.map((m) => m.fen));
 
   async function runFind() {
     if (onFindEvidence === undefined) {
@@ -110,27 +170,78 @@ export default function PositionContext({
     />
   );
 
-  if (!bookAvailable) {
-    // The tablebase hook (v0's endgame book extension point): out of book
-    // and into an endgame, the panel names the state — the reserved slot a
-    // tablebase source would fill once one exists in the repo.
-    const tablebaseNote =
-      fen !== null && isEndgameFen(fen) ? (
-        <p
-          className="m-0 flex items-center gap-1.5 px-3 pt-2 text-micro text-faint"
-          data-testid="position-context-endgame"
-        >
-          {t('positionContext.endgameHook')}
-        </p>
-      ) : null;
+  // The phase notes that ride the out-of-book states: tablebase-eligible
+  // (the reserved extension point — no TB source in the repo yet) and
+  // likely-endgame. Shown on whichever out-of-book branch renders.
+  const phaseNote =
+    phase !== null && (phase.tablebaseEligible || phase.likelyEndgame) ? (
+      <p
+        className="m-0 flex items-center gap-1.5 px-3 pt-2 text-micro text-faint"
+        data-testid="position-context-endgame"
+      >
+        {phase.tablebaseEligible
+          ? t('positionContext.tablebaseHook')
+          : t('positionContext.endgameHook')}
+      </p>
+    ) : null;
 
+  if (!inBook) {
     content =
-      cached !== undefined ? (
+      // Out of book but a child lands back in it: the transposition note
+      // replaces the plain book rows (the position itself has no named line).
+      transpositions.length > 0 ? (
+        // One-ply transposition back into the book: the position itself is
+        // out, but these moves land back in it. Interactive rows — the
+        // ghost preview and click-to-play match the book rows.
+        <div className="flex min-h-0 flex-col" data-testid="position-context-transpositions">
+          {phaseNote}
+          <p className="m-0 px-3 pt-2 text-note text-muted">
+            {t('positionContext.noDirectMatches')}
+          </p>
+          <p className="m-0 px-3 pb-1 text-micro font-semibold uppercase tracking-[0.11em] text-faint">
+            {t('positionContext.possibleTranspositions')}
+          </p>
+          <ul className="m-0 list-none p-1">
+            {[...transpositions]
+              .sort(
+                (a, b) =>
+                  (transpositionCounts?.[b.fen] ?? 0) - (transpositionCounts?.[a.fen] ?? 0) ||
+                  a.san.localeCompare(b.san),
+              )
+              .map((move) => (
+                <li
+                  key={move.san}
+                  onMouseEnter={() => onHoverMove(move)}
+                  onMouseLeave={() => onHoverMove(null)}
+                >
+                  <button
+                    type="button"
+                    className="flex w-full items-baseline gap-2 rounded-control px-2 py-1.5 text-left transition-colors not-disabled:hover:bg-raised disabled:cursor-default"
+                    disabled={onPlayMove === undefined}
+                    onClick={() => onPlayMove?.(move)}
+                    data-testid="position-context-transposition"
+                  >
+                    <span className="shrink-0 text-ui font-semibold text-ink tabular-nums">
+                      {move.san}
+                    </span>
+                    <span className="ml-auto shrink-0 font-mono text-micro text-faint tabular-nums">
+                      {transpositionCounts?.[move.fen] !== undefined
+                        ? t('positionContext.transpositionGames', {
+                            count: transpositionCounts[move.fen],
+                          })
+                        : '…'}
+                    </span>
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
+      ) : cached !== undefined ? (
         // Historical evidence already calculated — summary + View. The
         // sticky "Positional context" title already names the box, so the
         // section goes straight to the counts (no repeated header).
         <div className="flex min-h-0 flex-col" data-testid="position-context-evidence">
-          {tablebaseNote}
+          {phaseNote}
           <section className="flex flex-col gap-0.5 px-3 py-2 text-left">
             <p className="m-0 text-note text-ink">
               {t('positionContext.gamesCount', { count: cached.reference.games })}
@@ -159,7 +270,7 @@ export default function PositionContext({
           className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-3 py-4"
           data-testid="position-context-find"
         >
-          {tablebaseNote}
+          {phaseNote}
           {findStatus.kind === 'failed' ? (
             <>
               <p className="m-0 text-note text-bad-hi">{t('positionContext.failed')}</p>

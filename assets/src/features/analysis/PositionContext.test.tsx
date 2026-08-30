@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpeningBook } from '@/features/analysis/openings';
-import PositionContext from '@/features/analysis/PositionContext';
+import PositionContext, { resetTranspositionCache } from '@/features/analysis/PositionContext';
 import {
   rememberResult,
   requestKey,
@@ -10,13 +10,26 @@ import {
 import type { HistoricalEvidenceResult } from '@/features/historicalEvidence/types';
 import type { LegalMove } from '@/lib/api';
 
+vi.mock('@/lib/api', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/lib/api')>();
+  return { ...original, fetchBookCounts: vi.fn() };
+});
+
+const { fetchBookCounts } = await import('@/lib/api');
+const mockFetchBookCounts = vi.mocked(fetchBookCounts);
+
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-const OFF_BOOK = 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1';
-const OFF_BOOK_2 = 'rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2';
+// Genuinely out of book: not keyed, and no legal child is keyed either
+// (1. a3 lands nowhere in the fixture book).
+const OFF_BOOK = 'rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR b KQkq - 0 1';
+const OFF_BOOK_2 = 'rnbqkbnr/ppp1pppp/8/3p4/8/P7/1PPPPPPP/RNBQKBNR w KQkq - 0 2';
 // A king-and-pawn endgame, out of book (no queens, both sides ≤ 13 material).
 const ENDGAME = '8/8/4k3/8/8/4K3/4P3/8 w - - 0 1';
 
 const book: OpeningBook = {
+  // The start position is keyed (the real book keys it), so it's in-book and
+  // its continuations (e4, d4) are the named rows.
+  'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq': 'A00|Start',
   'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq': 'B00|King Pawn',
   'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq': 'A40|Queen Pawn',
 };
@@ -45,6 +58,9 @@ function evidenceResult(games = 3, fen: string = OFF_BOOK): HistoricalEvidenceRe
 
 beforeEach(() => {
   resetHistoricalEvidenceCache();
+  resetTranspositionCache();
+  // Default: no corpus support for the transposition candidates.
+  mockFetchBookCounts.mockResolvedValue({});
 });
 
 function renderPanel({
@@ -97,6 +113,34 @@ describe('PositionContext', () => {
   it('no endgame hook in a middlegame out-of-book position', () => {
     renderPanel({ fen: OFF_BOOK });
     expect(screen.queryByTestId('position-context-endgame')).not.toBeInTheDocument();
+  });
+
+  it('shows one-ply transpositions when out of book but a child lands back in it', async () => {
+    // After 1. a3 (out of book), 1... e5 lands on a book-keyed position.
+    // The book is keyed by resulting position (placement + side + castling).
+    const childFen = 'rnbqkbnr/pppp1ppp/8/4p3/8/P7/1PPPPPPP/RNBQKBNR w KQkq - 0 2';
+    const transposingBook: OpeningBook = {
+      'rnbqkbnr/pppp1ppp/8/4p3/8/P7/1PPPPPPP/RNBQKBNR w KQkq': 'A00|a3 then …e5',
+    };
+    const afterA3 = 'rnbqkbnr/pppppppp/8/8/8/P7/1PPPPPPP/RNBQKBNR b KQkq - 0 1';
+    mockFetchBookCounts.mockResolvedValue({ [childFen]: 24 });
+
+    render(
+      <PositionContext
+        book={transposingBook}
+        fen={afterA3}
+        onPlayMove={vi.fn()}
+        onHoverMove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('position-context-transpositions')).toBeInTheDocument();
+    expect(screen.getByText('Possible transpositions')).toBeInTheDocument();
+    expect(screen.getByTestId('position-context-transposition')).toBeInTheDocument();
+    // No find-CTA while a transposition exists.
+    expect(screen.queryByTestId('position-context-find')).not.toBeInTheDocument();
+    // The corpus count lands for the transposing child.
+    await waitFor(() => expect(mockFetchBookCounts).toHaveBeenCalled());
   });
 
   it('runs the evidence query on the CTA and shows the summary', async () => {

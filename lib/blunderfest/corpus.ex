@@ -15,7 +15,7 @@ defmodule Blunderfest.Corpus do
 
   use GenServer
 
-  alias Blunderfest.Corpus.{Book, GameExport, Occurrences}
+  alias Blunderfest.Corpus.{Book, GameExport, Occurrences, PositionKey}
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -54,6 +54,15 @@ defmodule Blunderfest.Corpus do
   """
   @spec book(String.t()) :: [Book.row()] | {:error, :not_configured | :invalid_fen}
   def book(fen), do: GenServer.call(__MODULE__, {:book, fen}, :infinity)
+
+  @doc """
+  Independent-game counts for a batch of FENs, one query (the
+  transposition candidates' support). Invalid FENs are skipped.
+  `%{fen => games}` — positions with no occurrences are absent.
+  """
+  @spec book_counts([String.t()]) ::
+          %{String.t() => non_neg_integer()} | {:error, :not_configured}
+  def book_counts(fens), do: GenServer.call(__MODULE__, {:book_counts, fens}, :infinity)
 
   @doc "Row counts of the four corpus tables."
   @spec counts() :: map() | {:error, :not_configured}
@@ -120,12 +129,40 @@ defmodule Blunderfest.Corpus do
   end
 
   def handle_call({fun, _arg}, _from, %{pool: nil} = state)
-      when fun in [:occurrences, :position, :pawn_bucket, :game, :moves, :book] do
+      when fun in [:occurrences, :position, :pawn_bucket, :game, :moves, :book, :book_counts] do
     {:reply, {:error, :not_configured}, state}
   end
 
   def handle_call({:book, fen}, _from, state) do
     {:reply, Book.for_fen(state.pool, fen), state}
+  end
+
+  def handle_call({:book_counts, fens}, _from, state) do
+    # Canonicalize each FEN to a key (invalid FENs skipped), batch into one
+    # query, and map counts back to the caller's FENs.
+    fen_keys =
+      fens
+      |> Enum.uniq()
+      |> Enum.flat_map(fn fen ->
+        case PositionKey.from_fen(fen) do
+          {:ok, key} -> [{fen, key}]
+          {:error, _} -> []
+        end
+      end)
+
+    counts = Book.counts_for_keys(state.pool, Enum.map(fen_keys, fn {_fen, key} -> key end))
+
+    # A key can serve several FENs (FEN move-counter differences); map back,
+    # dropping positions with no occurrences.
+    result =
+      for {fen, key} <- fen_keys,
+          count = Map.get(counts, key),
+          count !== nil,
+          into: %{} do
+        {fen, count}
+      end
+
+    {:reply, result, state}
   end
 
   def handle_call({:occurrences, key}, _from, state) do

@@ -527,6 +527,11 @@
     "gamesCount_other": "{{count}} games",
     "failed": "Historical evidence could not be loaded.",
     "retry": "Try again",
-    "endgameHook": "Endgame — tablebase territory (not yet available)"
+    "endgameHook": "Endgame — tablebase territory (not yet available)",
+    "tablebaseHook": "Tablebase-eligible position (tablebase not yet available)",
+    "noDirectMatches": "Current position is outside the book.",
+    "possibleTranspositions": "Possible transpositions",
+    "transpositionGames_one": "{{count}} game",
+    "transpositionGames_other": "{{count}} games"
   }
 }

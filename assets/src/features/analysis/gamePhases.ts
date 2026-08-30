@@ -1,55 +1,79 @@
-import { type PieceColor, type PieceKind, parseFen } from '@/components/board';
+import { type PieceKind, parseFen } from '@/components/board';
 import type { GameNode } from '@/lib/api';
 
-/** Non-pawn piece values in pawns, as the material timeline uses. */
-const VALUES: Record<PieceKind, number> = { p: 0, n: 3, b: 3, r: 5, q: 9, k: 0 };
+/** Piece values for the phase score: queens 4, rooks 2, bishops/knights 1, pawns 1. */
+const PHASE_VALUES: Record<PieceKind, number> = { q: 4, r: 2, b: 1, n: 1, p: 1, k: 0 };
 
-/** A side's non-pawn material (pawns and the king don't count), in pawns. */
-function nonPawnMaterial(position: ReturnType<typeof parseFen>, color: PieceColor): number {
-  let total = 0;
+/** The phase score's full-board reference: 24 (16 pawns + 8 pieces, both sides). */
+const PHASE_MAX = 24;
+
+/**
+ * A position's phase (the positional-context panel + the eval chart's
+ * endgame shading, unified). The material phase is a continuous 0..1 score
+ * (the standard game-phase model): 1.0 is the full board, 0.0 is bare
+ * kings. Tablebase eligibility is the Syzygy predicate (≤ 7 pieces).
+ * "Likely endgame" is the 0.5 band — see the resolution order in
+ * `PositionContext`.
+ */
+export type PositionPhase = {
+  /** 0..1 — remaining material / 24 (pawns included; the tablebase counts them). */
+  materialPhase: number;
+  /** Non-king pieces on the board. */
+  pieceCount: number;
+  /** Syzygy eligibility (≤ 7 pieces). */
+  tablebaseEligible: boolean;
+  /** materialPhase <= 0.5. */
+  likelyEndgame: boolean;
+};
+
+/** The phase of a parsed position. */
+export function phaseOfPosition(position: ReturnType<typeof parseFen>): PositionPhase {
+  let remaining = 0;
+  let pieceCount = 0;
   for (const piece of position) {
-    if (piece !== null && piece.color === color && piece.kind !== 'p' && piece.kind !== 'k') {
-      total += VALUES[piece.kind];
+    if (piece !== null && piece.kind !== 'k') {
+      remaining += PHASE_VALUES[piece.kind];
+      pieceCount += 1;
     }
   }
-  return total;
+  const materialPhase = Math.min(remaining / PHASE_MAX, 1);
+  return {
+    materialPhase,
+    pieceCount,
+    tablebaseEligible: pieceCount <= 7,
+    likelyEndgame: materialPhase <= 0.5,
+  };
+}
+
+/** The phase of a FEN. */
+export function phaseOf(fen: string): PositionPhase {
+  return phaseOfPosition(parseFen(fen));
 }
 
 /**
- * The endgame heuristic: low material — both sides down to ≤ 13 pawns of
- * non-pawn material (a queen and a minor, two rooks and a minor, …). A
- * normal middlegame (25 a side) doesn't qualify; a queen trade alone
- * doesn't either (queens off but a full board of pieces is still a
- * middlegame).
- */
-function isEndgame(position: ReturnType<typeof parseFen>): boolean {
-  return nonPawnMaterial(position, 'w') <= 13 && nonPawnMaterial(position, 'b') <= 13;
-}
-
-/**
- * Whether a FEN is an endgame position (the same heuristic as
- * `endgameStart`, for a single position — the positional-context panel's
- * tablebase hook).
+ * Whether a FEN is an endgame position — the phase model's `likelyEndgame`
+ * band, shared with the panel (the positional-context panel's endgame
+ * hook).
  */
 export function isEndgameFen(fen: string): boolean {
-  return isEndgame(parseFen(fen));
+  return phaseOf(fen).likelyEndgame;
 }
 
 /**
  * Where the endgame began, for the eval chart's phase shading
  * (visualization ideas #1). The earliest ply of the closing stretch in
- * which every position satisfies the endgame heuristic — the *closing*
- * stretch, because promotions can bring queens and material back, so a
- * mid-game dip doesn't shade as an endgame that then un-happens. Pure
- * tree data (FENs); null when the game stays a middlegame, 0 when it
- * starts as an endgame (e.g. a free-form setup).
+ * which every position is in the likely-endgame band — the *closing*
+ * stretch, because promotions can bring material back, so a mid-game dip
+ * doesn't shade as an endgame that then un-happens. Pure tree data (FENs);
+ * null when the game stays a middlegame, 0 when it starts as an endgame
+ * (e.g. a free-form setup).
  */
 export function endgameStart(root: GameNode): number | null {
   const mainline: { ply: number; endgame: boolean }[] = [];
   let node: GameNode | null = root;
   while (node !== null) {
     if (node.fen !== null) {
-      mainline.push({ ply: node.ply, endgame: isEndgame(parseFen(node.fen)) });
+      mainline.push({ ply: node.ply, endgame: phaseOf(node.fen).likelyEndgame });
     }
     node = node.children[0] ?? null;
   }
