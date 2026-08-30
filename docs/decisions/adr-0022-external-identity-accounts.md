@@ -65,3 +65,12 @@ links; magic links or other providers later).
   limits instead of per-IP).
 - `LichessAuth` (flow state, exchange codes) is deliberately ephemeral —
   nothing in it should ever want durability.
+- **Return-to-room (2026-08-30):** the callback originally always landed
+  on `#/` — signing in from inside a room dropped the user at the start
+  screen. The start request now carries the initiating hash route
+  (`return_to`), stored in the OAuth flow state and echoed back on
+  callback (`#/r/<code>?linked=…` / `?exchange=…`). Only the exact room
+  shape is accepted (ADR-0007's code validation; the whitelist grows with
+  new destinations like `#/search`); anything else falls back to home.
+  The SPA's auth-param stripping preserves the hash route instead of
+  hardcoding `#/`, and its room-route matcher tolerates the query suffix.

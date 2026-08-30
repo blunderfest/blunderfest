@@ -57,16 +57,21 @@ export async function createProfile(
  * binds the account to the current profile when it is new, or adopts the
  * profile the account is already bound to. Device credentials identify
  * the current profile for the bind case. Returns the lichess authorize
- * URL.
+ * URL. `returnTo` is the initiating hash route (`#/r/<code>`), validated
+ * server-side and echoed back on callback so the sign-in lands back where
+ * it started.
  */
-export async function lichessAuthStart(device: Device): Promise<{ url: string }> {
+export async function lichessAuthStart(
+  device: Device,
+  returnTo?: string | null,
+): Promise<{ url: string }> {
   return request('/api/auth/lichess/start', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${device.secret}`,
     },
-    body: JSON.stringify({ profile_id: device.id }),
+    body: JSON.stringify({ profile_id: device.id, return_to: returnTo ?? null }),
   });
 }
 

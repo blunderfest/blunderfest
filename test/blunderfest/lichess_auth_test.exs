@@ -22,7 +22,15 @@ defmodule Blunderfest.LichessAuthTest do
 
   test "flows without a profile id round-trip as nil" do
     {state, _verifier} = LichessAuth.begin_flow(:sign_in, nil)
-    assert {:ok, %{intent: :sign_in, profile_id: nil}} = LichessAuth.pop_flow(state)
+
+    assert {:ok, %{intent: :sign_in, profile_id: nil, return_to: nil}} =
+             LichessAuth.pop_flow(state)
+  end
+
+  test "a flow round-trips its return_to" do
+    {state, _verifier} = LichessAuth.begin_flow(:sign_in, "profile-1", "#/r/abc23")
+
+    assert {:ok, %{return_to: "#/r/abc23"}} = LichessAuth.pop_flow(state)
   end
 
   test "unknown state params are rejected" do

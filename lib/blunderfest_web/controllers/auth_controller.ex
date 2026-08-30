@@ -8,7 +8,7 @@ defmodule BlunderfestWeb.AuthController do
 
   use BlunderfestWeb, :controller
 
-  alias Blunderfest.{Lichess, LichessAuth, Profiles}
+  alias Blunderfest.{Lichess, LichessAuth, Profiles, Rooms}
   alias BlunderfestWeb.Auth
 
   @doc """
@@ -18,10 +18,11 @@ defmodule BlunderfestWeb.AuthController do
   bearer identifies the current profile for the bind case; a JSON round
   trip means the secret never lands in a redirect URL.
   """
-  def lichess_start(conn, _params) do
+  def lichess_start(conn, params) do
     case Auth.bearer_profile(conn) do
       {:ok, profile} ->
-        {state, verifier} = LichessAuth.begin_flow(:sign_in, profile.id)
+        return_to = if valid_return_to?(params["return_to"]), do: params["return_to"]
+        {state, verifier} = LichessAuth.begin_flow(:sign_in, profile.id, return_to)
         challenge = Base.url_encode64(:crypto.hash(:sha256, verifier), padding: false)
 
         json(conn, %{url: Lichess.authorize_url(callback_url(conn), challenge, state)})
@@ -103,7 +104,7 @@ defmodule BlunderfestWeb.AuthController do
       {:ok, known} ->
         {:ok, _} = Profiles.link_account(known.id, account)
         code = LichessAuth.issue_exchange_code(known.id)
-        redirect(conn, to: "/#/?exchange=#{code}")
+        redirect(conn, to: "#{return_path(flow)}?exchange=#{code}")
 
       {:error, :not_found} ->
         bind_to_current(conn, flow, account)
@@ -112,10 +113,10 @@ defmodule BlunderfestWeb.AuthController do
 
   # First sighting of the account: bind it to the current profile. The
   # current name stays.
-  defp bind_to_current(conn, %{profile_id: profile_id}, account)
+  defp bind_to_current(conn, %{profile_id: profile_id} = flow, account)
        when is_binary(profile_id) do
     case Profiles.link_account(profile_id, account) do
-      {:ok, _} -> redirect(conn, to: "/#/?linked=lichess")
+      {:ok, _} -> redirect(conn, to: "#{return_path(flow)}?linked=lichess")
       {:error, :not_found} -> redirect(conn, to: "/#/?auth_error=profile_gone")
     end
   end
@@ -123,6 +124,23 @@ defmodule BlunderfestWeb.AuthController do
   defp bind_to_current(conn, _flow, _account) do
     redirect(conn, to: "/#/?auth_error=profile_gone")
   end
+
+  # The post-sign-in landing: the client's initiating hash route when it
+  # was validated at start, home otherwise. Same-origin fragment-only, so
+  # an unvalidated return_to can never leave the app.
+  defp return_path(flow) do
+    case Map.get(flow, :return_to) do
+      nil -> "/#/"
+      path -> "/#{path}"
+    end
+  end
+
+  # The client passes its current hash route at start (`#/r/<code>` in a
+  # room). Only that exact shape is echoed back — everything else falls
+  # back to home. The room-code half reuses ADR-0007's validation; the
+  # destination whitelist grows with new hash routes (e.g. `#/search`).
+  defp valid_return_to?("#/r/" <> code), do: Rooms.valid_code?(code)
+  defp valid_return_to?(_), do: false
 
   defp callback_url(conn) do
     "#{conn.scheme}://#{conn.host}#{port_suffix(conn)}/auth/lichess/callback"

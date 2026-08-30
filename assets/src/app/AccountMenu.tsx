@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import LichessMark from '@/components/LichessMark';
 import { lichessAuthStart, type Profile, unlinkLichess } from '@/lib/api';
 import { loadDevice } from '@/lib/device';
+import { roomCodeInHash } from '@/lib/roomCode';
 
 const menuItem =
   'block w-full rounded-md px-2.5 py-1.5 text-left text-ui text-ink transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40';
@@ -46,7 +47,10 @@ export default function AccountMenu({ profile }: { profile: Profile }) {
     }
     setStarting(true);
     try {
-      const { url } = await lichessAuthStart(device);
+      // Carry the room along: the callback echoes the initiating hash
+      // route back, so a link from inside a room returns to that room.
+      const code = roomCodeInHash(window.location.hash);
+      const { url } = await lichessAuthStart(device, code === null ? null : `#/r/${code}`);
       window.location.assign(url);
     } catch {
       setStarting(false);

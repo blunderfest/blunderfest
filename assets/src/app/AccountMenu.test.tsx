@@ -12,6 +12,7 @@ const linked: Profile = {
 afterEach(() => {
   vi.unstubAllGlobals();
   localStorage.clear();
+  window.history.replaceState(null, '', window.location.pathname);
 });
 
 describe('AccountMenu', () => {
@@ -59,7 +60,35 @@ describe('AccountMenu', () => {
     expect(String(url)).toBe('/api/auth/lichess/start');
     const headers = (init?.headers ?? {}) as Record<string, string>;
     expect(headers.Authorization).toBe('Bearer the-secret');
-    expect(JSON.parse(String(init?.body))).toEqual({ profile_id: 'profile-1' });
+    expect(JSON.parse(String(init?.body))).toEqual({ profile_id: 'profile-1', return_to: null });
+  });
+
+  it('carries the current room hash so the callback returns to the room', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    window.location.hash = '#/r/abcde';
+    const fetchMock = vi.fn((_input: RequestInfo | URL, _init?: RequestInit) =>
+      Promise.resolve(
+        new Response(JSON.stringify({ url: 'https://lichess.org/oauth?state=abc' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    render(<AccountMenu profile={profile} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Account' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Sign in with Lichess' }));
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse(String(init?.body))).toEqual({
+      profile_id: 'profile-1',
+      return_to: '#/r/abcde',
+    });
   });
 
   it('closes the menu on Escape', () => {

@@ -46,6 +46,37 @@ defmodule BlunderfestWeb.AuthControllerTest do
 
       assert %{"errors" => %{"code" => "unauthorized"}} = json_response(conn, 401)
     end
+
+    test "round-trips a validated return_to for the callback", %{conn: conn} do
+      {:ok, profile, secret} = Profiles.create()
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{secret}")
+        |> post("/api/auth/lichess/start", %{
+          "profile_id" => profile.id,
+          "return_to" => "#/r/abc23"
+        })
+
+      assert %{"url" => url} = json_response(conn, 200)
+      [_, state_param] = Regex.run(~r/state=([^&]+)/, url)
+      assert {:ok, %{return_to: "#/r/abc23"}} = LichessAuth.pop_flow(state_param)
+    end
+
+    test "rejects a return_to that is not a room route", %{conn: conn} do
+      {:ok, profile, secret} = Profiles.create()
+
+      for bad <- ["https://evil.example", "/#/r/abc23", "#/r/nope!", "#/search"] do
+        conn =
+          conn
+          |> put_req_header("authorization", "Bearer #{secret}")
+          |> post("/api/auth/lichess/start", %{"profile_id" => profile.id, "return_to" => bad})
+
+        assert %{"url" => url} = json_response(conn, 200)
+        [_, state_param] = Regex.run(~r/state=([^&]+)/, url)
+        assert {:ok, %{return_to: nil}} = LichessAuth.pop_flow(state_param)
+      end
+    end
   end
 
   describe "GET /auth/lichess/callback" do
@@ -59,6 +90,43 @@ defmodule BlunderfestWeb.AuthControllerTest do
       assert redirected_to(conn) == "/#/?linked=lichess"
       {:ok, updated} = Profiles.get(profile.id)
       assert [%{type: "lichess", username: "dr_ny", token: "tok-123"}] = updated.accounts
+    end
+
+    test "a bind returns to the room the flow started from", %{conn: conn} do
+      {:ok, profile, _secret} = Profiles.create()
+      {state, _verifier} = LichessAuth.begin_flow(:sign_in, profile.id, "#/r/abc23")
+      stub_lichess_oauth("dr_ny")
+
+      conn = get(conn, "/auth/lichess/callback", %{"code" => "code-1", "state" => state})
+
+      assert redirected_to(conn) == "/#/r/abc23?linked=lichess"
+      {:ok, updated} = Profiles.get(profile.id)
+      assert [%{type: "lichess", username: "dr_ny"}] = updated.accounts
+    end
+
+    test "an adoption returns to the room the flow started from", %{conn: conn} do
+      {:ok, known, _secret} = Profiles.create()
+      {:ok, current, _secret} = Profiles.create()
+
+      {:ok, _} =
+        Profiles.link_account(known.id, %{
+          type: "lichess",
+          username: "dr_ny",
+          token: "old-tok",
+          scopes: [],
+          linked_at: DateTime.utc_now()
+        })
+
+      {state, _verifier} = LichessAuth.begin_flow(:sign_in, current.id, "#/r/abc23")
+      stub_lichess_oauth("dr_ny")
+
+      conn = get(conn, "/auth/lichess/callback", %{"code" => "code-1", "state" => state})
+
+      ["/#/r/abc23?exchange=" <> code] = [redirected_to(conn)]
+
+      conn = post(conn, "/api/auth/exchange", %{"code" => code})
+      assert %{"profile" => %{"id" => got}} = json_response(conn, 200)
+      assert got == known.id
     end
 
     test "a bound account adopts the known profile via a one-time exchange", %{conn: conn} do

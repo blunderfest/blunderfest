@@ -474,4 +474,23 @@ describe('App', () => {
     );
     expect(window.location.hash).toBe('#/');
   });
+
+  it('lands in the room the exchange redirect pointed at', async () => {
+    window.location.hash = '#/r/abcde?exchange=code-123';
+    stubFetch({
+      '/api/healthz': () => new Promise(() => {}),
+      '/api/auth/exchange': () => jsonResponse(profileBody, 200),
+    });
+    const channel = new FakeChannel();
+    channel.joinReturn = { ops: [], roles: { 'profile-1': 'owner' } };
+    socketMocks.channelFor.mockReturnValue(channel);
+    render(<App />);
+
+    expect(await screen.findByText('Brave Otter 42')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(socketMocks.channelFor).toHaveBeenCalledWith('room:abcde', expect.anything()),
+    );
+    // The single-use param is stripped, the room route stays.
+    expect(window.location.hash).toBe('#/r/abcde');
+  });
 });

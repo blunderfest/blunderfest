@@ -9,6 +9,7 @@ import RoomView from '@/features/room/RoomView';
 import { roomSteps } from '@/features/tour/steps';
 import Tour from '@/features/tour/Tour';
 import { hasNewVersion, loadInitialVersion } from '@/lib/appVersion';
+import { roomCodeInHash } from '@/lib/roomCode';
 import { getTheme, setTheme, type Theme } from '@/lib/theme';
 import { useProfile } from '@/lib/useProfile';
 
@@ -17,9 +18,9 @@ export type BackendStatus = 'checking' | 'ok' | 'down';
 type Route = { screen: 'home' } | { screen: 'room'; slug: string };
 
 function readHashRoute(): Route {
-  const match = window.location.hash.match(/^#\/r\/([abcdefghjkmnpqrstuvwxyz23456789]{5})$/);
-  if (match) {
-    return { screen: 'room', slug: match[1] };
+  const code = roomCodeInHash(window.location.hash);
+  if (code !== null) {
+    return { screen: 'room', slug: code };
   }
   return { screen: 'home' };
 }

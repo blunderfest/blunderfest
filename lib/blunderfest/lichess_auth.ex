@@ -26,11 +26,13 @@ defmodule Blunderfest.LichessAuth do
   Starts a flow: returns `{state_param, pkce_verifier}` to embed in the
   authorize URL and the token exchange respectively. The single
   `:sign_in` intent binds when the account is new and adopts the known
-  profile when it is bound (ADR-0022).
+  profile when it is bound (ADR-0022). `return_to` is the client's
+  initiating hash route (`#/r/<code>`), echoed back on callback so the
+  sign-in lands where it started.
   """
-  def begin_flow(intent, profile_id \\ nil, server \\ __MODULE__)
+  def begin_flow(intent, profile_id \\ nil, return_to \\ nil, server \\ __MODULE__)
       when intent in [:sign_in] do
-    GenServer.call(server, {:begin_flow, intent, profile_id})
+    GenServer.call(server, {:begin_flow, intent, profile_id, return_to})
   end
 
   @doc "Pops a flow's intent and verifier (single use). :error when unknown/expired."
@@ -57,13 +59,14 @@ defmodule Blunderfest.LichessAuth do
   end
 
   @impl true
-  def handle_call({:begin_flow, intent, profile_id}, _from, state) do
+  def handle_call({:begin_flow, intent, profile_id, return_to}, _from, state) do
     state_param = random_token()
     verifier = random_token()
 
     flow = %{
       intent: intent,
       profile_id: profile_id,
+      return_to: return_to,
       verifier: verifier,
       expires_at: now_ms() + @state_ttl_ms
     }
@@ -79,7 +82,7 @@ defmodule Blunderfest.LichessAuth do
       case flow do
         %{expires_at: expires_at} = flow when is_number(expires_at) ->
           if expires_at >= now,
-            do: {:ok, Map.take(flow, [:intent, :profile_id, :verifier])},
+            do: {:ok, Map.take(flow, [:intent, :profile_id, :return_to, :verifier])},
             else: :error
 
         _ ->

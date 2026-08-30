@@ -32,3 +32,13 @@ export function normalizeRoomCode(input: string): string {
 export function validRoomCode(code: string): boolean {
   return /^[abcdefghjkmnpqrstuvwxyz23456789]{5}$/.test(code);
 }
+
+/**
+ * The room code carried by a URL hash, tolerating a trailing `?query`
+ * (the OAuth handoff appends `?linked=` / `?exchange=` params to the
+ * route). `null` on the home screen or any other hash.
+ */
+export function roomCodeInHash(hash: string): string | null {
+  const match = hash.match(/^#\/r\/([abcdefghjkmnpqrstuvwxyz23456789]{5})(?:\?.*)?$/);
+  return match === null ? null : (match[1] ?? null);
+}

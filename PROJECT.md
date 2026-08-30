@@ -116,6 +116,23 @@ browser (ADR-0030's noted follow-up), or the `#/search` destination
 (ADR-0024/ADR-0010). The tablebase source for the endgame hook is open
 (ADR-0024's deferred line).
 
+### Bug fixed (2026-08-30 — Lichess sign-in returns to the room it started from)
+
+**Signing in with Lichess from inside a room no longer dumps the user at
+the start screen.** Root cause: the OAuth callback always redirected to
+`#/` — the initiating room hash never survived the round trip, and the
+SPA's auth-param stripping hardcoded `#/` too (its room-route regex
+also rejected a query-bearing hash). Now `POST /api/auth/lichess/start`
+carries the client's `return_to` (`#/r/<code>`), validated against the
+ADR-0007 shape and stored in the OAuth flow state; the callback
+redirects to `#/r/<code>?linked=lichess` / `?exchange=<code>` (home
+when invalid or absent — same-origin fragment-only, no open redirect).
+The client's param strip preserves the hash route, and `roomCodeInHash`
+(lib/roomCode.ts) parses room routes with a `?query` suffix — shared by
+App routing and AccountMenu. ADR-0022 gained a return-to-room
+consequence note. 630 frontend + 422 backend green; browser-verified
+(`#/r/chess?linked=lichess` lands in the room, URL cleaned).
+
 ### Where we are (2026-08-13)
 
 Milestones 1–6 done. Recently landed: one process per room (ADR-0012),

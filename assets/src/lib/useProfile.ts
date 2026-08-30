@@ -32,8 +32,12 @@ function readAuthParams(): { exchange: string | null; authError: string | null }
   if (exchange === null && authError === null && linked === null) {
     return { exchange: null, authError: null };
   }
-  // The params are single-use — strip them from the URL.
-  window.history.replaceState(null, '', `${window.location.pathname}#/`);
+  // The params are single-use — strip them, keeping the hash route the
+  // server redirected us to. `replaceState` does not fire a hashchange,
+  // but the App's route already resolved the query-bearing hash, and the
+  // path part is unchanged by this strip.
+  const path = window.location.hash.slice(0, q);
+  window.history.replaceState(null, '', `${window.location.pathname}${path === '' ? '#/' : path}`);
   return { exchange, authError };
 }
 
