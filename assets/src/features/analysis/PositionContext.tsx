@@ -112,12 +112,11 @@ export default function PositionContext({
   if (!bookAvailable) {
     content =
       cached !== undefined ? (
-        // Historical evidence already calculated — summary + View.
+        // Historical evidence already calculated — summary + View. The
+        // sticky "Positional context" title already names the box, so the
+        // section goes straight to the counts (no repeated header).
         <div className="flex min-h-0 flex-col" data-testid="position-context-evidence">
           <section className="flex flex-col gap-0.5 px-3 py-2 text-left">
-            <h4 className="m-0 text-micro font-semibold uppercase tracking-[0.11em] text-muted">
-              {t('positionContext.historicalEvidence')}
-            </h4>
             <p className="m-0 text-note text-ink">
               {t('positionContext.gamesCount', { count: cached.reference.games })}
             </p>
@@ -138,17 +137,19 @@ export default function PositionContext({
           )}
         </div>
       ) : (
-        // Historical evidence absent — explicit CTA (no auto-run).
-        <div className="flex min-h-0 flex-col" data-testid="position-context-find">
-          <h4 className="m-0 px-3 py-2 text-micro font-semibold uppercase tracking-[0.11em] text-muted">
-            {t('positionContext.historicalEvidence')}
-          </h4>
+        // Historical evidence absent — explicit CTA (no auto-run). Centered,
+        // no repeated header: the sticky "Position context" title already
+        // names the box, and the button hugs its label.
+        <div
+          className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-3 py-4"
+          data-testid="position-context-find"
+        >
           {findStatus.kind === 'failed' ? (
             <>
-              <p className="m-0 px-3 pb-1 text-note text-bad-hi">{t('positionContext.failed')}</p>
+              <p className="m-0 text-note text-bad-hi">{t('positionContext.failed')}</p>
               <button
                 type="button"
-                className="mx-3 mb-2 rounded-control border border-line px-2 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised"
+                className="self-center rounded-control border border-line px-3 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised"
                 onClick={() => {
                   setFindStatus({ kind: 'loading' });
                   void runFind();
@@ -161,7 +162,7 @@ export default function PositionContext({
           ) : (
             <button
               type="button"
-              className="mx-3 mb-2 rounded-control border border-line px-2 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised disabled:opacity-50"
+              className="self-center rounded-control border border-line px-3 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised disabled:opacity-50"
               disabled={findStatus.kind === 'loading'}
               onClick={() => {
                 setFindStatus({ kind: 'loading' });
@@ -174,7 +175,6 @@ export default function PositionContext({
                 : t('positionContext.find')}
             </button>
           )}
-          <p className="m-0 px-3 pb-2 text-note text-muted">{t('positionContext.findHint')}</p>
         </div>
       );
   }

@@ -630,9 +630,6 @@ function RoomViewInner({
         createPortal(
           <>
             <RoomCodeChip slug={slug} readOnly={readOnly} />
-            <span className="hidden text-note text-muted sm:inline" data-testid="room-subtitle">
-              {t('room.boardsWithCount', { count: Object.keys(games).length })}
-            </span>
             {!readOnly && (
               <PresenceStrip
                 members={members}

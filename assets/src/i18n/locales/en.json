@@ -507,10 +507,8 @@
   },
   "positionContext": {
     "title": "Positional context",
-    "historicalEvidence": "Historical evidence",
     "find": "Find historical evidence",
     "finding": "Finding historical evidence…",
-    "findHint": "Explore how this position appeared in historical games.",
     "view": "View evidence",
     "gamesCount_one": "{{count}} game",
     "gamesCount_other": "{{count}} games",
