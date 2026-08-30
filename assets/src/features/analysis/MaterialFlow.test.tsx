@@ -97,7 +97,9 @@ describe('MaterialFlow', () => {
     render(<MaterialFlow tree={tree} currentPly={3} onSelectPly={vi.fn()} />);
 
     expect(screen.getByTestId('material-flow-area')).toBeInTheDocument();
-    expect(screen.getByTestId('material-flow-marker')).toHaveAttribute('x1', '100');
+    // The current-ply marker clamps just inside the chart's right edge
+    // (never flush on the border).
+    expect(screen.getByTestId('material-flow-marker')).toHaveAttribute('x1', '99.6');
     expect(screen.getAllByTestId('material-flow-capture')).toHaveLength(1);
   });
 

@@ -105,27 +105,20 @@ describe('TimelineBand', () => {
     expect(layerTab('material')).toHaveAttribute('aria-selected', 'false');
   });
 
-  it('marks the eval tab as needing an analysis until one exists', () => {
+  it('shows a note on the eval tab until an analysis exists', () => {
     renderBand({ hasAnalysis: false });
 
-    expect(screen.getByTestId('eval-layer-needs-analysis')).toBeInTheDocument();
     // The eval chart itself is a note, not a chart.
     expect(screen.queryByTestId('game-flow')).not.toBeInTheDocument();
     expect(screen.getByTestId('timeline-layer-eval')).toHaveTextContent('No analysis yet');
   });
 
-  it('drops the eval marker once an analysis exists', () => {
-    renderBand({ hasAnalysis: true });
-
-    expect(screen.queryByTestId('eval-layer-needs-analysis')).not.toBeInTheDocument();
-  });
-
   it('switches layers from the tab row, persisting the choice', () => {
     renderBand();
 
-    // Fixed order: eval, material, activity, clocks.
+    // Fixed order: eval, material, activity, think, remaining.
     const order = screen.getAllByTestId('timeline-layer-tab').map((tab) => tab.dataset.layer);
-    expect(order).toEqual(['eval', 'material', 'activity', 'clocks']);
+    expect(order).toEqual(['eval', 'material', 'activity', 'think', 'remaining']);
 
     fireEvent.click(layerTab('material'));
     expect(screen.getByTestId('material-flow')).toBeInTheDocument();
@@ -144,17 +137,17 @@ describe('TimelineBand', () => {
   });
 
   it('shows the picked layer’s own empty note when it holds no data', () => {
-    // No clock data in this tree: the clocks layer can’t chart.
+    // No clock data in this tree: the think-time layer can’t chart.
     renderBand();
 
-    fireEvent.click(layerTab('clocks'));
-    expect(screen.getByTestId('timeline-layer-clocks')).toHaveTextContent('No clock data');
+    fireEvent.click(layerTab('think'));
+    expect(screen.getByTestId('timeline-layer-think')).toHaveTextContent('No clock data');
   });
 
-  it('explains the clocks bar colors with a side legend on its tab', () => {
+  it('explains the time-left line colors with a side legend on its tab', () => {
     renderBand();
 
-    fireEvent.click(layerTab('clocks'));
+    fireEvent.click(layerTab('remaining'));
     expect(screen.getByText('White')).toBeInTheDocument();
     expect(screen.getByText('Black')).toBeInTheDocument();
   });

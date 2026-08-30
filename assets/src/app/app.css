@@ -48,6 +48,10 @@
   --color-select: #6ea8fe;
   --color-check: #e05a4e;
 
+  /* The clock layer's "white" series: near-white on the dark canvas, a
+     readable slate on the light one. */
+  --color-clock-w: #f4f6fb;
+
   /* Gold text on dark surfaces — the interactive gold (DESIGN.md's accent) */
   --color-gold-text: #d4b13c;
 
@@ -164,6 +168,7 @@
 
   --color-gold-text: #8a6d10;
   --color-tray: #dde3ec;
+  --color-clock-w: #4d5768;
 
   --shadow-panel: 0 1px 0 0 rgb(255 255 255 / 0.7) inset, 0 8px 24px -16px rgb(15 23 42 / 0.25);
   --shadow-board: 0 18px 40px -24px rgb(15 23 42 / 0.35);

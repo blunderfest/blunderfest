@@ -2,6 +2,9 @@ import type { GameNode, GameTree } from '@/lib/api';
 
 export type MoveTime = { ply: number; mover: 'w' | 'b'; seconds: number };
 
+/** A side's remaining clock after each of its moves (from `[%clk]`). */
+export type ClockPoint = { ply: number; mover: 'w' | 'b'; remaining: number };
+
 /**
  * The initial clock and increment from the `TimeControl` header
  * (`"300+3"`, `"180"`); null when absent or not a simple control
@@ -67,4 +70,21 @@ export function moveTimes(tree: GameTree): MoveTime[] {
     node = node.children[0] ?? null;
   }
   return times;
+}
+
+/**
+ * The remaining clock after each mainline move, one point per side per
+ * clocked move (visualization ideas #10's second half). Unclocked moves
+ * simply leave no point — the lines bridge the gap.
+ */
+export function remainingClocks(tree: GameTree): ClockPoint[] {
+  const points: ClockPoint[] = [];
+  let node: GameNode | null = tree.root;
+  while (node !== null) {
+    if (node.ply > 0 && node.clock !== null && node.clock !== undefined) {
+      points.push({ ply: node.ply, mover: node.ply % 2 === 1 ? 'w' : 'b', remaining: node.clock });
+    }
+    node = node.children[0] ?? null;
+  }
+  return points;
 }

@@ -63,7 +63,7 @@ describe('ClocksFlow', () => {
     expect(bars.map((bar) => bar.getAttribute('data-ply'))).toEqual(['1', '2', '3']);
     // Odd plies are white's (near-white), even plies black's (silver).
     expect(bars.map((bar) => bar.getAttribute('data-side'))).toEqual(['w', 'b', 'w']);
-    expect(bars[0].getAttribute('class')).toContain('fill-[#f4f6fb]');
+    expect(bars[0].getAttribute('class')).toContain('fill-clock-w');
     expect(bars[1].getAttribute('class')).toContain('fill-[#b6bdcc]');
   });
 

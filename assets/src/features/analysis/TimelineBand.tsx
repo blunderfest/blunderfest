@@ -7,6 +7,7 @@ import ClocksFlow from '@/features/analysis/ClocksFlow';
 import GameFlow from '@/features/analysis/GameFlow';
 import MaterialFlow, { type CapturePoint } from '@/features/analysis/MaterialFlow';
 import { moveTimes } from '@/features/analysis/moveTimes';
+import RemainingClocksFlow from '@/features/analysis/RemainingClocksFlow';
 import type { GameTree } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
 
@@ -77,15 +78,18 @@ export default function TimelineBand({
     </div>
   );
 
-  /** The clocks layer's side legend: whose bar is which color. */
-  const clocksLegend = (
+  /** The time-left layer's side legend: solid line = White, dashed = Black. */
+  const remainingLegend = (
     <span className="flex items-center gap-2 text-micro font-semibold text-faint">
       <span className="flex items-center gap-1">
-        <span className="h-2 w-2 rounded-[2px] bg-[#f4f6fb]" aria-hidden="true" />
+        <span className="h-0.5 w-3 rounded-full bg-clock-w" aria-hidden="true" />
         {t('analysis.white')}
       </span>
       <span className="flex items-center gap-1">
-        <span className="h-2 w-2 rounded-[2px] bg-[#b6bdcc]" aria-hidden="true" />
+        <span
+          className="h-0.5 w-3 rounded-full border-t border-dashed border-[#b6bdcc]"
+          aria-hidden="true"
+        />
         {t('analysis.black')}
       </span>
     </span>
@@ -158,12 +162,27 @@ export default function TimelineBand({
       emptyCopy: t('analysis.activityEmpty'),
     },
     {
-      id: 'clocks',
-      label: t('analysis.clocksTab'),
-      legend: clocksLegend,
+      id: 'think',
+      label: t('analysis.thinkTab'),
       hasData: hasClocks,
       chart: (heightClass) => (
         <ClocksFlow
+          tree={tree}
+          currentPly={currentPly}
+          spanPly={spanPly}
+          heightClass={heightClass}
+          onSelectPly={onSelectPly}
+        />
+      ),
+      emptyCopy: t('analysis.clocksEmpty'),
+    },
+    {
+      id: 'remaining',
+      label: t('analysis.remainingTab'),
+      legend: remainingLegend,
+      hasData: hasClocks,
+      chart: (heightClass) => (
+        <RemainingClocksFlow
           tree={tree}
           currentPly={currentPly}
           spanPly={spanPly}
@@ -208,15 +227,6 @@ export default function TimelineBand({
                 onClick={() => chooseLayer(layer.id)}
               >
                 {layer.label}
-                {layer.id === 'eval' && !hasAnalysis && (
-                  // The one layer that needs an analysis: a quiet gold marker
-                  // until the whole-game job has run.
-                  <span
-                    className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-gold align-middle"
-                    aria-hidden="true"
-                    data-testid="eval-layer-needs-analysis"
-                  />
-                )}
                 {active.id === layer.id && (
                   <span
                     className="absolute inset-x-2 bottom-0 h-0.5 bg-gold-hi"

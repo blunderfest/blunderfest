@@ -65,7 +65,10 @@ export default function ActivityFlow({
     };
   });
 
-  const markerX = (Math.min(Math.max(currentPly, 0), maxPly) / maxPly) * WIDTH;
+  const markerX = Math.min(
+    (Math.min(Math.max(currentPly, 0), maxPly) / maxPly) * WIDTH,
+    WIDTH - 0.4,
+  );
 
   function plyAt(event: React.PointerEvent<HTMLDivElement>): number | null {
     const rect = event.currentTarget.getBoundingClientRect();

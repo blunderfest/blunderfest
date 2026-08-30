@@ -199,7 +199,10 @@ export default function GameFlow({
     });
   }
 
-  const markerX = (Math.min(Math.max(currentPly, 0), maxPly) / maxPly) * WIDTH;
+  const markerX = Math.min(
+    (Math.min(Math.max(currentPly, 0), maxPly) / maxPly) * WIDTH,
+    WIDTH - 0.4,
+  );
 
   const isExchange = (ply: number) => capturePlies.has(ply + 1) || capturePlies.has(ply - 1);
 

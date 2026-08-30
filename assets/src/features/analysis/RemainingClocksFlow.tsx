@@ -1,15 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { plyLabel } from '@/features/analysis/GameFlow';
-import { type MoveTime, moveTimes } from '@/features/analysis/moveTimes';
+import { type ClockPoint, remainingClocks } from '@/features/analysis/moveTimes';
 import type { GameTree } from '@/lib/api';
 
 /** Chart geometry: a 100×40 viewBox stretched to full width. */
 const WIDTH = 100;
 const HEIGHT = 40;
 
-/** The tooltip's think-time label: "12s" / "1:47" (visualization ideas #10). */
-export function thinkTimeLabel(seconds: number): string {
+/** The tooltip's clock readout: "3:07" / "42s". */
+function clockLabel(seconds: number): string {
   if (seconds < 60) {
     return `${Math.round(seconds)}s`;
   }
@@ -20,14 +20,13 @@ export function thinkTimeLabel(seconds: number): string {
 }
 
 /**
- * The time-management layer of the timeline band: how long each mainline
- * move took, as bars from the bottom (taller = longer think) on the shared
- * move axis. White's bars are near-white, black's silver (the layer
- * legend), and the hover readout names the side. Click or drag jumps to a
- * ply. Needs clock data (`[%clk]` extracted at import) plus a
- * `TimeControl` header — see `moveTimes.ts`.
+ * The time-remaining layer of the timeline band: each side's clock after
+ * its moves as two draining lines (white's solid, black's dashed) on the
+ * shared move axis — a time-trouble readout against the position's quality.
+ * Click or drag jumps to a ply. Needs clock data (`[%clk]` extracted at
+ * import) — see `moveTimes.ts`.
  */
-export default function ClocksFlow({
+export default function RemainingClocksFlow({
   tree,
   currentPly,
   spanPly,
@@ -47,11 +46,10 @@ export default function ClocksFlow({
   const [hoverPly, setHoverPly] = useState<number | null>(null);
   const [coarse] = useState(() => window.matchMedia('(pointer: coarse)').matches);
 
-  const times = useMemo(() => moveTimes(tree), [tree]);
-  const timeByPly = useMemo(() => new Map(times.map((time) => [time.ply, time])), [times]);
-  const maxPly = spanPly ?? (times.length > 0 ? times[times.length - 1].ply : 0);
+  const points = useMemo(() => remainingClocks(tree), [tree]);
+  const maxPly = spanPly ?? (points.length > 0 ? points[points.length - 1].ply : 0);
 
-  const available = times.length > 0;
+  const available = points.length > 0;
   if (!available || maxPly === 0) {
     return (
       <div className={`grid ${heightClass} place-items-center`}>
@@ -60,11 +58,21 @@ export default function ClocksFlow({
     );
   }
 
-  // Log scale: a 3s blitz think and a 4-minute tank both read, but the
-  // short ones don't vanish next to the outliers.
-  const worst = times.reduce((max, time) => Math.max(max, time.seconds), 0);
-  const barHeight = (seconds: number) =>
-    Math.max(1.5, (Math.log1p(seconds) / Math.log1p(worst)) * HEIGHT);
+  // The y domain: the initial clock at the top, the lowest remaining seen
+  // near the bottom — the drain fills the chart instead of hugging the top.
+  const peak = points.reduce((max, point) => Math.max(max, point.remaining), 0);
+  const trough = points.reduce((min, point) => Math.min(min, point.remaining), peak);
+  const span = Math.max(peak - trough, 1);
+  const yFor = (remaining: number) => 1 + (1 - (remaining - trough) / span) * (HEIGHT - 2);
+
+  const seriesFor = (mover: 'w' | 'b'): string =>
+    points
+      .filter((point) => point.mover === mover)
+      .map(
+        (point) =>
+          `${((point.ply / maxPly) * WIDTH).toFixed(2)},${yFor(point.remaining).toFixed(2)}`,
+      )
+      .join(' ');
 
   const markerX = Math.min(
     (Math.min(Math.max(currentPly, 0), maxPly) / maxPly) * WIDTH,
@@ -89,7 +97,6 @@ export default function ClocksFlow({
   }
 
   const hoverFraction = hoverPly === null ? 0 : hoverPly / maxPly;
-  const hoverTime: MoveTime | null = hoverPly === null ? null : (timeByPly.get(hoverPly) ?? null);
   const tooltipShift =
     hoverFraction < 0.12
       ? 'translate-x-0'
@@ -97,12 +104,31 @@ export default function ClocksFlow({
         ? '-translate-x-full'
         : '-translate-x-1/2';
 
+  // The readout at the hovered ply: the most recent clock per side at or
+  // before that ply (a side's clock only changes on its own moves).
+  function hoverReadout(mover: 'w' | 'b'): ClockPoint | null {
+    if (hoverPly === null) {
+      return null;
+    }
+    let latest: ClockPoint | null = null;
+    for (const point of points) {
+      if (point.mover === mover && point.ply <= hoverPly) {
+        if (latest === null || point.ply > latest.ply) {
+          latest = point;
+        }
+      }
+    }
+    return latest;
+  }
+  const hoverW = hoverReadout('w');
+  const hoverB = hoverReadout('b');
+
   return (
     <div
       className={`flex ${heightClass} cursor-crosshair touch-none select-none`}
       role="img"
-      aria-label={t('analysis.clocksFlow')}
-      data-testid="clocks-flow"
+      aria-label={t('analysis.remainingFlow')}
+      data-testid="remaining-clocks-flow"
       onPointerDown={(event) => {
         event.currentTarget.setPointerCapture?.(event.pointerId);
         scrubbedTo.current = null;
@@ -136,33 +162,27 @@ export default function ClocksFlow({
           aria-hidden="true"
           className="block h-full w-full"
         >
-          {times.map((time) => {
-            const h = barHeight(time.seconds);
-            // One bar per move, ~1 ply wide with a hair of daylight. The
-            // mover's color: near-white for white, silver for black (the
-            // layer legend explains the pair).
-            const w = Math.max(0.3, WIDTH / maxPly / 2);
-            const x = (time.ply / maxPly) * WIDTH - w / 2;
-            return (
-              <rect
-                key={time.ply}
-                x={Math.max(0, Math.min(WIDTH - w, x))}
-                y={HEIGHT - h}
-                width={w}
-                height={h}
-                className={
-                  time.ply === currentPly
-                    ? 'fill-gold-hi'
-                    : time.mover === 'w'
-                      ? 'fill-clock-w'
-                      : 'fill-[#b6bdcc]'
-                }
-                data-testid="clocks-flow-bar"
-                data-ply={time.ply}
-                data-side={time.mover}
-              />
-            );
-          })}
+          <polyline
+            points={seriesFor('w')}
+            fill="none"
+            className="stroke-clock-w"
+            vectorEffect="non-scaling-stroke"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            data-testid="remaining-clocks-white"
+          />
+          <polyline
+            points={seriesFor('b')}
+            fill="none"
+            className="stroke-[#b6bdcc]"
+            vectorEffect="non-scaling-stroke"
+            strokeWidth="2"
+            strokeDasharray="4 3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            data-testid="remaining-clocks-black"
+          />
           <line
             x1={markerX}
             x2={markerX}
@@ -170,20 +190,23 @@ export default function ClocksFlow({
             y2={HEIGHT}
             className="stroke-gold"
             vectorEffect="non-scaling-stroke"
-            strokeWidth={2}
-            data-testid="clocks-flow-marker"
+            strokeWidth="2"
+            data-testid="remaining-clocks-marker"
           />
         </svg>
-        {hoverPly !== null && hoverTime !== null && (
+        {hoverPly !== null && (hoverW !== null || hoverB !== null) && (
           <div
             className={`pointer-events-none absolute top-1 z-10 rounded-chip border border-line-strong bg-panel/95 px-1.5 py-0.5 font-semibold text-[10px] whitespace-nowrap tabular-nums text-ink backdrop-blur-sm ${tooltipShift}`}
             style={{ left: `${hoverFraction * 100}%` }}
-            data-testid="clocks-flow-tooltip"
+            data-testid="remaining-clocks-tooltip"
           >
-            {plyLabel(hoverPly, t('analysis.startPosition'))}{' '}
-            {t(hoverTime.mover === 'w' ? 'analysis.thinkTimeWhite' : 'analysis.thinkTimeBlack', {
-              time: thinkTimeLabel(hoverTime.seconds),
-            })}
+            {plyLabel(hoverPly, t('analysis.startPosition'))}
+            {hoverW !== null && (
+              <> {t('analysis.clockRemainingWhite', { time: clockLabel(hoverW.remaining) })}</>
+            )}
+            {hoverB !== null && (
+              <> {t('analysis.clockRemainingBlack', { time: clockLabel(hoverB.remaining) })}</>
+            )}
           </div>
         )}
       </div>
