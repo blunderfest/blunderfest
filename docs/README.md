@@ -13,6 +13,7 @@ directory holds the durable record of how and why the system is built.
 | `operations.md` | Branches, deploy, local dev, verification commands. |
 | `decisions/` | Architecture Decision Records (ADRs) — one file per decision, most recent first. |
 | `storage-options.md` | Decision support for the future durable store (corpus, index, accounts): workload, options, deciding questions. Not a decision. |
+| `corpus-scale-readiness.md` | How the corpus read path scales with game count, the single-GenServer bottleneck, and the documented packed-index migration trigger. Posture note, not a decision. |
 | `technical-spike-01-position-retrieval.md` | Spike brief: storage/indexing investigation for the position corpus. |
 | `technical-spike-01-position-retrieval-report.md` | Spike 01 results: position key design (EP convention), benchmarks (PG/SQLite/DuckDB/ETS/flatfile) at 100k/1M/10M games, recommendation. Code in `spike/position_retrieval/`. |
 | `technical-spike-02-similarity-and-relevance.md` | Spike 02 brief: which similarity/context dimensions produce useful historical candidates (experiment, not spec). |

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { statusDot } from '@/components/ui';
 import { continuationsFor, type OpeningBook } from '@/features/analysis/openings';
 import { type BookMove, fetchBook, type LegalMove } from '@/lib/api';
 
@@ -25,19 +26,39 @@ export function resetBookStatsCache(): void {
   statsCache.clear();
 }
 
-function useBookStats(fen: string | null): Map<string, BookMove> | null {
-  const [stats, setStats] = useState<Map<string, BookMove> | null>(
-    fen !== null ? (statsCache.get(fen) ?? null) : null,
-  );
+/** The book-stats fetch state for the rendered position. */
+type StatsStatus =
+  | { kind: 'loading' }
+  | { kind: 'ready'; stats: Map<string, BookMove> }
+  | { kind: 'failed' };
+
+function useBookStats(fen: string | null): StatsStatus {
+  const [status, setStatus] = useState<StatsStatus>(() => {
+    if (fen === null) {
+      return { kind: 'ready', stats: new Map() };
+    }
+    const cached = statsCache.get(fen);
+    return cached !== undefined ? { kind: 'ready', stats: cached } : { kind: 'loading' };
+  });
+
+  // A position change resets to loading unless the stats are cached —
+  // render-time compare (adjust-state-during-render) avoids an effect round.
+  const [previousFen, setPreviousFen] = useState<string | null>(fen);
+  if (previousFen !== fen) {
+    setPreviousFen(fen);
+    if (fen === null) {
+      setStatus({ kind: 'ready', stats: new Map() });
+    } else {
+      const cached = statsCache.get(fen);
+      setStatus(cached !== undefined ? { kind: 'ready', stats: cached } : { kind: 'loading' });
+    }
+  }
 
   useEffect(() => {
     if (fen === null) {
-      setStats(null);
       return;
     }
-    const cached = statsCache.get(fen);
-    if (cached !== undefined) {
-      setStats(cached);
+    if (statsCache.get(fen) !== undefined) {
       return;
     }
     let cancelled = false;
@@ -46,12 +67,12 @@ function useBookStats(fen: string | null): Map<string, BookMove> | null {
         if (!cancelled) {
           const map = new Map(moves.map((m) => [m.move, m]));
           statsCache.set(fen, map);
-          setStats(map);
+          setStatus({ kind: 'ready', stats: map });
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setStats(null);
+          setStatus({ kind: 'failed' });
         }
       });
     return () => {
@@ -59,7 +80,7 @@ function useBookStats(fen: string | null): Map<string, BookMove> | null {
     };
   }, [fen]);
 
-  return stats;
+  return status;
 }
 
 /** The W/D/B rate bar under a row: three segments, labeled when wide enough. */
@@ -101,52 +122,80 @@ export default function ReferencePanel({
     () => (book === null ? [] : continuationsFor(book, fen)),
     [book, fen],
   );
-  const stats = useBookStats(fen);
+  const status = useBookStats(fen);
+  const stats = status.kind === 'ready' ? status.stats : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-testid="reference-panel">
       {continuations.length === 0 ? (
         <p className="m-0 p-3 text-note text-faint">{t('analysis.referenceEmpty')}</p>
       ) : (
-        <ul
-          className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-1"
-          data-testid="reference-list"
-        >
-          {continuations.map((continuation) => {
-            const stat = stats?.get(continuation.san) ?? null;
-            return (
-              // Hover handlers sit on the li: disabled buttons (viewers) don't
-              // fire mouse events, but the ghost preview is for everyone.
-              <li
-                key={continuation.san}
-                onMouseEnter={() => onHoverMove(continuation)}
-                onMouseLeave={() => onHoverMove(null)}
-              >
-                <button
-                  type="button"
-                  className="flex w-full flex-col rounded-control px-2 py-1.5 text-left transition-colors not-disabled:hover:bg-raised disabled:cursor-default"
-                  disabled={onPlayMove === undefined}
-                  onClick={() => onPlayMove?.(continuation)}
+        <>
+          {status.kind === 'loading' && (
+            <p
+              className="m-0 flex items-center gap-1.5 px-3 pt-2 text-micro text-muted"
+              data-testid="reference-stats-loading"
+              role="status"
+            >
+              <span className={statusDot({ tone: 'warn', pulse: true })} />
+              {t('analysis.referenceStatsLoading')}
+            </p>
+          )}
+          {status.kind === 'failed' && (
+            <p
+              className="m-0 flex items-center gap-1.5 px-3 pt-2 text-micro text-bad-hi"
+              data-testid="reference-stats-failed"
+              role="alert"
+            >
+              {t('analysis.referenceStatsFailed')}
+            </p>
+          )}
+          <ul
+            className="m-0 min-h-0 flex-1 list-none overflow-y-auto p-1"
+            data-testid="reference-list"
+          >
+            {continuations.map((continuation) => {
+              const stat = stats?.get(continuation.san) ?? null;
+              return (
+                // Hover handlers sit on the li: disabled buttons (viewers) don't
+                // fire mouse events, but the ghost preview is for everyone.
+                <li
+                  key={continuation.san}
+                  onMouseEnter={() => onHoverMove(continuation)}
+                  onMouseLeave={() => onHoverMove(null)}
                 >
-                  <span className="flex w-full items-baseline gap-2">
-                    <span className="shrink-0 text-ui font-semibold text-ink tabular-nums">
-                      {continuation.san}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-right text-note text-muted">
-                      {continuation.eco} · {continuation.name}
-                    </span>
-                    {stat !== null && (
-                      <span className="shrink-0 font-mono text-micro text-faint tabular-nums">
-                        {stat.games.toLocaleString('en-US').replace(/,/g, ' ')}
+                  <button
+                    type="button"
+                    className="flex w-full flex-col rounded-control px-2 py-1.5 text-left transition-colors not-disabled:hover:bg-raised disabled:cursor-default"
+                    disabled={onPlayMove === undefined}
+                    onClick={() => onPlayMove?.(continuation)}
+                  >
+                    <span className="flex w-full items-baseline gap-2">
+                      <span className="shrink-0 text-ui font-semibold text-ink tabular-nums">
+                        {continuation.san}
                       </span>
+                      <span className="min-w-0 flex-1 truncate text-right text-note text-muted">
+                        {continuation.eco} · {continuation.name}
+                      </span>
+                      {stat !== null && (
+                        <span className="shrink-0 font-mono text-micro text-faint tabular-nums">
+                          {stat.games.toLocaleString('en-US').replace(/,/g, ' ')}
+                        </span>
+                      )}
+                    </span>
+                    {stat !== null && <RateBar stats={stat} />}
+                    {status.kind === 'loading' && (
+                      <span
+                        className="mt-1 block h-2 animate-pulse rounded-[3px] border border-line bg-raised/60"
+                        aria-hidden="true"
+                      />
                     )}
-                  </span>
-                  {stat !== null && <RateBar stats={stat} />}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
     </div>
   );

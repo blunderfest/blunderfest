@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpeningBook } from '@/features/analysis/openings';
 import ReferencePanel, { resetBookStatsCache } from '@/features/analysis/ReferencePanel';
@@ -103,5 +103,32 @@ describe('ReferencePanel', () => {
     expect(screen.getByText('100')).toBeInTheDocument();
     // Only the e4 row has stats; d4 stays plain.
     expect(screen.getAllByTestId('reference-rate-bar')).toHaveLength(1);
+  });
+
+  it('shows a loading indicator while the stats are in flight', async () => {
+    let resolve: (value: { moves: [] }) => void = () => {};
+    mockFetchBook.mockReturnValue(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    renderPanel();
+
+    // The rows render immediately (the book is local); the stats area signals loading.
+    expect(screen.getByText('e4')).toBeInTheDocument();
+    expect(screen.getByTestId('reference-stats-loading')).toBeInTheDocument();
+
+    await act(async () => resolve({ moves: [] }));
+    await waitFor(() =>
+      expect(screen.queryByTestId('reference-stats-loading')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('surfaces a failed stats fetch instead of silent empty rows', async () => {
+    mockFetchBook.mockRejectedValue(new Error('network'));
+    renderPanel();
+
+    await waitFor(() => expect(screen.getByTestId('reference-stats-failed')).toBeInTheDocument());
+    expect(screen.queryByTestId('reference-stats-loading')).not.toBeInTheDocument();
   });
 });

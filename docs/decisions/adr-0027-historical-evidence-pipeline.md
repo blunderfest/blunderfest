@@ -49,7 +49,10 @@ used, and how "sameness" is exposed without fusing signals into a score.
   examples of this position?" end-to-end: candidates, comparisons, routes,
   continuations, families, per-side membership, counts and flags.
 - Measured on the 100k corpus: 170–354 ms per request — comfortably
-  interactive; the packed index is not needed yet.
+  interactive; the packed index is not needed yet. (The opening-book read
+  path was later tightened — SQL-side aggregation + cache headers — and the
+  scale posture is documented; see ADR-0035 and
+  `docs/corpus-scale-readiness.md`.)
 - The general family setting may mis-cluster positions that need
   per-reference tuning; the known cases (F1, A2) are pinned by regression
   tests built on the research fixture corpus.

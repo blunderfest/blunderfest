@@ -258,6 +258,8 @@
     "insertLine": "Insert this line as a variation",
     "referenceTab": "Openings",
     "referenceEmpty": "No named continuations from this position.",
+    "referenceStatsLoading": "Loading corpus statistics…",
+    "referenceStatsFailed": "Couldn’t load corpus statistics.",
     "nagGroup": "Move quality",
     "nagLabel": "Mark as {{glyph}}",
     "backToMainline": "Back to the mainline",

@@ -33,49 +33,44 @@ defmodule Blunderfest.Corpus.Book do
   end
 
   defp for_key(conn, key) do
-    # Every occurrence of the position; per game, the move played next and
-    # the game's result. Games that reach the position repeatedly collapse
-    # to one row per (gid, move) before counting.
+    # Aggregate in SQL rather than pulling every occurrence row into the
+    # BEAM: one row per (move, result) comes back, so a hot position costs
+    # a handful of rows instead of thousands. The two-stage DISTINCT keeps
+    # the independent-games convention — a game that reaches the position
+    # repeatedly (or plays the same move twice) counts once.
     %Postgrex.Result{rows: rows} =
       Postgrex.query!(
         conn,
         """
-        SELECT DISTINCT o.gid, o.ply, m.sans, g.result
-        FROM corpus_occurrences o
-        JOIN corpus_moves m ON m.gid = o.gid
-        JOIN corpus_games g ON g.gid = o.gid
-        WHERE o.key = $1
+        WITH per_game AS (
+          SELECT DISTINCT o.gid, o.ply, m.sans, g.result
+          FROM corpus_occurrences o
+          JOIN corpus_moves m ON m.gid = o.gid
+          JOIN corpus_games g ON g.gid = o.gid
+          WHERE o.key = $1
+        ), dedup AS (
+          SELECT DISTINCT gid, split_part(sans, ' ', ply + 1) AS move, result
+          FROM per_game
+          WHERE split_part(sans, ' ', ply + 1) <> ''
+        )
+        SELECT move,
+               count(*) AS games,
+               count(*) FILTER (WHERE result = '1-0') AS white,
+               count(*) FILTER (WHERE result <> '1-0' AND result <> '0-1') AS draw,
+               count(*) FILTER (WHERE result = '0-1') AS black
+        FROM dedup
+        GROUP BY move
+        ORDER BY games DESC, move
         """,
         [key],
         timeout: :infinity
       )
 
-    rows
-    |> Enum.flat_map(fn [gid, ply, sans_json, result] ->
-      case next_move(sans_json, ply) do
-        nil -> []
-        move -> [{gid, move, result}]
-      end
+    # "*" and unrecorded results count as draws (the draw FILTER above) so
+    # the bar still totals 100%.
+    Enum.map(rows, fn [move, games, white, draw, black] ->
+      %{move: move, games: games, white: white, draw: draw, black: black}
     end)
-    |> Enum.uniq()
-    |> Enum.reduce(%{}, fn {gid, move, result}, acc ->
-      {w, d, b} = {win_for_white(result), draw(result), win_for_black(result)}
-
-      Map.update(acc, move, %{games: MapSet.new([gid]), w: w, d: d, b: b}, fn e ->
-        %{
-          e
-          | games: MapSet.put(e.games, gid),
-            w: e.w + w,
-            d: e.d + d,
-            b: e.b + b
-        }
-      end)
-    end)
-    |> Enum.map(fn {move, e} ->
-      games = MapSet.size(e.games)
-      %{move: move, games: games, white: e.w, draw: e.d, black: e.b}
-    end)
-    |> Enum.sort_by(fn row -> {-row.games, row.move} end)
   end
 
   @doc """
@@ -97,19 +92,4 @@ defmodule Blunderfest.Corpus.Book do
 
     Map.new(rows, fn [key, count] -> {key, count} end)
   end
-
-  # The move played next: the SAN at index `ply` of the game's mainline
-  # (the occurrence's ply is the 0-indexed position, so the next move is
-  # `sans[ply]`). Terminal positions (no next move) contribute nothing.
-  defp next_move(sans, ply) do
-    sans |> String.split(" ", trim: true) |> Enum.at(ply)
-  end
-
-  # Result → 1/0/0 tallies per side. "*" and unrecorded results count as
-  # draws (neither side won) so the bar still totals 100%.
-  defp win_for_white("1-0"), do: 1
-  defp win_for_white(_), do: 0
-  defp win_for_black("0-1"), do: 1
-  defp win_for_black(_), do: 0
-  defp draw(result), do: if(result in ["1-0", "0-1"], do: 0, else: 1)
 end

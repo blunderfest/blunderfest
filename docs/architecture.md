@@ -92,7 +92,10 @@ release and served by a catch-all (`SpaController`).
   application code never sees its internals:
   - `corpus.ex` — the facade GenServer: owns the Postgrex pool and
     delegates every query; starts unconfigured (inert) when no `db:`
-    config exists, e.g. dev without `DATABASE_URL`.
+    config exists, e.g. dev without `DATABASE_URL`. It serializes every
+    corpus read through one process — the replaceability seam (ADR-0026);
+    how that scales and when to move to the packed binary index is written
+    down in `docs/corpus-scale-readiness.md` (ADR-0035).
   - `position_key.ex` — canonical position identity (Spike 01): the
     capturable-only en-passant convention, 128-bit BLAKE2b hashes.
   - `replay.ex` + `extraction.ex` — lean mainline replay and the streaming
@@ -304,7 +307,13 @@ so clients send nothing and hide the member list.
   position, each with its corpus game count + W/D/B rate bar
   (`GET /api/book?fen=…`); hovering a row previews the move as a ghost
   arrow (local), and clicking it plays the move as a real broadcast op —
-  the panel's re-anchor on cursor move makes the descent free.
+  the panel's re-anchor on cursor move makes the descent free. The stats
+  fetch is explicit about its state (ADR-0035): a pulsing "Loading corpus
+  statistics…" header + per-row skeleton while `/api/book` is in flight, a
+  red error line on failure. The stats are aggregated in SQL (one grouped
+  query, one row per `(move, result)`, no per-occurrence BEAM round-trip)
+  and the endpoint sends `Cache-Control: private, max-age=86400` — a
+  position's stats are content-addressed by its FEN.
 - `assets/src/features/analysis/PositionContext.tsx` — the positional-
   context panel (ADR-0024 as amended). An explicit resolution order:
   tablebase-eligible (a label; no source yet) → in-book (the ReferencePanel)

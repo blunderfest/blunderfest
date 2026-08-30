@@ -162,6 +162,38 @@ button table gained the `tb` row; ADR-0024 gained a corrections note.
 635 frontend + 422 backend green; browser-verified (start book rows,
 evidence count match, fixed dialog height, centered header).
 
+### Improvement (2026-08-30 — opening-book stats: SQL, caching, visible states)
+
+Follow-up to the "W/D/B rates sometimes appear, sometimes don't" report: the
+rates were fine, but a **slow** fetch was indistinguishable from **no data**,
+and the first call on a cold instance felt stuck. Three changes:
+
+1. **Book stats aggregate in SQL.** `Corpus.Book` used to pull *every*
+   occurrence row for a position into the BEAM and reduce in Elixir — for a
+   hot position (after 1.d4 Nf6: ~4,500 games) that is thousands of rows per
+   request through the single serialized `Corpus` GenServer. It is now one
+   grouped query returning one row per `(move, result)`; verified identical
+   against the old logic, including the independent-games dedup and the
+   "`*`/unrecorded counts as a draw" rule (new test pins both).
+2. **`/api/book` is cacheable.** A position's stats are content-addressed by
+   its FEN, so responses send `Cache-Control: private, max-age=86400`.
+3. **Visible states.** `ReferencePanel` now tracks `loading / ready / failed`:
+   a pulsing gold dot + "Loading corpus statistics…" header + per-row skeleton
+   while in flight, and a red "Couldn't load corpus statistics." alert on
+   failure (no more silent bare rows).
+
+**Scale question answered in writing.** The single-GenServer serialization is
+the deliberate replaceability seam (ADR-0026) — left as-is; the documented
+escape is the packed binary index (trigger: > ~5–10M games, painful rebuilds,
+or measured tail latency — Spike 03 §10.2). New `docs/corpus-scale-readiness.md`
+records the growth profile (`corpus_occurrences` is the big table) and what to
+watch. ADR-0035; architecture.md + ADR-0027 updated. 637 frontend + 423
+backend green; loading/error/ready states browser-verified.
+
+The ply-0 (start-position) occurrence recording — so the start position gets
+first-move popularity stats — is **approved but not yet done**; it's a corpus
+rebuild + extraction change, deliberately split out of this pass.
+
 ### Where we are (2026-08-13)
 
 Milestones 1–6 done. Recently landed: one process per room (ADR-0012),

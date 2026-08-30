@@ -20,7 +20,12 @@ defmodule BlunderfestWeb.BookController do
         |> json(%{errors: %{code: "corpus_unavailable"}})
 
       rows ->
-        json(conn, %{moves: rows})
+        # A position's stats are content-addressed by the FEN (the corpus
+        # only changes on a rebuild), so cache them for a day; a cold tab's
+        # first hit still revalidates fast.
+        conn
+        |> put_resp_header("cache-control", "private, max-age=86400")
+        |> json(%{moves: rows})
     end
   end
 

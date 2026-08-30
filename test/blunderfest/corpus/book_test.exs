@@ -64,6 +64,57 @@ defmodule Blunderfest.Corpus.BookTest do
     assert by_move["c5"] == %{move: "c5", games: 1, white: 0, draw: 0, black: 1}
   end
 
+  test "a game reaching the position twice counts once per distinct answer", %{data_dir: dir} do
+    # Game 3 reaches the after-e4 position twice (plies 1 and 5) and answers
+    # e5 both times: still one independent game for e5. A draw by repetition
+    # ("*" result) counts as a draw, not a win.
+    File.write!(
+      Path.join(dir, "keys-10.tsv"),
+      Enum.join(
+        [
+          Enum.join([@e4, "1", "1"], "\t"),
+          Enum.join([@e4, "2", "1"], "\t"),
+          Enum.join([@e4, "3", "1"], "\t"),
+          Enum.join([@e4, "3", "5"], "\t")
+        ],
+        "\n"
+      ) <> "\n"
+    )
+
+    File.write!(
+      Path.join(dir, "games-10.tsv"),
+      Enum.join(
+        [
+          Enum.join(["1", "A", "B", "1-0", "d", "e", "o", "1", "2", "ev", "tc", "s"], "\t"),
+          Enum.join(["2", "C", "D", "0-1", "d", "e", "o", "1", "2", "ev", "tc", "s"], "\t"),
+          Enum.join(["3", "E", "F", "*", "d", "e", "o", "1", "2", "ev", "tc", "s"], "\t")
+        ],
+        "\n"
+      ) <> "\n"
+    )
+
+    File.write!(
+      Path.join(dir, "moves-10.tsv"),
+      Enum.join(
+        [
+          Enum.join(["1", "e4 e5 Nf3"], "\t"),
+          Enum.join(["2", "e4 c5 Nf3"], "\t"),
+          Enum.join(["3", "e4 e5 Nf3 Nc6 Nf3 e5"], "\t")
+        ],
+        "\n"
+      ) <> "\n"
+    )
+
+    assert Corpus.rebuild(dir, 10).games == 3
+    assert {:ok, rows} = fetch(dir)
+    by_move = Map.new(rows, &{&1.move, &1})
+
+    # e5: games 1 and 3 (game 3's repeated reach counts once); white won 1,
+    # game 3 is an unfinished draw. c5: game 2, black won.
+    assert by_move["e5"] == %{move: "e5", games: 2, white: 1, draw: 1, black: 0}
+    assert by_move["c5"] == %{move: "c5", games: 1, white: 0, draw: 0, black: 1}
+  end
+
   test "empty for a position with no occurrences", %{data_dir: dir} do
     assert Corpus.rebuild(dir, 10).games == 2
 
