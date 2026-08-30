@@ -9,6 +9,7 @@ directory holds the durable record of how and why the system is built.
 | Path | Contents |
 |---|---|
 | `architecture.md` | How the system is put together: components, data flow, real-time model, frontend structure. Read this before reading code. |
+| `erd.md` | The persistent data model (application data, durable room log, corpus) plus a detailed walkthrough of the historical-evidence feature, including every query it executes and why. |
 | `operations.md` | Branches, deploy, local dev, verification commands. |
 | `decisions/` | Architecture Decision Records (ADRs) — one file per decision, most recent first. |
 | `storage-options.md` | Decision support for the future durable store (corpus, index, accounts): workload, options, deciding questions. Not a decision. |
