@@ -263,15 +263,14 @@ so clients send nothing and hide the member list.
   toolbar's direct action icons — flip, comment, find examples, edit
   position, the drawing-color dots, clear), `GameInfo`, `NodeComment`.
   Whole-game visualization (ADR-0024, as amended 2026-08-24; ADR-0031;
-  tabbed per ADR-0034)
-  splits by kind: `TimelineBand.tsx` is the band under the board, a
-  collapsed **strip** by default and an expand chevron for a taller view —
-  either way it shows **one chart at a time**, switched by a tab row in the
-  strip header (Eval · Material · Activity · Clocks) with the same accent-
-  underline grammar as the dock tabs. All charts share one move axis
-  (`spanPly` = mainline tip); the active layer and the expanded state are
-  localStorage preferences
-  (`blunderfest.timelineActiveLayer` / `blunderfest.timelineExpanded`) —
+  tabbed and docked per ADR-0034)
+  splits by kind: `TimelineBand.tsx` is a fixed-height bottom region of the
+  board column (the rail and dock run the full viewport height beside it; the
+  strip is **not collapsible**). It shows **one chart at a time**, switched by
+  a tab row in the strip header (Eval · Material · Activity · Clocks) with the
+  same accent-underline grammar as the dock tabs. All charts share one move
+  axis (`spanPly` = mainline tip); the active layer is a localStorage
+  preference (`blunderfest.timelineActiveLayer`) —
   `GameFlow` (eval + quality strip, phase
   shading and capture marks via `gamePhases.ts`/`MaterialFlow.capturesOf`),
   `MaterialFlow`, `ActivityFlow`, and `ClocksFlow` (thinking time per move

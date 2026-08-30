@@ -10,31 +10,25 @@ import { moveTimes } from '@/features/analysis/moveTimes';
 import type { GameTree } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
 
-const EXPANDED_KEY = 'blunderfest.timelineExpanded';
 const ACTIVE_KEY = 'blunderfest.timelineActiveLayer';
 const DEFAULT_LAYER = 'eval';
-/** The band's expanded layer height: compact. */
-const LAYER_HEIGHT = 'h-28';
-/** The collapsed strip's sparkline height. */
-const STRIP_HEIGHT = 'h-10';
-
-function readExpanded(): boolean {
-  return localStorage.getItem(EXPANDED_KEY) === '1';
-}
+/** The strip's single chart height. */
+const STRIP_HEIGHT = 'h-24';
 
 function readActiveLayer(): string {
   return localStorage.getItem(ACTIVE_KEY) ?? DEFAULT_LAYER;
 }
 
 /**
- * The whole-game timeline band (ADR-0024, as amended; ADR-0031; now tabbed):
- * the game-story charts — eval, material, activity, clocks — as ONE chart at
- * a time under the board, switched by a tab row in the header. Scrub-to-ply
- * on the chart navigates; the gold current-position marker rides the active
- * chart. The expanded state and the active layer persist per viewer in
- * localStorage, never as ops. The whole-game analyze job owns the header —
- * Analyze game, live progress, Re-analyze — always reachable, whatever the
- * band's state.
+ * The whole-game timeline band (ADR-0024, as amended; ADR-0031; now tabbed
+ * and docked per ADR-0034): the game-story charts — eval, material, activity,
+ * clocks — as ONE chart at a time, switched by a tab row in the header. The
+ * strip is a fixed bottom region of the board column (the rail and dock run
+ * full height beside it); it is not collapsible. Scrub-to-ply on the chart
+ * navigates; the gold current-position marker rides the chart. The active
+ * layer persists per viewer in localStorage, never as ops. The whole-game
+ * analyze job owns the header — Analyze game, live progress, Re-analyze —
+ * always reachable.
  */
 export default function TimelineBand({
   tree,
@@ -69,19 +63,11 @@ export default function TimelineBand({
   onSelectPly: (ply: number) => void;
 }) {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState<boolean>(readExpanded);
   const [activeLayer, setActiveLayer] = useState<string>(readActiveLayer);
 
   function chooseLayer(id: string) {
     setActiveLayer(id);
     localStorage.setItem(ACTIVE_KEY, id);
-  }
-
-  function toggleExpanded() {
-    setExpanded((current) => {
-      localStorage.setItem(EXPANDED_KEY, current ? '0' : '1');
-      return !current;
-    });
   }
 
   /** A layer's empty-state note, at the height it renders at. */
@@ -199,28 +185,6 @@ export default function TimelineBand({
     >
       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-2 py-1">
         <div className="flex min-w-0 items-center gap-1.5">
-          <button
-            type="button"
-            data-testid="timeline-expand"
-            className={button({ intent: 'ghost', size: 'icon' })}
-            aria-label={expanded ? t('analysis.collapseTimeline') : t('analysis.expandTimeline')}
-            title={expanded ? t('analysis.collapseTimeline') : t('analysis.expandTimeline')}
-            aria-expanded={expanded}
-            onClick={toggleExpanded}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
           {/*
             One chart at a time: the tab row picks it. A dataless layer's tab
             stays selectable — its chart explains itself in place.
@@ -308,8 +272,8 @@ export default function TimelineBand({
       </div>
       <div className="p-2" data-testid={`timeline-layer-${active.id}`}>
         {active.hasData
-          ? active.chart(expanded ? LAYER_HEIGHT : STRIP_HEIGHT, !expanded)
-          : placeholder(active.emptyCopy, expanded ? LAYER_HEIGHT : STRIP_HEIGHT)}
+          ? active.chart(STRIP_HEIGHT, false)
+          : placeholder(active.emptyCopy, STRIP_HEIGHT)}
       </div>
     </section>
   );

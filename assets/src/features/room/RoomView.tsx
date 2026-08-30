@@ -722,7 +722,7 @@ function RoomViewInner({
                 </div>
                 {chatContent !== undefined && (
                   <aside
-                    className="flex h-[46dvh] w-full max-w-[min(100%,24rem)] flex-col self-center border border-line bg-panel xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] xl:max-w-none xl:self-auto xl:border-l xl:border-y-0 xl:border-r-0 2xl:w-[420px]"
+                    className="flex h-[46dvh] w-full max-w-[min(100%,24rem)] flex-col self-center border border-line bg-panel xl:h-[calc(100dvh-3.5rem)] xl:w-[360px] xl:max-w-none xl:self-auto xl:border-l xl:border-y-0 xl:border-r-0 2xl:w-[420px]"
                     data-tour="sidebar"
                     data-testid="room-sidebar"
                   >

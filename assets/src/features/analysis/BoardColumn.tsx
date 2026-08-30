@@ -97,7 +97,7 @@ export default function BoardColumn({
   const evalBarLabel = evalAriaLabel(engineState.eval, t);
 
   return (
-    <div className="order-1 flex min-w-0 flex-1 flex-col items-center gap-2 px-3 py-3">
+    <div className="order-1 flex min-w-0 flex-1 flex-col items-center gap-2 px-3 py-3 xl:min-h-0">
       <div className="flex w-full items-baseline justify-between gap-4">
         <h2 className="m-0 min-w-0 truncate text-lead font-semibold tracking-[-0.01em]">
           {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}

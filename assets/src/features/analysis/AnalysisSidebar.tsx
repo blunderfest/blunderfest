@@ -279,7 +279,7 @@ export default function AnalysisSidebar({
 
   return (
     <aside
-      className="order-3 flex h-[52dvh] w-full flex-col bg-panel max-xl:border-line max-xl:border-t sm:h-[46dvh] xl:h-[calc(var(--board-size)+7.5rem)] xl:w-[360px] xl:border-l xl:border-line 2xl:w-[420px]"
+      className="order-3 flex h-[52dvh] w-full flex-col bg-panel max-xl:border-line max-xl:border-t sm:h-[46dvh] xl:h-[calc(100dvh-3.5rem)] xl:w-[360px] xl:border-l xl:border-line 2xl:w-[420px]"
       data-tour="sidebar"
       data-testid="room-sidebar"
     >

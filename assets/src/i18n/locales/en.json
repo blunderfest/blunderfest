@@ -269,8 +269,6 @@
     "timelineLayers": "Timeline layers",
     "timelineAllOff": "All layers are off.",
     "layers": "Layers",
-    "expandTimeline": "Expand timeline",
-    "collapseTimeline": "Collapse timeline",
     "timelineStripEmpty": "Nothing to chart yet — play a move or run an analysis.",
     "clocksTab": "Clocks",
     "clocksFlow": "Thinking time per move. Click or drag to jump to a position.",

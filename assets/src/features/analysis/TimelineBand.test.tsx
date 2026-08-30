@@ -93,7 +93,6 @@ function layerTab(id: string): HTMLElement {
 
 describe('TimelineBand', () => {
   afterEach(() => {
-    localStorage.removeItem('blunderfest.timelineExpanded');
     localStorage.removeItem('blunderfest.timelineActiveLayer');
   });
 
@@ -183,17 +182,10 @@ describe('TimelineBand', () => {
     expect(screen.queryByRole('button', { name: 'Analyze game' })).not.toBeInTheDocument();
   });
 
-  it('expands and collapses the chart, persisting the choice', () => {
+  it('renders a single fixed-height strip (no expand/collapse)', () => {
     renderBand();
 
-    // Collapsed by default: the strip sparkline.
-    expect(document.querySelector('.h-10')).not.toBeNull();
-
-    fireEvent.click(screen.getByTestId('timeline-expand'));
-    expect(localStorage.getItem('blunderfest.timelineExpanded')).toBe('1');
-    expect(document.querySelector('.h-28')).not.toBeNull();
-
-    fireEvent.click(screen.getByTestId('timeline-expand'));
-    expect(localStorage.getItem('blunderfest.timelineExpanded')).toBe('0');
+    expect(document.querySelector('.h-24')).not.toBeNull();
+    expect(screen.queryByTestId('timeline-expand')).not.toBeInTheDocument();
   });
 });

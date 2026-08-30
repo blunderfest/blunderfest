@@ -12,9 +12,10 @@ decision — they're still listed, because they're visible.
 > **Resolved 2026-08-29 (ADR-0034):** §1.1 and §1.2 (the room frame is now full-bleed
 > hairline regions, not cards), §5.1's title size (compact `text-lead` heading), §3.5
 > (RegionChip is now borderless), and §7 wholesale (the timeline is a single tabbed chart —
-> Eval · Material · Activity · Clocks — replacing the layered/stacked/spotlight model). The
-> timeline row still lists the *original* difference for the record, but the live side has
-> since moved to tabs (neither v0's overlay nor the old stacked cards).
+> Eval · Material · Activity · Clocks — replacing the layered/stacked/spotlight model; it
+> docks to the bottom of the board column only, so the rail and dock run full height, and it
+> is not collapsible). The timeline row still lists the *original* difference for the record,
+> but the live side has since moved to tabs (neither v0's overlay nor the old stacked cards).
 
 ---
 

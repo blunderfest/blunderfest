@@ -1031,61 +1031,96 @@ export default function Analysis({
         The board/sidebar row is display:contents below xl, so the board
         cell and the sidebar become direct children of this column and
         the timeline band slots between them (board → band → sidebar).
-        At xl the row re-forms (board and sidebar side by side) and the
-        band drops below it. The row stretches full-width (games rail left,
-        dock right — the v0 frame).
+        At xl the row re-forms: the board region and the band share one
+        flex column (the band docks to the column's bottom edge) while the
+        dock stretches the full viewport height beside it (ADR-0034).
       */}
       <div className="flex w-full max-w-full flex-col items-stretch">
         <div className="contents xl:flex xl:flex-row xl:items-stretch">
-          <BoardColumn
-            tree={tree}
-            current={current}
-            opening={opening}
-            engineOn={engineOn}
-            engineState={engineState}
-            flipped={flipped}
-            editor={editor}
-            selected={selected}
-            legalTargets={legalTargets}
-            arrows={boardArrows}
-            highlights={nodeAnnotations.highlights}
-            checkSquare={checkSquare}
-            dragFlag={dragFlag}
-            drawColor={drawColor}
-            canPlay={canPlay}
-            canEdit={canEdit}
-            navTargets={navTargets}
-            onSquareClick={canPlay ? handleSquareClick : undefined}
-            onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
-            onDragHover={handleDragHover}
-            onDrawArrow={canEdit ? handleDrawArrow : undefined}
-            onToggleHighlight={canEdit ? handleToggleHighlight : undefined}
-            onDrawColorChange={setDrawColor}
-            drawColorPicker={canEdit ? { current: drawColor, onChange: setDrawColor } : undefined}
-            clearDrawings={
-              canEdit
-                ? {
-                    disabled:
-                      nodeAnnotations.arrows.length === 0 &&
-                      nodeAnnotations.highlights.length === 0,
-                    onClear: () => onAnnotations?.({ arrows: [], highlights: [] }, current.id),
-                  }
-                : undefined
-            }
-            onFlip={handleFlip}
-            onOpenComment={canEdit ? openComment : undefined}
-            onFindExamples={canEdit ? openFindExamples : undefined}
-            onSelect={navigate}
-            onSetPosition={onSetPosition !== undefined ? handleSetPosition : undefined}
-          />
+          {/*
+            The board region + timeline band column. At xl it is the middle
+            flex child: the board area grows (min-h-0 flex-1) and the band
+            docks to the column's bottom. Below xl this wrapper is
+            display:contents, so the board and band become siblings again
+            (board order-1, band order-2, sidebar order-3).
+          */}
+          <div className="contents xl:flex xl:min-h-0 xl:min-w-0 xl:flex-1 xl:flex-col">
+            <BoardColumn
+              tree={tree}
+              current={current}
+              opening={opening}
+              engineOn={engineOn}
+              engineState={engineState}
+              flipped={flipped}
+              editor={editor}
+              selected={selected}
+              legalTargets={legalTargets}
+              arrows={boardArrows}
+              highlights={nodeAnnotations.highlights}
+              checkSquare={checkSquare}
+              dragFlag={dragFlag}
+              drawColor={drawColor}
+              canPlay={canPlay}
+              canEdit={canEdit}
+              navTargets={navTargets}
+              onSquareClick={canPlay ? handleSquareClick : undefined}
+              onDragMove={editor.editing || canPlay ? handleDragMove : undefined}
+              onDragHover={handleDragHover}
+              onDrawArrow={canEdit ? handleDrawArrow : undefined}
+              onToggleHighlight={canEdit ? handleToggleHighlight : undefined}
+              onDrawColorChange={setDrawColor}
+              drawColorPicker={canEdit ? { current: drawColor, onChange: setDrawColor } : undefined}
+              clearDrawings={
+                canEdit
+                  ? {
+                      disabled:
+                        nodeAnnotations.arrows.length === 0 &&
+                        nodeAnnotations.highlights.length === 0,
+                      onClear: () => onAnnotations?.({ arrows: [], highlights: [] }, current.id),
+                    }
+                  : undefined
+              }
+              onFlip={handleFlip}
+              onOpenComment={canEdit ? openComment : undefined}
+              onFindExamples={canEdit ? openFindExamples : undefined}
+              onSelect={navigate}
+              onSetPosition={onSetPosition !== undefined ? handleSetPosition : undefined}
+            />
+
+            {/*
+            The timeline band (ADR-0024, as amended; ADR-0034): one tabbed
+            chart docked to the board region's bottom edge. At xl it is the
+            second child of the board column (which stretches full width);
+            below xl it orders between the board and the sidebar.
+          */}
+            <div className="order-2 w-full shrink-0">
+              <TimelineBand
+                tree={tree}
+                evals={mainlineEvals}
+                currentPly={current.ply}
+                flipped={flipped}
+                openingExitPly={bookExitPly}
+                endgameStartPly={endgamePly}
+                captures={captures}
+                bestMoves={bestMoves}
+                spanPly={mainlineTipPly}
+                hasAnalysis={hasAnalysis}
+                analyzeAction={bandAnalyzeAction}
+                onSelectPly={handleFlowSelect}
+              />
+            </div>
+            {/*
+            The board area absorbs the leftover column height above the band
+            at xl (flex-1 min-h-0), keeping the band pinned to the bottom.
+          */}
+          </div>
 
           {/*
-            The sidebar stretches to the board column's height on wide
-            screens, so a long move list scrolls *inside* it and never
-            stretches the page. Below xl it stacks full-width with a capped
-            list. Comments live in a popup (the `c` key or the board
-            controls), not here.
-          */}
+          The sidebar stretches to the full viewport height at xl (a long
+          move list scrolls *inside* it and never stretches the page). Below
+          xl it stacks full-width with a capped list. Comments live in a
+          popup (the `c` key or the board controls), not here.
+        */}
           <AnalysisSidebar
             tree={tree}
             current={current}
@@ -1124,28 +1159,6 @@ export default function Analysis({
             onToggleEngine={toggleEngine}
             onToggleArrows={toggleArrows}
             onEngineLines={setEngineLinesCount}
-          />
-        </div>
-
-        {/*
-          The timeline band (ADR-0024, as amended): the whole-game charts as
-          stacked layers on one shared move axis, full width under the
-          board+sidebar row at xl and right under the board below it.
-        */}
-        <div className="order-2 w-full">
-          <TimelineBand
-            tree={tree}
-            evals={mainlineEvals}
-            currentPly={current.ply}
-            flipped={flipped}
-            openingExitPly={bookExitPly}
-            endgameStartPly={endgamePly}
-            captures={captures}
-            bestMoves={bestMoves}
-            spanPly={mainlineTipPly}
-            hasAnalysis={hasAnalysis}
-            analyzeAction={bandAnalyzeAction}
-            onSelectPly={handleFlowSelect}
           />
         </div>
       </div>
