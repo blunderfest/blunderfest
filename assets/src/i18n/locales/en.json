@@ -504,6 +504,11 @@
       "white": "White",
       "black": "Black"
     },
+    "matchingGames": "Relevant games",
+    "gamesShort_one": "{{count}} game",
+    "gamesShort_other": "{{count}} games",
+    "tierExact": "Same position",
+    "tierSimilar": "Similar",
     "menuShowMore": "Show {{count}} more",
     "menuHideMore": "Show less",
     "menuGames": "{{count}} games",

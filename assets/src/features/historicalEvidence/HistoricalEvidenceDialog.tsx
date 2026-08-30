@@ -55,6 +55,11 @@ function isAnalyzedGame(game: GameMeta, headers: Record<string, string>): boolea
   return result === undefined || game.result === result;
 }
 
+/** Colored result in a game-list row: white win green, black win red, draw muted. */
+function resultTone(result: string): string {
+  return result === '1-0' ? 'text-ok-hi' : result === '0-1' ? 'text-bad-hi' : 'text-faint';
+}
+
 function HelpContent() {
   const { t } = useTranslation();
 
@@ -346,7 +351,7 @@ export default function HistoricalEvidenceDialog({
         role="dialog"
         aria-modal="true"
         aria-label={t('evidence.dialogTitle')}
-        className="relative flex max-h-full w-full max-w-2xl flex-col gap-3 rounded-panel border border-line bg-surface p-4 shadow-panel outline-none"
+        className="relative flex max-h-full w-full max-w-3xl flex-col gap-3 rounded-panel border border-line bg-surface p-4 shadow-panel outline-none"
         data-testid="historical-evidence-dialog"
       >
         <header className="flex shrink-0 items-center justify-between gap-2">
@@ -389,31 +394,78 @@ export default function HistoricalEvidenceDialog({
                 {t('evidence.openError')}
               </p>
             )}
-            <DecisionMenu
-              fen={status.result.reference.fen}
-              nextMoves={status.result.reference.next_moves}
-            />
             {count === 0 ? (
               <p className="m-0 py-6 text-center text-note text-faint">
                 {t('evidence.noCandidates')}
               </p>
             ) : slide === null ? null : (
-              <>
-                <div className="flex h-[min(60dvh,34rem)] flex-col items-center gap-3 overflow-y-auto">
-                  {/* Fixed slide height: the carousel frame must not resize
-                      between candidates — a taller card scrolls inside
-                      instead of growing the dialog under the user's
-                      prev/next finger. */}
-                  {/* The sized wrapper, not the board itself, is what the
-                      column centers: the board carries `self-start` (the
-                      main layout needs it), which would otherwise pin it
-                      to the left edge while the card below centers. */}
-                  <div className="w-[220px] shrink-0">
+              // The relevant-games finder: the decision menu reads the whole
+              // result set; the list below picks the game shown in detail.
+              // Stacked on narrow screens (the list caps its height), two
+              // panes from sm up.
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 sm:flex-row">
+                {/* Left pane: overview + the game list */}
+                <div className="flex shrink-0 flex-col overflow-y-auto rounded-control border border-line max-sm:max-h-44 sm:w-[210px]">
+                  <DecisionMenu
+                    fen={status.result.reference.fen}
+                    nextMoves={status.result.reference.next_moves}
+                    align="left"
+                  />
+                  <div
+                    role="listbox"
+                    aria-label={t('evidence.matchingGames')}
+                    className="flex flex-1 flex-col"
+                    data-testid="historical-evidence-list"
+                  >
+                    {visibleCandidates.map((candidate, i) => (
+                      <button
+                        key={candidate.id}
+                        type="button"
+                        role="option"
+                        aria-selected={i === clampedIndex}
+                        data-testid="historical-evidence-row"
+                        className={`flex flex-col gap-0.5 border-l-2 px-2.5 py-2 text-left transition-colors ${
+                          i === clampedIndex
+                            ? 'border-gold-hi bg-raised'
+                            : 'border-transparent hover:bg-raised/60'
+                        }`}
+                        onClick={() => setIndex(i)}
+                      >
+                        <span className="truncate text-note font-semibold text-ink">
+                          {candidate.game.white} — {candidate.game.black}
+                        </span>
+                        <span className="flex items-baseline gap-1.5 text-micro text-faint tabular-nums">
+                          <span>{candidate.game.eco}</span>
+                          <span className={resultTone(candidate.game.result)}>
+                            {candidate.game.result}
+                          </span>
+                          <span
+                            className={`ml-auto rounded-chip px-1 font-semibold uppercase tracking-[0.06em] ${
+                              candidate.strategy === 'exact'
+                                ? 'bg-gold/15 text-gold-hi'
+                                : 'bg-raised text-faint'
+                            }`}
+                          >
+                            {t(
+                              candidate.strategy === 'exact'
+                                ? 'evidence.tierExact'
+                                : 'evidence.tierSimilar',
+                            )}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Detail pane: board + facts card */}
+                <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto">
+                  <div className="w-[200px] shrink-0">
                     <Board
                       position={parseFen(slide.fen)}
                       flipped={slide.stm === 'b'}
                       label={`${slide.game.white} — ${slide.game.black}`}
-                      width={220}
+                      width={200}
                     />
                   </div>
                   <HistoricalEvidenceCard
@@ -431,34 +483,7 @@ export default function HistoricalEvidenceDialog({
                     }
                   />
                 </div>
-                <div className="flex shrink-0 items-center justify-between gap-2 border-t border-line pt-3">
-                  <button
-                    type="button"
-                    className={button({ intent: 'secondary', size: 'sm' })}
-                    disabled={clampedIndex === 0}
-                    aria-label={t('evidence.previous')}
-                    onClick={() => setIndex((current) => Math.max(0, current - 1))}
-                    data-testid="historical-evidence-prev"
-                  >
-                    ← {t('evidence.previous')}
-                  </button>
-                  <span className="text-note text-muted tabular-nums" aria-live="polite">
-                    {t('evidence.counter', { index: clampedIndex + 1, total: count })}
-                  </span>
-                  <button
-                    type="button"
-                    className={button({ intent: 'secondary', size: 'sm' })}
-                    disabled={clampedIndex === count - 1}
-                    aria-label={t('evidence.next')}
-                    onClick={() =>
-                      setIndex((current) => Math.min(countRef.current - 1, current + 1))
-                    }
-                    data-testid="historical-evidence-next"
-                  >
-                    {t('evidence.next')} →
-                  </button>
-                </div>
-              </>
+              </div>
             )}
           </>
         )}

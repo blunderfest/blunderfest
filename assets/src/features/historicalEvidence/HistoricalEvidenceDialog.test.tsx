@@ -191,7 +191,7 @@ describe('HistoricalEvidenceDialog', () => {
     });
   });
 
-  it('renders the decision menu before the example carousel', async () => {
+  it('renders the decision menu atop the results list', async () => {
     mockAnalyze.mockResolvedValue({
       ...result,
       reference: {
@@ -207,15 +207,15 @@ describe('HistoricalEvidenceDialog', () => {
 
     renderDialog();
 
-    // The menu is between the header and the first slide — heading names Black.
+    // The menu sits above the results list in the left pane — heading names Black.
     expect(await screen.findByTestId('evidence-decision-menu')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /what did Black play next/i })).toBeInTheDocument();
 
     const menu = screen.getByTestId('evidence-decision-menu');
-    const slide = screen.getByTestId('historical-evidence-card');
-    expect(menu.compareDocumentPosition(slide)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    // The carousel still works below the menu.
-    expect(screen.getByText('1 of 2')).toBeInTheDocument();
+    const list = screen.getByTestId('historical-evidence-list');
+    expect(menu.compareDocumentPosition(list)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // Both games are listed.
+    expect(screen.getAllByTestId('historical-evidence-row')).toHaveLength(2);
   });
 
   it('no menu when the response carries no next moves', async () => {
@@ -262,7 +262,7 @@ describe('HistoricalEvidenceDialog', () => {
     expect(screen.queryByTestId('historical-evidence-card')).not.toBeInTheDocument();
   });
 
-  it('shows one slide at a time and pages through the candidates', async () => {
+  it('lists every candidate and previews the picked one in the detail pane', async () => {
     mockAnalyze.mockResolvedValue({
       ...result,
       candidates: [candidate(), secondCandidate],
@@ -270,26 +270,22 @@ describe('HistoricalEvidenceDialog', () => {
 
     renderDialog();
 
-    expect(await screen.findByText('PlayerA — PlayerB')).toBeInTheDocument();
-    expect(screen.queryByText('Eve — Frank')).not.toBeInTheDocument();
-    expect(screen.getByText('1 of 2')).toBeInTheDocument();
-    expect(screen.getByTestId('historical-evidence-prev')).toBeDisabled();
-    expect(screen.getByTestId('historical-evidence-next')).toBeEnabled();
+    // Both rows are listed at once; the first is selected/previewed.
+    const rows = await screen.findAllByTestId('historical-evidence-row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveAttribute('aria-selected', 'true');
+    expect(rows[1]).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getAllByText('PlayerA — PlayerB').length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByTestId('historical-evidence-next'));
-
-    expect(await screen.findByText('Eve — Frank')).toBeInTheDocument();
-    expect(screen.queryByText('PlayerA — PlayerB')).not.toBeInTheDocument();
-    expect(screen.getByText('2 of 2')).toBeInTheDocument();
-    expect(screen.getByTestId('historical-evidence-next')).toBeDisabled();
-    expect(screen.getByTestId('historical-evidence-prev')).toBeEnabled();
-
-    fireEvent.click(screen.getByTestId('historical-evidence-prev'));
-    expect(await screen.findByText('PlayerA — PlayerB')).toBeInTheDocument();
-    expect(screen.getByText('1 of 2')).toBeInTheDocument();
+    // Picking the second row previews its game in the detail pane.
+    fireEvent.click(rows[1]);
+    expect(rows[1]).toHaveAttribute('aria-selected', 'true');
+    expect(rows[0]).toHaveAttribute('aria-selected', 'false');
+    // The detail card now shows the second candidate (its eco appears once in the card).
+    expect(screen.getByTestId('historical-evidence-card')).toHaveTextContent('Eve — Frank');
   });
 
-  it('pages with the arrow keys and closes on Escape', async () => {
+  it('moves the selection with the arrow keys and closes on Escape', async () => {
     mockAnalyze.mockResolvedValue({
       ...result,
       candidates: [candidate(), secondCandidate],
@@ -298,12 +294,14 @@ describe('HistoricalEvidenceDialog', () => {
 
     renderDialog(undefined, { onClose });
 
-    await screen.findByText('PlayerA — PlayerB');
+    const rows = await screen.findAllByTestId('historical-evidence-row');
+    expect(rows[0]).toHaveAttribute('aria-selected', 'true');
+
     fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(await screen.findByText('Eve — Frank')).toBeInTheDocument();
+    expect(rows[1]).toHaveAttribute('aria-selected', 'true');
 
     fireEvent.keyDown(window, { key: 'ArrowLeft' });
-    expect(await screen.findByText('PlayerA — PlayerB')).toBeInTheDocument();
+    expect(rows[0]).toHaveAttribute('aria-selected', 'true');
 
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -334,7 +332,7 @@ describe('HistoricalEvidenceDialog', () => {
     });
   });
 
-  it('does not auto-advance after a pick', async () => {
+  it('does not change the selection after a pick', async () => {
     mockAnalyze.mockResolvedValue({
       ...result,
       candidates: [candidate(), secondCandidate],
@@ -347,9 +345,9 @@ describe('HistoricalEvidenceDialog', () => {
     fireEvent.click(await screen.findByTestId('historical-evidence-add-game'));
     await waitFor(() => expect(onAddGame).toHaveBeenCalledTimes(1));
 
-    // Still on the same slide — the user navigates manually.
-    expect(screen.getByText('1 of 2')).toBeInTheDocument();
-    expect(screen.getByText('PlayerA — PlayerB')).toBeInTheDocument();
+    // Still on the same row — the user navigates manually.
+    const rows = screen.getAllByTestId('historical-evidence-row');
+    expect(rows[0]).toHaveAttribute('aria-selected', 'true');
   });
 
   it('surfaces add-to-room failures', async () => {

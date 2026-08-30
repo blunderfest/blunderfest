@@ -16,10 +16,13 @@ const COLLAPSE_AT = 6;
 export default function DecisionMenu({
   fen,
   nextMoves,
+  align = 'center',
 }: {
   fen: string;
   /** The backend's additive `next_moves` field; optional for older cached shapes. */
   nextMoves?: NextMoveRow[] | null;
+  /** Center for the dialog's old overview slot; left inside the results list. */
+  align?: 'center' | 'left';
 }) {
   const { t } = useTranslation();
   // Side to move from the reference FEN's stm field — never hard-coded.
@@ -35,15 +38,22 @@ export default function DecisionMenu({
     return null;
   }
 
+  const centered = align === 'center';
   return (
     <section
-      className="flex shrink-0 flex-col items-center gap-1 border-b border-line pb-3 text-center"
+      className={`flex shrink-0 flex-col gap-1 border-b border-line pb-3 ${
+        centered ? 'items-center text-center' : 'items-stretch px-2.5 pt-2 pb-2 text-left'
+      }`}
       data-testid="evidence-decision-menu"
     >
       <h4 className="m-0 text-note font-semibold text-ink">
         {t(`evidence.menuWhat`, { side: t(`evidence.menuSide.${side}`) })}
       </h4>
-      <ul className="m-0 flex w-full max-w-xs list-none flex-col gap-0.5 p-0 text-note">
+      <ul
+        className={`m-0 flex w-full list-none flex-col gap-0.5 p-0 text-note ${
+          centered ? 'max-w-xs' : ''
+        }`}
+      >
         {initial.map((row) => (
           <li
             key={row.move}

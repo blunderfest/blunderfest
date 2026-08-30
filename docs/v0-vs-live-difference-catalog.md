@@ -145,16 +145,19 @@ Palette values themselves are converged (surfaces, line, ink, gold `#c9a227`, ac
 
 ## 8. Find-examples dialog
 
+> **Resolved 2026-08-30 (ADR-0030 amended):** §8 reframed as the "relevant games finder" —
+> the carousel is gone. Now a two-pane layout: left = the `DecisionMenu` (position-level
+> overview) atop a list of every relevant game (players, ECO, colored result, tier badge,
+> gold left bar on the selected row); right = board + facts card + pick actions. Clicking a
+> row previews it (arrow keys move the selection); no pager. Stacks vertically on mobile.
+> Remaining deltas below are the card's internal presentation (§8.4) and action styling
+> (§8.5), which stay as live designed them.
+
 | # | v0 | live |
 |---|---|---|
-| 8.1 | **List + detail** layout: 880px dialog; left results list (280px, scrollable) + right detail pane. | **Carousel**: 640px dialog; one candidate at a time (board + card), prev/next footer. *(Live is ADR-0030's carousel; v0's list+detail is the deliberate redesign of it — DESIGN.md §12.2.)* |
-| 8.2 | Header: book icon + "Historical examples" 13.5px + help button + mono meta "17 examples · 876 ms" right + X. | Header: "Historical examples" 16px + HelpPopover + X; counts + ms on a centered line **below** the header. |
-| 8.3 | Result rows: players + ECO + **colored result** (1-0 green / 0-1 red / ½ gray) + **tier badge** ("Same position" accent / "Same route" info / "Similar" neutral) + "N games · N plies"; active row = gold left border + surface-2. | No list, no tier badges, no result coloring (ECO · result in muted mono in the card header). |
-| 8.4 | Detail: 128px mini board beside the facts; **Position comparison table** with green ✓ on exact rows / warn on off rows; Continuation plans White/Black mono rows; "Comparison details" disclosure (typed differences bullet list + per-side similarity mono lines). | Detail: 220px board **above** the card; card = gold uppercase **headline sentence**; Position facts as same/different rows (no ✓ marks); extra **Route** section; Continuation per side **with verdict lines** ("followed the most common continuation"); Historical count line; details disclosure with left-border indent. |
+| 8.4 | Detail: 128px mini board beside the facts; **Position comparison table** with green ✓ on exact rows / warn on off rows; Continuation plans White/Black mono rows; "Comparison details" disclosure (typed differences bullet list + per-side similarity mono lines). | Detail: 200px board **above** the card; card = gold uppercase **headline sentence**; Position facts as same/different rows (no ✓ marks); extra **Route** section; Continuation per side **with verdict lines** ("followed the most common continuation"); Historical count line; details disclosure with left-border indent. |
 | 8.5 | Footer of the detail pane: **primary gold "Add as variation"** + secondary "Add to room" + explainer note right. | Actions inside the card, **both secondary** (fixed-width labels, active state = gold-wash when added). |
-| 8.6 | Pager in detail footer: "‹ Prev · 3 of 12 (mono) · Next ›". | Pager as the dialog's bottom bar: bordered sm buttons "← Previous / Next →" + counter. |
-| 8.7 | No decision menu (predates product experiment 01). | **DecisionMenu** ("What did White play here?" + move/count rows + "Show N more") between header and carousel. |
-| 8.8 | Scrim: `black/50` + 2px backdrop blur; dialog surface-1, radius-14, shadow-2xl. | Scrim: `black/60`, no blur; dialog bg-surface, radius-**10**, `shadow-panel`. |
+| 8.7 | No decision menu (predates product experiment 01). | **DecisionMenu** ("What did White play here?" + move/count rows + "Show N more") pinned atop the results list. |
 
 ## 9. Import dialog
 

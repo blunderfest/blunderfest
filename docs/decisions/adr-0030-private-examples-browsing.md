@@ -1,6 +1,7 @@
 # ADR-0030: Historical examples are browsed privately — only picks are shared
 
-Status: Accepted (2026-08-27)
+Status: Accepted (2026-08-27); presentation amended 2026-08-30 (carousel →
+list + detail, the "relevant games finder")
 
 ## Context
 
@@ -19,20 +20,19 @@ sidebar-shaped layout on a browsing experience.
 
 - **Browsing is private.** "Find examples" (now a button in the board
   header, next to Export PGN / Save to library — the Examples tab is
-  gone) opens a modal carousel over the candidates for the cursor's
-  position: one slide per candidate with a static board at the candidate
-  position, the facts card, and the pick actions. The corpus query runs
-  on open for the opener only — no channel traffic.
+  gone) opens a modal over the candidates for the cursor's position. The
+  corpus query runs on open for the opener only — no channel traffic.
+  (Presentation amended 2026-08-30: the original one-slide-at-a-time
+  carousel became a list + detail layout — see below.)
 - **Only picks are shared.** Picking means the existing ops: "Add to
   room" (`set_game` with `evidence_gid` + `openAtPly` + fingerprint
   dedupe) and "Add as variation" (`set_position`/`add_line`). Everyone
   sees the picked games via the op log, as before.
-- **Picks never auto-advance the carousel.** The button flips to
-  "Added ✓" (echo-proven) and the user browses on — a candidate can be
-  added as a game *and* as a variation without navigating back and
-  forth. Prev/next (buttons, ←/→ keys) and Esc/backdrop close the
-  dialog; finished analyses stay in the session cache, so reopening the
-  dialog for the same position never re-runs the query.
+- **Picks never change the selection.** The button flips to "Added ✓"
+  (echo-proven) and the user browses on — a candidate can be added as a
+  game *and* as a variation without navigating away. Esc/backdrop close
+  the dialog; finished analyses stay in the session cache, so reopening
+  the dialog for the same position never re-runs the query.
 - The `evidence_run` channel push, its broadcast, and the Redux
   `evidenceRun` state are removed.
 
