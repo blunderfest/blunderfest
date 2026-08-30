@@ -285,7 +285,7 @@ export default function HistoricalEvidenceCard({
             >
               {/* Fixed width: "Add as variation" ↔ "Added ✓" must not shift
                   the sibling button when the label swaps. */}
-              <span className="inline-block w-[7.5rem] text-left">
+              <span className="inline-block w-[7.5rem] text-center">
                 {variationState?.exists === true
                   ? t('evidence.addedVariation')
                   : addingVariation
@@ -307,7 +307,7 @@ export default function HistoricalEvidenceCard({
                   the corpus surfaces the same game at several positions,
                   and a second card with the same players is that game —
                   not a different game that deserves another add. */}
-              <span className="inline-block w-[11.5rem] text-left">
+              <span className="inline-block w-[11.5rem] text-center">
                 {addedToRoom
                   ? t('evidence.sameGameInRoom')
                   : adding

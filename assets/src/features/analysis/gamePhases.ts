@@ -16,14 +16,14 @@ function nonPawnMaterial(position: ReturnType<typeof parseFen>, color: PieceColo
 }
 
 /**
- * The endgame heuristic: no queens on the board, or both sides down to
- * ≤ 13 pawns of non-pawn material (a queen and a minor, two rooks and a
- * minor, …). Queenless heavy-piece positions and pure queen endgames both
- * qualify; a normal middlegame (25 a side) doesn't.
+ * The endgame heuristic: low material — both sides down to ≤ 13 pawns of
+ * non-pawn material (a queen and a minor, two rooks and a minor, …). A
+ * normal middlegame (25 a side) doesn't qualify; a queen trade alone
+ * doesn't either (queens off but a full board of pieces is still a
+ * middlegame).
  */
 function isEndgame(position: ReturnType<typeof parseFen>): boolean {
-  const noQueens = !position.some((piece) => piece?.kind === 'q');
-  return noQueens || (nonPawnMaterial(position, 'w') <= 13 && nonPawnMaterial(position, 'b') <= 13);
+  return nonPawnMaterial(position, 'w') <= 13 && nonPawnMaterial(position, 'b') <= 13;
 }
 
 /**
