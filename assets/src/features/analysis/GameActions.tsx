@@ -151,17 +151,18 @@ export default function GameActions({ tree }: { tree: GameTree }) {
       <button
         type="button"
         id="export-pgn-button"
-        className={button({ intent: 'ghost', size: 'icon' })}
+        className={`${button({ intent: 'ghost', size: 'sm' })} px-1.5`}
         aria-label={t('room.exportPgn')}
         title={t('room.exportPgn')}
         onClick={() => downloadPgn(tree)}
       >
         <ExportIcon />
+        <span className="hidden xl:inline">{t('room.exportPgnShort')}</span>
       </button>
       <button
         type="button"
         id="save-to-library-button"
-        className={button({ intent: 'ghost', size: 'icon' })}
+        className={`${button({ intent: 'ghost', size: 'sm' })} px-1.5`}
         aria-label={bookmarkLabel}
         title={bookmarkLabel}
         data-filled={inLibrary || undefined}
@@ -169,6 +170,7 @@ export default function GameActions({ tree }: { tree: GameTree }) {
         onClick={() => void (inLibrary ? handleRemove() : handleSave())}
       >
         {saveState === 'saved' ? <CheckIcon /> : <BookmarkIcon filled={inLibrary} />}
+        <span className="hidden xl:inline">{t('room.saveShort')}</span>
       </button>
     </div>
   );

@@ -7,7 +7,6 @@ import { button } from '@/components/ui';
 import BoardControls from '@/features/analysis/BoardControls';
 import EvalBar from '@/features/analysis/EvalBar';
 import GameActions from '@/features/analysis/GameActions';
-import { moveNumber } from '@/features/analysis/moveList';
 import NavControls, { type NavTargets } from '@/features/analysis/NavControls';
 import type { Opening } from '@/features/analysis/openings';
 import type { WhiteEval } from '@/features/analysis/uci';
@@ -98,17 +97,31 @@ export default function BoardColumn({
 
   return (
     <div className="order-1 flex min-w-0 flex-1 flex-col items-center gap-2 px-3 py-3 xl:min-h-0">
-      <div className="flex w-full items-baseline justify-between gap-4">
-        <h2 className="m-0 min-w-0 truncate text-lead font-semibold tracking-[-0.01em]">
+      {/*
+        Compact game header (v0's 36px row): the players + the opening on
+        one line, the actions on the right. The meta shows just the ECO +
+        opening name — the viewed move lives in the timeline header and the
+        move list. The STM chip is xl-only (the board's edge strip already
+        marks the mover on narrower widths).
+      */}
+      <div className="flex h-9 w-full shrink-0 items-center gap-2 border-b border-line">
+        <h2 className="m-0 min-w-0 shrink-0 truncate text-ui font-semibold">
           {tree.headers.White ?? '?'} – {tree.headers.Black ?? '?'}
         </h2>
+        <p
+          data-testid="opening-name"
+          aria-hidden={opening === null}
+          className="m-0 min-w-0 flex-1 truncate text-note text-gold-hi"
+        >
+          {opening === null ? '' : `${opening.eco} · ${opening.name}`}
+        </p>
         <div className="flex shrink-0 items-center gap-2">
           {!editor.editing && (
             <span
               data-testid="stm-chip"
               title="Side to move"
               aria-live="polite"
-              className="mr-1 flex items-center whitespace-nowrap gap-1.5 rounded-chip border border-line px-2 py-0.5 text-micro font-semibold uppercase tracking-[0.11em] text-muted"
+              className="mr-1 hidden items-center gap-1.5 whitespace-nowrap rounded-chip border border-line px-2 py-0.5 text-micro font-semibold uppercase tracking-[0.11em] text-muted xl:flex"
             >
               <span
                 className={`h-1.5 w-1.5 rounded-full ${(current.fen ?? '').split(/\s+/u)[1] === 'w' ? 'bg-white' : 'bg-ink'} border border-line`}
@@ -123,24 +136,6 @@ export default function BoardColumn({
           <GameActions tree={tree} />
         </div>
       </div>
-      {/*
-          Meta line: opening (when on book) + the viewed move. Fixed-height
-          slot — empty at the start position, so the board never shifts
-          when a name appears or the cursor moves.
-        */}
-      <p
-        data-testid="opening-name"
-        aria-hidden={opening === null}
-        className="m-0 -mt-1 h-[1.125rem] w-full text-note font-semibold text-gold-hi"
-      >
-        {opening === null
-          ? current.ply > 0
-            ? `${moveNumber(current)} ${current.san ?? ''}`
-            : ''
-          : `${opening.eco} · ${opening.name}${
-              current.ply > 0 ? ` · ${moveNumber(current)} ${current.san ?? ''}` : ''
-            }`}
-      </p>
 
       {/*
         The board column is always centered. The eval bar hangs off its
@@ -340,12 +335,50 @@ export default function BoardColumn({
           )}
         </div>
       )}
-      {current.comment !== null && (
+      {/*
+        The annotation strip (v0): a fixed-height slot under the toolbar
+        that always renders — the current move's comment when one exists
+        (with an edit affordance), a quiet "comment on this move" ghost
+        when empty. Reserving the height means a comment appearing or
+        disappearing never shifts the board above it.
+      */}
+      {!editor.editing && (
         <div
-          className="w-full max-w-[var(--board-size)] rounded-control border border-line bg-panel p-3 text-body text-ink"
-          data-testid="comment-bubble"
+          aria-live="polite"
+          className={`flex h-11 w-full max-w-[var(--board-size)] items-start gap-2 overflow-hidden rounded-control px-2 py-1.5 transition-colors ${
+            current.comment !== null ? 'bg-panel' : ''
+          }`}
+          data-testid="annotation-strip"
         >
-          {current.comment}
+          {current.comment !== null ? (
+            <>
+              <p className="line-clamp-2 flex-1 text-note leading-[1.125rem] text-muted">
+                {current.comment}
+              </p>
+              {onOpenComment !== undefined && (
+                <button
+                  type="button"
+                  aria-label={t('analysis.commentTitle')}
+                  title={t('analysis.commentTitle')}
+                  className="shrink-0 rounded-control px-1 text-faint transition-colors hover:text-ink"
+                  onClick={onOpenComment}
+                >
+                  ✎
+                </button>
+              )}
+            </>
+          ) : (
+            onOpenComment !== undefined && (
+              <button
+                type="button"
+                className="flex h-full items-center gap-1.5 rounded-control px-1 text-note text-faint transition-colors hover:text-muted"
+                onClick={onOpenComment}
+                data-testid="comment-on-move"
+              >
+                💬 {t('analysis.commentOnMove')}
+              </button>
+            )
+          )}
         </div>
       )}
       <p className="sr-only" role="status">

@@ -149,7 +149,7 @@ describe('Analysis', () => {
 
     fireEvent.click(screen.getByTestId('analysis-move-3'));
     expect(pieceAt('square-c5')).toBe('bp');
-    expect(screen.getByTestId('comment-bubble')).toHaveTextContent('Sicilian');
+    expect(screen.getByTestId('annotation-strip')).toHaveTextContent('Sicilian');
   });
 
   it('shows a line path inside a variation, returning to the branch point on click', () => {
@@ -419,59 +419,6 @@ describe('Analysis', () => {
     await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(2));
   });
 
-  it('the header labels a pass with its black-slot number ("1... --"), not its ply', async () => {
-    // A tree whose mainline is 1. e4 -- 2. e5 (pass in black's slot at
-    // ply 2). The header must read chess notation, not raw ply numbers.
-    const passTree: GameTree = {
-      ...tree,
-      root: {
-        ...tree.root,
-        children: [
-          {
-            ...node({
-              id: 10,
-              ply: 1,
-              san: 'e4',
-              from: 'e2',
-              to: 'e4',
-              fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
-            }),
-            children: [
-              {
-                ...node({
-                  id: 11,
-                  ply: 2,
-                  san: '--',
-                  from: null,
-                  to: null,
-                  fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1',
-                }),
-                children: [
-                  node({
-                    id: 12,
-                    ply: 3,
-                    san: 'e5',
-                    from: 'e4',
-                    to: 'e5',
-                    fen: 'rnbqkbnr/pppppppp/8/4P3/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
-                  }),
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    };
-    render(<Analysis tree={passTree} />);
-
-    const header = screen.getByTestId('opening-name');
-    // Opens on the tail: 2. e5 — NOT "3. e5".
-    expect(header.textContent).toContain('2. e5');
-    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
-    // The pass is black's move-1 slot.
-    expect(header.textContent).toContain('1... --');
-  });
-
   it('side-to-move chip and edge strip track the mover through navigation', () => {
     const startFw: GameTree = {
       ...tree,
@@ -636,22 +583,23 @@ describe('Analysis', () => {
       />,
     );
 
-    expect(screen.getByTestId('comment-bubble')).toHaveTextContent('Nice idea');
+    expect(screen.getByTestId('annotation-strip')).toHaveTextContent('Nice idea');
   });
 
-  it('does not offer the note popup to viewers, but shows existing comments in the bubble', () => {
+  it('does not offer the note popup to viewers, but shows existing comments in the strip', () => {
     render(<Analysis tree={tree} presenterId="p1" selfId="me" />);
 
     expect(screen.queryByRole('button', { name: 'Comment' })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('analysis-move-3'));
-    expect(screen.getByTestId('comment-bubble')).toHaveTextContent('Sicilian');
+    expect(screen.getByTestId('annotation-strip')).toHaveTextContent('Sicilian');
   });
 
-  it('shows no bubble to viewers when the position has no comment', () => {
+  it('shows no comment affordance to viewers when the position has no comment', () => {
     render(<Analysis tree={tree} presenterId="p1" selfId="me" />);
 
-    expect(screen.queryByTestId('comment-bubble')).not.toBeInTheDocument();
+    expect(screen.getByTestId('annotation-strip')).toBeInTheDocument();
+    expect(screen.queryByTestId('comment-on-move')).not.toBeInTheDocument();
     expect(screen.queryByTestId('comment-editor')).not.toBeInTheDocument();
   });
 });

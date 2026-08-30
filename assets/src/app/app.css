@@ -197,13 +197,13 @@
       /* width budget: rail (260) + dock (360) + eval slot (52); height
          budget: header, title/meta, board padding, toolbar, and the docked
          band (header + h-24 chart) so the page never scrolls */
-      --board-size: min(calc(100vw - 26rem), calc(100dvh - 22rem), 46rem);
+      --board-size: min(calc(100vw - 26rem), calc(100dvh - 24.25rem), 46rem);
     }
   }
   @media (min-width: 1536px) {
     .analysis-scope {
       /* the dock widens at 2xl (360px → 420px) */
-      --board-size: min(calc(100vw - 29.75rem), calc(100dvh - 22rem), 46rem);
+      --board-size: min(calc(100vw - 29.75rem), calc(100dvh - 24.25rem), 46rem);
     }
   }
 

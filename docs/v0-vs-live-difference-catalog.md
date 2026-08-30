@@ -20,8 +20,11 @@ decision — they're still listed, because they're visible.
 >
 > **Resolved 2026-08-30:** §3.2 (single-color wordmark), §4 (rail rows are bordered cards
 > with a gold left-edge bar on the active row), §5.5/§5.6 (board is 4px-cornered with no
-> drop shadow), and §6.2 (dock + timeline tabs use v0's metrics: 12px labels, tracking-wide,
-> inset underline).
+> drop shadow), §6.2 (dock + timeline tabs use v0's metrics: 12px labels, tracking-wide,
+> inset underline), §5.1/§5.2/§5.4 (compact 36px game header: players + opening on one line,
+> labeled PGN/Save buttons at xl, the viewed move lives in the move list), and §5.14 (the
+> annotation strip — a fixed slot under the toolbar that always renders, showing the
+> current move's comment or a "Comment on this move" ghost affordance).
 
 ---
 
