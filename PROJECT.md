@@ -71,6 +71,51 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
+### Session handoff (2026-08-30 — v0 visual convergence: frame, timeline, finder, book)
+
+**The room now matches the v0 "Study Hall" frame** (ADR-0034). Full-bleed
+hairline regions instead of padded cards: rail flush-left on the canvas, dock
+flush-right full viewport height, timeline docked to the board column's bottom
+edge (the band no longer spans under the dock, and it is not collapsible).
+The timeline is a single tabbed chart — Eval · Material · Activity · Think
+time · Time left — replacing the layered/stacked/spotlight model (active layer
+persists in `blunderfest.timelineActiveLayer`). Time left splits off from
+think time: `RemainingClocksFlow` charts each side's remaining clock as two
+draining lines (`remainingClocks()` in `moveTimes.ts`).
+
+**Board column chrome, v0-style:** compact 36px game header (players + ECO/
+opening on one line; the viewed move lives in the move list; STM chip is
+xl-only; labeled PGN/Save buttons at xl). The comment bubble became a fixed
+annotation strip under the toolbar — always rendered, so comments never shift
+the board. The board dropped its shadow and squares to 4px corners; the
+wordmark is single-color. The find-examples dialog is now a **relevant-games
+finder** (ADR-0030 amended): carousel gone — left pane = the DecisionMenu atop
+a list of every relevant game (players, ECO, colored result, tier badge); right
+pane = board + facts card + pick actions; click a row to preview, ←/→ move the
+selection.
+
+**Phase-aware opening book (ADR-0024):** book rows carry corpus game counts +
+W/D/B rate bars (`Blunderfest.Corpus.Book` → `GET /api/book?fen=…`;
+`ReferencePanel` merges them, per-FEN cached). The Positional Context panel
+resolves through an explicit order: tablebase-eligible → in-book → **one-ply
+transposition back into book** (local child check + one batched
+`POST /api/book/counts` — `Book.counts_for_keys`; interactive rows) →
+likely-endgame → cached evidence → find-CTA. The **phase model** (`phaseOf` in
+`gamePhases.ts`: material/24 with pawns counted, `tablebaseEligible` ≤ 7
+pieces, `likelyEndgame` ≤ 0.5) is unified with the eval chart's `endgameStart`.
+Fix along the way: the endgame rule no longer fires on a bare queen trade
+(`…Qxd1+ 5. Kxd1` is a middlegame).
+
+Verified live at blunderfest.org (prod corpus: the Ruy position returns
+O-O 43 games / d6 28 games). 628 frontend + 417 backend green. The full
+difference catalog is `docs/v0-vs-live-difference-catalog.md` (resolved items
+marked inline).
+
+**Next candidates:** §6.16 (chat avatars + timestamps), the in-dialog game
+browser (ADR-0030's noted follow-up), or the `#/search` destination
+(ADR-0024/ADR-0010). The tablebase source for the endgame hook is open
+(ADR-0024's deferred line).
+
 ### Where we are (2026-08-13)
 
 Milestones 1–6 done. Recently landed: one process per room (ADR-0012),
