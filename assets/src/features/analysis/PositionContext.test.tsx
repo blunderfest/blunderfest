@@ -13,6 +13,8 @@ import type { LegalMove } from '@/lib/api';
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const OFF_BOOK = 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1';
 const OFF_BOOK_2 = 'rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2';
+// A king-and-pawn endgame, out of book (no queens, both sides ≤ 13 material).
+const ENDGAME = '8/8/4k3/8/8/4K3/4P3/8 w - - 0 1';
 
 const book: OpeningBook = {
   'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq': 'B00|King Pawn',
@@ -84,6 +86,17 @@ describe('PositionContext', () => {
     expect(screen.getByTestId('position-context-find')).toBeInTheDocument();
     // No evidence request fires until the user clicks.
     expect(screen.queryByTestId('position-context-evidence')).not.toBeInTheDocument();
+  });
+
+  it('names the endgame (tablebase hook) when out of book in an endgame', () => {
+    renderPanel({ fen: ENDGAME });
+    expect(screen.getByTestId('position-context-endgame')).toBeInTheDocument();
+    expect(screen.queryByTestId('position-context-find')).toBeInTheDocument();
+  });
+
+  it('no endgame hook in a middlegame out-of-book position', () => {
+    renderPanel({ fen: OFF_BOOK });
+    expect(screen.queryByTestId('position-context-endgame')).not.toBeInTheDocument();
   });
 
   it('runs the evidence query on the CTA and shows the summary', async () => {

@@ -27,6 +27,15 @@ function isEndgame(position: ReturnType<typeof parseFen>): boolean {
 }
 
 /**
+ * Whether a FEN is an endgame position (the same heuristic as
+ * `endgameStart`, for a single position — the positional-context panel's
+ * tablebase hook).
+ */
+export function isEndgameFen(fen: string): boolean {
+  return isEndgame(parseFen(fen));
+}
+
+/**
  * Where the endgame began, for the eval chart's phase shading
  * (visualization ideas #1). The earliest ply of the closing stretch in
  * which every position satisfies the endgame heuristic — the *closing*

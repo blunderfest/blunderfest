@@ -97,3 +97,11 @@ an ambient panel.
   Moves tab as the opening-book block (per-continuation rows, corpus
   statistics when the corpus lands); the dock's set is Moves · Review ·
   Chat · Room. Per-position reference docking itself is unchanged.
+- **Corpus statistics landed (2026-08-30):** the book rows now carry the
+  corpus data this ADR spike-gated. `Blunderfest.Corpus.Book` computes the
+  per-move independent-game counts + W/D/B outcomes behind the corpus
+  boundary (served at `GET /api/book?fen=…`); the ReferencePanel merges
+  them into the named book rows (count + W/D/B rate bar; rows without
+  corpus data stay plain). The endgame/tablebase source decision from the
+  "Endgame table: deferred" line above is still open — the panel currently
+  only names endgame territory (the reserved hook), no tablebase truth.

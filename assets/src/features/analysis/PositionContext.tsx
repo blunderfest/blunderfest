@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { isEndgameFen } from '@/features/analysis/gamePhases';
 import {
   type BookContinuation,
   continuationsFor,
@@ -110,12 +111,26 @@ export default function PositionContext({
   );
 
   if (!bookAvailable) {
+    // The tablebase hook (v0's endgame book extension point): out of book
+    // and into an endgame, the panel names the state — the reserved slot a
+    // tablebase source would fill once one exists in the repo.
+    const tablebaseNote =
+      fen !== null && isEndgameFen(fen) ? (
+        <p
+          className="m-0 flex items-center gap-1.5 px-3 pt-2 text-micro text-faint"
+          data-testid="position-context-endgame"
+        >
+          {t('positionContext.endgameHook')}
+        </p>
+      ) : null;
+
     content =
       cached !== undefined ? (
         // Historical evidence already calculated — summary + View. The
         // sticky "Positional context" title already names the box, so the
         // section goes straight to the counts (no repeated header).
         <div className="flex min-h-0 flex-col" data-testid="position-context-evidence">
+          {tablebaseNote}
           <section className="flex flex-col gap-0.5 px-3 py-2 text-left">
             <p className="m-0 text-note text-ink">
               {t('positionContext.gamesCount', { count: cached.reference.games })}
@@ -144,6 +159,7 @@ export default function PositionContext({
           className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-3 py-4"
           data-testid="position-context-find"
         >
+          {tablebaseNote}
           {findStatus.kind === 'failed' ? (
             <>
               <p className="m-0 text-note text-bad-hi">{t('positionContext.failed')}</p>

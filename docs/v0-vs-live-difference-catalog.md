@@ -25,6 +25,12 @@ decision — they're still listed, because they're visible.
 > labeled PGN/Save buttons at xl, the viewed move lives in the move list), and §5.14 (the
 > annotation strip — a fixed slot under the toolbar that always renders, showing the
 > current move's comment or a "Comment on this move" ghost affordance).
+>
+> **Resolved 2026-08-30 (§6.12, corpus statistics landed):** the opening book is
+> phase-aware and corpus-backed — each named book row carries the corpus game count and a
+> W/D/B rate bar (`Blunderfest.Corpus.Book` → `GET /api/book`; ReferencePanel merges them;
+> rows without corpus data stay plain). Out of book, the panel names endgame territory
+> (v0's tablebase extension point — no tablebase source yet, so no endgame book).
 
 ---
 

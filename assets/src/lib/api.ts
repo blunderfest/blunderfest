@@ -465,3 +465,20 @@ export async function analyzeHistoricalEvidence(
 export async function fetchHistoricalGame(gid: number): Promise<{ tree: GameTree }> {
   return request(`/api/historical-evidence/games/${gid}`);
 }
+
+/** One move's opening-book stats (games + W/D/B), from `/api/book`. */
+export type BookMove = {
+  move: string;
+  games: number;
+  white: number;
+  draw: number;
+  black: number;
+};
+
+/**
+ * The opening-book next-move stats for a FEN (corpus game counts + W/D/B
+ * per move). `[]` for a position with no occurrences.
+ */
+export async function fetchBook(fen: string): Promise<{ moves: BookMove[] }> {
+  return request(`/api/book?fen=${encodeURIComponent(fen)}`);
+}

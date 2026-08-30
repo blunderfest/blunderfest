@@ -15,7 +15,7 @@ defmodule Blunderfest.Corpus do
 
   use GenServer
 
-  alias Blunderfest.Corpus.{GameExport, Occurrences}
+  alias Blunderfest.Corpus.{Book, GameExport, Occurrences}
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -47,6 +47,13 @@ defmodule Blunderfest.Corpus do
   @doc "Mainline SAN list of a game (empty when unknown)."
   @spec moves(pos_integer()) :: [String.t()] | {:error, :not_configured}
   def moves(gid), do: GenServer.call(__MODULE__, {:moves, gid}, :infinity)
+
+  @doc """
+  The opening-book next-move stats for a FEN (games + W/D/B per move),
+  `[]` for a position with no occurrences.
+  """
+  @spec book(String.t()) :: [Book.row()] | {:error, :not_configured | :invalid_fen}
+  def book(fen), do: GenServer.call(__MODULE__, {:book, fen}, :infinity)
 
   @doc "Row counts of the four corpus tables."
   @spec counts() :: map() | {:error, :not_configured}
@@ -113,8 +120,12 @@ defmodule Blunderfest.Corpus do
   end
 
   def handle_call({fun, _arg}, _from, %{pool: nil} = state)
-      when fun in [:occurrences, :position, :pawn_bucket, :game, :moves] do
+      when fun in [:occurrences, :position, :pawn_bucket, :game, :moves, :book] do
     {:reply, {:error, :not_configured}, state}
+  end
+
+  def handle_call({:book, fen}, _from, state) do
+    {:reply, Book.for_fen(state.pool, fen), state}
   end
 
   def handle_call({:occurrences, key}, _from, state) do

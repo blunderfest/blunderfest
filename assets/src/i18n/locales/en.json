@@ -526,6 +526,7 @@
     "gamesCount_one": "{{count}} game",
     "gamesCount_other": "{{count}} games",
     "failed": "Historical evidence could not be loaded.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "endgameHook": "Endgame — tablebase territory (not yet available)"
   }
 }

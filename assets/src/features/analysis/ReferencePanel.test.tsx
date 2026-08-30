@@ -1,8 +1,16 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { OpeningBook } from '@/features/analysis/openings';
-import ReferencePanel from '@/features/analysis/ReferencePanel';
+import ReferencePanel, { resetBookStatsCache } from '@/features/analysis/ReferencePanel';
 import type { LegalMove } from '@/lib/api';
+
+vi.mock('@/lib/api', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/lib/api')>();
+  return { ...original, fetchBook: vi.fn() };
+});
+
+const { fetchBook } = await import('@/lib/api');
+const mockFetchBook = vi.mocked(fetchBook);
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const AFTER_D4 = 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1';
@@ -28,6 +36,12 @@ function renderPanel({
 }
 
 describe('ReferencePanel', () => {
+  beforeEach(() => {
+    resetBookStatsCache();
+    // Default: no corpus stats (the empty-stats path — no bars).
+    mockFetchBook.mockResolvedValue({ moves: [] });
+  });
+
   it('lists the named continuations of the position', () => {
     renderPanel();
 
@@ -77,5 +91,17 @@ describe('ReferencePanel', () => {
 
     renderPanel({ fen: null });
     expect(screen.getAllByText('No named continuations from this position.')).toHaveLength(2);
+  });
+
+  it('adds the corpus game count and W/D/B bar to a row with stats', async () => {
+    mockFetchBook.mockResolvedValue({
+      moves: [{ move: 'e4', games: 100, white: 50, draw: 30, black: 20 }],
+    });
+    renderPanel();
+
+    await waitFor(() => expect(screen.getByTestId('reference-rate-bar')).toBeInTheDocument());
+    expect(screen.getByText('100')).toBeInTheDocument();
+    // Only the e4 row has stats; d4 stays plain.
+    expect(screen.getAllByTestId('reference-rate-bar')).toHaveLength(1);
   });
 });
