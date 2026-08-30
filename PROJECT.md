@@ -133,6 +133,35 @@ App routing and AccountMenu. ADR-0022 gained a return-to-room
 consequence note. 630 frontend + 422 backend green; browser-verified
 (`#/r/chess?linked=lichess` lands in the room, URL cleaned).
 
+### Bugs fixed (2026-08-30 — positional context, evidence counts, dialog/header)
+
+Three owner-reported fixes, all verified against the local corpus:
+
+1. **New board no longer reads "outside the book" / "Possible
+   transpositions".** The chess-openings corpus never keys the standard
+   start position, so `isBookPosition(start)` was false and the new
+   one-ply transposition branch (whose predicate ≡ the book's own
+   continuations) fired on a fresh board. The start position now counts
+   as in the book by definition (`START_POSITION_KEY` in `openings.ts`).
+2. **The positional-context summary and the finder dialog agree.** The
+   summary showed the reference position's exact-match games (`0 games`
+   for an off-book position) while the dialog listed every candidate
+   (including pawn-skeleton matches). The summary now counts the
+   dialog-visible candidates, with the analyzed game filtered out (shared
+   `isAnalyzedGame`, exported from the dialog) — the panel's `gameHeaders`
+   prop mirrors the dialog's filter so both never disagree.
+3. **The find-examples dialog is a fixed height again.** The list+detail
+   rewrite dropped the carousel's fixed slide height, so expanding a
+   card's Comparison details resized the modal. The two-pane row is
+   `h-[min(60dvh,34rem)]` — details scroll the pane, the frame stays put.
+
+Plus a UI polish: the 36px game header's PGN/Save buttons used the
+32px `sm` size and overflowed the bar (they sat high); they now use a new
+28px `tb` button size (v0's `tb-btn`) so the row centers. Design-system
+button table gained the `tb` row; ADR-0024 gained a corrections note.
+635 frontend + 422 backend green; browser-verified (start book rows,
+evidence count match, fixed dialog height, centered header).
+
 ### Where we are (2026-08-13)
 
 Milestones 1–6 done. Recently landed: one process per room (ADR-0012),

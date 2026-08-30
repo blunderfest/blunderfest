@@ -65,6 +65,10 @@ export const button = tv({
       lg: 'h-11 px-5 text-body',
       icon: 'h-8 w-8 text-ui',
       iconLg: 'h-10 w-10 text-lead',
+      // The 36px header's compact action: v0's `tb-btn` (h-7). Header
+      // buttons must stay under the bar's height so they center, not
+      // overflow — `sm` (h-8) would stick out of an h-9 row.
+      tb: 'h-7 px-1.5 text-note',
     },
     active: {
       true: 'border-gold/60 bg-gold/25 text-gold-text hover:bg-gold/30',

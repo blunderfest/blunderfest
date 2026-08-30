@@ -103,10 +103,18 @@ export function classifyOpening(
   return null;
 }
 
+/**
+ * The standard starting position counts as in the book: the book starts
+ * there by definition. The chess-openings corpus keys only positions
+ * after a first move, so without this a fresh board reads as out of book
+ * (and its 20 legal first moves look like "transpositions back into it").
+ */
+const START_POSITION_KEY = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq';
+
 /** Whether this exact position is in the book (no ancestor fallback). */
 export function isBookPosition(book: OpeningBook, fen: string | null): boolean {
   const key = positionKey(fen);
-  return key !== null && book[key] !== undefined;
+  return key !== null && (key === START_POSITION_KEY || book[key] !== undefined);
 }
 
 /**

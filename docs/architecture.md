@@ -314,7 +314,13 @@ so clients send nothing and hide the member list.
   likely-endgame → cached evidence summary + View → the find-CTA. The phase
   model (`phaseOf` in `gamePhases.ts`: material/24 with pawns counted,
   `tablebaseEligible` ≤ 7 pieces, `likelyEndgame` ≤ 0.5) is shared with the
-  eval chart's endgame shading (`endgameStart`).
+  eval chart's endgame shading (`endgameStart`). The start position counts
+  as in the book by definition — the corpus has no entry for it, so without
+  that convention a fresh board reads as out of book and its first moves
+  look like transpositions. The evidence summary counts the candidates the
+  View dialog will list (the analyzed game itself filtered out), not the
+  reference position's exact-match games: an off-book position has 0 exact
+  games yet can still surface a full list of similar examples.
 - `assets/src/features/historicalEvidence/` — the vertical slice's UI
   (ADR-0027, ADR-0030): the board header's **Find examples** button
   (next to Export PGN / Save to library — editors only; the old

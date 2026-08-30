@@ -115,3 +115,14 @@ an ambient panel.
   one batched `POST /api/book/counts` for the candidates' independent-game
   support; the rows are interactive (ghost preview + click-to-play, like
   the book rows).
+- **Corrections the same day (2026-08-30):** the start position counts as
+  in the book by definition — the corpus has no entry for it, so a fresh
+  board otherwise read as "outside the book" and its 20 first moves looked
+  like transpositions. The cached-evidence summary counts the candidates
+  the View dialog will list (with the analyzed game filtered out), not the
+  reference position's exact-match games — an off-book position has 0
+  exact games but can still surface many similar examples, so the summary
+  and the dialog must agree. The find-examples dialog's two-pane row is
+  fixed-height (`h-[min(60dvh,34rem)]`), so expanding a card's Comparison
+  details scrolls the pane instead of resizing the modal (the carousel's
+  fixed-slide-height guarantee, restored).

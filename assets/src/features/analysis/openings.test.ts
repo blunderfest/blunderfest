@@ -3,6 +3,7 @@ import { buildNodeMap } from '@/features/analysis/nodeMap';
 import {
   classifyOpening,
   continuationsFor,
+  isBookPosition,
   type OpeningBook,
   openingExitPly,
 } from '@/features/analysis/openings';
@@ -168,6 +169,23 @@ describe('openingExitPly', () => {
       children: [node({ id: 1, ply: 1, fen: fen('after-e4-e5') })],
     });
     expect(openingExitPly(book, theory)).toBeNull();
+  });
+});
+
+describe('isBookPosition', () => {
+  const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+
+  it('counts the standard starting position as in the book', () => {
+    // The corpus has no entry for the start position — it is in the book
+    // by definition, otherwise a fresh board reads as out of book.
+    expect(isBookPosition({}, START)).toBe(true);
+  });
+
+  it('otherwise requires a keyed position', () => {
+    const keyed = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq';
+    const book: OpeningBook = { [keyed]: 'B00|King Pawn' };
+    expect(isBookPosition(book, `${keyed} - 0 1`)).toBe(true);
+    expect(isBookPosition(book, START.replace(' w ', ' b '))).toBe(false);
   });
 });
 

@@ -262,6 +262,21 @@ describe('HistoricalEvidenceDialog', () => {
     expect(screen.queryByTestId('historical-evidence-card')).not.toBeInTheDocument();
   });
 
+  it('keeps the finder at a fixed height while details expand and collapse', async () => {
+    mockAnalyze.mockResolvedValue({ ...result, candidates: [candidate()] });
+
+    renderDialog();
+
+    await screen.findByTestId('historical-evidence-row');
+    // The two-pane row carries the height; expanding the card's Comparison
+    // details scrolls the pane instead of resizing the dialog.
+    const finder = screen.getByTestId('historical-evidence-finder');
+    expect(finder).toHaveClass('h-[min(60dvh,34rem)]');
+
+    fireEvent.click(screen.getByText(/Comparison details/));
+    expect(finder).toHaveClass('h-[min(60dvh,34rem)]');
+  });
+
   it('lists every candidate and previews the picked one in the detail pane', async () => {
     mockAnalyze.mockResolvedValue({
       ...result,

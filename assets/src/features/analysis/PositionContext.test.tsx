@@ -7,7 +7,11 @@ import {
   requestKey,
   resetHistoricalEvidenceCache,
 } from '@/features/historicalEvidence/evidenceCache';
-import type { HistoricalEvidenceResult } from '@/features/historicalEvidence/types';
+import type {
+  EvidenceCandidate,
+  GameMeta,
+  HistoricalEvidenceResult,
+} from '@/features/historicalEvidence/types';
 import type { LegalMove } from '@/lib/api';
 
 vi.mock('@/lib/api', async (importOriginal) => {
@@ -27,26 +31,106 @@ const OFF_BOOK_2 = 'rnbqkbnr/ppp1pppp/8/3p4/8/P7/1PPPPPPP/RNBQKBNR w KQkq - 0 2'
 const ENDGAME = '8/8/4k3/8/8/4K3/4P3/8 w - - 0 1';
 
 const book: OpeningBook = {
-  // The start position is keyed (the real book keys it), so it's in-book and
-  // its continuations (e4, d4) are the named rows.
-  'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq': 'A00|Start',
+  // The start position is deliberately NOT keyed — the real book has no
+  // entry for it (lichess's chess-openings starts after the first move);
+  // it counts as in-book by definition (see openings.ts). Its named
+  // continuations (e4, d4) are the rows.
   'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq': 'B00|King Pawn',
   'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq': 'A40|Queen Pawn',
 };
 
-function evidenceResult(games = 3, fen: string = OFF_BOOK): HistoricalEvidenceResult {
+function candidateStub(gid: number, meta?: Partial<GameMeta>): EvidenceCandidate {
+  return {
+    id: `exact-${gid}-1`,
+    strategy: 'exact',
+    stm: 'w',
+    fen: OFF_BOOK,
+    gid,
+    ply: 1,
+    game: {
+      gid,
+      white: `White${gid}`,
+      black: `Black${gid}`,
+      result: '1-0',
+      date: '2017.05.01',
+      eco: 'A00',
+      opening: 'Fixture',
+      white_elo: null,
+      black_elo: null,
+      event: 'Fixture',
+      time_control: '300+0',
+      site: 'fix',
+      ...meta,
+    },
+    position: {
+      dims: {
+        pawn_structure: 'same',
+        material: 'same',
+        piece_placement: { matches: 14, mismatches: 0, ref_pieces: 14 },
+        king_position: 'same',
+        side_to_move: 'same',
+        castling: 'same',
+      },
+      differences: [],
+    },
+    route: {
+      shared_plies: 1,
+      ref_ply: 1,
+      diverged_ply: null,
+      ref_move: null,
+      cand_move: null,
+      ply_gap: 0,
+      extra_white: [],
+      extra_black: [],
+      missing_white: [],
+      missing_black: [],
+    },
+    continuation: { moves: [], differences: [] },
+    families: {
+      membership: {
+        status: 'no_menu',
+        member_of: null,
+        sim: null,
+        family_occurrences: null,
+        family_games: null,
+      },
+      skeleton: {
+        white: {
+          status: 'no_menu',
+          family_id: null,
+          sim: null,
+          family_occurrences: null,
+          family_games: null,
+        },
+        black: {
+          status: 'no_menu',
+          family_id: null,
+          sim: null,
+          family_occurrences: null,
+          family_games: null,
+        },
+      },
+    },
+    historical: { occurrences: 1, games: 1, same_game_only: false },
+    flags: [],
+  };
+}
+
+// The fixture's exact-match count is 0 on purpose: the summary must read
+// the candidates (the dialog's examples), not the reference's games.
+function evidenceResult(candidateCount: number, fen: string = OFF_BOOK): HistoricalEvidenceResult {
   return {
     reference: {
       fen,
       occurrences: 1,
-      games,
+      games: 0,
       families: [],
       next_moves: [
         { move: 'd4', games: 3 },
         { move: 'e4', games: 1 },
       ],
     },
-    candidates: [],
+    candidates: Array.from({ length: candidateCount }, (_, i) => candidateStub(i + 1)),
     timings: {
       candidates_ms: 1,
       menu_ms: 1,
@@ -65,12 +149,14 @@ beforeEach(() => {
 
 function renderPanel({
   fen = START,
+  gameHeaders,
   onFindEvidence,
   onViewEvidence,
   onPlayMove,
   onHoverMove = vi.fn(),
 }: {
   fen?: string | null;
+  gameHeaders?: Record<string, string>;
   onFindEvidence?: () => Promise<HistoricalEvidenceResult | null>;
   onViewEvidence?: () => void;
   onPlayMove?: (move: LegalMove) => void;
@@ -80,6 +166,7 @@ function renderPanel({
     <PositionContext
       book={book}
       fen={fen}
+      gameHeaders={gameHeaders}
       onFindEvidence={onFindEvidence}
       onViewEvidence={onViewEvidence}
       onPlayMove={onPlayMove}
@@ -95,6 +182,15 @@ describe('PositionContext', () => {
     expect(screen.getByText('e4')).toBeInTheDocument();
     expect(screen.getByText('B00 · King Pawn')).toBeInTheDocument();
     expect(screen.queryByTestId('position-context-find')).not.toBeInTheDocument();
+  });
+
+  it('treats the unkeyed start position as in-book (no transposition framing)', () => {
+    // Regression: the chess-openings corpus has no entry for the bare start
+    // position — a fresh board must show the book, not "outside the book".
+    renderPanel();
+    expect(screen.getByTestId('reference-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('position-context-transpositions')).not.toBeInTheDocument();
+    expect(screen.queryByText('Possible transpositions')).not.toBeInTheDocument();
   });
 
   it('renders the find-CTA when the book has nothing', () => {
@@ -167,6 +263,28 @@ describe('PositionContext', () => {
     await screen.findByText('d4');
     fireEvent.click(screen.getByTestId('position-context-view-evidence'));
     expect(onViewEvidence).toHaveBeenCalled();
+  });
+
+  it('excludes the analyzed game itself from the summary count', async () => {
+    const onFindEvidence = vi.fn<() => Promise<HistoricalEvidenceResult | null>>(() =>
+      Promise.resolve({
+        ...evidenceResult(0),
+        candidates: [
+          candidateStub(1),
+          candidateStub(2),
+          candidateStub(3, { white: 'SelfW', black: 'SelfB', result: '1-0' }),
+        ],
+      }),
+    );
+    renderPanel({
+      fen: OFF_BOOK,
+      gameHeaders: { White: 'SelfW', Black: 'SelfB', Result: '1-0' },
+      onFindEvidence,
+    });
+    fireEvent.click(screen.getByTestId('position-context-find-button'));
+    // Three candidates returned, the analyzed game filtered out — the count
+    // matches the two rows the View dialog will list.
+    await screen.findByText('2 games');
   });
 
   it('offers a retry on failure', async () => {

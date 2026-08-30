@@ -40,9 +40,10 @@ const VARIATION_ECHO_TIMEOUT_MS = 5000;
  * itself is noise — you are already looking at it. Identified by the PGN
  * headers (players and result), which the corpus meta mirrors. Header
  * fields that differ (or are absent) keep the candidate: a partial match
- * is not enough to hide it.
+ * is not enough to hide it. Shared with the position-context summary, so
+ * the panel's count and this dialog's list never disagree.
  */
-function isAnalyzedGame(game: GameMeta, headers: Record<string, string>): boolean {
+export function isAnalyzedGame(game: GameMeta, headers: Record<string, string>): boolean {
   const white = headers.White;
   const black = headers.Black;
   const result = headers.Result;
@@ -402,8 +403,13 @@ export default function HistoricalEvidenceDialog({
               // The relevant-games finder: the decision menu reads the whole
               // result set; the list below picks the game shown in detail.
               // Stacked on narrow screens (the list caps its height), two
-              // panes from sm up.
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 sm:flex-row">
+              // panes from sm up. The height is fixed (the old carousel's
+              // slide-area guarantee): expanding a card's details or paging
+              // the list scrolls the panes — the dialog never resizes.
+              <div
+                className="flex h-[min(60dvh,34rem)] min-h-0 min-w-0 flex-col gap-3 sm:flex-row"
+                data-testid="historical-evidence-finder"
+              >
                 {/* Left pane: overview + the game list */}
                 <div className="flex shrink-0 flex-col overflow-y-auto rounded-control border border-line max-sm:max-h-44 sm:w-[210px]">
                   <DecisionMenu

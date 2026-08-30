@@ -433,6 +433,11 @@ disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none`
 | `lg`     | 44px   | 20px      | `body`   |
 | `icon`   | 32×32  | 0 (square)| `ui`     |
 | `iconLg` | 40×40  | 0 (square)| `lead`   |
+| `tb`     | 28px   | 6px       | `note`   |
+
+`tb` is the 36px header's compact action (v0's `tb-btn`) — header buttons
+must stay under the bar's height to center, so the game header uses `tb`,
+never `sm`.
 
 #### Additional Variants
 

@@ -188,6 +188,7 @@ export default function AnalysisSidebar({
           <PositionContext
             book={book}
             fen={current.fen ?? null}
+            gameHeaders={tree.headers}
             canPlay={canPlay && !editor.editing}
             onPlayMove={canPlay && !editor.editing ? onPlayMove : undefined}
             onHoverMove={onReferenceGhost}

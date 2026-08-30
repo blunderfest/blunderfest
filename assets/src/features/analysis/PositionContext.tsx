@@ -6,6 +6,7 @@ import { isBookPosition, type OpeningBook } from '@/features/analysis/openings';
 import ReferencePanel from '@/features/analysis/ReferencePanel';
 import DecisionMenu from '@/features/historicalEvidence/DecisionMenu';
 import { cachedResult, requestKey } from '@/features/historicalEvidence/evidenceCache';
+import { isAnalyzedGame } from '@/features/historicalEvidence/HistoricalEvidenceDialog';
 import type { HistoricalEvidenceResult } from '@/features/historicalEvidence/types';
 import { fetchBookCounts, type LegalMove } from '@/lib/api';
 
@@ -85,6 +86,7 @@ export default function PositionContext({
   fen,
   route = null,
   refPly = null,
+  gameHeaders = {},
   canPlay = true,
   onPlayMove,
   onHoverMove,
@@ -95,6 +97,9 @@ export default function PositionContext({
   fen: string | null;
   route?: string[] | null;
   refPly?: number | null;
+  /** The analyzed game's PGN headers — its own corpus appearances are
+      excluded from the summary count (the dialog filters them too). */
+  gameHeaders?: Record<string, string>;
   canPlay?: boolean;
   onPlayMove?: (move: LegalMove) => void;
   onHoverMove: (move: LegalMove | null) => void;
@@ -239,12 +244,20 @@ export default function PositionContext({
       ) : cached !== undefined ? (
         // Historical evidence already calculated — summary + View. The
         // sticky "Positional context" title already names the box, so the
-        // section goes straight to the counts (no repeated header).
+        // section goes straight to the counts (no repeated header). The
+        // count is what the View dialog will list — the visible candidates
+        // (the analyzed game itself filtered out), not the reference
+        // position's exact-match games: an off-book position has 0 exact
+        // games yet can still surface a full list of similar examples.
         <div className="flex min-h-0 flex-col" data-testid="position-context-evidence">
           {phaseNote}
           <section className="flex flex-col gap-0.5 px-3 py-2 text-left">
             <p className="m-0 text-note text-ink">
-              {t('positionContext.gamesCount', { count: cached.reference.games })}
+              {t('positionContext.gamesCount', {
+                count: cached.candidates.filter(
+                  (candidate) => !isAnalyzedGame(candidate.game, gameHeaders),
+                ).length,
+              })}
             </p>
           </section>
           <DecisionMenu
