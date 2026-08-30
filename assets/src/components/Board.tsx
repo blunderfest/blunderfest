@@ -514,7 +514,7 @@ export default function Board({
     <div
       ref={containerRef}
       data-board-grid
-      className={`relative grid aspect-square self-start grid-cols-8 grid-rows-8 select-none overflow-hidden rounded-md border border-board-edge shadow-board [-webkit-touch-callout:none] [container-type:inline-size] ${width === undefined ? 'w-[var(--board-size)]' : ''} ${interactive ? 'touch-none' : ''}`}
+      className={`relative grid aspect-square self-start grid-cols-8 grid-rows-8 select-none overflow-hidden rounded border border-board-edge [-webkit-touch-callout:none] [container-type:inline-size] ${width === undefined ? 'w-[var(--board-size)]' : ''} ${interactive ? 'touch-none' : ''}`}
       style={width !== undefined ? { width } : undefined}
       role={interactive ? 'group' : 'img'}
       aria-label={label}

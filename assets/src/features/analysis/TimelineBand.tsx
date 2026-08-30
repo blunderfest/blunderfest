@@ -221,7 +221,7 @@ export default function TimelineBand({
                 aria-selected={active.id === layer.id}
                 data-testid="timeline-layer-tab"
                 data-layer={layer.id}
-                className={`relative px-2 py-1 text-micro font-semibold uppercase tracking-[0.08em] transition-colors ${
+                className={`relative px-2 py-1 text-note font-semibold uppercase tracking-wide transition-colors ${
                   active.id === layer.id ? 'text-gold-hi' : 'text-faint hover:text-muted'
                 }`}
                 onClick={() => chooseLayer(layer.id)}

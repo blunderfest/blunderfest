@@ -205,8 +205,8 @@ export default function GameRail({
                   onDoubleClick={() => startRename(id, tree)}
                   className={`flex w-full flex-col rounded-control border px-2 py-1.5 text-left transition-colors ${
                     active
-                      ? 'border-gold-hi/60 bg-gold/10'
-                      : 'border-transparent hover:border-line hover:bg-raised'
+                      ? 'border-gold-hi/60 bg-gold/10 shadow-[inset_2px_0_0_var(--color-gold-hi)]'
+                      : 'border-line bg-panel hover:border-line-strong hover:bg-raised'
                   }`}
                 >
                   <span className="flex min-w-0 items-baseline gap-1.5">

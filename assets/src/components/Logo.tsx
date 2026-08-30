@@ -42,10 +42,7 @@ export default function Logo({ size = 'sm' }: { size?: 'sm' | 'md' | 'lg' }) {
           <path d={KNIGHT_PATH} fill="currentColor" fillRule="evenodd" />
         </svg>
       </span>
-      <span className={wordmark({ size })}>
-        <span className="text-ink">Blunder</span>
-        <span className="text-gold-hi">fest</span>
-      </span>
+      <span className={`${wordmark({ size })} text-ink`}>Blunderfest</span>
     </span>
   );
 }
