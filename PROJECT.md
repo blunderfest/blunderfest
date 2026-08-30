@@ -190,9 +190,15 @@ records the growth profile (`corpus_occurrences` is the big table) and what to
 watch. ADR-0035; architecture.md + ADR-0027 updated. 637 frontend + 423
 backend green; loading/error/ready states browser-verified.
 
-The ply-0 (start-position) occurrence recording — so the start position gets
-first-move popularity stats — is **approved but not yet done**; it's a corpus
-rebuild + extraction change, deliberately split out of this pass.
+**Start position now has first-move stats (same day).** Extraction emits each
+game's ply-0 (initial) position — every corpus game replays from the standard
+start (`Echecs.new_game()`), so the initial position is a constant. The
+artifacts were regenerated from `moves-N.tsv` (no PGN re-parse), the local
+corpus rebuilt, and prod backfilled with an idempotent insert (100k ply-0
+occurrences + the positions row). The start position now shows all 20 first
+moves with real W/D/B bars (e4 58 717 games, d4 25 076, …) — verified in the
+UI. Extraction + occurrences tests updated for the ply-0 counts. 423 backend
+green.
 
 ### Where we are (2026-08-13)
 

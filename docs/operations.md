@@ -77,6 +77,24 @@ split -l 600000 -d data/corpus/positions-100000.tsv /tmp/loadchunks/chunk_
   needs a few minutes after a machine start before it is reliable
   (boot-time DNS/network settling).
 
+### Corpus occurrences include ply 0
+
+Since 2026-08-30 the extraction emits each game's initial position (`ply 0`),
+so the start position has occurrences and first-move W/D/B stats. A future
+full reload via `mix corpus.extract` + `corpus.load` reproduces this; a
+targeted backfill of an existing corpus is a pair of idempotent inserts
+(every corpus game starts at the standard start):
+
+```sql
+INSERT INTO corpus_occurrences (key, gid, ply)
+SELECT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -', gid, 0
+FROM corpus_games ON CONFLICT DO NOTHING;
+INSERT INTO corpus_positions (key, pawn_hash, first_gid, first_ply)
+SELECT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -',
+       7637200972616230768, min(gid), 0
+FROM corpus_games ON CONFLICT (key) DO NOTHING;
+```
+
 ## Deploy
 
 - App: `blunderfest` on Fly.io → `https://blunderfest.fly.dev` and

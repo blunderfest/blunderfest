@@ -126,3 +126,10 @@ an ambient panel.
   fixed-height (`h-[min(60dvh,34rem)]`), so expanding a card's Comparison
   details scrolls the pane instead of resizing the modal (the carousel's
   fixed-slide-height guarantee, restored).
+- **Start position gets corpus stats (2026-08-30):** extraction now emits
+  the ply-0 (initial) position per game, so the start position has real
+  occurrences and its first moves get W/D/B bars like any other book
+  position — closing the "start shows no stats" hole. Every corpus game
+  replays from the standard start (`Echecs.new_game()`), so the initial
+  position is a constant; the artifact regeneration and the prod backfill
+  both derive ply-0 rows from `moves-N.tsv` without re-parsing the PGN.

@@ -324,9 +324,10 @@ so clients send nothing and hide the member list.
   model (`phaseOf` in `gamePhases.ts`: material/24 with pawns counted,
   `tablebaseEligible` ≤ 7 pieces, `likelyEndgame` ≤ 0.5) is shared with the
   eval chart's endgame shading (`endgameStart`). The start position counts
-  as in the book by definition — the corpus has no entry for it, so without
-  that convention a fresh board reads as out of book and its first moves
-  look like transpositions. The evidence summary counts the candidates the
+  as in the book by definition (the openings corpus never keys it), and
+  since the ply-0 extraction it has corpus occurrences too — the start
+  position's first moves get real W/D/B stats like any other book position.
+  The evidence summary counts the candidates the
   View dialog will list (the analyzed game itself filtered out), not the
   reference position's exact-match games: an off-book position has 0 exact
   games yet can still surface a full list of similar examples.

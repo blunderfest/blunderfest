@@ -193,9 +193,15 @@ defmodule Blunderfest.Corpus.Extraction do
 
         case Replay.replay(Echecs.new_game(), movetext) do
           {:ok, states} ->
+            # Prepend the initial position (ply 0) so the start position has
+            # occurrences too — otherwise the most-played position of all has
+            # no first-move stats. `states` are the positions after each ply;
+            # the initial state is the position before ply 1.
+            initial = Echecs.new_game()
+
             {occ_lines, key_lines, plies} =
-              states
-              |> Enum.with_index(1)
+              [initial | states]
+              |> Enum.with_index(0)
               |> Enum.reduce({[], [], 0}, fn {state, ply}, {occ, keys, n} ->
                 key = PositionKey.from_game(state)
                 hash_hex = PositionKey.to_hash128_hex(key)

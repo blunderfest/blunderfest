@@ -67,8 +67,8 @@ defmodule Blunderfest.Corpus.ExtractionTest do
 
     assert result.stats.games == 2
     assert result.stats.games_failed == 1
-    # game 1: 10 plies, game 2: 10 plies
-    assert result.stats.plies == 20
+    # game 1: 10 plies + the ply-0 start position, game 2: 10 plies + ply 0
+    assert result.stats.plies == 22
     assert result.wall_ms >= 0
 
     moves = File.read!(result.paths.moves)
@@ -91,20 +91,25 @@ defmodule Blunderfest.Corpus.ExtractionTest do
              "1\tPlayerA\tPlayerB\t1-0\t2017.05.01\tB32\tSicilian Defense\t2400\t2350\t" <>
                "Rated Blitz game\t300+0\tAbCdEf12\n"
 
-    # Keys: only replayed games contribute ply rows.
+    # Keys: only replayed games contribute ply rows; each game now leads with
+    # its ply-0 start position.
     key_rows = String.split(keys, "\n", trim: true)
-    assert length(key_rows) == 20
+    assert length(key_rows) == 22
 
     assert hd(key_rows) ==
+             "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -\t1\t0"
+
+    # The position after 1. e4 is ply 1 (the ply-0 start position precedes it).
+    assert Enum.at(key_rows, 1) ==
              "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -\t1\t1"
 
     # Occ: hash rows match the canonical key rows.
     occ_rows = String.split(occ, "\n", trim: true)
-    assert length(occ_rows) == 20
+    assert length(occ_rows) == 22
 
     assert hd(occ_rows) ==
-             PositionKey.to_hash128_hex("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -") <>
-               "\t1\t1"
+             PositionKey.to_hash128_hex("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -") <>
+               "\t1\t0"
 
     # A capturable EP square makes it into the key (game 1 ply 7: d4 cxd4...
     # no EP; ply 1 e4 has no capturer — check a real EP key instead: none in
@@ -113,7 +118,7 @@ defmodule Blunderfest.Corpus.ExtractionTest do
     stats = File.read!(result.paths.stats) |> Jason.decode!()
     assert stats["games"] == 2
     assert stats["games_failed"] == 1
-    assert stats["plies"] == 20
+    assert stats["plies"] == 22
     assert stats["wall_ms"] >= 0
   end
 

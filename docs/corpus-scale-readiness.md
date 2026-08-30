@@ -14,14 +14,15 @@ Ecto; UNLOGGED; rebuilt from the extraction artifacts):
 | Table | Rows | Growth driver |
 |---|---|---|
 | `corpus_positions` | one per **distinct** canonical position | ~distinct positions across all games |
-| `corpus_occurrences` | one per **(key, gid, ply) occurrence** | total positions seen — the big table |
-| `corpus_games` | one per game | game count |
+| `corpus_occurrences` | one per **(key, gid, ply) occurrence** | total positions seen — the big table || `corpus_games` | one per game | game count |
 | `corpus_moves` | one per game | game count |
 
 `corpus_occurrences` is the growth-sensitive one: it stores a row **per
 occurrence** (a game that reaches a position 5 times stores 5 rows), keyed by
-a 128-bit hex `key` text column with a btree on `key`. Everything else is a
-small, key- or gid-indexed lookup.
+a 128-bit hex `key` text column with a btree on `key`. Since the ply-0
+extraction (2026-08-30) every game also contributes its initial position
+(`ply = 0`), so the start position carries a full count of the corpus's
+games. Everything else is a small, key- or gid-indexed lookup.
 
 ## What the read path costs
 

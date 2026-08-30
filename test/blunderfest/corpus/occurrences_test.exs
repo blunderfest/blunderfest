@@ -188,12 +188,18 @@ defmodule Blunderfest.Corpus.OccurrencesTest do
     %{stats: stats} = Blunderfest.Corpus.Extraction.run(corpus, games: 2, out_dir: out)
     assert stats.games == 2
 
+    # 8 played plies + 2 ply-0 start-position rows (one per game); the start
+    # position is now a distinct position (shared by both games).
     assert Occurrences.rebuild(conn, out, 2) == %{
-             positions: 7,
-             occurrences: 8,
+             positions: 8,
+             occurrences: 10,
              games: 2,
              moves: 2
            }
+
+    # The start position has a ply-0 occurrence per game.
+    start_key = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
+    assert Occurrences.occurrences(conn, start_key) == [{1, 0}, {2, 0}]
 
     key = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -"
     assert Occurrences.occurrences(conn, key) == [{1, 1}, {2, 1}]
