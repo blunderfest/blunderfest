@@ -50,7 +50,20 @@ Export the dev one (or put it in your shell profile) before running
 
 ### Loading the corpus into production
 
-The prod load lessons (all fought the hard way, 2026-08-25):
+The corpus source is the **Lichess Broadcast Database** (ADR-0036) — the
+monthly `.pgn.zst` files under `https://database.lichess.org/broadcast/`
+(2020-01 → present), concatenated and filtered to standard-chess games
+(drop `[Variant]`≠Standard and any `[SetUp]` game), then
+`mix corpus.extract --games <n> --corpus <filtered.pgn>`. Extraction emits
+each game's initial position at ply 0 and skips non-standard games.
+
+**The full broadcast load does not fit the current prod Postgres** (the
+94M-row `corpus_occurrences.key` index build OOM-crashes the shared-cpu box;
+the COPY stage filled the volume into read-only mode). The broadcast corpus is
+therefore local-only for now; prod runs the 100k slice. See ADR-0036 and the
+scale-readiness trigger — the packed binary index is the path forward.
+
+The prod load lessons (all fought the hard way, 2026-08-25 and 2026-08-30):
 
 - **Don't load on the app machines.** They auto-stop (killing the load),
   deploys recreate them (wiping the ephemeral disk), and the shared vCPU
@@ -73,6 +86,19 @@ split -l 600000 -d data/corpus/positions-100000.tsv /tmp/loadchunks/chunk_
   emergency read-only mid-build (`cannot execute CREATE INDEX in a
   read-only transaction`, flapping until space freed). The volume is
   extended to 10GB (`flyctl volumes extend`).
+- **Read-only recovery (2026-08-30):** when the volume fills, the cluster
+  flips to read-only (`transaction_read_only = on`, everything fails with
+  `cannot execute … in a read-only transaction`). Recovery: extend the volume
+  past the threshold (`flyctl volumes extend`), then `rm /data/readonly.lock`
+  via `flyctl ssh console -a blunderfest-db`, then `flyctl machine restart`.
+  Fly volumes only grow — there is no shrink; the broadcast-load volume is at
+  64GB (extended during the failed reload) and stays there until the packed
+  index replaces PG.
+- **Temporary scale-up for big loads:** the shared-cpu-1x/1GB box OOMs on the
+  94M-row index build; it was scaled to shared-cpu-4x/8GB for the attempt and
+  back down after (`flyctl machine update <id> -a blunderfest-db --vm-cpus N
+  --vm-memory M --yes`). Not a fix — even 8GB could not build the occurrences
+  key index; the corpus has outgrown PG for this shape.
 - Machine-side `bin/blunderfest rpc` is for quick probes; the app's pool
   needs a few minutes after a machine start before it is reliable
   (boot-time DNS/network settling).

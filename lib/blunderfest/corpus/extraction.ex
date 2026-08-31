@@ -29,6 +29,7 @@ defmodule Blunderfest.Corpus.Extraction do
   @type stats :: %{
           games: non_neg_integer(),
           games_failed: non_neg_integer(),
+          games_skipped: non_neg_integer(),
           plies: non_neg_integer(),
           failures: [{non_neg_integer(), term(), binary()}]
         }
@@ -175,77 +176,90 @@ defmodule Blunderfest.Corpus.Extraction do
     File.open(path, [:raw, :write, {:delayed_write, 16 * 1024 * 1024, 10_000}])
   end
 
-  defp empty_stats, do: %{games: 0, games_failed: 0, plies: 0, failures: []}
+  defp empty_stats, do: %{games: 0, games_failed: 0, games_skipped: 0, plies: 0, failures: []}
 
   defp process_batch(games) do
     games
     |> Enum.reduce(
       %{occ: [], games: [], moves: [], keys: [], stats: empty_stats()},
       fn {{headers, movetext}, gid}, acc ->
-        sans = Replay.scan_sans(movetext)
+        case initial_game(headers) do
+          :skip ->
+            # A non-standard game (Chess960 / From-Position / etc.): its
+            # positions are meaningless for a standard-chess book and would be
+            # silently mis-keyed if replayed from the standard start. Dropped.
+            %{acc | stats: %{acc.stats | games_skipped: acc.stats.games_skipped + 1}}
 
-        moves_line = [
-          Integer.to_string(gid),
-          ?\t,
-          Enum.intersperse(sans, ?\s),
-          ?\n
-        ]
+          {:ok, initial} ->
+            sans = Replay.scan_sans(movetext)
 
-        case Replay.replay(Echecs.new_game(), movetext) do
-          {:ok, states} ->
-            # Prepend the initial position (ply 0) so the start position has
-            # occurrences too — otherwise the most-played position of all has
-            # no first-move stats. `states` are the positions after each ply;
-            # the initial state is the position before ply 1.
-            initial = Echecs.new_game()
+            moves_line = [
+              Integer.to_string(gid),
+              ?\t,
+              Enum.intersperse(sans, ?\s),
+              ?\n
+            ]
 
-            {occ_lines, key_lines, plies} =
-              [initial | states]
-              |> Enum.with_index(0)
-              |> Enum.reduce({[], [], 0}, fn {state, ply}, {occ, keys, n} ->
-                key = PositionKey.from_game(state)
-                hash_hex = PositionKey.to_hash128_hex(key)
+            case Replay.replay(initial, movetext) do
+              {:ok, states} ->
+                # Prepend the game's initial position (ply 0) so the start
+                # position has occurrences too — otherwise the most-played
+                # position of all has no first-move stats. `states` are the
+                # positions after each ply; `initial` is the position before
+                # ply 1.
+                {occ_lines, key_lines, plies} =
+                  [initial | states]
+                  |> Enum.with_index(0)
+                  |> Enum.reduce({[], [], 0}, fn {state, ply}, {occ, keys, n} ->
+                    key = PositionKey.from_game(state)
+                    hash_hex = PositionKey.to_hash128_hex(key)
 
-                occ = [
-                  [hash_hex, ?\t, Integer.to_string(gid), ?\t, Integer.to_string(ply), ?\n] | occ
-                ]
+                    occ = [
+                      [hash_hex, ?\t, Integer.to_string(gid), ?\t, Integer.to_string(ply), ?\n]
+                      | occ
+                    ]
 
-                keys = [
-                  [key, ?\t, Integer.to_string(gid), ?\t, Integer.to_string(ply), ?\n] | keys
-                ]
+                    keys = [
+                      [key, ?\t, Integer.to_string(gid), ?\t, Integer.to_string(ply), ?\n] | keys
+                    ]
 
-                {occ, keys, n + 1}
-              end)
+                    {occ, keys, n + 1}
+                  end)
 
-            stats = %{
-              acc.stats
-              | games: acc.stats.games + 1,
-                plies: acc.stats.plies + plies
-            }
+                stats = %{
+                  acc.stats
+                  | games: acc.stats.games + 1,
+                    plies: acc.stats.plies + plies
+                }
 
-            %{
-              acc
-              | occ: [Enum.reverse(occ_lines) | acc.occ],
-                keys: [Enum.reverse(key_lines) | acc.keys],
-                moves: [moves_line | acc.moves],
-                games: [game_line(headers, gid) | acc.games],
-                stats: stats
-            }
+                %{
+                  acc
+                  | occ: [Enum.reverse(occ_lines) | acc.occ],
+                    keys: [Enum.reverse(key_lines) | acc.keys],
+                    moves: [moves_line | acc.moves],
+                    games: [game_line(headers, gid) | acc.games],
+                    stats: stats
+                }
 
-          {:error, reason, san} ->
-            failures =
-              if length(acc.stats.failures) < 5,
-                do: acc.stats.failures ++ [{gid, reason, san}],
-                else: acc.stats.failures
+              {:error, reason, san} ->
+                failures =
+                  if length(acc.stats.failures) < 5,
+                    do: acc.stats.failures ++ [{gid, reason, san}],
+                    else: acc.stats.failures
 
-            stats = %{acc.stats | games_failed: acc.stats.games_failed + 1, failures: failures}
+                stats = %{
+                  acc.stats
+                  | games_failed: acc.stats.games_failed + 1,
+                    failures: failures
+                }
 
-            %{
-              acc
-              | moves: [moves_line | acc.moves],
-                games: [game_line(headers, gid) | acc.games],
-                stats: stats
-            }
+                %{
+                  acc
+                  | moves: [moves_line | acc.moves],
+                    games: [game_line(headers, gid) | acc.games],
+                    stats: stats
+                }
+            end
         end
       end
     )
@@ -260,6 +274,20 @@ defmodule Blunderfest.Corpus.Extraction do
     end)
   end
 
+  # Whether a game is a standard-chess game from the standard start. We only
+  # keep those: a non-Standard Variant (Chess960) or any SetUp tag
+  # (From-Position) starts from a position the standard-chess book has no use
+  # for, and replaying it from the standard start would silently mis-key every
+  # position. Such games are skipped, not extracted.
+  defp initial_game(headers) do
+    if Map.get(headers, "Variant", "Standard") == "Standard" and
+         Map.get(headers, "SetUp") == nil do
+      {:ok, Echecs.new_game()}
+    else
+      :skip
+    end
+  end
+
   defp game_line(headers, gid) do
     [
       Integer.to_string(gid),
@@ -270,15 +298,15 @@ defmodule Blunderfest.Corpus.Extraction do
       ?\t,
       clean(Map.get(headers, "Result", "*")),
       ?\t,
-      clean(Map.get(headers, "UTCDate", "?")),
+      clean(game_date(headers)),
       ?\t,
       clean(Map.get(headers, "ECO", "?")),
       ?\t,
       clean(Map.get(headers, "Opening", "?")),
       ?\t,
-      clean(Map.get(headers, "WhiteElo", "?")),
+      clean(elo(Map.get(headers, "WhiteElo", "?"))),
       ?\t,
-      clean(Map.get(headers, "BlackElo", "?")),
+      clean(elo(Map.get(headers, "BlackElo", "?"))),
       ?\t,
       clean(Map.get(headers, "Event", "?")),
       ?\t,
@@ -287,6 +315,16 @@ defmodule Blunderfest.Corpus.Extraction do
       site_id(Map.get(headers, "Site", "?")),
       ?\n
     ]
+  end
+
+  # An Elo is an integer; anything else ("?", "N/A", "") becomes "?" — the
+  # unknown marker the loader maps to NULL (the COPY integer columns reject
+  # non-numeric text).
+  defp elo(v) do
+    case Integer.parse(v) do
+      {_, ""} -> v
+      _ -> "?"
+    end
   end
 
   defp site_id(site) do
@@ -298,16 +336,27 @@ defmodule Blunderfest.Corpus.Extraction do
       acc
       | games: acc.games + batch_stats.games,
         games_failed: acc.games_failed + batch_stats.games_failed,
+        games_skipped: acc.games_skipped + batch_stats.games_skipped,
         plies: acc.plies + batch_stats.plies,
         failures: Enum.take(acc.failures ++ batch_stats.failures, 5)
     }
   end
 
+  # The game's date: `UTCDate` (the lichess export convention) falling back to
+  # `Date` (the Seven-Tag-Roster field the broadcast database uses).
+  defp game_date(headers) do
+    Map.get(headers, "UTCDate") || Map.get(headers, "Date") || "?"
+  end
+
   defp clean(nil), do: "?"
 
+  # PGN header text → one COPY field: tabs/newlines/CRs become spaces, and a
+  # backslash becomes a forward slash (COPY's text format treats `\` as an
+  # escape — a raw backslash before a tab/newline corrupts the row).
   defp clean(v) when is_binary(v) do
     v
     |> String.replace(["\t", "\n", "\r"], " ")
+    |> String.replace("\\", "/")
     |> String.trim()
     |> then(fn s ->
       if String.valid?(s), do: s, else: :unicode.characters_to_binary(s, :latin1, :utf8)

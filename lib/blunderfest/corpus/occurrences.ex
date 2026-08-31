@@ -100,6 +100,26 @@ defmodule Blunderfest.Corpus.Occurrences do
   end
 
   @doc """
+  Total occurrence and independent-game counts for a canonical key, in one
+  query (no per-occurrence fetch — the hot-key path stays cheap).
+  """
+  @spec counts_for(conn(), String.t()) :: %{
+          occurrences: non_neg_integer(),
+          games: non_neg_integer()
+        }
+  def counts_for(conn, key) do
+    %{rows: [[occ, games]]} =
+      Postgrex.query!(
+        conn,
+        "SELECT COUNT(*), COUNT(DISTINCT gid) FROM corpus_occurrences WHERE key = $1",
+        [key],
+        timeout: :infinity
+      )
+
+    %{occurrences: occ, games: games}
+  end
+
+  @doc """
   The position row for a canonical key (`%{pawn_hash, first_gid, first_ply}`)
   or nil when the corpus has never seen the position.
   """
@@ -185,6 +205,24 @@ defmodule Blunderfest.Corpus.Occurrences do
       [[sans]] -> String.split(sans, " ", trim: true)
       [] -> []
     end
+  end
+
+  @doc """
+  Mainline SAN lists for a batch of gids, one query — `%{gid => sans_list}`.
+  The family clustering's per-occurrence continuation fetch stays a single
+  round trip (a hot key's bounded occurrence list → one query).
+  """
+  @spec moves_for(conn(), [pos_integer()]) :: %{pos_integer() => [String.t()]}
+  def moves_for(conn, gids) do
+    %{rows: rows} =
+      Postgrex.query!(
+        conn,
+        "SELECT gid, sans FROM corpus_moves WHERE gid = ANY($1)",
+        [Enum.uniq(gids)],
+        timeout: :infinity
+      )
+
+    Map.new(rows, fn [gid, sans] -> {gid, String.split(sans, " ", trim: true)} end)
   end
 
   ## Schema

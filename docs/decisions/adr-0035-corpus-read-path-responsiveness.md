@@ -31,8 +31,12 @@ Two concrete problems fell out:
   counts as a draw" rule move into SQL `FILTER` clauses; the output shape is
   unchanged (verified identical against the previous implementation).
 - **Cache `/api/book` responses.** A position's stats are content-addressed by
-  the FEN (the corpus only changes on a rebuild), so responses carry
-  `Cache-Control: private, max-age=86400` to short-circuit revisits.
+  the FEN, so responses carry `Cache-Control: private, max-age=300` to
+  short-circuit repeat visits. The cache is deliberately short: the tables
+  change only on a rebuild, but a long max-age would serve pre-rebuild numbers
+  for its duration — discovered when the corpus re-source (ADR-0036) showed a
+  day's stale stats. Five minutes balances the cursor's revisits against
+  rebuild freshness.
 - **Make the states visible.** `ReferencePanel` tracks a `loading / ready /
   failed` status: a pulsing gold dot + "Loading corpus statistics…" header with
   a skeleton bar per row while in flight, and a red "Couldn't load corpus

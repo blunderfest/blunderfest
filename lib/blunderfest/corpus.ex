@@ -32,6 +32,10 @@ defmodule Blunderfest.Corpus do
   @spec occurrences(String.t()) :: [{pos_integer(), pos_integer()}] | {:error, :not_configured}
   def occurrences(key), do: GenServer.call(__MODULE__, {:occurrences, key}, :infinity)
 
+  @doc "Total occurrence and independent-game counts for a canonical key, one query."
+  @spec occurrence_counts(String.t()) :: map() | {:error, :not_configured}
+  def occurrence_counts(key), do: GenServer.call(__MODULE__, {:occurrence_counts, key}, :infinity)
+
   @doc "The position row for a canonical key, or nil if never seen."
   @spec position(String.t()) :: map() | nil | {:error, :not_configured}
   def position(key), do: GenServer.call(__MODULE__, {:position, key}, :infinity)
@@ -47,6 +51,10 @@ defmodule Blunderfest.Corpus do
   @doc "Mainline SAN list of a game (empty when unknown)."
   @spec moves(pos_integer()) :: [String.t()] | {:error, :not_configured}
   def moves(gid), do: GenServer.call(__MODULE__, {:moves, gid}, :infinity)
+
+  @doc "Mainline SAN lists for a batch of gids, one query — `%{gid => sans_list}`."
+  @spec moves_for([pos_integer()]) :: %{pos_integer() => [String.t()]} | {:error, :not_configured}
+  def moves_for(gids), do: GenServer.call(__MODULE__, {:moves_for, gids}, :infinity)
 
   @doc """
   The opening-book next-move stats for a FEN (games + W/D/B per move),
@@ -129,7 +137,17 @@ defmodule Blunderfest.Corpus do
   end
 
   def handle_call({fun, _arg}, _from, %{pool: nil} = state)
-      when fun in [:occurrences, :position, :pawn_bucket, :game, :moves, :book, :book_counts] do
+      when fun in [
+             :occurrences,
+             :position,
+             :pawn_bucket,
+             :game,
+             :moves,
+             :moves_for,
+             :book,
+             :book_counts,
+             :occurrence_counts
+           ] do
     {:reply, {:error, :not_configured}, state}
   end
 
@@ -169,6 +187,10 @@ defmodule Blunderfest.Corpus do
     {:reply, Occurrences.occurrences(state.pool, key), state}
   end
 
+  def handle_call({:occurrence_counts, key}, _from, state) do
+    {:reply, Occurrences.counts_for(state.pool, key), state}
+  end
+
   def handle_call({:position, key}, _from, state) do
     {:reply, Occurrences.position(state.pool, key), state}
   end
@@ -183,6 +205,10 @@ defmodule Blunderfest.Corpus do
 
   def handle_call({:moves, gid}, _from, state) do
     {:reply, Occurrences.moves(state.pool, gid), state}
+  end
+
+  def handle_call({:moves_for, gids}, _from, state) do
+    {:reply, Occurrences.moves_for(state.pool, gids), state}
   end
 
   def handle_call(:counts, _from, %{pool: nil} = state) do

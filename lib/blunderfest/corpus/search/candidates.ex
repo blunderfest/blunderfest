@@ -54,8 +54,22 @@ defmodule Blunderfest.Corpus.Search.Candidates do
   def generate(ref_key, opts \\ []) do
     ref = Features.from_key(ref_key)
 
-    exact_occurrences = Blunderfest.Corpus.occurrences(ref_key)
-    exact_total = length(exact_occurrences)
+    # The occurrence list feeds the family clustering and used to drive the
+    # counts/next-moves. It is bounded (families are heuristic; the exact
+    # counts and next-move distribution come from SQL in the pipeline), so a
+    # hot key like the start position never materializes a million rows.
+    occurrence_limit = Keyword.get(opts, :occurrence_limit, 2000)
+
+    exact_occurrences =
+      ref_key
+      |> Blunderfest.Corpus.occurrences()
+      |> Enum.take(occurrence_limit)
+
+    exact_total =
+      case Blunderfest.Corpus.occurrence_counts(ref_key) do
+        {:error, _} -> length(exact_occurrences)
+        %{occurrences: n} -> n
+      end
 
     exact =
       exact_occurrences
@@ -66,9 +80,6 @@ defmodule Blunderfest.Corpus.Search.Candidates do
 
     %{
       exact: exact,
-      # The complete occurrence list — the pipeline builds the decision
-      # menu and the reference counts from it; the `exact` cap above is a
-      # display concern only.
       exact_occurrences: exact_occurrences,
       structural: structural_candidates(ref, opts),
       reference: ref

@@ -77,3 +77,4 @@ here, or point to the ADR that superseded this one.
 | [0033](adr-0033-null-moves-as-tree-nodes.md) | Null moves ("passes") modeled as ordinary tree nodes via `move_at_ply` with `from/to: nil`, emitted and resolved as `'--'` | Accepted (2026-08-29) |
 | [0034](adr-0034-flat-frame-tabbed-timeline.md) | Flat full-bleed room frame (hairlines, not cards) + the timeline band as a single tabbed chart | Accepted (2026-08-29) |
 | [0035](adr-0035-corpus-read-path-responsiveness.md) | Corpus read-path responsiveness: book stats aggregated in SQL, `/api/book` cache headers, visible loading/error states; serialization left to the packed-index trigger | Accepted (2026-08-30) |
+| [0036](adr-0036-corpus-resourced-to-broadcast-database.md) | Corpus re-sourced to the Lichess Broadcast Database (~1.17M elite OTB games); drop non-standard games, no Elo floor; extraction variant/FEN-correct | Accepted (2026-08-30) |

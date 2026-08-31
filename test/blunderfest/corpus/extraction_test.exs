@@ -142,4 +142,101 @@ defmodule Blunderfest.Corpus.ExtractionTest do
     assert result.stats.games == 2
     assert String.split(File.read!(result.paths.games), "\n", trim: true) |> length() == 2
   end
+
+  test "non-standard games are skipped; Date is the UTCDate fallback", %{
+    tmp_dir: tmp_dir
+  } do
+    # A standard game, a Chess960 game, a From-Position game, and a standard
+    # game carrying only Date (no UTCDate). Only the two standard games land
+    # in the corpus; the variant/setup games are counted as skipped, and the
+    # Date-only game keeps its date.
+    fixture = """
+    [Event "Standard"]
+    [White "A"]
+    [Black "B"]
+    [Result "1-0"]
+    [UTCDate "2026.01.01"]
+
+    1. e4 e5 1-0
+
+    [Event "Chess960"]
+    [Variant "Chess960"]
+    [White "C"]
+    [Black "D"]
+    [Result "1-0"]
+
+    1. e4 e5 1-0
+
+    [Event "From Position"]
+    [Variant "From Position"]
+    [SetUp "1"]
+    [FEN "8/8/8/8/8/8/8/K6k w - - 0 1"]
+    [White "E"]
+    [Black "F"]
+    [Result "0-1"]
+
+    1. Kb1 0-1
+
+    [Event "Date only"]
+    [White "G"]
+    [Black "H"]
+    [Result "1/2-1/2"]
+    [Date "2026.02.03"]
+
+    1. d4 d5 1/2-1/2
+    """
+
+    corpus = Path.join(tmp_dir, "mixed.pgn")
+    File.write!(corpus, fixture)
+    out = Path.join(tmp_dir, "out")
+
+    result = Extraction.run(corpus, games: 4, out_dir: out)
+
+    assert result.stats.games == 2
+    assert result.stats.games_skipped == 2
+    assert result.stats.games_failed == 0
+
+    games = File.read!(result.paths.games)
+    # Only the two standard games; the variant/from-position games are absent.
+    assert String.split(games, "\n", trim: true) |> length() == 2
+    assert games =~ "\tA\tB\t"
+    assert games =~ "\tG\tH\t"
+    refute games =~ "\tC\tD\t"
+    refute games =~ "\tE\tF\t"
+
+    # The Date-only game carries its date (UTCDate fell back to Date).
+    assert games =~ "\tG\tH\t1/2-1/2\t2026.02.03\t"
+
+    # The stats JSON records the skip count.
+    stats = File.read!(result.paths.stats) |> Jason.decode!()
+    assert stats["games_skipped"] == 2
+  end
+
+  test "header values are sanitized for COPY (backslashes → slashes)", %{
+    tmp_dir: tmp_dir
+  } do
+    # A raw backslash before a tab/newline makes COPY's text format treat it
+    # as an escape and corrupt the row (bad_copy_file_format on load). The
+    # extractor rewrites it to a forward slash.
+    fixture = """
+    [Event "T\\ournament"]
+    [White "A"]
+    [Black "B"]
+    [Result "1-0"]
+    [UTCDate "2026.01.01"]
+
+    1. e4 e5 1-0
+    """
+
+    corpus = Path.join(tmp_dir, "backslash.pgn")
+    File.write!(corpus, fixture)
+    out = Path.join(tmp_dir, "out")
+
+    result = Extraction.run(corpus, games: 1, out_dir: out)
+    games = File.read!(result.paths.games)
+
+    assert result.stats.games == 1
+    assert games =~ "T/ournament"
+    refute games =~ "T\\ournament"
+  end
 end

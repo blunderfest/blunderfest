@@ -14,8 +14,14 @@ Ecto; UNLOGGED; rebuilt from the extraction artifacts):
 | Table | Rows | Growth driver |
 |---|---|---|
 | `corpus_positions` | one per **distinct** canonical position | ~distinct positions across all games |
-| `corpus_occurrences` | one per **(key, gid, ply) occurrence** | total positions seen — the big table || `corpus_games` | one per game | game count |
+| `corpus_occurrences` | one per **(key, gid, ply) occurrence** | total positions seen — the big table |
+| `corpus_games` | one per game | game count |
 | `corpus_moves` | one per game | game count |
+
+Current corpus in **production**: the 100k-game 2017-05 slice (restored after
+the broadcast reload failed — see the trigger note below). The **Lichess
+Broadcast Database** (~1.17M elite OTB games / ~94M occurrences) is extracted
+and verified locally and is the intended first payload for the packed index.
 
 `corpus_occurrences` is the growth-sensitive one: it stores a row **per
 occurrence** (a game that reaches a position 5 times stores 5 rows), keyed by
@@ -68,15 +74,21 @@ p50 12–16 µs) when **any** of:
 - a measured query mix needs the flatfile's tail latency (PG p99 degrades as
   `corpus_occurrences` outgrows the buffer cache).
 
-None apply at 100k games. The 1 GB prod VM and the single-region corpus make
-PG the right size today.
+**Trigger reached (2026-08-30, ADR-0036):** the ~1.17M-game broadcast corpus
+was extracted (94.3M occurrences) and the prod reload failed operationally —
+the `corpus_occurrences.key` index build (94M text keys) OOM-crashed the
+shared-cpu Postgres repeatedly, and the COPY stage filled the volume into
+read-only mode. Prod was restored to the 100k corpus; the broadcast corpus
+lives locally and is the intended first payload for the packed index. The
+lesson: at this size the *load* path (index builds on the live box) is the
+wall, before any query latency question — and 10M+ would be far worse.
 
 ## What to watch as it grows
 
 1. **`corpus_occurrences` size vs. buffer cache.** Once the `key` btree no
    longer fits in memory, `WHERE key = $1` lookups go from ~1 ms to disk-bound.
-2. **Evidence-pipeline tail latency** (ADR-0027's 170–354 ms) — watch the
-   candidate caps and the structural-bucket fan-out as distinct positions
+2. **Evidence-pipeline tail latency** (ADR-0027's 170–354 ms at 100k) — watch
+   the candidate caps and the structural-bucket fan-out as distinct positions
    multiply.
 3. **GenServer queue depth** — if book/evidence requests start visibly
    queuing behind each other under real concurrency, that is the serialization

@@ -20,11 +20,11 @@ defmodule BlunderfestWeb.BookController do
         |> json(%{errors: %{code: "corpus_unavailable"}})
 
       rows ->
-        # A position's stats are content-addressed by the FEN (the corpus
-        # only changes on a rebuild), so cache them for a day; a cold tab's
-        # first hit still revalidates fast.
+        # A short cache: eases the cursor's repeat visits without pinning a
+        # stale corpus — the tables change only on a rebuild, but a long
+        # max-age would serve the pre-rebuild numbers for a day.
         conn
-        |> put_resp_header("cache-control", "private, max-age=86400")
+        |> put_resp_header("cache-control", "private, max-age=300")
         |> json(%{moves: rows})
     end
   end

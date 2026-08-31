@@ -200,6 +200,33 @@ moves with real W/D/B bars (e4 58 717 games, d4 25 076, …) — verified in the
 UI. Extraction + occurrences tests updated for the ply-0 counts. 423 backend
 green.
 
+### Milestone (2026-08-30 — corpus re-source: pipeline ready, prod deferred to the packed index)
+
+The corpus pipeline moved to the **Lichess Broadcast Database** (~1.17M elite
+OTB games, 2020-01 → 2026-07, real Elo/FIDE IDs, `[%eval]`/`[%clk]`) — the
+quality jump the roadmap wanted. Extraction was made variant/FEN-correct
+(skips Chess960/From-Position, `Date` fallback, Elo `N/A`→NULL, COPY-safe
+backslash handling) and emits ply-0 per game. The broadcast corpus extracted
+cleanly (1,169,353 games / 94.3M occurrences / 72.4M positions) and is
+**fully loaded and verified locally** (start position e4 = 569 149 games; Ruy
+tabiya 3 736; evidence <1s).
+
+**But the prod reload hit the scale wall and was abandoned.** The 94M-row
+`corpus_occurrences.key` index build OOM-crashed the shared-cpu Postgres
+repeatedly (even scaled to 8GB) and the COPY stage filled the volume into
+read-only mode (volume extended 10→64GB, machine scaled up then back down).
+Prod is restored to the 100k slice and healthy. The verdict: if 1M is this
+painful on PG, 10M+ is untenable — **the packed binary index is now the plan**
+(Spike 08). The broadcast corpus is its first payload.
+
+A **hot-key fan-out bug** surfaced and was fixed (applies to the 100k corpus
+too): the start position's ~1.17M ply-0 occurrences made the evidence pipeline
+materialize and re-query every occurrence. Counts and the next-move
+distribution are now SQL-backed; the family clustering reads a bounded,
+batched occurrence list. `/api/book` cache is 5 min (the day-long max-age
+served stale stats across a rebuild). ADR-0036, ADR-0035 corrected;
+operations.md + scale-readiness updated. 425 backend + 637 frontend green.
+
 ### Where we are (2026-08-13)
 
 Milestones 1–6 done. Recently landed: one process per room (ADR-0012),

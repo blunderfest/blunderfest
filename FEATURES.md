@@ -73,7 +73,7 @@ Everything Blunderfest has, plans, or could plausibly grow into. Status marks:
 
 - 🚧 Position search: exact *and* similar (shift/substitute/add/remove/color flip), user-configurable weights, weight-agnostic index — its own `#/search` destination, results open into rooms as a game or variation (ADR-0024)
 - 🚧 Result labels decomposed from the winning transformation ("pawn h3→h2", "colors reversed")
-- 🚧 Bulk corpus import (e.g. Millionbase) — a search feature is meaningless on a tiny corpus
+- 🚧 Bulk corpus import: the Lichess Broadcast Database (~1.17M elite OTB games) extracted + verified locally (ADR-0036); prod load deferred to the packed binary index (the 94M-row PG index build doesn't fit the live box)
 - ✅ Reference (ADR-0024, as amended by ADR-0032): per-position continuation rows in the Moves tab's opening-book block — they play the move on click (broadcast, like the board) and preview it as a ghost arrow on hover; placeholder when off-book — v0 runs on the static opening book (named continuations, no statistics)
 - 🚧 Reference corpus upgrade: games · W/D/B% statistics per continuation (spike-gated)
 - 💡 Reference game lists (who played this position, best-rated games) — extends the Moves opening-book block

@@ -20,7 +20,6 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
 
   alias Blunderfest.Corpus.Analysis.{
     Counts,
-    DecisionMenu,
     Differences,
     Families,
     Features,
@@ -74,18 +73,36 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
 
     {menu_us, menu} =
       :timer.tc(fn ->
+        # One batch query for the bounded occurrence list's continuations —
+        # a hot key's family build is one round trip, not N GenServer calls.
+        moves_map =
+          gen.exact_occurrences
+          |> Enum.map(fn {gid, _ply} -> gid end)
+          |> then(fn gids ->
+            case Blunderfest.Corpus.moves_for(gids) do
+              {:error, _} -> %{}
+              map -> map
+            end
+          end)
+
         gen.exact_occurrences
         |> Enum.map(fn {gid, ply} ->
-          {gid, ply, Blunderfest.Corpus.moves(gid) |> drop_ply(ply)}
+          {gid, ply, Map.get(moves_map, gid, []) |> drop_ply(ply)}
         end)
         |> Families.build(family_cfg)
       end)
 
-    # The raw next-move distribution (independent games per first move).
-    # Computed alongside the family menu — families chain hot menus into
-    # one blob (Spike 07), so this correct-by-construction distribution is
-    # the reliable overview; families stay untouched per experiment §13.
-    next_moves = DecisionMenu.from_occurrences(gen.exact_occurrences, &Blunderfest.Corpus.moves/1)
+    # The next-move distribution is computed in SQL via the corpus Book
+    # (independent games per move — the same per-(gid,move) dedupe the
+    # per-occurrence path used, without fetching every occurrence).
+    next_moves =
+      case Blunderfest.Corpus.book(Features.fen(ref_key)) do
+        {:error, _} ->
+          []
+
+        rows ->
+          Enum.map(rows, fn row -> %{move: row.move, games: row.games} end)
+      end
 
     ref_window =
       if ref_moves do
@@ -94,7 +111,13 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
         []
       end
 
-    ref_counts = Counts.counts(gen.exact_occurrences)
+    # Total occurrence/game counts in one SQL query (the hot-key path does
+    # not materialize the occurrence list).
+    ref_counts =
+      case Blunderfest.Corpus.occurrence_counts(ref_key) do
+        {:error, _} -> Counts.counts(gen.exact_occurrences)
+        counts -> counts
+      end
 
     {evidence_us, candidates} =
       :timer.tc(fn ->
