@@ -45,9 +45,12 @@ defmodule Blunderfest.Corpus.Search.Candidates do
   @doc """
   Generates the capped candidate lists for a reference key. Returns
   `%{exact: [candidate], structural: [candidate], reference: Features.t()}`.
+  The full result also carries `:exact_occurrences` (the bounded occurrence
+  list the pipeline's family build consumes).
   """
   @spec generate(String.t(), keyword()) :: %{
           exact: [candidate],
+          exact_occurrences: [{pos_integer(), pos_integer()}],
           structural: [candidate],
           reference: Features.t()
         }

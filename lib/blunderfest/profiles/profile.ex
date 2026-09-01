@@ -17,4 +17,6 @@ defmodule Blunderfest.Profiles.Profile do
     field(:created_at, :utc_datetime_usec)
     field(:accounts, {:array, :map}, virtual: true, default: [])
   end
+
+  @type t :: %__MODULE__{}
 end

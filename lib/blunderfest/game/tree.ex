@@ -28,8 +28,8 @@ defmodule Blunderfest.Game.Node do
   ]
 
   @type t :: %__MODULE__{
-          id: non_neg_integer(),
-          ply: non_neg_integer(),
+          id: non_neg_integer() | nil,
+          ply: pos_integer() | nil,
           san: String.t(),
           from: String.t() | nil,
           to: String.t() | nil,
