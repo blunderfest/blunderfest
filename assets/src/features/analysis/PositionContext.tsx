@@ -156,6 +156,7 @@ export default function PositionContext({
       return;
     }
     try {
+      setFindStatus({ kind: 'loading' });
       const result = await onFindEvidence();
       if (result !== null) {
         setResolved(result);
@@ -242,24 +243,13 @@ export default function PositionContext({
           </ul>
         </div>
       ) : cached !== undefined ? (
-        // Historical evidence already calculated — summary + View. The
-        // sticky "Positional context" title already names the box, so the
-        // section goes straight to the counts (no repeated header). The
-        // count is what the View dialog will list — the visible candidates
-        // (the analyzed game itself filtered out), not the reference
-        // position's exact-match games: an off-book position has 0 exact
-        // games yet can still surface a full list of similar examples.
+        // Historical evidence already calculated — the decision menu leads
+        // (what did they play next?), then the View link carries the split
+        // count ("View 4 exact + 10 similar games →") so the found total is
+        // unmissable and exact vs similar is not conflated. Counts match
+        // the dialog: the analyzed game itself is filtered out.
         <div className="flex min-h-0 flex-col" data-testid="position-context-evidence">
           {phaseNote}
-          <section className="flex flex-col gap-0.5 px-3 py-2 text-left">
-            <p className="m-0 text-note text-ink">
-              {t('positionContext.gamesCount', {
-                count: cached.candidates.filter(
-                  (candidate) => !isAnalyzedGame(candidate.game, gameHeaders),
-                ).length,
-              })}
-            </p>
-          </section>
           <DecisionMenu
             fen={cached.reference.fen}
             nextMoves={cached.reference.next_moves ?? null}
@@ -271,7 +261,21 @@ export default function PositionContext({
               onClick={() => onViewEvidence()}
               data-testid="position-context-view-evidence"
             >
-              {t('positionContext.view')} →
+              {(() => {
+                const visible = cached.candidates.filter(
+                  (candidate) => !isAnalyzedGame(candidate.game, gameHeaders),
+                );
+                const exact = visible.filter((c) => c.strategy === 'exact').length;
+                const similar = visible.length - exact;
+
+                if (exact > 0 && similar > 0) {
+                  return t('positionContext.viewCountMixed', { exact, similar });
+                }
+                if (exact > 0) {
+                  return t('positionContext.viewCountExact', { count: exact });
+                }
+                return t('positionContext.viewCountSimilar', { count: similar });
+              })()}
             </button>
           )}
         </div>
@@ -291,7 +295,6 @@ export default function PositionContext({
                 type="button"
                 className="self-center rounded-control border border-line px-3 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised"
                 onClick={() => {
-                  setFindStatus({ kind: 'loading' });
                   void runFind();
                 }}
                 data-testid="position-context-retry"
@@ -299,13 +302,16 @@ export default function PositionContext({
                 {t('positionContext.retry')}
               </button>
             </>
-          ) : (
+          ) : onFindEvidence ===
+            undefined ? // Evidence is an editor feature (ADR-0030's private browsing) —
+          // no handler for viewers: render nothing here (the phase note
+          // already renders above), never a stuck "Finding…" button.
+          null : (
             <button
               type="button"
               className="self-center rounded-control border border-line px-3 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised disabled:opacity-50"
               disabled={findStatus.kind === 'loading'}
               onClick={() => {
-                setFindStatus({ kind: 'loading' });
                 void runFind();
               }}
               data-testid="position-context-find-button"

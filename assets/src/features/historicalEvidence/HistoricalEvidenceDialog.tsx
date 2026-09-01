@@ -103,6 +103,7 @@ export default function HistoricalEvidenceDialog({
   route = null,
   refPly = null,
   gameHeaders = {},
+  flipped = false,
   onClose,
   onAddGame,
   onAddVariation,
@@ -120,6 +121,11 @@ export default function HistoricalEvidenceDialog({
    * filtered out (the corpus may contain the imported game itself).
    */
   gameHeaders?: Record<string, string>;
+  /**
+   * The main board's orientation — the miniboard must not flip per
+   * candidate (a black-to-move candidate used to invert it).
+   */
+  flipped?: boolean;
   onClose: () => void;
   /** Add a historical game to the room as another game (cursor at `ply`). */
   onAddGame?: (tree: GameTree, ply: number, gid: number) => void;
@@ -469,7 +475,7 @@ export default function HistoricalEvidenceDialog({
                   <div className="w-[200px] shrink-0">
                     <Board
                       position={parseFen(slide.fen)}
-                      flipped={slide.stm === 'b'}
+                      flipped={flipped}
                       label={`${slide.game.white} — ${slide.game.black}`}
                       width={200}
                     />

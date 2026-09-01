@@ -1201,6 +1201,7 @@ export default function Analysis({
           route={evidenceDialog.route}
           refPly={evidenceDialog.refPly}
           gameHeaders={tree.headers}
+          flipped={flipped}
           onClose={() => setEvidenceDialog(null)}
           onAddGame={canEdit ? onAddHistoricalGame : undefined}
           onAddVariation={canEdit ? handleAddHistoricalVariation : undefined}

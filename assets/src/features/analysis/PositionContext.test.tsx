@@ -39,10 +39,14 @@ const book: OpeningBook = {
   'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq': 'A40|Queen Pawn',
 };
 
-function candidateStub(gid: number, meta?: Partial<GameMeta>): EvidenceCandidate {
+function candidateStub(
+  gid: number,
+  meta?: Partial<GameMeta>,
+  strategy: EvidenceCandidate['strategy'] = 'exact',
+): EvidenceCandidate {
   return {
-    id: `exact-${gid}-1`,
-    strategy: 'exact',
+    id: `${strategy}-${gid}-1`,
+    strategy,
     stm: 'w',
     fen: OFF_BOOK,
     gid,
@@ -243,14 +247,40 @@ describe('PositionContext', () => {
     const onFindEvidence = vi.fn<() => Promise<HistoricalEvidenceResult | null>>(() =>
       Promise.resolve(evidenceResult(5)),
     );
-    renderPanel({ fen: OFF_BOOK, onFindEvidence });
+    renderPanel({ fen: OFF_BOOK, onFindEvidence, onViewEvidence: vi.fn() });
     const button = screen.getByTestId('position-context-find-button');
     fireEvent.click(button);
     expect(button).toBeDisabled();
     await screen.findByText('d4');
     expect(onFindEvidence).toHaveBeenCalled();
     expect(screen.getByTestId('position-context-evidence')).toBeInTheDocument();
-    expect(screen.getByText('5 games')).toBeInTheDocument();
+    expect(screen.getByText('View 5 exact games →')).toBeInTheDocument();
+  });
+
+  it('hides the find CTA entirely when no handler exists (read-only viewer)', () => {
+    // A viewer clicking "Find historical evidence" used to stick on
+    // "Finding…" forever: runFind early-returned on the undefined handler
+    // while the button state was already set to loading.
+    renderPanel({ fen: OFF_BOOK, onFindEvidence: undefined });
+    expect(screen.queryByTestId('position-context-find-button')).not.toBeInTheDocument();
+  });
+
+  it('splits exact and similar counts in the View link', async () => {
+    const onFindEvidence = vi.fn<() => Promise<HistoricalEvidenceResult | null>>(() =>
+      Promise.resolve({
+        ...evidenceResult(0),
+        candidates: [
+          candidateStub(1),
+          candidateStub(2),
+          candidateStub(3),
+          candidateStub(4),
+          ...Array.from({ length: 10 }, (_, i) => candidateStub(i + 5, undefined, 'pawn_skeleton')),
+        ],
+      }),
+    );
+    renderPanel({ fen: OFF_BOOK, onFindEvidence, onViewEvidence: vi.fn() });
+    fireEvent.click(screen.getByTestId('position-context-find-button'));
+    await screen.findByText('View 4 exact + 10 similar games →');
   });
 
   it('View evidence opens the dialog without re-running', async () => {
@@ -280,18 +310,19 @@ describe('PositionContext', () => {
       fen: OFF_BOOK,
       gameHeaders: { White: 'SelfW', Black: 'SelfB', Result: '1-0' },
       onFindEvidence,
+      onViewEvidence: vi.fn(),
     });
     fireEvent.click(screen.getByTestId('position-context-find-button'));
     // Three candidates returned, the analyzed game filtered out — the count
     // matches the two rows the View dialog will list.
-    await screen.findByText('2 games');
+    await screen.findByText('View 2 exact games →');
   });
 
   it('offers a retry on failure', async () => {
     const onFindEvidence = vi.fn<() => Promise<HistoricalEvidenceResult | null>>(() => {
       return Promise.reject(new Error('no'));
     });
-    renderPanel({ fen: OFF_BOOK, onFindEvidence });
+    renderPanel({ fen: OFF_BOOK, onFindEvidence, onViewEvidence: vi.fn() });
     fireEvent.click(screen.getByTestId('position-context-find-button'));
     const retry = await screen.findByTestId('position-context-retry');
     expect(retry).toBeEnabled();
@@ -302,9 +333,9 @@ describe('PositionContext', () => {
       .fn<() => Promise<HistoricalEvidenceResult | null>>()
       .mockResolvedValueOnce(evidenceResult(5, OFF_BOOK))
       .mockResolvedValueOnce(evidenceResult(7, OFF_BOOK_2));
-    const { rerender } = renderPanel({ fen: OFF_BOOK, onFindEvidence });
+    const { rerender } = renderPanel({ fen: OFF_BOOK, onFindEvidence, onViewEvidence: vi.fn() });
     fireEvent.click(screen.getByTestId('position-context-find-button'));
-    await screen.findByText('5 games');
+    await screen.findByText('View 5 exact games →');
     expect(screen.getByTestId('position-context-evidence')).toBeInTheDocument();
 
     // The cursor moves to a new off-book position: the old summary must go
@@ -314,16 +345,17 @@ describe('PositionContext', () => {
         book={book}
         fen={OFF_BOOK_2}
         onFindEvidence={onFindEvidence}
+        onViewEvidence={vi.fn()}
         onHoverMove={vi.fn()}
       />,
     );
     expect(screen.queryByTestId('position-context-evidence')).not.toBeInTheDocument();
-    expect(screen.queryByText('5 games')).not.toBeInTheDocument();
+    expect(screen.queryByText('View 5 exact games →')).not.toBeInTheDocument();
     const button = screen.getByTestId('position-context-find-button');
     expect(button).toBeEnabled();
 
     fireEvent.click(button);
-    await screen.findByText('7 games');
+    await screen.findByText('View 7 exact games →');
     expect(onFindEvidence).toHaveBeenCalledTimes(2);
     expect(screen.getByTestId('position-context-evidence')).toBeInTheDocument();
   });
@@ -336,7 +368,7 @@ describe('PositionContext', () => {
       rememberResult(requestKey(OFF_BOOK, null, null), result);
       return Promise.resolve(result);
     });
-    const { rerender } = renderPanel({ fen: OFF_BOOK, onFindEvidence });
+    const { rerender } = renderPanel({ fen: OFF_BOOK, onFindEvidence, onViewEvidence: vi.fn() });
     fireEvent.click(screen.getByTestId('position-context-find-button'));
     await waitFor(() => screen.getByText('d4'));
     rerender(
