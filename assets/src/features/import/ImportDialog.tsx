@@ -127,6 +127,8 @@ export default function ImportDialog({
   const [state, setState] = useState<PreviewState>({ status: 'idle' });
   const [sourceTab, setSourceTab] = useState<'paste' | 'studies' | 'games' | 'chesscom'>('paste');
   const [studies, setStudies] = useState<StudiesState>({ status: 'idle' });
+  // The currently picked study (toggle: click again to deselect).
+  const [pickedStudyId, setPickedStudyId] = useState<string | null>(null);
   const [games, setGames] = useState<GamesState>({ status: 'idle' });
   const [selectedGames, setSelectedGames] = useState<Set<string>>(new Set());
   const [ccUser, setCcUser] = useState(() => {
@@ -245,6 +247,16 @@ export default function ImportDialog({
     if (device === null) {
       return;
     }
+
+    // Toggle: clicking the picked study again deselects it (clears the
+    // preview back to the study list).
+    if (pickedStudyId === studyId) {
+      setPickedStudyId(null);
+      setState({ status: 'idle' });
+      return;
+    }
+
+    setPickedStudyId(studyId);
     setState({ status: 'parsing' });
     importLichessStudy(device, studyId).then(
       (result) => {
@@ -256,6 +268,7 @@ export default function ImportDialog({
         });
       },
       (error) => {
+        setPickedStudyId(null);
         setState({ status: 'error', code: error instanceof ApiError ? error.code : 'unknown' });
       },
     );
@@ -269,6 +282,15 @@ export default function ImportDialog({
     setState({ status: 'parsing' });
     importLichessGames(device, [...selectedGames]).then(
       (result) => {
+        // Clean fetch → import immediately (the selection WAS the
+        // confirmation; a second Import click was a usability bug).
+        // Failures pause at the preview with the skip list.
+        if (result.failures.length === 0) {
+          onImported(result.trees);
+          onClose();
+          return;
+        }
+
         setState({
           status: 'preview',
           trees: result.trees,
@@ -309,15 +331,6 @@ export default function ImportDialog({
     );
   }
 
-  function shiftChesscomMonth(delta: number) {
-    const total = ccMonth.year * 12 + (ccMonth.month - 1) + delta;
-    const next = { year: Math.floor(total / 12), month: (total % 12) + 1 };
-    setCcMonth(next);
-    if (ccUser.trim() !== '' && ccState.status !== 'idle') {
-      loadChesscomGames(ccUser, next);
-    }
-  }
-
   function handleImportChesscom() {
     if (ccState.status !== 'loaded' || ccSelected.size === 0) {
       return;
@@ -329,6 +342,14 @@ export default function ImportDialog({
     setState({ status: 'parsing' });
     importPgn(pgns).then(
       (result) => {
+        // Same one-click contract as the Lichess games tab: clean fetch
+        // imports immediately; failures pause at the preview.
+        if (result.failures.length === 0) {
+          onImported(result.trees);
+          onClose();
+          return;
+        }
+
         setState({
           status: 'preview',
           trees: result.trees,
@@ -500,7 +521,12 @@ export default function ImportDialog({
                     <li key={study.id}>
                       <button
                         type="button"
-                        className="flex w-full items-baseline justify-between gap-2 rounded-control px-2 py-1.5 text-left text-ui text-ink transition-colors hover:bg-raised"
+                        aria-pressed={pickedStudyId === study.id}
+                        className={
+                          pickedStudyId === study.id
+                            ? 'flex w-full items-baseline justify-between gap-2 rounded-control bg-gold/15 px-2 py-1.5 text-left text-ui text-ink outline-1 outline-gold/60 transition-colors hover:bg-gold/20'
+                            : 'flex w-full items-baseline justify-between gap-2 rounded-control px-2 py-1.5 text-left text-ui text-ink transition-colors hover:bg-raised'
+                        }
                         onClick={() => handlePickStudy(study.id)}
                       >
                         <span className="min-w-0 flex-1 truncate">{study.name}</span>
@@ -519,15 +545,6 @@ export default function ImportDialog({
                 <span className="text-micro font-semibold uppercase tracking-[0.08em] text-muted">
                   {t('import.gamesLabel')}
                 </span>
-                <button
-                  type="button"
-                  id="import-selected-games-button"
-                  className={button({ intent: 'secondary', size: 'xs' })}
-                  disabled={selectedGames.size === 0}
-                  onClick={handleImportSelectedGames}
-                >
-                  {t('import.importSelected', { count: selectedGames.size })}
-                </button>
               </div>
               {games.status === 'loading' && (
                 <p className="m-0 text-ui text-faint">{t('import.gamesLoading')}</p>
@@ -588,7 +605,13 @@ export default function ImportDialog({
                     className="rounded-control border border-line bg-transparent px-2 py-1 text-ui text-ink outline-none placeholder:text-faint focus:border-line-strong"
                     placeholder={t('import.chesscomUserPlaceholder')}
                     value={ccUser}
-                    onChange={(event) => setCcUser(event.target.value)}
+                    onChange={(event) => {
+                      setCcUser(event.target.value);
+                      // Username change also invalidates the loaded list —
+                      // manual reload required.
+                      setCcState({ status: 'idle' });
+                      setCcSelected(new Set());
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter') {
                         loadChesscomGames();
@@ -597,27 +620,24 @@ export default function ImportDialog({
                   />
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    aria-label={t('import.chesscomPrevMonth')}
-                    title={t('import.chesscomPrevMonth')}
-                    className={button({ intent: 'ghost', size: 'icon' })}
-                    onClick={() => shiftChesscomMonth(-1)}
-                  >
-                    ‹
-                  </button>
-                  <span className="min-w-16 text-center text-note text-muted tabular-nums">
-                    {ccMonth.year}-{String(ccMonth.month).padStart(2, '0')}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={t('import.chesscomNextMonth')}
-                    title={t('import.chesscomNextMonth')}
-                    className={button({ intent: 'ghost', size: 'icon' })}
-                    onClick={() => shiftChesscomMonth(1)}
-                  >
-                    ›
-                  </button>
+                  <input
+                    type="month"
+                    id="chesscom-month"
+                    className="rounded-control border border-line bg-transparent px-2 py-1 text-ui text-ink outline-none focus:border-line-strong"
+                    value={`${ccMonth.year}-${String(ccMonth.month).padStart(2, '0')}`}
+                    onChange={(event) => {
+                      const [y, m] = event.target.value.split('-').map(Number);
+                      if (y && m) {
+                        setCcMonth({ year: y, month: m });
+                        // Manual trigger only (Chess.com API etiquette): a
+                        // month change never auto-loads — the user clicks
+                        // Load games again. The previously loaded list is
+                        // marked stale rather than silently kept.
+                        setCcState({ status: 'idle' });
+                        setCcSelected(new Set());
+                      }
+                    }}
+                  />
                 </div>
                 <button
                   type="button"
@@ -641,52 +661,36 @@ export default function ImportDialog({
                 </p>
               )}
               {ccState.status === 'loaded' && (
-                <>
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-note text-faint tabular-nums">
-                      {t('import.chesscomFound', { count: ccState.games.length })}
-                    </span>
-                    <button
-                      type="button"
-                      id="chesscom-import-button"
-                      className={button({ intent: 'secondary', size: 'xs' })}
-                      disabled={ccSelected.size === 0}
-                      onClick={handleImportChesscom}
-                    >
-                      {t('import.importSelected', { count: ccSelected.size })}
-                    </button>
-                  </div>
-                  <ul className="m-0 flex max-h-44 flex-col gap-0.5 overflow-y-auto">
-                    {ccState.games.map((game) => (
-                      <li key={game.id}>
-                        <label className="flex cursor-pointer items-baseline gap-2 rounded-control px-2 py-1.5 text-ui text-ink transition-colors hover:bg-raised">
-                          <input
-                            type="checkbox"
-                            className="relative top-px"
-                            checked={ccSelected.has(game.id)}
-                            onChange={(event) => {
-                              setCcSelected((current) => {
-                                const next = new Set(current);
-                                if (event.target.checked) {
-                                  next.add(game.id);
-                                } else {
-                                  next.delete(game.id);
-                                }
-                                return next;
-                              });
-                            }}
-                          />
-                          <span className="min-w-0 flex-1 truncate">
-                            {game.white} – {game.black}
-                          </span>
-                          <span className="shrink-0 text-note text-faint tabular-nums">
-                            {game.result} · {game.speed}
-                          </span>
-                        </label>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                <ul className="m-0 flex max-h-44 flex-col gap-0.5 overflow-y-auto">
+                  {ccState.games.map((game) => (
+                    <li key={game.id}>
+                      <label className="flex cursor-pointer items-baseline gap-2 rounded-control px-2 py-1.5 text-ui text-ink transition-colors hover:bg-raised">
+                        <input
+                          type="checkbox"
+                          className="relative top-px"
+                          checked={ccSelected.has(game.id)}
+                          onChange={(event) => {
+                            setCcSelected((current) => {
+                              const next = new Set(current);
+                              if (event.target.checked) {
+                                next.add(game.id);
+                              } else {
+                                next.delete(game.id);
+                              }
+                              return next;
+                            });
+                          }}
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {game.white} – {game.black}
+                        </span>
+                        <span className="shrink-0 text-note text-faint tabular-nums">
+                          {game.result} · {game.speed}
+                        </span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
               )}
               <p className="m-0 text-note text-faint">{t('import.chesscomAttribution')}</p>
             </div>
@@ -924,8 +928,25 @@ export default function ImportDialog({
               type="button"
               id="import-submit-button"
               className={button({ intent: 'primary', size: 'md' })}
-              disabled={displayTrees === null}
+              disabled={displayTrees === null && selectedGames.size === 0 && ccSelected.size === 0}
               onClick={() => {
+                // A selection on the games/chess.com tabs fetches and
+                // imports in one click — handleImportSelectedGames /
+                // handleImportChesscom call onImported directly when there
+                // are no failures (a failed fetch shows the preview with
+                // the skip list, same as the other sources).
+                if (displayTrees === null) {
+                  if (selectedGames.size > 0) {
+                    handleImportSelectedGames();
+                    return;
+                  }
+
+                  if (ccSelected.size > 0) {
+                    handleImportChesscom();
+                    return;
+                  }
+                }
+
                 if (displayTrees !== null) {
                   onImported(displayTrees);
                   onClose();

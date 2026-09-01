@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ImportDialog from '@/features/import/ImportDialog';
 
@@ -294,11 +294,10 @@ describe('ImportDialog', () => {
 
     const first = await screen.findByRole('checkbox', { name: /dr_ny – someone/ });
     fireEvent.click(first);
-    fireEvent.click(screen.getByRole('button', { name: 'Import 1 game' }));
 
-    expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
+    // One click: fetch + import (clean fetches skip the preview).
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
-    expect(onImported).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1));
   });
 
   it('imports selected chess.com games from the monthly archive', async () => {
@@ -335,13 +334,9 @@ describe('ImportDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Load games' }));
 
     fireEvent.click(await screen.findByRole('checkbox', { name: /BornForTheEndgame – Hikaru/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Import 1 game' }));
-
-    expect(await screen.findByText('Valid PGN')).toBeInTheDocument();
-    expect(screen.getByText("Game data via Chess.com's public API")).toBeInTheDocument();
-
     fireEvent.click(screen.getByRole('button', { name: 'Import' }));
-    expect(onImported).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1));
   });
 
   it('excludes engine annotations by default and variations on uncheck', async () => {
