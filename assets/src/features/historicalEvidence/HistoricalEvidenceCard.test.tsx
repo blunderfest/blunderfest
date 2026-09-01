@@ -137,12 +137,17 @@ describe('HistoricalEvidenceCard', () => {
     expect(screen.getByText('1 ply later')).toBeInTheDocument();
   });
 
-  it('shows the continuation per side, split from the candidate side to move', () => {
+  it('shows the continuation in standard notation from the candidate ply', () => {
     render(<HistoricalEvidenceCard candidate={candidate} />);
 
-    // Black to move: black plays 1st, 3rd, 5th...
-    expect(screen.getByText('Ne8 · h6 · f5')).toBeInTheDocument();
-    expect(screen.getByText('Bg5 · Be3 · Qc1')).toBeInTheDocument();
+    // Black to move at ply 17: the window starts 9... and pairs by move.
+    expect(screen.getByText('9... Ne8 10. Bg5 h6 11. Be3 f5 12. Qc1')).toBeInTheDocument();
+  });
+
+  it('numbers a white-to-move continuation with plain move numbers', () => {
+    render(<HistoricalEvidenceCard candidate={{ ...candidate, stm: 'w', ply: 16 }} />);
+
+    expect(screen.getByText('9. Ne8 Bg5 10. h6 Be3 11. f5 Qc1')).toBeInTheDocument();
   });
 
   it('shows continuation verdicts only when confidence is high', () => {

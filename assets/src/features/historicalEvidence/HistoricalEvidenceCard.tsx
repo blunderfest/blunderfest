@@ -73,22 +73,39 @@ function headline(candidate: EvidenceCandidate, t: TFunction): string {
 }
 
 /**
- * The candidate's own continuation, split per side (the side to move at
- * the position plays first). Shows what was played — not an
+ * The candidate's own continuation in standard notation — move numbers from
+ * the candidate's ply (`5. Nf3 d6 6. Bc4 Nf6`, or `10... d6 11. a4 Qd8`
+ * when black opens the window). Shows what was played — not an
  * interpretation of it.
  */
-function bySide(moves: string[], stm: 'w' | 'b'): { white: string[]; black: string[] } {
-  const white: string[] = [];
-  const black: string[] = [];
-  moves.forEach((move, index) => {
-    const mover = index % 2 === 0 ? stm : stm === 'w' ? 'b' : 'w';
-    if (mover === 'w') {
-      white.push(move);
-    } else {
-      black.push(move);
-    }
-  });
-  return { white, black };
+export function formatContinuation(moves: string[], ply: number): string {
+  if (moves.length === 0) {
+    return '—';
+  }
+
+  // The first continuation move is ply+1 (1-based); move numbers count
+  // pairs (white ply odd, black ply even).
+  let moveNo = Math.ceil((ply + 1) / 2);
+  const startsWhite = (ply + 1) % 2 === 1;
+
+  const parts: string[] = [];
+  let i = 0;
+
+  if (!startsWhite) {
+    parts.push(`${moveNo}... ${moves[0]}`);
+    i = 1;
+    moveNo += 1;
+  }
+
+  while (i < moves.length) {
+    const white = moves[i];
+    const black = moves[i + 1];
+    parts.push(black !== undefined ? `${moveNo}. ${white} ${black}` : `${moveNo}. ${white}`);
+    i += 2;
+    moveNo += 1;
+  }
+
+  return parts.join(' ');
 }
 
 /**
@@ -165,8 +182,6 @@ export default function HistoricalEvidenceCard({
   const d = candidate.position.dims;
   const fam = candidate.families;
   const route = candidate.route;
-  const sides = bySide(candidate.continuation.moves, candidate.stm);
-
   const whiteVerdict = sideVerdict(fam.skeleton.white, t);
   const blackVerdict = sideVerdict(fam.skeleton.black, t);
 
@@ -246,16 +261,11 @@ export default function HistoricalEvidenceCard({
       )}
 
       <Section title={t('evidence.continuation')}>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-note text-muted">{t('evidence.white')}</span>
-          <span className="text-note text-ink tabular-nums">{sides.white.join(' · ') || '—'}</span>
-          {whiteVerdict !== null && <span className="text-note text-muted">{whiteVerdict}</span>}
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-note text-muted">{t('evidence.black')}</span>
-          <span className="text-note text-ink tabular-nums">{sides.black.join(' · ') || '—'}</span>
-          {blackVerdict !== null && <span className="text-note text-muted">{blackVerdict}</span>}
-        </div>
+        <p className="m-0 text-note text-ink tabular-nums">
+          {formatContinuation(candidate.continuation.moves, candidate.ply)}
+        </p>
+        {whiteVerdict !== null && <span className="text-note text-muted">{whiteVerdict}</span>}
+        {blackVerdict !== null && <span className="text-note text-muted">{blackVerdict}</span>}
       </Section>
 
       <Section title={t('evidence.historical')}>
