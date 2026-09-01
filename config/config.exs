@@ -12,9 +12,14 @@ config :blunderfest,
 
 # Corpus artifacts (ADR-0026): where extraction writes and corpus.load
 # reads. Derived data, gitignored, rebuildable from the canonical PGN.
+# occurrence_backend selects the occurrence store (Spike 08): :postgres
+# (default) or :packed (the packed binary segment directory at packed_dir;
+# games/moves/metadata always stay in Postgres).
 config :blunderfest, Blunderfest.Corpus,
   data_dir: "data/corpus",
-  tier: 100_000
+  tier: 100_000,
+  occurrence_backend: :postgres,
+  packed_dir: "data/corpus-packed"
 
 # Configure the endpoint
 config :blunderfest, BlunderfestWeb.Endpoint,

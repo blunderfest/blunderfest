@@ -11,11 +11,23 @@ defmodule Blunderfest.Corpus do
   When no `db:` configuration exists (dev without `DATABASE_URL`, per
   ADR-0026), the process starts in an unconfigured state: every query
   returns `{:error, :not_configured}` instead of crashing the app.
+
+  ## Occurrence backends (Spike 08)
+
+  `occurrence_backend: :postgres` (default) serves the occurrence layer
+  (`occurrences`, `occurrence_counts`, `position`, `pawn_bucket`, and the
+  book aggregates) from the Postgres tables. `occurrence_backend: :packed`
+  serves them from the packed binary segment directory at `packed_dir`
+  instead; games, moves, game metadata, and game export always come from
+  Postgres (the spike replaces the occurrence store, not game storage —
+  brief §8). In packed mode the book aggregate is computed locally from the
+  packed occurrence run plus batched Postgres `moves_for`/`results_for`
+  queries, with identical independent-game semantics.
   """
 
   use GenServer
 
-  alias Blunderfest.Corpus.{Book, GameExport, Occurrences, PositionKey}
+  alias Blunderfest.Corpus.{Book, GameExport, Occurrences, Packed, PositionKey}
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
@@ -43,6 +55,15 @@ defmodule Blunderfest.Corpus do
   @doc "Distinct canonical keys sharing a pawn-skeleton hash."
   @spec pawn_bucket(non_neg_integer()) :: [String.t()] | {:error, :not_configured}
   def pawn_bucket(pawn_hash), do: GenServer.call(__MODULE__, {:pawn_bucket, pawn_hash}, :infinity)
+
+  @doc """
+  Bounded bucket fetch (`Packed.pawn_bucket/3`) — the pipeline passes its
+  own `bucket_limit` down after the broadcast-scale bucket measurements
+  (the largest broadcast bucket resolves ~25 s unbounded).
+  """
+  @spec pawn_bucket(non_neg_integer(), pos_integer()) :: [String.t()] | {:error, :not_configured}
+  def pawn_bucket(pawn_hash, limit),
+    do: GenServer.call(__MODULE__, {:pawn_bucket, pawn_hash, limit}, :infinity)
 
   @doc "Game metadata for a gid, or nil."
   @spec game(pos_integer()) :: map() | nil | {:error, :not_configured}
@@ -113,7 +134,8 @@ defmodule Blunderfest.Corpus do
 
   @impl true
   def init(_opts) do
-    db = Application.get_env(:blunderfest, __MODULE__)[:db]
+    config = Application.get_env(:blunderfest, __MODULE__) || []
+    db = config[:db]
 
     pool =
       if db do
@@ -128,7 +150,36 @@ defmodule Blunderfest.Corpus do
         nil
       end
 
-    {:ok, %{pool: pool}}
+    backend_choice = Keyword.get(config, :occurrence_backend, :postgres)
+
+    packed =
+      if backend_choice == :packed do
+        # When the packed backend is explicitly configured, failing to open it
+        # is a boot failure (never silently fall back to the Postgres
+        # occurrence tables).
+        case Packed.open(Keyword.get(config, :packed_dir, "data/corpus-packed")) do
+          {:ok, backend} ->
+            backend
+
+          {:error, reason} ->
+            raise("packed occurrence backend failed to open: #{inspect(reason)}")
+        end
+      else
+        nil
+      end
+
+    {:ok, %{pool: pool, packed: packed}}
+  end
+
+  # The occurrence store is packed only when both the packed backend and the
+  # Postgres pool (game storage) are up — a missing pool degrades the whole
+  # facade to not_configured, same as before.
+  defp occurrence_store(%{pool: pool, packed: packed}) do
+    cond do
+      pool == nil -> :unconfigured
+      packed != nil -> {:packed, packed}
+      true -> :postgres
+    end
   end
 
   @impl true
@@ -152,12 +203,16 @@ defmodule Blunderfest.Corpus do
   end
 
   def handle_call({:book, fen}, _from, state) do
+    # book always hits the PG aggregate: the occurrence tables exist by the
+    # spike's §8 scope (only the pipeline's occurrence reads are packed),
+    # and the SQL path doesn't burn BEAM time in this single GenServer
+    # (ADR-0035). packed_book remains needed only when the occurrence
+    # tables actually drop.
     {:reply, Book.for_fen(state.pool, fen), state}
   end
 
   def handle_call({:book_counts, fens}, _from, state) do
-    # Canonicalize each FEN to a key (invalid FENs skipped), batch into one
-    # query, and map counts back to the caller's FENs.
+    # book_counts always hits PG (Corpus.Book aggregation rationale above).
     fen_keys =
       fens
       |> Enum.uniq()
@@ -184,19 +239,58 @@ defmodule Blunderfest.Corpus do
   end
 
   def handle_call({:occurrences, key}, _from, state) do
-    {:reply, Occurrences.occurrences(state.pool, key), state}
+    result =
+      case occurrence_store(state) do
+        {:packed, packed} -> Packed.occurrences(packed, PositionKey.to_hash128(key))
+        :postgres -> Occurrences.occurrences(state.pool, key)
+        :unconfigured -> {:error, :not_configured}
+      end
+
+    {:reply, result, state}
   end
 
   def handle_call({:occurrence_counts, key}, _from, state) do
-    {:reply, Occurrences.counts_for(state.pool, key), state}
+    result =
+      case occurrence_store(state) do
+        {:packed, packed} -> Packed.occurrence_counts(packed, PositionKey.to_hash128(key))
+        :postgres -> Occurrences.counts_for(state.pool, key)
+        :unconfigured -> {:error, :not_configured}
+      end
+
+    {:reply, result, state}
   end
 
   def handle_call({:position, key}, _from, state) do
-    {:reply, Occurrences.position(state.pool, key), state}
+    result =
+      case occurrence_store(state) do
+        {:packed, packed} -> Packed.position(packed, PositionKey.to_hash128(key))
+        :postgres -> Occurrences.position(state.pool, key)
+        :unconfigured -> {:error, :not_configured}
+      end
+
+    {:reply, result, state}
   end
 
   def handle_call({:pawn_bucket, pawn_hash}, _from, state) do
-    {:reply, Occurrences.pawn_bucket(state.pool, pawn_hash), state}
+    result =
+      case occurrence_store(state) do
+        {:packed, packed} -> Packed.pawn_bucket(packed, pawn_hash)
+        :postgres -> Occurrences.pawn_bucket(state.pool, pawn_hash)
+        :unconfigured -> {:error, :not_configured}
+      end
+
+    {:reply, result, state}
+  end
+
+  def handle_call({:pawn_bucket, pawn_hash, limit}, _from, state) do
+    result =
+      case occurrence_store(state) do
+        {:packed, packed} -> Packed.pawn_bucket(packed, pawn_hash, limit)
+        :postgres -> Occurrences.pawn_bucket(state.pool, pawn_hash, limit)
+        :unconfigured -> {:error, :not_configured}
+      end
+
+    {:reply, result, state}
   end
 
   def handle_call({:game, gid}, _from, state) do
@@ -242,4 +336,9 @@ defmodule Blunderfest.Corpus do
   def handle_call({:export_game, gid}, _from, state) do
     {:reply, GameExport.tree(gid, state.pool), state}
   end
+
+  # Packed-mode book aggregate exists as `Book.for_key_packed/3`:
+  # currently unused by the facade (the `:book` route is PG-only while the
+  # occurrence tables exist; ADR-0035). The parity task exercises the same
+  # implementation so both paths check one source of truth.
 end

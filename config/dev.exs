@@ -1,5 +1,11 @@
 import Config
 
+# Spike 08: PACKED_CORPUS=1 serves the occurrence layer from the packed
+# binary index (data/corpus-packed) instead of the Postgres tables.
+if System.get_env("PACKED_CORPUS") == "1" do
+  config :blunderfest, Blunderfest.Corpus, occurrence_backend: :packed
+end
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

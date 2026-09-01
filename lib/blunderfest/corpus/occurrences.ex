@@ -142,14 +142,39 @@ defmodule Blunderfest.Corpus.Occurrences do
     end
   end
 
-  @doc "Distinct canonical keys sharing a pawn-skeleton hash (the structural bucket)."
+  @doc """
+  Distinct canonical keys sharing a pawn-skeleton hash (the structural bucket).
+  The ORDER BY runs in C collation — the packed backend's binary sort is
+  bytewise, and the sorted-contract can't leak libc collation differences
+  into candidate-set caps (brief §10).
+  """
   @spec pawn_bucket(conn(), non_neg_integer()) :: [String.t()]
   def pawn_bucket(conn, pawn_hash) do
     %{rows: rows} =
       Postgrex.query!(
         conn,
-        "SELECT key FROM corpus_positions WHERE pawn_hash = $1 ORDER BY key",
+        "SELECT key FROM corpus_positions WHERE pawn_hash = $1 ORDER BY key COLLATE \"C\"",
         [pawn_hash],
+        timeout: :infinity
+      )
+
+    Enum.map(rows, fn [key] -> key end)
+  end
+
+  @doc """
+  Bounded bucket fetch: the lexicographically-first `limit` keys (PG's
+  `ORDER BY key LIMIT n`). The pipeline caps structural candidates with
+  this so a hot bucket never drags the whole key list into the BEAM; the
+  packed backend's bounded variant documents its pos-hash-order difference
+  explicitly (broadcast validation §17, condition B).
+  """
+  @spec pawn_bucket(conn(), non_neg_integer(), pos_integer()) :: [String.t()]
+  def pawn_bucket(conn, pawn_hash, limit) do
+    %{rows: rows} =
+      Postgrex.query!(
+        conn,
+        "SELECT key FROM corpus_positions WHERE pawn_hash = $1 ORDER BY key COLLATE \"C\" LIMIT $2",
+        [pawn_hash, limit],
         timeout: :infinity
       )
 
@@ -223,6 +248,24 @@ defmodule Blunderfest.Corpus.Occurrences do
       )
 
     Map.new(rows, fn [gid, sans] -> {gid, String.split(sans, " ", trim: true)} end)
+  end
+
+  @doc """
+  Game results for a batch of gids, one query — `%{gid => result}`. The
+  packed occurrence backend's book aggregation needs results without the
+  full metadata rows.
+  """
+  @spec results_for(conn(), [pos_integer()]) :: %{pos_integer() => String.t()}
+  def results_for(conn, gids) do
+    %{rows: rows} =
+      Postgrex.query!(
+        conn,
+        "SELECT gid, result FROM corpus_games WHERE gid = ANY($1)",
+        [Enum.uniq(gids)],
+        timeout: :infinity
+      )
+
+    Map.new(rows, fn [gid, result] -> {gid, result} end)
   end
 
   ## Schema

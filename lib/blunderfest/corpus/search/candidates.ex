@@ -98,12 +98,16 @@ defmodule Blunderfest.Corpus.Search.Candidates do
 
     ref_key = ref.key
 
+    # The bucket fetch is bounded at the store layer: hot broadcast buckets
+    # (~370k keys) would otherwise resolve every key before the cap applies
+    # (measured ~26 s on the packed backend at 1.17M). The two backends
+    # pick different first-N subsets on oversized buckets — documented in
+    # the Broadcast validation report.
     ref_key
     |> Features.from_key()
     |> Features.pawn_hash()
-    |> Blunderfest.Corpus.pawn_bucket()
+    |> Blunderfest.Corpus.pawn_bucket(bucket_limit)
     |> Enum.reject(&(&1 == ref_key))
-    |> Enum.take(bucket_limit)
     |> Enum.map(fn key -> {key, Features.from_key(key)} end)
     |> Enum.sort_by(fn {key, feats} ->
       {-Features.piece_overlap(ref, feats).matches, key}

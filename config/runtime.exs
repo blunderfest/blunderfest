@@ -159,6 +159,15 @@ if url = System.get_env("DATABASE_URL") do
   config :blunderfest, Blunderfest.Corpus, db: db
   config :blunderfest, Blunderfest.RoomLog, db: db
 
+  # Spike 08: PACKED_CORPUS=1 serves the occurrence layer from the packed
+  # binary index (PACKED_DIR, default data/corpus-packed) instead of the
+  # Postgres occurrence tables. Games/moves/metadata stay in Postgres.
+  if System.get_env("PACKED_CORPUS") == "1" do
+    config :blunderfest, Blunderfest.Corpus,
+      occurrence_backend: :packed,
+      packed_dir: System.get_env("PACKED_DIR") || "data/corpus-packed"
+  end
+
   # Application data (ADR-0029) uses Ecto: the Repo takes the same parsed
   # connection (including the IPv6 socket options Fly's .internal hosts
   # need — the raw URL alone cannot connect on prod).

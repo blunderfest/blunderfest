@@ -88,20 +88,35 @@ release and served by a catch-all (`SpaController`).
     FEN in, a serializable evidence DTO out — the stable API between the UI
     and the corpus boundary. Facts only: no relevance score, no
     interpretation.
-- `lib/blunderfest/corpus/` — the corpus boundary (ADR-0026, ADR-0027);
-  application code never sees its internals:
+- `lib/blunderfest/corpus/` — the corpus boundary (ADR-0026, ADR-0027,
+  ADR-0037); application code never sees its internals:
   - `corpus.ex` — the facade GenServer: owns the Postgrex pool and
     delegates every query; starts unconfigured (inert) when no `db:`
     config exists, e.g. dev without `DATABASE_URL`. It serializes every
     corpus read through one process — the replaceability seam (ADR-0026);
-    how that scales and when to move to the packed binary index is written
-    down in `docs/corpus-scale-readiness.md` (ADR-0035).
+    the occurrence backend is configured (`:postgres` or `:packed`) and
+    nothing downstream notices (Spike 08/ADR-0037).
+  - `packed/` — the packed occurrence backend (Spike 08/ADR-0037):
+    `packed/format.ex` (fixed-width records: occ 22B, pos 36B header +
+    strings region, bucket 24B), `packed/builder.ex` (sortedness + size +
+    SHA-256 validation per segment), `packed/manifest.ex` (manifest
+    read/write/all-or-nothing validation), `packed/segment.ex` (sparse
+    anchors — binary search anchors → bounded chunk scans; ~0.1 MB anchors
+    at stride 1024, 500-hit probe p50 35 µs), `packed/input.ex` (8 MB
+    chunk line reader — the build path bottleneck), `packed.ex` (segments
+    merged in build order). Opens per query in the calling process — the
+    raw fd never crosses process boundaries.
   - `position_key.ex` — canonical position identity (Spike 01): the
     capturable-only en-passant convention, 128-bit BLAKE2b hashes.
   - `replay.ex` + `extraction.ex` — lean mainline replay and the streaming
     PGN → occ/games/moves/keys artifact pipeline (mix `corpus.extract`).
   - `occurrences.ex` — the PG store: COPY-loaded, UNLOGGED, rebuildable
     (mix `corpus.load`); positions carry the 63-bit pawn bucket hash.
+  - `book.ex` — PG aggregate (SQL) plus `for_key_packed/3` (packed/logic
+    for when the occurrence tables drop); the facade routes `:book` to SQL
+    while the tables exist (ADR-0035). `ORDER BY move`/`ORDER BY key` run
+    in C collation — the sorted-by-bytes contract the packed backend
+    depends on (Spike 08 fix).
   - `analysis/` — pure analysis modules: `Features` (bitboard dimensions),
     `Differences` (typed differences + the §8 dims report), `Route`
     (Spike 05 route comparison), `Continuation` (windows, representations,
@@ -144,8 +159,12 @@ The one persistence exception is the corpus (ADR-0026): a Fly Postgres
 cluster (`blunderfest-db`, `ams`, non-HA) holds the occurrence data behind
 the `Blunderfest.Corpus` boundary, accessed via Postgrex (no Ecto).
 Everything after the canonical PGNs is derived and rebuildable
-(`mix corpus.extract` + `mix corpus.load`). `DATABASE_URL` is a deployed
-secret parsed in `config/runtime.exs`.
+(`mix corpus.extract` → `corpus.load` for PG, or → `corpus.pack` +
+`corpus.validate` for the packed segments; `corpus.pack` and the parity
+check the PG artifact pipeline and the packed build both come from the same extraction artifacts, so PG vs
+packed is a config flip). `DATABASE_URL` is a deployed secret parsed in
+`config/runtime.exs`. The spike 08 benchmarks/parity are in
+`mix corpus.bench` / `corpus.parity` / `corpus.he_parity`.
 
 ### Channel protocol
 
