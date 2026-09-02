@@ -10,10 +10,10 @@ import type { GameNode } from '@/lib/api';
 import type { AnalysisEval } from '@/protocol/ops';
 
 const moveButton = tv({
-  base: 'rounded-control px-1.5 py-0.5 font-mono transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-gold-hi',
+  base: 'rounded-control px-1.5 py-0.5 font-mono transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent',
   variants: {
     selected: {
-      true: 'bg-gold/20 text-gold-hi ring-1 ring-gold/50 hover:bg-gold/25',
+      true: 'bg-accent-muted text-accent ring-1 ring-accent/50 hover:bg-accent/25',
       false: '',
     },
     line: {
@@ -87,7 +87,7 @@ function MoveButton({
       ? moveMark(before.score, evaluation.score, node.ply % 2 === 1)
       : null;
   const shown = nag ?? mark;
-  const markClass = shown === '??' ? 'text-bad-hi' : shown === '?' ? 'text-gold-hi' : 'text-muted';
+  const markClass = shown === '??' ? 'text-bad-hi' : shown === '?' ? 'text-warn-hi' : 'text-muted';
   return (
     <button
       type="button"

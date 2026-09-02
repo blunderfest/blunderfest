@@ -55,8 +55,8 @@ describe('App', () => {
     });
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: 'Blunderfest' })).toBeInTheDocument();
-    expect(screen.getByText('Collaborative chess analysis.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'OpenChessLab' })).toBeInTheDocument();
+    expect(screen.getByText('Explore chess. Understand more.')).toBeInTheDocument();
   });
 
   it('reports the backend as online when healthz succeeds', async () => {
@@ -245,7 +245,7 @@ describe('App', () => {
     expect(await screen.findByText('ABCDE')).toBeInTheDocument();
     // Code copy is header chrome (ADR-0032); leaving is the logo.
     expect(screen.getByRole('button', { name: 'Room code' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Blunderfest' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'OpenChessLab' })).toBeInTheDocument();
   });
 
   it('waits for the identity before joining the room channel', async () => {
@@ -392,7 +392,7 @@ describe('App', () => {
 
     // Leaving the room is the logo (ADR-0032): it navigates home, which
     // unmounts the room and drops the channel.
-    fireEvent.click(await screen.findByRole('link', { name: 'Blunderfest' }));
+    fireEvent.click(await screen.findByRole('link', { name: 'OpenChessLab' }));
 
     await waitFor(() => expect(window.location.hash).toBe('#/'));
     expect(screen.getByRole('button', { name: 'Create a room' })).toBeInTheDocument();

@@ -67,11 +67,11 @@ describe('ClocksFlow', () => {
     expect(bars[1].getAttribute('class')).toContain('fill-[#b6bdcc]');
   });
 
-  it('gives the current ply\u2019s bar the gold highlight instead of its side color', () => {
+  it('gives the current ply\u2019s bar the accent highlight instead of its side color', () => {
     render(<ClocksFlow tree={clockedTree([295, 290, 271])} currentPly={2} onSelectPly={vi.fn()} />);
 
     const bar = screen.getAllByTestId('clocks-flow-bar')[1];
-    expect(bar.getAttribute('class')).toContain('fill-gold-hi');
+    expect(bar.getAttribute('class')).toContain('fill-accent');
     expect(bar.getAttribute('class')).not.toContain('fill-[#b6bdcc]');
   });
 

@@ -111,7 +111,7 @@ export default function EngineBox({
             disabled={!engineOn}
             className={`grid h-6 w-6 place-items-center rounded-control border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               arrowsOn
-                ? 'border-gold/60 bg-gold/25 text-gold-text'
+                ? 'border-brand-hi/60 bg-brand/25 text-ink'
                 : 'border-line text-muted hover:border-line-strong hover:text-ink'
             }`}
             onClick={onToggleArrows}
@@ -141,7 +141,7 @@ export default function EngineBox({
         (paused ? (
           <div className="flex h-9 items-center gap-2 px-3" data-testid="engine-paused">
             <span className={statusDot({ tone: 'warn', pulse: true })} />
-            <span className="text-ui text-gold-hi">{t('analysis.enginePaused')}</span>
+            <span className="text-ui text-warn-hi">{t('analysis.enginePaused')}</span>
           </div>
         ) : (
           <EngineReadout fen={fen} state={state} onInsertLine={onInsertLine} />

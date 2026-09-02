@@ -199,7 +199,7 @@ export default function HistoricalEvidenceCard({
         </span>
       </header>
 
-      <p className="m-0 text-note font-semibold uppercase tracking-[0.06em] text-gold-text">
+      <p className="m-0 text-note font-semibold uppercase tracking-[0.06em] text-accent">
         {headline(candidate, t)}
       </p>
 

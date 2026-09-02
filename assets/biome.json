@@ -7,7 +7,14 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!public/engine", "!public/openings.json", "!public/pieces"]
+    "includes": [
+      "**",
+      "!public/engine",
+      "!public/openings.json",
+      "!public/pieces",
+      "!public/brand",
+      "!public/favicon.svg"
+    ]
   },
   "formatter": {
     "enabled": true,

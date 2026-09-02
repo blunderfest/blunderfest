@@ -34,7 +34,7 @@ export default function RoomCodeChip({ slug, readOnly }: { slug: string; readOnl
         data-tour="share"
         aria-label={t('room.codeLabel')}
         title={t('room.codeChipHint')}
-        className="flex items-center gap-1.5 rounded-lg border border-line px-2 py-1 font-mono text-ui tracking-widest text-ink transition-colors hover:border-gold-hi/60 hover:text-gold-hi"
+        className="flex items-center gap-1.5 rounded-lg border border-line px-2 py-1 font-mono text-ui tracking-widest text-ink transition-colors hover:border-line-strong"
         onClick={() => void handleCopy()}
       >
         <span aria-hidden="true">{copied ? t('room.copied') : slug.toUpperCase()}</span>
@@ -74,7 +74,7 @@ export default function RoomCodeChip({ slug, readOnly }: { slug: string; readOnl
         </span>
       </button>
       {readOnly && (
-        <span className={chip({ tone: 'gold' })} title={t('room.demoHint')}>
+        <span className={chip({ tone: 'info' })} title={t('room.demoHint')}>
           {t('room.demoBadge')}
         </span>
       )}

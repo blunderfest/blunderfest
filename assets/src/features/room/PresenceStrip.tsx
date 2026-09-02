@@ -28,7 +28,7 @@ function Avatar({ member, presenting }: { member: PresenceMember; presenting: bo
     <span
       aria-hidden="true"
       className={`grid h-7 w-7 shrink-0 animate-pop place-items-center rounded-full border text-micro font-bold uppercase ${
-        presenting ? 'border-gold ring-2 ring-gold/35' : 'border-line'
+        presenting ? 'border-accent ring-2 ring-accent/35' : 'border-line'
       }`}
       style={{
         backgroundColor: `hsl(${hue} 45% 22%)`,
@@ -156,7 +156,7 @@ export default function PresenceStrip({
                       {member.name}
                     </span>
                     {member.id === presenterId && (
-                      <span className={chip({ tone: 'gold' })}>{t('room.presenting')}</span>
+                      <span className={chip({ tone: 'accent' })}>{t('room.presenting')}</span>
                     )}
                     {member.id === presenterId && member.id !== selfId && (
                       <button

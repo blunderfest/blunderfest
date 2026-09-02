@@ -8,7 +8,7 @@ import { createTV } from 'tailwind-variants';
  * The custom type scale (text-micro/ui/body/…) must be registered as a
  * font-size group, or the merge classifies it as a *color* and silently
  * drops real text-color classes wherever both appear (e.g. the primary
- * button's dark text on gold).
+ * button's light text on brand navy).
  */
 export const tv = createTV({
   twMergeConfig: {
@@ -46,11 +46,11 @@ export const panelHeader = tv({
 });
 
 export const button = tv({
-  base: 'inline-flex items-center justify-center gap-1.5 rounded-control border font-semibold transition-[background,border-color,color,box-shadow] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-hi disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none',
+  base: 'inline-flex items-center justify-center gap-1.5 rounded-control border font-semibold transition-[background,border-color,color,box-shadow] duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none',
   variants: {
     intent: {
       primary:
-        'bg-gold text-[#20180a] border-gold/70 hover:bg-gold-hi hover:border-gold-hi active:translate-y-px',
+        'bg-brand text-brand-ink border-brand/70 hover:bg-brand-hi hover:border-brand-hi active:translate-y-px',
       secondary:
         'bg-raised text-ink border-line-strong hover:bg-overlay hover:border-line-strong active:translate-y-px',
       ghost:
@@ -71,7 +71,7 @@ export const button = tv({
       tb: 'h-7 px-1.5 text-note',
     },
     active: {
-      true: 'border-gold/60 bg-gold/25 text-gold-text hover:bg-gold/30',
+      true: 'border-brand-hi/60 bg-brand/25 text-ink hover:bg-brand/30',
     },
     block: { true: 'w-full' },
   },
@@ -79,7 +79,7 @@ export const button = tv({
 });
 
 export const input = tv({
-  base: 'w-full rounded-control border bg-surface text-ink placeholder:text-faint transition-[border-color,box-shadow] duration-150 focus:border-gold/60 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-gold-hi disabled:cursor-not-allowed disabled:opacity-50',
+  base: 'w-full rounded-control border bg-surface text-ink placeholder:text-faint transition-[border-color,box-shadow] duration-150 focus:border-accent/60 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50',
   variants: {
     size: {
       sm: 'h-8 px-2.5 text-note',
@@ -93,7 +93,7 @@ export const input = tv({
 });
 
 export const textarea = tv({
-  base: 'w-full resize-none rounded-control border bg-surface p-2.5 text-body leading-[1.45] text-ink placeholder:text-faint focus:border-gold/60 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-gold-hi',
+  base: 'w-full resize-none rounded-control border bg-surface p-2.5 text-body leading-[1.45] text-ink placeholder:text-faint focus:border-accent/60 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent',
   variants: {
     invalid: { true: 'border-bad/70' },
   },
@@ -104,7 +104,8 @@ export const chip = tv({
   variants: {
     tone: {
       neutral: 'bg-raised text-muted',
-      gold: 'bg-gold/15 text-gold-hi',
+      accent: 'bg-accent-muted text-accent',
+      warn: 'bg-warn/15 text-warn-hi',
       ok: 'bg-ok/15 text-ok-hi',
       bad: 'bg-bad/15 text-bad-hi',
       info: 'bg-info/15 text-info',
@@ -120,7 +121,7 @@ export const statusDot = tv({
     tone: {
       ok: 'bg-ok',
       bad: 'bg-bad',
-      warn: 'bg-gold',
+      warn: 'bg-warn',
       idle: 'bg-faint',
     },
     pulse: { true: 'animate-pulse-soft' },
@@ -129,11 +130,12 @@ export const statusDot = tv({
 });
 
 export const listRow = tv({
-  base: 'group flex w-full items-center gap-2 px-3 py-2 text-left text-ui transition-colors duration-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-gold-hi',
+  base: 'group flex w-full items-center gap-2 px-3 py-2 text-left text-ui transition-colors duration-100 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
   variants: {
     state: {
       default: 'text-muted hover:bg-raised hover:text-ink',
-      selected: 'bg-gold/12 text-ink shadow-[inset_2px_0_0_var(--color-gold)] hover:bg-gold/16',
+      selected:
+        'bg-accent-muted text-ink shadow-[inset_2px_0_0_var(--color-accent)] hover:bg-accent/20',
       muted: 'text-faint',
     },
     arrived: { true: 'animate-arrive' },

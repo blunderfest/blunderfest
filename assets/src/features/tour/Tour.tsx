@@ -129,7 +129,7 @@ export default function Tour({ steps, onClose }: { steps: TourStepDef[]; onClose
       {spot !== null && (
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.72)] outline-2 outline-gold"
+          className="pointer-events-none absolute rounded-xl shadow-[0_0_0_9999px_rgba(0,0,0,0.72)] outline-2 outline-accent"
           style={{ top: spot.top, left: spot.left, width: spot.width, height: spot.height }}
         />
       )}

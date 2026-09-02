@@ -205,7 +205,7 @@ export default function GameRail({
                   onDoubleClick={() => startRename(id, tree)}
                   className={`flex w-full flex-col rounded-control border px-2 py-1.5 text-left transition-colors ${
                     active
-                      ? 'border-gold-hi/60 bg-gold/10 shadow-[inset_2px_0_0_var(--color-gold-hi)]'
+                      ? 'border-accent/40 bg-accent-muted shadow-[inset_2px_0_0_var(--color-accent)]'
                       : 'border-line bg-panel hover:border-line-strong hover:bg-raised'
                   }`}
                 >
@@ -241,7 +241,7 @@ export default function GameRail({
                         role="img"
                         aria-label={t('room.presenting')}
                         title={t('room.presenting')}
-                        className="ml-auto inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-line text-[7px] font-bold text-gold-hi"
+                        className="ml-auto inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-line text-[7px] font-bold text-accent"
                       >
                         {initialsOf(presenterName)}
                       </span>
@@ -288,7 +288,7 @@ export default function GameRail({
             <button
               type="button"
               onClick={onAddGame}
-              className="flex w-28 shrink-0 items-center justify-center gap-1.5 self-stretch rounded-control border border-dashed border-line-strong text-ui font-medium text-faint transition-colors hover:border-gold-hi/60 hover:text-gold-hi xl:hidden"
+              className="flex w-28 shrink-0 items-center justify-center gap-1.5 self-stretch rounded-control border border-dashed border-line-strong text-ui font-medium text-faint transition-colors hover:border-line-strong hover:text-ink xl:hidden"
             >
               <ImportIcon />
               {t('room.addGame')}
@@ -296,7 +296,7 @@ export default function GameRail({
             <button
               type="button"
               onClick={onNewGame}
-              className="flex w-28 shrink-0 items-center justify-center gap-1.5 self-stretch rounded-control border border-dashed border-line-strong text-ui font-medium text-faint transition-colors hover:border-gold-hi/60 hover:text-gold-hi xl:hidden"
+              className="flex w-28 shrink-0 items-center justify-center gap-1.5 self-stretch rounded-control border border-dashed border-line-strong text-ui font-medium text-faint transition-colors hover:border-line-strong hover:text-ink xl:hidden"
             >
               <NewGameIcon />
               {t('room.newGame')}

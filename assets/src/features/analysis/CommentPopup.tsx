@@ -72,7 +72,7 @@ export default function CommentPopup({
         <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
           <h2 className="m-0 text-lead font-semibold">{t('analysis.commentTitle')}</h2>
           {moveLabel !== null && (
-            <span className="text-ui text-gold-hi tabular-nums">{moveLabel}</span>
+            <span className="text-ui text-accent tabular-nums">{moveLabel}</span>
           )}
         </div>
         <div className="flex flex-col gap-3 p-4">
@@ -88,7 +88,7 @@ export default function CommentPopup({
                 data-testid={`nag-${nag.code}`}
                 className={`min-w-9 rounded-control border px-2 py-1 text-ui font-bold transition-colors ${
                   selectedNag === nag.code
-                    ? 'border-gold/60 bg-gold/20 text-gold-hi'
+                    ? 'border-accent/60 bg-accent-muted text-accent'
                     : 'border-line text-muted hover:border-line-strong hover:text-ink'
                 }`}
                 onClick={() =>

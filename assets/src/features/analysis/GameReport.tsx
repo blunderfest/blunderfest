@@ -9,7 +9,7 @@ import type { AnalysisEval } from '@/protocol/ops';
 
 const MARK_COLOR: Record<MoveMark, string> = {
   '??': 'text-bad-hi',
-  '?': 'text-gold-hi',
+  '?': 'text-warn-hi',
   '?!': 'text-muted',
 };
 
@@ -76,7 +76,7 @@ export default function GameReport({
               <span className="sr-only">{sideLabel(side, stats)}</span>
               <div aria-hidden="true">
                 <div className="truncate text-note font-semibold text-ink">{names[side]}</div>
-                <div className="text-lead font-bold tabular-nums text-gold-hi">
+                <div className="text-lead font-bold tabular-nums text-ink">
                   {stats.accuracy === null ? '–' : `${stats.accuracy.toFixed(1)}%`}
                 </div>
                 <div className="text-micro text-faint tabular-nums">

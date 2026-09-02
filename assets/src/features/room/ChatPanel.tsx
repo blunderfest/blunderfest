@@ -63,7 +63,7 @@ export default function ChatPanel({
         {messages.map((message) => (
           <li key={message.seq} className="flex items-start gap-1 text-ui leading-snug">
             <span className="min-w-0 flex-1">
-              <span className="font-semibold text-gold-hi">
+              <span className="font-semibold text-muted">
                 {names[message.author] ?? message.author_name ?? message.author}
               </span>{' '}
               <span className="text-ink">{message.text}</span>

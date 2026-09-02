@@ -26,7 +26,7 @@ function readActiveLayer(): string {
  * clocks — as ONE chart at a time, switched by a tab row in the header. The
  * strip is a fixed bottom region of the board column (the rail and dock run
  * full height beside it); it is not collapsible. Scrub-to-ply on the chart
- * navigates; the gold current-position marker rides the chart. The active
+ * navigates; the accent current-position marker rides the chart. The active
  * layer persists per viewer in localStorage, never as ops. The whole-game
  * analyze job owns the header — Analyze game, live progress, Re-analyze —
  * always reachable.
@@ -222,14 +222,14 @@ export default function TimelineBand({
                 data-testid="timeline-layer-tab"
                 data-layer={layer.id}
                 className={`relative px-2 py-1 text-note font-semibold uppercase tracking-wide transition-colors ${
-                  active.id === layer.id ? 'text-gold-hi' : 'text-faint hover:text-muted'
+                  active.id === layer.id ? 'text-accent' : 'text-faint hover:text-muted'
                 }`}
                 onClick={() => chooseLayer(layer.id)}
               >
                 {layer.label}
                 {active.id === layer.id && (
                   <span
-                    className="absolute inset-x-2 bottom-0 h-0.5 bg-gold-hi"
+                    className="absolute inset-x-2 bottom-0 h-0.5 bg-accent"
                     aria-hidden="true"
                   />
                 )}
@@ -263,7 +263,7 @@ export default function TimelineBand({
                   className="relative h-1.5 w-16 overflow-hidden rounded-full bg-line"
                 >
                   <span
-                    className="absolute inset-y-0 left-0 rounded-full bg-gold transition-[width] duration-300"
+                    className="absolute inset-y-0 left-0 rounded-full bg-warn transition-[width] duration-300"
                     style={{
                       width: `${Math.round(
                         (analyzeAction.progress.done / Math.max(analyzeAction.progress.total, 1)) *

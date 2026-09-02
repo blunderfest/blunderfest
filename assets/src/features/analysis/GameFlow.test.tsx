@@ -148,9 +148,9 @@ describe('GameFlow', () => {
 
     const cells = screen.getAllByTestId('game-flow-quality-cell');
     expect(cells.map((c) => c.getAttribute('data-mark'))).toEqual(['?!', '?', '??']);
-    // The current ply's cell wears the gold ring.
-    expect(cells[1].className).toContain('ring-gold');
-    expect(cells[0].className).not.toContain('ring-gold');
+    // The current ply's cell wears the accent ring.
+    expect(cells[1].className).toContain('ring-accent');
+    expect(cells[0].className).not.toContain('ring-accent');
   });
 
   it('leaves neutral cells subtle when nothing went wrong', () => {

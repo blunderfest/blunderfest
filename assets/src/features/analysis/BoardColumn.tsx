@@ -111,7 +111,7 @@ export default function BoardColumn({
         <p
           data-testid="opening-name"
           aria-hidden={opening === null}
-          className="m-0 min-w-0 flex-1 truncate text-note text-gold-hi"
+          className="m-0 min-w-0 flex-1 truncate text-note text-muted"
         >
           {opening === null ? '' : `${opening.eco} · ${opening.name}`}
         </p>
@@ -226,7 +226,7 @@ export default function BoardColumn({
               data-testid="eraser-button"
               className={`grid h-9 w-9 place-items-center rounded-control border text-base transition-colors ${
                 editor.editBrush === 'erase'
-                  ? 'border-gold/60 bg-gold/20 text-gold-hi'
+                  ? 'border-brand-hi/60 bg-brand/20 text-ink'
                   : 'border-line bg-panel text-muted hover:bg-raised'
               }`}
               onClick={() => editor.toggleBrush('erase')}
@@ -325,11 +325,11 @@ export default function BoardColumn({
             drawColorPicker={canEdit ? drawColorPicker : undefined}
             clearDrawings={canEdit ? clearDrawings : undefined}
           />
-          {/* A terminal result rides the toolbar row (gold text), not a
+          {/* A terminal result rides the toolbar row (neutral ink), not a
               row of its own — every pixel of vertical chrome costs the
               board's height budget. */}
           {current.status !== 'active' && (
-            <span id="analysis-status" className="text-ui font-semibold text-gold-hi" role="status">
+            <span id="analysis-status" className="text-ui font-semibold text-ink" role="status">
               {t(`analysis.status.${current.status}`)}
             </span>
           )}
@@ -428,7 +428,7 @@ function PaletteStrip({
               piece: t(`analysis.pieces.${kind}`),
             })}
             className={`grid h-[min(calc(var(--board-size)/8),4.25rem)] w-[min(calc(var(--board-size)/8),4.25rem)] place-items-center rounded-control leading-none transition-colors ${
-              active ? 'bg-gold/25 ring-1 ring-gold/60' : 'hover:bg-black/10'
+              active ? 'bg-brand/25 ring-1 ring-brand-hi/60' : 'hover:bg-black/10'
             }`}
             onPointerDown={(event) => editor.handlePalettePointerDown({ color, kind }, event)}
             onClick={() => editor.handlePaletteClick({ color, kind })}

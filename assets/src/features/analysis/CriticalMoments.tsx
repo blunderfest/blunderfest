@@ -130,7 +130,7 @@ export default function CriticalMoments({
                   moment.mark === '??'
                     ? 'text-bad-hi'
                     : moment.mark === '?'
-                      ? 'text-gold-hi'
+                      ? 'text-warn-hi'
                       : 'text-muted'
                 }
               >

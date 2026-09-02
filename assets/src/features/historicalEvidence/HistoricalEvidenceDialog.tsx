@@ -438,7 +438,7 @@ export default function HistoricalEvidenceDialog({
                         data-testid="historical-evidence-row"
                         className={`flex flex-col gap-0.5 border-l-2 px-2.5 py-2 text-left transition-colors ${
                           i === clampedIndex
-                            ? 'border-gold-hi bg-raised'
+                            ? 'border-accent bg-raised'
                             : 'border-transparent hover:bg-raised/60'
                         }`}
                         onClick={() => setIndex(i)}
@@ -454,7 +454,7 @@ export default function HistoricalEvidenceDialog({
                           <span
                             className={`ml-auto rounded-chip px-1 font-semibold uppercase tracking-[0.06em] ${
                               candidate.strategy === 'exact'
-                                ? 'bg-gold/15 text-gold-hi'
+                                ? 'bg-accent-muted text-accent'
                                 : 'bg-raised text-faint'
                             }`}
                           >

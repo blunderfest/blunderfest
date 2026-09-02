@@ -340,7 +340,7 @@ export default function GameFlow({
             x2={markerX}
             y1={0}
             y2={HEIGHT}
-            className="stroke-gold"
+            className="stroke-accent"
             vectorEffect="non-scaling-stroke"
             strokeWidth={2}
             data-testid="game-flow-marker"
@@ -392,7 +392,7 @@ export default function GameFlow({
           <div
             key={ply}
             className={`pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ${
-              mark === '??' ? 'bg-bad-hi' : mark === '?' ? 'bg-gold-hi' : 'bg-muted'
+              mark === '??' ? 'bg-bad-hi' : mark === '?' ? 'bg-warn-hi' : 'bg-muted'
             }`}
             style={{ left: `${xPct}%`, top: `${yPct}%` }}
             data-testid="game-flow-mark"
@@ -477,11 +477,11 @@ export default function GameFlow({
                   mark === '??'
                     ? 'bg-bad-hi'
                     : mark === '?'
-                      ? 'bg-gold-hi'
+                      ? 'bg-warn-hi'
                       : mark === '?!'
                         ? 'bg-muted'
                         : 'bg-raised'
-                } ${evaluation.ply === currentPly ? 'ring-1 ring-gold' : ''}`}
+                } ${evaluation.ply === currentPly ? 'ring-1 ring-accent' : ''}`}
                 data-testid="game-flow-quality-cell"
                 data-mark={mark ?? ''}
               />

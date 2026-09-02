@@ -7,7 +7,7 @@ describe('UpdateBanner', () => {
     const onReload = vi.fn();
     render(<UpdateBanner onReload={onReload} />);
 
-    expect(screen.getByText('A new version of Blunderfest is available.')).toBeInTheDocument();
+    expect(screen.getByText('A new version of OpenChessLab is available.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Reload' }));
     expect(onReload).toHaveBeenCalled();

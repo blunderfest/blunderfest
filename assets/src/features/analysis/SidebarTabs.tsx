@@ -56,14 +56,14 @@ export default function SidebarTabs({
             role="tab"
             aria-selected={tab.id === current.id}
             className={`relative flex flex-1 items-center justify-center gap-1 py-2 text-center text-note font-semibold uppercase tracking-wide transition-colors ${
-              tab.id === current.id ? 'text-gold-hi' : 'text-muted hover:text-ink'
+              tab.id === current.id ? 'text-ink' : 'text-muted hover:text-ink'
             }`}
             onClick={() => activate(tab.id)}
           >
             {tab.label}
             {tab.badge}
             {tab.id === current.id && (
-              <span className="absolute inset-x-2 bottom-0 h-0.5 bg-gold-hi" aria-hidden="true" />
+              <span className="absolute inset-x-2 bottom-0 h-0.5 bg-brand-hi" aria-hidden="true" />
             )}
           </button>
         ))}

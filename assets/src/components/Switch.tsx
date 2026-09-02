@@ -21,7 +21,7 @@ export default function Switch({
       data-testid={testid}
       disabled={disabled}
       className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-        on ? 'bg-gold' : 'border border-line-strong bg-raised'
+        on ? 'bg-brand' : 'border border-line-strong bg-raised'
       } ${disabled ? 'cursor-not-allowed' : ''}`}
       onClick={onToggle}
     >

@@ -76,7 +76,7 @@ function UploadIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="text-gold-hi"
+      className="text-muted"
     >
       <path d="M12 16V4m0 0 4 4m-4-4-4 4" />
       <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
@@ -447,7 +447,7 @@ export default function ImportDialog({
                   aria-selected={sourceTab === tab}
                   className={`rounded-control border px-2.5 py-1 text-note font-semibold transition-colors ${
                     sourceTab === tab
-                      ? 'border-gold/60 bg-gold/15 text-gold-hi'
+                      ? 'border-brand-hi/60 bg-brand/15 text-ink'
                       : 'border-line text-muted hover:border-line-strong hover:text-ink'
                   }`}
                   onClick={() => setSourceTab(tab)}
@@ -524,7 +524,7 @@ export default function ImportDialog({
                         aria-pressed={pickedStudyId === study.id}
                         className={
                           pickedStudyId === study.id
-                            ? 'flex w-full items-baseline justify-between gap-2 rounded-control bg-gold/15 px-2 py-1.5 text-left text-ui text-ink outline-1 outline-gold/60 transition-colors hover:bg-gold/20'
+                            ? 'flex w-full items-baseline justify-between gap-2 rounded-control bg-accent-muted px-2 py-1.5 text-left text-ui text-ink outline-1 outline-accent/60 transition-colors hover:bg-accent/20'
                             : 'flex w-full items-baseline justify-between gap-2 rounded-control px-2 py-1.5 text-left text-ui text-ink transition-colors hover:bg-raised'
                         }
                         onClick={() => handlePickStudy(study.id)}
@@ -713,20 +713,20 @@ export default function ImportDialog({
 
           {skips.length > 0 && (
             <div
-              className="flex shrink-0 items-start gap-2 rounded-control border border-gold/40 bg-gold/10 p-2.5"
+              className="flex shrink-0 items-start gap-2 rounded-control border border-warn/40 bg-warn/10 p-2.5"
               role="alert"
               data-testid="import-failures"
             >
-              <span aria-hidden="true" className="text-gold-hi">
+              <span aria-hidden="true" className="text-warn-hi">
                 ⚠
               </span>
               <div className="flex flex-col">
-                <span className="text-ui font-semibold text-gold-hi">
+                <span className="text-ui font-semibold text-warn-hi">
                   {t('import.partialTitle')}
                 </span>
                 {skips.map((skip, position) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: the skip list is static per parse — the index IS the identity
-                  <span key={position} className="text-note text-gold-hi/90">
+                  <span key={position} className="text-note text-warn-hi/90">
                     {skipLine(t, skip)}
                   </span>
                 ))}
@@ -878,7 +878,7 @@ export default function ImportDialog({
                     applicable ? (
                       <label
                         key={key}
-                        className="group/card flex cursor-pointer items-start gap-2 rounded-control border border-line bg-raised p-2.5 transition-colors has-[:checked]:border-gold/60 has-[:checked]:bg-gold/10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-gold-hi"
+                        className="group/card flex cursor-pointer items-start gap-2 rounded-control border border-line bg-raised p-2.5 transition-colors has-[:checked]:border-accent/60 has-[:checked]:bg-accent-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent"
                       >
                         <input
                           type="checkbox"
@@ -889,13 +889,13 @@ export default function ImportDialog({
                         />
                         <span
                           aria-hidden="true"
-                          className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border border-line-strong transition-colors group-has-[:checked]/card:border-gold group-has-[:checked]/card:bg-gold"
+                          className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border border-line-strong transition-colors group-has-[:checked]/card:border-accent group-has-[:checked]/card:bg-accent"
                         >
                           {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative tick — the wrapping span is aria-hidden and the real checkbox carries the state */}
                           <svg
                             viewBox="0 0 20 20"
                             fill="currentColor"
-                            className="h-3 w-3 text-[#20180a] opacity-0 transition-opacity group-has-[:checked]/card:opacity-100"
+                            className="h-3 w-3 text-void opacity-0 transition-opacity group-has-[:checked]/card:opacity-100"
                           >
                             <path d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.8 3.8 6.8-6.8a1 1 0 0 1 1.4 0Z" />
                           </svg>

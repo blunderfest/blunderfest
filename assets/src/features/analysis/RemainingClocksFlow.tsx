@@ -188,7 +188,7 @@ export default function RemainingClocksFlow({
             x2={markerX}
             y1={0}
             y2={HEIGHT}
-            className="stroke-gold"
+            className="stroke-accent"
             vectorEffect="non-scaling-stroke"
             strokeWidth="2"
             data-testid="remaining-clocks-marker"

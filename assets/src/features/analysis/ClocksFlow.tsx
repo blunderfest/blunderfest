@@ -152,7 +152,7 @@ export default function ClocksFlow({
                 height={h}
                 className={
                   time.ply === currentPly
-                    ? 'fill-gold-hi'
+                    ? 'fill-accent'
                     : time.mover === 'w'
                       ? 'fill-clock-w'
                       : 'fill-[#b6bdcc]'
@@ -168,7 +168,7 @@ export default function ClocksFlow({
             x2={markerX}
             y1={0}
             y2={HEIGHT}
-            className="stroke-gold"
+            className="stroke-accent"
             vectorEffect="non-scaling-stroke"
             strokeWidth={2}
             data-testid="clocks-flow-marker"

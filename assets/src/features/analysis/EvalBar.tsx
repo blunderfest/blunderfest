@@ -3,7 +3,7 @@ import { evalLabel, type WhiteEval, whiteShare } from '@/features/analysis/uci';
 /**
  * Vertical eval bar per the design spec: white's share (gradient) grows from
  * white's side of the board — from the bottom normally, from the top when
- * the board is flipped, like lichess. A tick at 50%, a gold sweep while the
+ * the board is flipped, like lichess. A tick at 50%, a warn sweep while the
  * engine thinks, and a dimmed "?" when the engine is unavailable. The value
  * badge floats inside the bar at the white/black split point. Height is
  * inherited from the flex row that wraps it beside the board.
@@ -51,7 +51,7 @@ export default function EvalBar({
           <div className="w-full flex-1 bg-[#1a1d24]" data-testid="eval-black" />
           <div className="absolute top-1/2 right-0 left-0 h-px bg-line-strong" />
           {thinking && !unavailable && (
-            <div className="absolute inset-x-0 h-1/3 animate-sweep bg-gradient-to-b from-transparent via-gold/25 to-transparent" />
+            <div className="absolute inset-x-0 h-1/3 animate-sweep bg-gradient-to-b from-transparent via-warn/25 to-transparent" />
           )}
         </div>
         {white !== null && !unavailable && (

@@ -257,7 +257,7 @@ export default function PositionContext({
           {onViewEvidence !== undefined && (
             <button
               type="button"
-              className="border-t border-line px-3 py-1.5 text-left text-note text-gold-hi transition-colors hover:bg-raised hover:text-ink"
+              className="border-t border-line px-3 py-1.5 text-left text-note text-accent transition-colors hover:bg-raised hover:text-accent-hi"
               onClick={() => onViewEvidence()}
               data-testid="position-context-view-evidence"
             >

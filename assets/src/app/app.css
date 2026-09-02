@@ -28,10 +28,18 @@
   --color-muted: #a6adb8;
   --color-faint: #8e96a3; /* ≥4.5:1 on every surface (DESIGN.md's ink floor rule) */
 
-  /* Brand + semantics */
-  --color-gold: #c9a227;
-  --color-gold-hi: #d4b13c;
-  --color-gold-dim: #7a641a;
+  /* OpenChessLab brand layer (Phase 2A validation slice). brand = navy
+     identity/primary action; accent = cyan analytical focus/current
+     position; warn = the amber status semantics (gold's old warning
+     role), never brand. */
+  --color-brand: #35507e;
+  --color-brand-hi: #46639a;
+  --color-brand-ink: #f4f6fb;
+  --color-accent: #45c4e9;
+  --color-accent-hi: #7ad6f2;
+  --color-accent-muted: rgb(69 196 233 / 0.16);
+  --color-warn: #c9a227;
+  --color-warn-hi: #d4b13c;
   --color-ok: #58a86c;
   --color-ok-hi: #7ed081;
   --color-bad: #d96c66;
@@ -51,9 +59,6 @@
   /* The clock layer's "white" series: near-white on the dark canvas, a
      readable slate on the light one. */
   --color-clock-w: #f4f6fb;
-
-  /* Gold text on dark surfaces — the interactive gold (DESIGN.md's accent) */
-  --color-gold-text: #d4b13c;
 
   /* The edit-palette tray: a muted slate on dark, a soft gray on light —
      quiet, but the solid-black pawn still reads on both. */
@@ -156,9 +161,16 @@
   --color-faint: #626a76;
 
   /* Brand + semantics (deepened for contrast on white) */
-  --color-gold: #c9a227;
-  --color-gold-hi: #8a6d10;
-  --color-gold-dim: #7a641a;
+
+  /* OpenChessLab brand layer, light theme */
+  --color-brand: #1c3663;
+  --color-brand-hi: #24447c;
+  --color-brand-ink: #ffffff;
+  --color-accent: #0b7285;
+  --color-accent-hi: #085a69;
+  --color-accent-muted: rgb(11 114 133 / 0.12);
+  --color-warn: #8a6d10;
+  --color-warn-hi: #8a6d10;
   --color-ok: #2c7a43;
   --color-ok-hi: #2f9e4f;
   --color-bad: #b23e38;
@@ -166,7 +178,6 @@
   --color-info: #2b6cb0;
   --color-silver: #6b7688;
 
-  --color-gold-text: #8a6d10;
   --color-tray: #dde3ec;
   --color-clock-w: #4d5768;
 
@@ -212,7 +223,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-gold-hi);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
     border-radius: var(--radius-chip);
   }

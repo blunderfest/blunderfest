@@ -710,7 +710,7 @@ function RoomViewInner({
                       <p id="viewer-waiting" className="m-0 text-body text-muted">
                         {t('room.viewerWaiting')}
                       </p>
-                      <span className={chip({ tone: 'gold' })}>
+                      <span className={chip({ tone: 'warn' })}>
                         <span className={statusDot({ tone: 'warn', pulse: true })} />
                         {t('room.listening')}
                       </span>

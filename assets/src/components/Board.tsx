@@ -14,7 +14,7 @@ import {
 import type { DrawnHighlight } from '@/protocol/ops';
 
 const square = tv({
-  base: 'relative flex items-center justify-center aspect-square select-none focus-visible:z-20 focus-visible:shadow-[inset_0_0_0_2px_var(--color-surface),inset_0_0_0_4px_var(--color-gold-hi)]',
+  base: 'relative flex items-center justify-center aspect-square select-none focus-visible:z-20 focus-visible:shadow-[inset_0_0_0_2px_var(--color-surface),inset_0_0_0_4px_var(--color-accent)]',
   variants: {
     shade: { light: 'bg-board-light', dark: 'bg-board-dark' },
     highlight: { none: '', lastMove: '', selected: '' },
@@ -605,7 +605,7 @@ export default function Board({
                   dragMark.mark === '??'
                     ? 'bg-bad text-white'
                     : dragMark.mark === '?'
-                      ? 'bg-gold text-[#20180a]'
+                      ? 'bg-warn-hi text-void'
                       : 'bg-overlay text-muted'
                 }`}
               >

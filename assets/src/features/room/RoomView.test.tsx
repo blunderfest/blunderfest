@@ -722,7 +722,7 @@ describe('RoomView', () => {
     const list = screen.getByTestId('member-list');
     expect(await within(list).findByText('Brave Otter 42')).toBeInTheDocument();
     expect(screen.getAllByText('Presenting')).toHaveLength(1);
-    // …and the games list marks the presented game with a compact gold dot.
+    // …and the games list marks the presented game with a compact accent dot.
     expect(screen.getByRole('img', { name: 'Presenting' })).toBeInTheDocument();
   });
 

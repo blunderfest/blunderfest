@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "Blunderfest",
-    "tagline": "Collaborative chess analysis.",
+    "name": "OpenChessLab",
+    "tagline": "Explore chess. Understand more.",
     "skipToContent": "Skip to main content",
     "toLightMode": "Switch to light mode",
     "toDarkMode": "Switch to dark mode",
@@ -517,7 +517,7 @@
     "menuGame": "{{count}} game"
   },
   "update": {
-    "available": "A new version of Blunderfest is available.",
+    "available": "A new version of OpenChessLab is available.",
     "reload": "Reload"
   },
   "positionContext": {

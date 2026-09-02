@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackendStatus } from '@/app/App';
-import Logo from '@/components/Logo';
 import { button, input, listRow, panel, panelHeader, statusDot } from '@/components/ui';
 import {
   ApiError,
@@ -138,11 +137,28 @@ export default function Home({
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
       <div className="flex flex-col items-center gap-3 text-center">
-        <h1 className="m-0">
-          <span className="sr-only">{t('app.name')}</span>
-          <span aria-hidden="true">
-            <Logo size="lg" />
+        <h1 className="m-0 flex flex-col items-center gap-4">
+          {/* The approved full-mark SVG masters (Phase 2E); both theme
+              variants render and the pre-paint data-theme attribute selects
+              the visible one. h-[98px] matches the previous PNG's optical
+              knight height (~97.7px) — the SVG viewBox is the knight bbox. */}
+          <span className="grid h-28 w-24 place-items-center" aria-hidden="true">
+            <img
+              src="/brand/openchesslab-mark-light.svg"
+              alt=""
+              width={135}
+              height={171}
+              className="col-start-1 row-start-1 h-[98px] w-auto [[data-theme=dark]_&]:hidden"
+            />
+            <img
+              src="/brand/openchesslab-mark-dark.svg"
+              alt=""
+              width={135}
+              height={171}
+              className="col-start-1 row-start-1 hidden h-[98px] w-auto [[data-theme=dark]_&]:block"
+            />
           </span>
+          <span className="text-hero font-bold tracking-[-0.01em] text-ink">{t('app.name')}</span>
         </h1>
         <p className="m-0 max-w-lg text-lead text-muted">{t('app.tagline')}</p>
       </div>

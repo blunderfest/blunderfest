@@ -95,7 +95,7 @@ export default function EngineReadout({
         <span className="text-ui text-muted">{t('analysis.engineUnavailable')}</span>
         <button
           type="button"
-          className="text-ui font-semibold text-gold-hi hover:underline"
+          className="text-ui font-semibold text-ink hover:underline"
           onClick={retry}
         >
           {t('analysis.engineRetry')}
