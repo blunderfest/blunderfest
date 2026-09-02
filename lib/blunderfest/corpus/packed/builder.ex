@@ -17,6 +17,8 @@ defmodule Blunderfest.Corpus.Packed.Builder do
     * positions: `{hash16, pawn_hash, first_gid, first_ply, key_string}`
       sorted by `hash` (bucket entries are re-sorted by `(pawn_hash, hash)`
       in memory).
+    * book rows: `{hash16, move, games, white, draw, black}` sorted by
+      `hash` — each key's entries pre-sorted by `(games desc, move)`.
   """
 
   alias Blunderfest.Corpus.Packed.{Format, Input}
@@ -24,6 +26,7 @@ defmodule Blunderfest.Corpus.Packed.Builder do
   @occ_record_bytes Format.occ_record_bytes()
   @pos_header_bytes Format.pos_header_bytes()
   @bucket_record_bytes Format.bucket_record_bytes()
+  @book_header_bytes Format.book_header_bytes()
 
   @doc """
   Builds the segment `id` under the packed root `root_dir` (files land in
@@ -36,9 +39,10 @@ defmodule Blunderfest.Corpus.Packed.Builder do
           String.t(),
           occ_stream :: Enumerable.t(),
           pos_stream :: Enumerable.t(),
+          book_stream :: Enumerable.t(),
           games_count :: non_neg_integer() | nil
         ) :: map()
-  def build!(root_dir, id, occurrences, positions, games_count) do
+  def build!(root_dir, id, occurrences, positions, books, games_count) do
     dir = Path.join(root_dir, id)
     File.mkdir_p!(dir)
 
@@ -50,6 +54,8 @@ defmodule Blunderfest.Corpus.Packed.Builder do
     if bucket_count != pos.count do
       raise "packed build validation failed: #{bucket_count} bucket entries for #{pos.count} positions"
     end
+
+    book_count = write_book(Path.join(dir, "book.bin"), dir, books)
 
     files = %{
       occ:
@@ -69,6 +75,12 @@ defmodule Blunderfest.Corpus.Packed.Builder do
           Path.join(id, "bucket.bin"),
           Path.join(dir, "bucket.bin"),
           bucket_count * @bucket_record_bytes
+        ),
+      book:
+        file_info!(
+          Path.join(id, "book.bin"),
+          Path.join(dir, "book.bin"),
+          book_count.bytes
         )
     }
 
@@ -79,6 +91,7 @@ defmodule Blunderfest.Corpus.Packed.Builder do
       games: games_count,
       occurrences: occ.count,
       positions: pos.count,
+      book_records: book_count.count,
       gids: occ.gids,
       files: files
     }
@@ -243,6 +256,58 @@ defmodule Blunderfest.Corpus.Packed.Builder do
     File.rm!(sorted)
 
     count
+  end
+
+  ## Book pass (headers + blob region, sorted by hash)
+
+  # The book stream is already grouped per key: `{hash, [{move, games,
+  # white, draw, black}, …]}` with keys sorted ascending. Each entry is
+  # written into the blob region; the header region records the offset.
+  defp write_book(path, dir, books) do
+    headers_path = Path.join(dir, "book-headers.tmp")
+    blobs_path = Path.join(dir, "book-blobs.tmp")
+
+    {:ok, headers} = File.open(headers_path, [:raw, :write, delayed_write()])
+    {:ok, blobs} = File.open(blobs_path, [:raw, :write, delayed_write()])
+
+    state =
+      books
+      |> Stream.chunk_every(@write_chunk_records)
+      |> Enum.reduce(%{count: 0, bytes: 0, prev: nil}, fn chunk, st ->
+        {st, header_buf, blob_buf} =
+          Enum.reduce(chunk, {st, [], []}, fn {hash, entries}, {st, hbuf, bbuf} ->
+            if st.prev != nil and hash < st.prev do
+              raise "packed build validation failed: book stream is not sorted by hash"
+            end
+
+            blob =
+              Enum.map(entries, fn {move, games, white, draw, black} ->
+                Format.book_entry(move, games, white, draw, black)
+              end)
+
+            blob_bin = IO.iodata_to_binary(blob)
+            len = byte_size(blob_bin)
+
+            header = Format.book_header(hash, st.bytes, len)
+
+            st = %{count: st.count + 1, bytes: st.bytes + len, prev: hash}
+
+            {st, [header | hbuf], [blob_bin | bbuf]}
+          end)
+
+        IO.binwrite(headers, Enum.reverse(header_buf))
+        IO.binwrite(blobs, Enum.reverse(blob_buf))
+
+        st
+      end)
+
+    File.close(headers)
+    File.close(blobs)
+
+    concat(headers_path, blobs_path, path)
+    cleanup([headers_path, blobs_path])
+
+    %{count: state.count, bytes: state.count * @book_header_bytes + state.bytes}
   end
 
   ## Helpers

@@ -32,12 +32,13 @@ pipeline on all six reference positions matched PG exactly.
 
 The occurrence-store seam is closed: PG's UNLOGGED corpus occurrence/
 position tables stop growing once the packed backend is flipped. The
-100k corpus' occurrence store drops from ~2113 MB to ~764 MB, lookups are
-~3.5× faster (corrected measurement), and the 1M-corpus rebuild path
-(`mix corpus.pack`) stays under ten minutes. The corpus' status config
-in `config/config.exs` rests on `:postgres` because deployments choose
-with `PACKED_CORPUS` — the PG tables stay provisionable while the packed
-index validates on the broadcast 1M corpus.
+100k corpus' occurrence store drops from ~2113 MB to ~1012 MB (packed
+with the precomputed `book.bin`), lookups are ~3.5× faster (corrected
+measurement), and the 1M-corpus rebuild path (`mix corpus.pack`) stays
+under an hour. The corpus' status config in `config/config.exs` rests on
+`:postgres` because deployments choose with `PACKED_CORPUS` — the PG
+tables stay provisionable while the packed index validates on the broadcast
+1M corpus.
 
 After a reviewer's pass on the spike, eight findings were closed before
 merging: the bench's broken probe now returns hit-only samples on both
@@ -45,14 +46,19 @@ sides (the earlier ~4× headline is corrected to ~3.5×); PG's text-column
 ORDER BYs pin C collation (the sorted contract can't leak libc differences
 into candidate caps); the hot-bucket regression (~2.4s→1.0s after
 threading one fd per query); the facade routes `:book`/`:book_counts` to
-SQL unconditionally (ADR-0035 guard; `Book.for_key_packed/3` becomes
-necessary only after the occurrence tables drop); boot on packed open
-failure is now truthful (never silently falls back); one `packed_book`
-lives in `Book.for_key_packed/3` so the facade route and parity check are
-the same code; stride-2 unit tests cover walk-back/boundary/crash; and
+the precomputed `book.bin` in packed mode (the SQL path serves PG-only
+coexistence; `Book.for_key_packed/3` remains available as the
+non-precomputed alternative); boot on packed open failure is now truthful
+(never silently falls back); one `packed_book` lives in
+`Book.for_key_packed/3` so the facade route and parity check are the same
+code; stride-2 unit tests cover walk-back/boundary/crash; and
 `mix corpus.validate` wires up `verify_checksums: true` (the failure/
 recovery claim is exercised).
 
-The spike recommendation B→A remains: the packed backend becomes the
-production occurrence backend after the broadcast 1M corpus validates on
-packed locally (the existing ADR-0036 gate).
+The follow-up validation against the full 1.17M broadcast corpus (the
+closing condition) passed: broadcast artifact parity 72.4M keys streamed,
+10,001 sampled, 0 failures; the packed build is ~9.4 GiB total with
+`book.bin` (occ 1977.6 + pos 5959.3 + bucket 1657.0 + book ~975 MB).
+The recommendation is A — production migration approved; deploy with
+`PACKED_CORPUS=1` behind the existing PG tables, then drop the PG
+occurrence tables once prod is validated.

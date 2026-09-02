@@ -31,6 +31,7 @@ defmodule Blunderfest.Corpus.Packed.Segment do
   @occ_record_bytes Format.occ_record_bytes()
   @pos_header_bytes Format.pos_header_bytes()
   @bucket_record_bytes Format.bucket_record_bytes()
+  @book_header_bytes Format.book_header_bytes()
 
   defstruct [
     :id,
@@ -43,6 +44,9 @@ defmodule Blunderfest.Corpus.Packed.Segment do
     :bucket_path,
     :bucket_records,
     :bucket_anchors,
+    :book_path,
+    :book_records,
+    :book_anchors,
     :games_count,
     :occurrence_count,
     :position_count,
@@ -65,9 +69,14 @@ defmodule Blunderfest.Corpus.Packed.Segment do
     occ_size = File.stat!(files["occ"]).size
     bucket_size = File.stat!(files["bucket"]).size
     pos_size = File.stat!(files["pos"]).size
+    book_size = File.stat!(files["book"]).size
 
     occ_records = div(occ_size, @occ_record_bytes)
     bucket_records = div(bucket_size, @bucket_record_bytes)
+    # Book headers are fixed 22B; the manifest carries the count (the blob
+    # region is variable, so it can't be derived from the file size).
+    book_records = segment_entry.book_records || 0
+    book_headers_bytes = book_records * @book_header_bytes
 
     cond do
       rem(occ_size, @occ_record_bytes) != 0 ->
@@ -85,6 +94,9 @@ defmodule Blunderfest.Corpus.Packed.Segment do
       pos_size < pos_records * @pos_header_bytes ->
         {:error, {:invalid_pos_file_size, pos_size}}
 
+      book_size < book_headers_bytes ->
+        {:error, {:invalid_book_file_size, book_size}}
+
       true ->
         # Anchors are rebuilt at open (a per-file strided read), then the
         # descriptors are dropped — lookups reopen the file per call.
@@ -93,6 +105,9 @@ defmodule Blunderfest.Corpus.Packed.Segment do
 
         bucket_anchors =
           build_anchors(files["bucket"], bucket_records, @bucket_record_bytes, 8, stride)
+
+        book_anchors =
+          build_anchors(files["book"], book_records, @book_header_bytes, 16, stride)
 
         {:ok,
          %__MODULE__{
@@ -106,6 +121,9 @@ defmodule Blunderfest.Corpus.Packed.Segment do
            bucket_path: files["bucket"],
            bucket_records: bucket_records,
            bucket_anchors: bucket_anchors,
+           book_path: files["book"],
+           book_records: book_records,
+           book_anchors: book_anchors,
            games_count: segment_entry.games,
            occurrence_count: occ_records,
            position_count: pos_records,
@@ -311,6 +329,75 @@ defmodule Blunderfest.Corpus.Packed.Segment do
       )
 
     for <<^pawn_hash::64, pos_hash::binary-size(16) <- bin>>, do: pos_hash
+  end
+
+  ## Book
+
+  @doc """
+  The precomputed next-move distribution for a position hash:
+  `[%\{move, games, white, draw, black}]` sorted `(games desc, move)`.
+  A miss means a terminal position (or an unknown key) — `[]`.
+  """
+  def book(%__MODULE__{} = seg, hash) do
+    n = anchor_count(seg.book_anchors, 16)
+
+    if n == 0 do
+      []
+    else
+      idx = floor_anchor(seg.book_anchors, n, 16, hash)
+
+      # Book headers are unique per key, so no walk-back; scan forward.
+      case find_book_header(seg, idx, hash) do
+        {:ok, offset, len} ->
+          base = seg.book_records * @book_header_bytes
+
+          {:ok, blob} = pread_fd(nil, seg.book_path, base + offset, len)
+          Format.decode_book_blob(blob)
+
+        :none ->
+          []
+      end
+    end
+  end
+
+  defp find_book_header(seg, idx, hash) do
+    from = idx * seg.stride
+    to = min(from + seg.stride, seg.book_records)
+
+    {:ok, chunk} =
+      pread_fd(nil, seg.book_path, from * @book_header_bytes, (to - from) * @book_header_bytes)
+
+    scan_book_chunk(seg, chunk, to, hash)
+  end
+
+  defp scan_book_chunk(seg, chunk, next_from, hash) do
+    case chunk do
+      <<^hash::binary-size(16), offset::32, len::16, _rest::binary>> ->
+        {:ok, offset, len}
+
+      <<key::binary-size(16), _::binary-size(6), rest::binary>> when key < hash ->
+        scan_book_chunk(seg, rest, next_from, hash)
+
+      <<key::binary-size(16), _::binary>> when key > hash ->
+        :none
+
+      <<>> ->
+        if next_from < seg.book_records do
+          to = min(next_from + seg.stride, seg.book_records)
+
+          {:ok, more} =
+            pread_fd(
+              nil,
+              seg.book_path,
+              next_from * @book_header_bytes,
+              (to - next_from) * @book_header_bytes
+            )
+
+          scan_book_chunk(seg, more, to, hash)
+        else
+          :none
+        end
+    end
   end
 
   ## Shared sparse-anchor machinery

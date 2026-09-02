@@ -48,6 +48,7 @@ defmodule Blunderfest.Corpus.Packed.Manifest do
       "games" => entry.games,
       "occurrences" => entry.occurrences,
       "positions" => entry.positions,
+      "book_records" => entry.book_records,
       "gids" => %{"min" => entry.gids.min, "max" => entry.gids.max},
       "files" => entry.files
     }
@@ -116,6 +117,7 @@ defmodule Blunderfest.Corpus.Packed.Manifest do
          games: seg["games"],
          occurrences: seg["occurrences"],
          positions: seg["positions"],
+         book_records: seg["book_records"],
          gids: %{"min" => get_in(seg, ["gids", "min"]), "max" => get_in(seg, ["gids", "max"])},
          files: files
        }}
@@ -125,7 +127,7 @@ defmodule Blunderfest.Corpus.Packed.Manifest do
   defp validate_files(dir, seg, opts) do
     files = Map.get(seg, "files", %{})
 
-    required = ~w(occ pos bucket)
+    required = ~w(occ pos bucket book)
 
     case Enum.find(required, &(not Map.has_key?(files, &1))) do
       nil ->

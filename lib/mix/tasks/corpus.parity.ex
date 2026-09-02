@@ -229,8 +229,9 @@ defmodule Mix.Tasks.Corpus.Parity do
   # The packed-mode book aggregate lives in `Book.for_key_packed/3` — the
   # facade's route and this parity check both call it directly, so the
   # 200-key check exercises the real production path.
-  defp packed_book(backend, conn, key) do
-    Book.for_key_packed(backend, conn, key)
+  defp packed_book(backend, _conn, key) do
+    # The production packed path: the precomputed book.bin aggregate.
+    Blunderfest.Corpus.Packed.book(backend, PositionKey.to_hash128(key))
   end
 
   ## Per-key comparison

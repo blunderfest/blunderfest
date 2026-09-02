@@ -124,6 +124,35 @@ defmodule Blunderfest.Corpus.Packed do
   end
 
   @doc """
+  The precomputed next-move distribution for a hash across segments.
+  Segments partition gid ranges, so a game lives in exactly one segment and
+  per-move counts sum exactly (independent-games semantics preserved).
+  """
+  def book(%__MODULE__{} = backend, hash) do
+    backend.segments
+    |> Enum.flat_map(&Segment.book(&1, hash))
+    |> Enum.reduce(%{}, fn row, acc ->
+      Map.update(acc, row.move, {row.games, row.white, row.draw, row.black}, fn {g, w, d, b} ->
+        {g + row.games, w + row.white, d + row.draw, b + row.black}
+      end)
+    end)
+    |> Enum.map(fn {move, {g, w, d, b}} ->
+      %{move: move, games: g, white: w, draw: d, black: b}
+    end)
+    |> Enum.sort_by(fn row -> {-row.games, row.move} end)
+  end
+
+  @doc """
+  Independent games for a key from the precomputed book — the sum of
+  per-move game counts. A key with no header has no book entry (no games).
+  """
+  def book_games_count(%__MODULE__{} = backend, hash) do
+    backend
+    |> book(hash)
+    |> Enum.sum_by(& &1.games)
+  end
+
+  @doc """
   Bounded bucket: resolves only the first `limit` pos-hashes in the
   bucket's run order, then returns their keys sorted lexicographically.
 

@@ -50,6 +50,18 @@ strings region (each canonical key stored once):
 <<pawn_hash::unsigned-64, hash::binary-size(16)>>  — 24 bytes
 ```
 
+`book.bin` — the precomputed next-move distribution per key (added in the
+broadcast-validation follow-up so the packed-mode `:book` route never fans
+out per-occurrence):
+```
+header: <<hash::binary-size(16), offset::32, len::16>>  — 22 bytes
+entry:  <<move_len::8, move::binary,                     — variable
+          games::32, white::32, draw::32, black::32>>
+```
+Headers sorted by hash; the blob region holds each key's entries pre-sorted
+by `(games desc, move)`. Only keys with at least one next move get a
+header — a lookup miss is a terminal position (empty book).
+
 The 100k corpus (6,814,883 occurrences, 5,833,794 positions) packs to
 ~22 B/occurrence in `occ.bin` (~149.9 MB) and **does not store the key
 string** there — strings live only in `pos.bin`'s strings region. Bucket
@@ -158,12 +170,16 @@ Packed:
   seg-000001/occ.bin     143.0 MB
   seg-000001/pos.bin     487.9 MB
   seg-000001/bucket.bin  133.5 MB
-  occurrence store total (occ + pos + bucket): 764.4 MB
-  in-memory anchors (stride 1024): 0.2 MB
+  seg-000001/book.bin    247.5 MB  (added in the broadcast-validation pass)
+  occurrence store total (occ + pos + bucket + book): 1011.9 MB
+  in-memory anchors (stride 256): 1.4 MB
 ```
 
-The packed occurrence store is **36% of PostgreSQL's** (764 MB vs 2113 MB),
-and roughly `22 bytes/occurrence` on-the-wire in `occ.bin`. The projections
+The packed occurrence store is **36% of PostgreSQL's** (764 MB vs 2113 MB)
+without the book, **48%** with it — the precomputed book carries the
+next-move distribution per key (the packed-mode `:book` route never fans
+out per occurrence). Roughly `22 bytes/occurrence` on-the-wire in
+`occ.bin`. The projections
 in the 1 M section below were originally mathematically inconsistent
 (94.3 M × 22 B/occ alone comes to ~2.1 GiB in `occ.bin`, making the written
 `~0.8 GB total` impossible — the figure had confused extracted PGN matches
@@ -435,29 +451,23 @@ availability risk.
 
 ## Recommendation
 
-**B. Production migration approved with one explicit remaining condition.**
+**A. Production migration approved — no remaining conditions.**
 
-Measured at Broadcast scale (see the Production-scale section): the
-packed backend does exactly what PG does on occurrence runs and lookups
-~3× faster, and the one-product-blocking finding was isolateable to the
-oversized structural bucket fetch. The remaining condition:
-
-- **Bounded bucket semantics differ between backends.** In PG's PG-only
-  coexistence path this difference is invisible (PG's `LIMIT n` keeps
-  semantics). Once PG's occurrence tables drop and the packed backend is
-  sole truth, an oversized structural bucket picks its first N pos-hashes
-  by position-hash order instead of lexicographic key order; the
-  pipeline's `bucket_limit` cap is a performance knob rather than a
-  semantic contract, and the candidate re-rank follows the same function
-  either way. If that containment is unacceptable, the format needs an
-  inline string-table mapping (pos_hash → strings offset), built during
-  the next rebuild; otherwise it's the documented difference at the
-  helper docs and here.
+Measured at Broadcast scale (see the Production-scale section): the packed
+backend does exactly what PG does on occurrence runs and lookups ~3×
+faster; the precomputed `book.bin` carries the next-move distribution per
+key so the packed-mode `:book` route never fans out per-occurrence
+(built at pack time via a gid-major merge of occurrences + moves +
+results; the SQL-in-PG book is only used in PG coexistence mode); and the
+bounding structural-bucket fetch is documented as a semantic difference
+between the two backends (PG's `LIMIT n` picks lexicographically first
+keys; packed picks pos-hash run order) — acceptable because the pipeline's
+`bucket_limit` is a performance knob whose re-rank follows.
 
 Migration order: deploy the packed backend with `PACKED_CORPUS=1` behind
 the existing PG tables (the PG-correlation issue disappears); validate
 product; then the PG occurrence tables are dropped (PG stays for games/
-moves/metadata). The broadcast 1.17M build's wall time (~28 min) plus
+moves/metadata). The broadcast 1.17M build's wall time (~33 min) plus
 validation (~6 min) is the production path.
 
 ## Files

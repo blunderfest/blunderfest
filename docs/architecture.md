@@ -98,25 +98,26 @@ release and served by a catch-all (`SpaController`).
     nothing downstream notices (Spike 08/ADR-0037).
   - `packed/` — the packed occurrence backend (Spike 08/ADR-0037):
     `packed/format.ex` (fixed-width records: occ 22B, pos 36B header +
-    strings region, bucket 24B), `packed/builder.ex` (sortedness + size +
-    SHA-256 validation per segment), `packed/manifest.ex` (manifest
-    read/write/all-or-nothing validation), `packed/segment.ex` (sparse
-    anchors — binary search anchors → bounded chunk scans; ~0.1 MB anchors
-    at stride 1024, 500-hit probe p50 35 µs), `packed/input.ex` (8 MB
-    chunk line reader — the build path bottleneck), `packed.ex` (segments
-    merged in build order). Opens per query in the calling process — the
-    raw fd never crosses process boundaries.
+    strings region, bucket 24B, book 22B header + variable blob),
+    `packed/builder.ex` (sortedness + size + SHA-256 validation per
+    segment), `packed/manifest.ex` (manifest read/write/all-or-nothing
+    validation), `packed/segment.ex` (sparse anchors — binary search
+    anchors → bounded chunk scans; ~5.6 MB anchors at stride 256 for the
+    broadcast corpus), `packed/input.ex` (8 MB chunk line reader — the
+    build path bottleneck), `packed.ex` (segments merged in build order).
+    Opens per query in the calling process — the raw fd never crosses
+    process boundaries.
   - `position_key.ex` — canonical position identity (Spike 01): the
     capturable-only en-passant convention, 128-bit BLAKE2b hashes.
   - `replay.ex` + `extraction.ex` — lean mainline replay and the streaming
     PGN → occ/games/moves/keys artifact pipeline (mix `corpus.extract`).
   - `occurrences.ex` — the PG store: COPY-loaded, UNLOGGED, rebuildable
     (mix `corpus.load`); positions carry the 63-bit pawn bucket hash.
-  - `book.ex` — PG aggregate (SQL) plus `for_key_packed/3` (packed/logic
-    for when the occurrence tables drop); the facade routes `:book` to SQL
-    while the tables exist (ADR-0035). `ORDER BY move`/`ORDER BY key` run
-    in C collation — the sorted-by-bytes contract the packed backend
-    depends on (Spike 08 fix).
+  - `book.ex` — PG aggregate (SQL). In packed mode the facade routes
+    `:book` to the precomputed `book.bin` aggregate (built at pack time
+    from the gid-major merge of occurrences + moves + results), never the
+    per-occurrence fan-out. `ORDER BY move` runs in C collation — the
+    sorted-by-bytes contract the packed backend depends on (Spike 08 fix).
   - `analysis/` — pure analysis modules: `Features` (bitboard dimensions),
     `Differences` (typed differences + the §8 dims report), `Route`
     (Spike 05 route comparison), `Continuation` (windows, representations,

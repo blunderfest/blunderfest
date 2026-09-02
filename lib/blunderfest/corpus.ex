@@ -203,16 +203,25 @@ defmodule Blunderfest.Corpus do
   end
 
   def handle_call({:book, fen}, _from, state) do
-    # book always hits the PG aggregate: the occurrence tables exist by the
-    # spike's §8 scope (only the pipeline's occurrence reads are packed),
-    # and the SQL path doesn't burn BEAM time in this single GenServer
-    # (ADR-0035). packed_book remains needed only when the occurrence
-    # tables actually drop.
-    {:reply, Book.for_fen(state.pool, fen), state}
+    result =
+      case occurrence_store(state) do
+        {:packed, packed} ->
+          case PositionKey.from_fen(fen) do
+            {:error, _} -> {:error, :invalid_fen}
+            {:ok, key} -> Packed.book(packed, PositionKey.to_hash128(key))
+          end
+
+        :postgres ->
+          Book.for_fen(state.pool, fen)
+
+        :unconfigured ->
+          {:error, :not_configured}
+      end
+
+    {:reply, result, state}
   end
 
   def handle_call({:book_counts, fens}, _from, state) do
-    # book_counts always hits PG (Corpus.Book aggregation rationale above).
     fen_keys =
       fens
       |> Enum.uniq()
@@ -223,14 +232,27 @@ defmodule Blunderfest.Corpus do
         end
       end)
 
-    counts = Book.counts_for_keys(state.pool, Enum.map(fen_keys, fn {_fen, key} -> key end))
+    counts =
+      case occurrence_store(state) do
+        {:packed, packed} ->
+          # Packed book: a key with no header has no next moves (no games).
+          Map.new(fen_keys, fn {_fen, key} ->
+            {key, Packed.book_games_count(packed, PositionKey.to_hash128(key))}
+          end)
+
+        :postgres ->
+          Book.counts_for_keys(state.pool, Enum.map(fen_keys, fn {_fen, key} -> key end))
+
+        :unconfigured ->
+          %{}
+      end
 
     # A key can serve several FENs (FEN move-counter differences); map back,
     # dropping positions with no occurrences.
     result =
       for {fen, key} <- fen_keys,
           count = Map.get(counts, key),
-          count !== nil,
+          count !== nil and count > 0,
           into: %{} do
         {fen, count}
       end

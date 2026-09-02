@@ -7,8 +7,8 @@ defmodule BlunderfestWeb do
   """
 
   def static_paths,
-    do:
-      ~w(assets engine fonts images pieces favicon.png favicon.ico robots.txt openings.json version.json)
+    do: ~w(assets engine fonts images pieces brand favicon.svg favicon.ico favicon-16x16.png
+         favicon-32x32.png favicon-48x48.png robots.txt openings.json version.json)
 
   def router do
     quote do

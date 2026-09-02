@@ -20,9 +20,9 @@ defmodule Blunderfest.Corpus.PackedTest do
 
   defp hash(key), do: PositionKey.to_hash128(key)
 
-  defp build_backend!(dir, occs, poss, id \\ "seg-000001", stride \\ 1024) do
+  defp build_backend!(dir, occs, poss, id \\ "seg-000001", stride \\ 1024, books \\ []) do
     File.mkdir_p!(dir)
-    entry = Builder.build!(dir, id, occs, poss, 100)
+    entry = Builder.build!(dir, id, occs, poss, books, 100)
     Manifest.write!(dir, [entry])
     {:ok, backend} = Packed.open(dir, stride: stride)
     backend
@@ -121,7 +121,7 @@ defmodule Blunderfest.Corpus.PackedTest do
     poss = [{hash(@key_a), Features.pawn_hash(@key_a), 1, 4, @key_a}]
 
     assert_raise RuntimeError, ~r/not sorted/, fn ->
-      Builder.build!(dir, "seg-bad", occs, poss, 1)
+      Builder.build!(dir, "seg-bad", occs, poss, [], 1)
     end
   end
 
@@ -216,6 +216,33 @@ defmodule Blunderfest.Corpus.PackedTest do
     assert_raise RuntimeError, fn ->
       Packed.position(backend, hash(@key_b))
     end
+
+    Packed.close(backend)
+  end
+
+  test "book round-trips per-key next-move distributions", %{tmp_dir: dir} do
+    {occs, poss} = fixture_streams()
+
+    books =
+      [
+        {hash(@key_a), [{"e5", 2, 2, 0, 0}, {"c5", 1, 0, 0, 1}]},
+        {hash(@key_c), [{"Nf6", 3, 2, 1, 0}]}
+      ]
+      |> Enum.sort_by(fn {h, _} -> h end)
+
+    backend = build_backend!(Path.join(dir, "packed"), occs, poss, "seg-000001", 1024, books)
+
+    assert Packed.book(backend, hash(@key_a)) == [
+             %{move: "e5", games: 2, white: 2, draw: 0, black: 0},
+             %{move: "c5", games: 1, white: 0, draw: 0, black: 1}
+           ]
+
+    assert Packed.book(backend, hash(@key_c)) == [
+             %{move: "Nf6", games: 3, white: 2, draw: 1, black: 0}
+           ]
+
+    assert Packed.book(backend, hash(@key_b)) == []
+    assert Packed.book(backend, <<0::128>>) == []
 
     Packed.close(backend)
   end

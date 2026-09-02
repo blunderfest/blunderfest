@@ -48,6 +48,31 @@ postgres://blunderfest:blunderfest@localhost:5433/blunderfest_test
 Export the dev one (or put it in your shell profile) before running
 `mix phx.server`; `config/runtime.exs` picks it up.
 
+### Packed occurrence backend (Spike 08 + broadcast validation)
+
+The occurrence layer can be served from the packed binary index instead of
+the Postgres occurrence tables. Games/moves/metadata stay in Postgres.
+
+```sh
+# Build from the extraction artifacts (artifact-aligned, external sort):
+mix corpus.pack --data-dir data/corpus-broadcast --tier 1174661 \
+  --out data/corpus-packed-broadcast
+
+# Validate (manifest, sizes, counts, checksums):
+mix corpus.validate --packed-dir data/corpus-packed-broadcast
+
+# Serve the packed backend (games/moves still come from the PG tables):
+PACKED_CORPUS=1 PACKED_DIR=data/corpus-packed-broadcast mix phx.server
+```
+
+The book aggregate (`/api/book`) is precomputed into `book.bin` at pack
+time — the packed-mode `:book` route never fans out per-occurrence. In
+PG coexistence mode (the current default) the SQL aggregate stays.
+
+Other measurement/verification tasks: `corpus.parity` (PG oracle),
+`corpus.broadcast_parity` (artifact oracle), `corpus.he_parity` (product
+parity on the reference positions), `corpus.bench` (storage/stride/latency).
+
 ### Loading the corpus into production
 
 The corpus source is the **Lichess Broadcast Database** (ADR-0036) — the
