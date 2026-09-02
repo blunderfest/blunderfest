@@ -1,6 +1,6 @@
 # ADR-0037: Packed binary occurrence backend
 
-Status: Accepted (2026-08-31)
+Status: Accepted (2026-08-31); broadcast 1.17M validated (2026-09-02)
 
 ## Context
 

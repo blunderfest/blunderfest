@@ -71,7 +71,7 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
-### Session handoff (2026-09-02 — packed occurrence backend validated; 1.17M build in flight)
+### Session handoff (2026-09-02 — packed occurrence backend validated; broadcast flip is live locally)
 
 Spike 08 + the broadcast follow-up are implemented and green: the packed
 binary occurrence backend (immutable segments behind `Blunderfest.Corpus`)
@@ -80,11 +80,29 @@ on the full broadcast corpus (72.4M keys / 10,001 sampled / 0 failures).
 The format carries `book.bin` — a precomputed per-key next-move
 distribution — so the packed-mode `:book` route never fans out per
 occurrence. Measurements: 100k store 764 MB → 1012 MB with book (vs
-2113 MB PG); lookups ~3.5× faster; stride default 256. The production
-recommendation is **A — migrate**, gated on the in-flight 1.17M broadcast
-rebuild completing and the local flip being verified (PACKED_CORPUS=1 +
-promoted broadcast games/moves tables). The he18/parity/bench tasks and
-the Spike 08 report carry the evidence.
+2113 MB PG); broadcast store ~9.4 GiB packed (occ 1977.6 + pos 5959.3 +
+bucket 1657.0 + book ~975 MB) vs ~29 GiB extrapolated PG; lookups ~3.5×
+faster; stride default 256; `mix corpus.pack --resume <dir>` skips finished
+intermediate phases. The production recommendation is **A — migrate**.
+
+**Local flip is done and verified.** `PACKED_CORPUS=1
+PACKED_DIR=data/corpus-packed-broadcast mix phx.server` serves the
+broadcast corpus from the packed index; the broadcast games/moves tables
+are promoted to `corpus_games`/`corpus_moves` locally (the 100k tables
+are parked as `corpus_*_100k`). UI smoke: start-position book shows
+e4 569,149 games; Ruy decision point d6 3,985 / O-O 3,624; the evidence
+dialog returns real players with standard-notation continuations.
+Prod still serves PG (empty corpus until the flip); the flip is one deploy
+with `PACKED_CORPUS=1` + the packed dir shipped to the volume.
+
+Also fixed along the way: evidence-dialog miniboards follow the main
+board's orientation (no per-candidate flip), the read-only find CTA no
+longer spins forever, the View link splits exact vs similar counts
+("View 4 exact + 10 similar games →"), the card continuation renders in
+standard notation (5. Nf3 d6 6. Bc4 Nf6), and the import dialog has one
+Import button that fetches+imports in a click (Chess.com month picker,
+toggleable studies). The rebrand to OpenChessLab also landed this
+session.
 
 Also fixed along the way: evidence-dialog miniboards follow the main
 board's orientation (no per-candidate flip), the read-only find CTA no
