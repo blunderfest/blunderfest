@@ -164,18 +164,8 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
         skeleton_threshold
       )
 
-    # Counts only (no occurrence-list fetch): the card needs
-    # occurrences/games/same_game_only, all derivable from the aggregate —
-    # `occurrence_counts` is a single bounded read in the packed backend
-    # (and a COUNT(*), COUNT(DISTINCT gid) in PG), so a hot candidate key
-    # never re-reads its occurrence run per card.
-    historical =
-      case Blunderfest.Corpus.occurrence_counts(cand.key) do
-        {:error, _} -> Counts.counts(Blunderfest.Corpus.occurrences(cand.key))
-        counts -> counts
-      end
-
-    same_game_only = historical.occurrences > 1 and historical.games == 1
+    key_occurrences = Blunderfest.Corpus.occurrences(cand.key)
+    historical = Counts.counts(key_occurrences)
 
     %{
       id: cand.id,
@@ -204,7 +194,7 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
       historical: %{
         occurrences: historical.occurrences,
         games: historical.games,
-        same_game_only: same_game_only
+        same_game_only: Counts.same_game_only?(key_occurrences)
       },
       flags:
         flags(
@@ -212,7 +202,7 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
           continuation_diffs,
           family,
           historical,
-          same_game_only
+          Counts.same_game_only?(key_occurrences)
         )
     }
   end
