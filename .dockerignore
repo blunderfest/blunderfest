@@ -31,6 +31,10 @@
 /tmp/
 .elixir_ls
 
+# Local corpus data (extraction artifacts, packed index) — gitignored,
+# local-only, tens of GB; never part of the release image
+/data/
+
 # Mix artifacts
 /_build/
 /deps/

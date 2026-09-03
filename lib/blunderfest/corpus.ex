@@ -359,8 +359,9 @@ defmodule Blunderfest.Corpus do
     {:reply, GameExport.tree(gid, state.pool), state}
   end
 
-  # Packed-mode book aggregate exists as `Book.for_key_packed/3`:
-  # currently unused by the facade (the `:book` route is PG-only while the
-  # occurrence tables exist; ADR-0035). The parity task exercises the same
-  # implementation so both paths check one source of truth.
+  # In packed mode the facade routes :book/:book_counts to the precomputed
+  # book.bin aggregate (see the handle_call clauses above);
+  # `Book.for_key_packed/3` remains as the non-precomputed alternative. The
+  # parity task exercises the same implementation so both paths check one
+  # source of truth.
 end
