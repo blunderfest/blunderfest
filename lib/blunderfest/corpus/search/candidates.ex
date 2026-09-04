@@ -66,13 +66,11 @@ defmodule Blunderfest.Corpus.Search.Candidates do
     # The occurrence list feeds the family clustering and used to drive the
     # counts/next-moves. It is bounded (families are heuristic; the exact
     # counts and next-move distribution come from SQL in the pipeline), so a
-    # hot key like the start position never materializes a million rows.
+    # hot key like the start position never materializes a million rows —
+    # the store fetch decodes only the bounded prefix.
     occurrence_limit = Keyword.get(opts, :occurrence_limit, 2000)
 
-    exact_occurrences =
-      ref_key
-      |> Blunderfest.Corpus.occurrences()
-      |> Enum.take(occurrence_limit)
+    exact_occurrences = Blunderfest.Corpus.occurrences(ref_key, occurrence_limit)
 
     {ref_counts, memo} = CountMemo.fetch(memo, ref_key)
 
@@ -127,8 +125,7 @@ defmodule Blunderfest.Corpus.Search.Candidates do
     |> Enum.take(scan_limit)
     |> Enum.flat_map(fn {key, feats} ->
       key
-      |> Blunderfest.Corpus.occurrences()
-      |> Enum.take(8)
+      |> Blunderfest.Corpus.occurrences(8)
       |> Enum.map(fn {gid, ply} ->
         {candidate(:pawn_skeleton, key, gid, ply, feats), feats}
       end)

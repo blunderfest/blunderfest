@@ -146,6 +146,19 @@ defmodule Blunderfest.Corpus.Packed.Segment do
   end
 
   @doc """
+  The first `limit` occurrence tuples of the run, in run order. The run is
+  still located and read as a unit (bounded reads land with format v2), but
+  only the requested prefix is decoded — a hot key's caller that keeps a
+  bounded list never materializes the full run's tuples.
+  """
+  def occurrences(%__MODULE__{} = seg, hash, limit)
+      when is_integer(limit) and limit >= 0 do
+    bin = run_binary(seg, hash)
+    take = min(byte_size(bin), limit * @occ_record_bytes)
+    decode_occurrences(binary_part(bin, 0, take))
+  end
+
+  @doc """
   `%{occurrences, games}` counts over the run. Gids are ascending within a
   run (sort key `(hash, gid, ply)`), so distinct-gid counting is an
   adjacent comparison — no occurrence list is materialized.

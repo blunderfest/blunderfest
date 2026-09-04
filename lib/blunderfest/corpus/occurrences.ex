@@ -100,6 +100,25 @@ defmodule Blunderfest.Corpus.Occurrences do
   end
 
   @doc """
+  The first `limit` occurrences of a canonical key in `(gid, ply)` order —
+  SQL `LIMIT` keeps a hot key's bounded fetch from scanning the whole run
+  into the BEAM (the packed backend's bounded variant decodes the prefix
+  the same way).
+  """
+  @spec occurrences(conn(), String.t(), non_neg_integer()) :: [{pos_integer(), pos_integer()}]
+  def occurrences(conn, key, limit) when is_integer(limit) and limit >= 0 do
+    %{rows: rows} =
+      Postgrex.query!(
+        conn,
+        "SELECT gid, ply FROM corpus_occurrences WHERE key = $1 ORDER BY gid, ply LIMIT $2",
+        [key, limit],
+        timeout: :infinity
+      )
+
+    Enum.map(rows, fn [gid, ply] -> {gid, ply} end)
+  end
+
+  @doc """
   Total occurrence and independent-game counts for a canonical key, in one
   query (no per-occurrence fetch — the hot-key path stays cheap).
   """

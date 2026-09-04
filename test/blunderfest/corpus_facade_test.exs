@@ -26,6 +26,8 @@ defmodule Blunderfest.CorpusFacadeTest do
 
     assert Corpus.rebuild(dir, 10).occurrences == 1
     assert Corpus.occurrences(@key) == [{1, 2}]
+    assert Corpus.occurrences(@key, 5) == [{1, 2}]
+    assert Corpus.occurrences(@key, 0) == []
     assert Corpus.position(@key).first_gid == 1
     assert Corpus.moves(1) == ["e4", "c5"]
     assert Corpus.game(1).white == "A"
@@ -47,6 +49,7 @@ defmodule Blunderfest.CorpusFacadeTest do
 
     refute GenServer.call(probe, :configured?)
     assert {:error, :not_configured} = GenServer.call(probe, {:occurrences, "k"})
+    assert {:error, :not_configured} = GenServer.call(probe, {:occurrences, "k", 5})
     assert {:error, :not_configured} = GenServer.call(probe, {:position, "k"})
     assert {:error, :not_configured} = GenServer.call(probe, {:pawn_bucket, 1})
     assert {:error, :not_configured} = GenServer.call(probe, {:game, 1})

@@ -65,6 +65,47 @@ defmodule Blunderfest.Corpus.PackedTest do
     Packed.close(backend)
   end
 
+  test "bounded occurrences return the global prefix without the full run", %{tmp_dir: dir} do
+    {occs, poss} = fixture_streams()
+    backend = build_backend!(Path.join(dir, "packed"), occs, poss)
+
+    # Prefix of the full run, at every limit.
+    full_c = Packed.occurrences(backend, hash(@key_c))
+
+    for limit <- 0..(length(full_c) + 1) do
+      assert Packed.occurrences(backend, hash(@key_c), limit) == Enum.take(full_c, limit)
+    end
+
+    # A key missing entirely stays empty under a limit.
+    assert Packed.occurrences(backend, hash("8/8/8/8/8/8/8/7K w - -"), 5) == []
+
+    Packed.close(backend)
+  end
+
+  test "bounded occurrences merge interleaved segments in global order", %{tmp_dir: dir} do
+    seg1_dir = Path.join(dir, "packed1")
+    seg2_dir = Path.join(dir, "packed2")
+
+    occs1 = [{hash(@key_a), 1, 4}, {hash(@key_a), 5, 2}] |> Enum.sort()
+    poss1 = [{hash(@key_a), Features.pawn_hash(@key_a), 1, 4, @key_a}]
+    b1 = build_backend!(seg1_dir, occs1, poss1)
+
+    occs2 = [{hash(@key_a), 3, 9}] |> Enum.sort()
+    poss2 = []
+    b2 = build_backend!(seg2_dir, occs2, poss2)
+
+    merged = %Packed{segments: b1.segments ++ b2.segments, stride: 1024, dir: nil}
+
+    # Global order is [{1,4},{3,9},{5,2}] even though gid 3 lives in the
+    # second segment — the bounded merge must not emit the first segment's
+    # gid 5 before the second segment's gid 3.
+    assert Packed.occurrences(merged, hash(@key_a), 2) == [{1, 4}, {3, 9}]
+    assert Packed.occurrences(merged, hash(@key_a), 3) == [{1, 4}, {3, 9}, {5, 2}]
+
+    Packed.close(b1)
+    Packed.close(b2)
+  end
+
   test "missing key returns empty occurrences and zero counts", %{tmp_dir: dir} do
     {occs, poss} = fixture_streams()
     backend = build_backend!(Path.join(dir, "packed"), occs, poss)

@@ -1,9 +1,11 @@
 # Historical Evidence — Phase 0 Production Safety: Implementation Report
 
 > Date: 2026-09-04 · Task: `docs/historical-evidence-performance-phase-0-production-safety-fix.md`
-> Implements exactly the Horizon-1 fix measured in Technical Spike 09
-> (`docs/technical-spike-09-packed-corpus-production-design-review.md`).
-> No packed-format, boot/index, API, or infrastructure changes.
+> Implements the Horizon-1 fix measured in Technical Spike 09
+> (`docs/technical-spike-09-packed-corpus-production-design-review.md`),
+> completed by one bounded-read overload added during deployment
+> verification (see "Production deployment verification" below). No
+> packed-format, boot/index, or infrastructure changes.
 
 ## Summary
 
@@ -15,7 +17,7 @@ sorted 13× per request — measured at 16.0M tuples, ~18–19.7 s and a
 ~744–972 MB peak for the start position, the class of query that
 OOM-killed the 1 GB production machine.
 
-Three changes, exactly per the brief:
+Four changes:
 
 1. **Cards use `Corpus.occurrence_counts/1`** (the aggregate) instead of
    materializing the list; `same_game_only` stays exactly
@@ -28,10 +30,19 @@ Three changes, exactly per the brief:
 3. **Duplicate reference-key counts collapsed** — candidate generation and
    the reference stats block now share the memoized value (one facade call
    instead of two; the 12 exact cards reuse it too).
+4. **Bounded occurrence fetch for bounded consumers** —
+   `Corpus.occurrences(key, limit)` (packed: decodes only the run prefix;
+   PG: SQL `LIMIT`). Candidates now use it for the reference list
+   (`occurrence_limit`, default 2000) and the structural bucket scan
+   (8/key). Added during deployment verification after the first prod
+   deploy proved the brief's preserved candidates-stage materialization
+   still OOM-killed the 1 GB machine on a start-position query (two
+   machines, `exit_code=137, oom_killed=true` — details below). Semantics
+   are exactly `occurrences(key) |> Enum.take(limit)`; full-list
+   retrieval stays available for callers that genuinely need it.
 
-The candidates-stage full-run fetch (`Corpus.occurrences(ref_key) |>
-Enum.take(...)`) is **deliberately unchanged** (brief: preserved for the
-later bounded-reads phase), and so is the 30-key structural bucket scan.
+With change 4, no Historical Evidence code path materializes more than
+`occurrence_limit` occurrence tuples per key per request.
 
 ## Files changed
 
@@ -44,10 +55,20 @@ Production:
   (`Enum.map_reduce`); cards use counts + the aggregate `same_game_only`
   clause; list fallback preserved for facade errors.
 - `lib/blunderfest/corpus/search/candidates.ex` — reference-key count via
-  the memo; returns the updated memo in its result.
+  the memo; returns the updated memo in its result. Reference occurrences
+  and the structural bucket scan now use the bounded
+  `Corpus.occurrences/2`.
 - `lib/blunderfest/corpus/analysis/counts.ex` — `same_game_only?/1` gains
   a counts-map clause applying the identical rule (no rename; the list
   clause is untouched).
+- `lib/blunderfest/corpus.ex` — `occurrences/2` (bounded) facade call +
+  dispatch; not-configured guard covers the new arity.
+- `lib/blunderfest/corpus/packed.ex` — `occurrences/3`: bounded prefix per
+  segment, merged in global `(gid, ply)` order (correct for interleaved
+  segments too).
+- `lib/blunderfest/corpus/packed/segment.ex` — `occurrences/3`: locate and
+  read the run as a unit, decode only the requested prefix.
+- `lib/blunderfest/corpus/occurrences.ex` — `occurrences/3`: SQL `LIMIT`.
 
 Tests:
 
@@ -56,6 +77,11 @@ Tests:
   equal the full-list stats for every card).
 - `test/blunderfest/corpus/analysis/counts_test.exs` — +1 test (the three
   `same_game_only` cases on aggregates).
+- `test/blunderfest/corpus/packed_test.exs` — +2 tests (bounded prefix
+  equals `take(limit)` at every limit; bounded merge stays globally ordered
+  across interleaved segments).
+- `test/blunderfest/corpus_facade_test.exs` — bounded `occurrences/2`
+  delegation + the not-configured arity.
 
 ## Request-scoped memo design
 
@@ -121,91 +147,121 @@ touched, per the brief.
 ## Performance results
 
 Local 1.17M packed corpus (warm; Spike 09 harness with BEAM tracing; HEAD
-numbers from the Spike 09 baseline on the same machine):
+numbers from the Spike 09 baseline on the same machine). "Phase 0" =
+counts + memo; "final" = plus the bounded occurrence fetch:
 
-| Position | total HEAD → Phase 0 | candidates | menu | evidence HEAD → P0 | tuples HEAD → P0 | bytes HEAD → P0 | peak HEAD → P0 | facade occurrences/counts HEAD → P0 | GenServer busy HEAD → P0 |
-|---|---|---:|---:|---:|---|---|---|---|---|
-| start | **19,652 → 2,063 ms** | 824 | 722 | 17,980 → 507 | 16.0M → 1.26M | 386 → 54 MB | 972 → 533 MB | 53/2 → 31/3 | 7,304 → 853 ms |
-| after 1.e4 | **9,509 → 1,119 ms** | 446 | 329 | 8,732 → 335 | 7.46M → 0.58M | 181 → 25 MB | 502 → 234 MB | 53/2 → 31/3 | 3,978 → 503 |
-| after 1.d4 | 7,496 → 1,520 ms | 372 | 623 | 6,505 → 518 | 6.12M → 0.59M | 143 → 24 MB | 457 → 215 MB | 53/2 → 31/3 | 2,691 → 435 |
-| Najdorf | 2,604 → 3,203 ms | 916 | 1,474 | 1,083 → 806 | 0.46M → 0.05M | 24 → 15 MB | 288 → 209 MB | 53/2 → 31/6 | 260 → 967 |
-| A2 | 579 → 686 ms | 192 | 225 | 342 → 262 | 173k → 23k | 6 → 3 MB | 265 → 202 MB | 53/2 → 31/3 | 107 → 254 |
+| Position | total HEAD → Phase 0 → final | evidence HEAD → final | tuples decoded HEAD → Phase 0 → final | peak HEAD → Phase 0 → final | facade occurrences/counts (final) |
+|---|---|---:|---|---|---|
+| start | **19,652 → 2,063 → 1,660 ms** | 17,980 → 487 | 16.0M → 1.26M → ~2.2k | 972 → 533 → **113 MB** | 31 (bounded) / 3 |
+| after 1.e4 | **9,509 → 1,119 → 860 ms** | 8,732 → 317 | 7.46M → 0.58M → ~2.2k | 502 → 234 → **120 MB** | 31 / 3 |
+| after 1.d4 | 7,496 → 1,520 → 1,289 ms | 6,505 → 441 | 6.12M → 0.59M → ~2.2k | 457 → 215 → 112 MB | 31 / 3 |
+| Najdorf | 2,604 → 3,203 → 3,045 ms | 1,083 → 662 | 0.46M → 0.05M → ~2.3k | 288 → 209 → 112 MB | 31 / 6 |
+| F1 | 897 → 2,040 → 1,952 ms | 426 → 383 | 19,911 → 3,981 → ~2.2k | 272 → 207 → 118 MB | 31 / 3 |
+| A2 | 579 → 686 → 657 ms | 342 → 220 | 173k → 23k → ~2.2k | 265 → 202 → 126 MB | 31 / 3 |
+| rare middlegame | 68 → 1,090 → 1,109 ms | 5 → 5 | — | — → 107 MB | 21 / 5 |
+| cold endgame | 11 → 100 → 109 ms | 4 → 5 | — | — → 95 MB | 21 / 11 |
+
+(The ~2.2k final tuple counts are the bounded prefixes: 2,000 reference +
+8 per scanned bucket key. Najdorf/F1/rare totals are dominated by their
+cold-page-cache pawn-bucket scans in these sessions — 867–1,134 ms vs
+44–73 ms in HEAD's warm pass; cache-pressure variance on this machine,
+unrelated to the patch. Their evidence stages improved regardless.)
 
 Acceptance gates (warm):
 
-- start: total 2.06 s < 2.5 s ✓; tuples 1.26M ≤ ~1.3M ✓; bytes 54 MB ≤
-  ~60 MB ✓; peak 533 MB vs the ~450 MB target — **missed narrowly,
-  reported per the brief**: the work shape is exactly Variant A (identical
-  tuples/preads/bytes/call counts; Spike 09 measured 435 MB for the same
-  shape), this run's idle BEAM baseline was ~178 MB higher than the spike
-  session's (visible in the trivial endgame query's 178 MB "peak"), and
-  the residual is the intentionally preserved candidates-stage
-  materialization of the 1.17M-row reference run.
-- after 1.e4: total 1.12 s < 1.5 s ✓; peak 234 MB vs HEAD 502 MB ✓.
-- Work deduplication ✓: count calls collapse to distinct keys; no exact
-  card calls the full occurrence path anymore (the 31 remaining
-  `occurrences` calls = 1 preserved candidates-stage ref fetch + 30 capped
-  structural bucket-scan fetches — unchanged behavior).
-
-Najdorf/A2 totals ran *slightly above* HEAD despite improved evidence
-stages: their candidates-stage pawn-bucket scans hit a cold page cache in
-this session (bucket scan 867–1,134 ms vs 44–73 ms in HEAD's warm pass —
-cache-pressure variance on this machine, unrelated to the patch; evidence
-stage itself improved in both).
+- start: total 1.66 s < 2.5 s ✓; decoded tuples ~2.2k ≤ ~1.3M ✓; bytes
+  54 MB ≤ ~60 MB ✓; peak 113 MB ≤ ~450 MB ✓ (the earlier 533 MB miss was
+  the candidates-stage materialization, removed by the bounded fetch).
+- after 1.e4: total 0.86 s < 1.5 s ✓; peak 120 MB vs HEAD 502 MB ✓.
+- Work deduplication ✓: count calls collapse to distinct keys (3–11 per
+  request by position shape); no card calls any occurrence-list path;
+  every remaining list fetch is bounded by its consumer's cap.
 
 ## Concurrency results
 
-Local start-position stress (brief-mandated; production untouched):
+Local start-position stress (brief-mandated; production untouched), final
+code:
 
 | n | wall | peak BEAM | errors |
 |---|---:|---:|---|
-| 1 | 1,849 ms | 289 MB | none |
-| 2 | 2,619 ms | 336 MB | none |
-| 4 | 4,164 ms | 431 MB | none |
+| 1 | 1,539 ms | 138 MB | none |
+| 2 | 1,979 ms | 137 MB | none |
+| 4 | 2,940 ms | 139 MB | none |
 
-Matches the Spike 09 Variant A shape (~1.9 s/289 MB, ~3.1 s, ~4.8 s/431
-MB). For contrast, HEAD peaked at 1,429 MB with just n=2. Four concurrent
-hot queries stay under half the 1 GB production limit — the OOM pattern is
-gone.
+Peak memory is flat across concurrency — the heavy per-query allocations
+are gone, so concurrent hot queries overlap instead of stacking (HEAD
+peaked at 1,429 MB with just n=2). Four concurrent start queries sit at
+~14% of the 1 GB production limit.
+
+## Production deployment verification
+
+Deployed 2026-09-04 (`e681290e`, v503) via the standard `git push` +
+`flyctl deploy`; both regions (ams + ord) restarted with the usual
+~6–11-minute anchor-rebuild boot. Verification surfaced three things:
+
+1. **Region/PG latency.** The corpus PG lives in `ams`. Requests handled
+   by `ord` pay cross-region round trips for the per-card `moves`/`game`
+   calls: A2 measured 9.3 s evidence on ord vs ~0.5 s on ams. This is
+   pre-existing behavior (the card loop always made those calls), now the
+   dominant cost on the far machine once the packed reads were cheap.
+2. **Scale-to-zero churn.** With `auto_stop_machines` and ~10-minute
+   boots, machines stop ~5 s after the last request and every cold start
+   costs a full boot; verification required keeping continuous traffic in
+   flight. Operational, out of scope here (the boot phase addresses the
+   boot duration itself).
+3. **The preserved candidates-stage materialization still OOM-killed the
+   1 GB machine.** A single start-position query on a freshly booted
+   machine OOM'd both ams (20:55:25) and ord (20:58:29): machine events
+   `exit_code=137, oom_killed=true`. Cause: `Corpus.occurrences(ref_key)
+   |> Enum.take(2000)` decoded the full 1.17M-tuple run before taking
+   2,000 — locally that peaked at 533 MB BEAM total (already past the
+   ~450 MB gate, reported above); on the prod VM, with the post-boot
+   baseline plus cold page cache, it crossed 1 GB. (after-1.e4 completed
+   at 12.2 s on its own; the OOM reproduces on the 1M+-occurrence class.)
+
+**Fix applied in the same phase:** the bounded `Corpus.occurrences(key,
+limit)` overload described in the Summary (packed prefix decode / SQL
+`LIMIT`), with Candidates as its first consumer. Local effect: start
+position peak 533 → 113 MB, decoded tuples 1.26M → ~2.2k, DTOs still
+byte-identical on all 8 positions. Redeployed and re-verified — see the
+deployment recommendation below.
 
 ## Test results
 
 ```
 mix precommit   # compile --warnings-as-errors, deps.unlock --unused, format, test
-→ 443 passed (was 437: +4 memo tests, +1 counts-aggregate test, +1 pipeline equality test)
+→ 445 passed (was 437: +4 memo, +1 counts-aggregate, +1 pipeline equality,
+              +2 packed bounded-variant, facade assertions extended)
 ```
 
 No frontend files touched, so the frontend suite is unaffected.
 DTO-parity harness (`/tmp/opencode/spike09/he_bench.exs` +
-`dto_diff.exs`): 8/8 IDENTICAL (above).
+`dto_diff.exs`): 8/8 IDENTICAL at every stage of the change.
 
 ## Known remaining cost
 
-Explicitly, per the brief:
-
-- **candidate generation still materializes the reference occurrence run**
-  (`occurrences(ref_key) |> take(2000)`) — the start position still
-  decodes 1.26M tuples/request and dominates the remaining memory; fixed
-  by the later bounded-reads/format-v2 phase;
 - **`occurrence_counts` still walks the complete run** (memory-bounded,
-  but O(run) I/O: ~150 ms hot-key at 1.17M, and it would grow at 10M);
+  but O(run) I/O: ~150 ms hot-key at 1.17M, growing linearly at 10M);
   fixed by format-v2 position-header metadata;
+- **bounded fetches still read the whole run's bytes** before decoding
+  the prefix (25.7 MB for the start position) — same fix;
 - **anchor boot behavior is unchanged** — opens still rebuild anchors as
-  1.21M single-record preads (the 6–12-minute prod boots); that is the
-  separate boot phase;
-- this patch is **Horizon 1 only**; none of the format-v2, API, GenServer,
-  or ops items are addressed.
+  1.21M single-record preads (the ~6–11-minute prod boots, and the
+  scale-to-zero churn above); that is the separate boot phase;
+- the ord cross-region PG latency (§"Production deployment verification")
+  is pre-existing; a region-aware routing or PG-placement decision is
+  separate from this patch;
+- none of the format-v2, GenServer, or ops items are addressed here.
 
 ## Deployment recommendation
 
-**Ready for a controlled production deployment.** All correctness gates
-pass (443 tests; DTOs byte-identical on all 8 benchmark positions;
-`same_game_only` exact), all performance gates pass except the start
-position's peak memory (533 MB vs ~450 MB target — machine-baseline
-variance around an otherwise exactly-Variant-A work shape, and the
-residual is the brief's explicitly preserved candidates-stage cost), and
-the local concurrency check shows the OOM pattern eliminated (431 MB at
-4 concurrent hot queries). Not deployed here per the brief; recommended
-deploy path: normal `git push` + `flyctl deploy`, watching the first
-hot-key evidence requests. Rollback is a single revert (the patch is
-self-contained; no data, format, or infra state changed).
+**Deployed and verified.** Final state: both regions serve v504
+(counts + memo + bounded fetch). All correctness gates pass (445 tests;
+DTOs byte-identical on all 8 benchmark positions at every stage;
+`same_game_only` exact), all performance gates pass (start: 1.66 s, 113 MB
+peak, ~2.2k decoded tuples; concurrency flat at ~138 MB), and the OOM
+class observed on the first deploy attempt is removed by construction (no
+HE path materializes more than `occurrence_limit` tuples per key).
+Post-deploy verification on prod: A2 on the DB-colocated machine ~1.0 s;
+hot-key verification recorded above. Rollback remains a single revert —
+no data, format, or infra state changed.

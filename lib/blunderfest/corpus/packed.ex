@@ -85,6 +85,22 @@ defmodule Blunderfest.Corpus.Packed do
     |> Enum.sort()
   end
 
+  @doc """
+  The first `limit` occurrences of a hash in global `(gid, ply)` order —
+  the same prefix as `occurrences/2 |> Enum.take(limit)`, but each segment
+  decodes at most `limit` tuples, so a hot key shared by many callers never
+  materializes its full run. (The global first `limit` is always contained
+  in the union of the per-segment first-`limit` prefixes, whatever the
+  segments' gid ranges.)
+  """
+  def occurrences(%__MODULE__{} = backend, hash, limit)
+      when is_integer(limit) and limit >= 0 do
+    backend.segments
+    |> Enum.flat_map(&Segment.occurrences(&1, hash, limit))
+    |> Enum.sort()
+    |> Enum.take(limit)
+  end
+
   @doc "`%{occurrences, games}` for a hash across all segments."
   def occurrence_counts(%__MODULE__{segments: segments} = backend, hash) do
     counts = Enum.map(segments, &Segment.occurrence_counts(&1, hash))

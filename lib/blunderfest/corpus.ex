@@ -44,6 +44,17 @@ defmodule Blunderfest.Corpus do
   @spec occurrences(String.t()) :: [{pos_integer(), pos_integer()}] | {:error, :not_configured}
   def occurrences(key), do: GenServer.call(__MODULE__, {:occurrences, key}, :infinity)
 
+  @doc """
+  The first `limit` occurrences of a canonical key in `(gid, ply)` order —
+  the bounded variant for callers that only keep a prefix (a hot key's full
+  run is never materialized into tuples for them). Semantics equal
+  `occurrences(key) |> Enum.take(limit)`.
+  """
+  @spec occurrences(String.t(), non_neg_integer()) ::
+          [{pos_integer(), pos_integer()}] | {:error, :not_configured}
+  def occurrences(key, limit),
+    do: GenServer.call(__MODULE__, {:occurrences, key, limit}, :infinity)
+
   @doc "Total occurrence and independent-game counts for a canonical key, one query."
   @spec occurrence_counts(String.t()) :: map() | {:error, :not_configured}
   def occurrence_counts(key), do: GenServer.call(__MODULE__, {:occurrence_counts, key}, :infinity)
@@ -202,6 +213,11 @@ defmodule Blunderfest.Corpus do
     {:reply, {:error, :not_configured}, state}
   end
 
+  def handle_call({fun, _arg, _arg2}, _from, %{pool: nil} = state)
+      when fun in [:occurrences, :pawn_bucket] do
+    {:reply, {:error, :not_configured}, state}
+  end
+
   def handle_call({:book, fen}, _from, state) do
     result =
       case occurrence_store(state) do
@@ -265,6 +281,17 @@ defmodule Blunderfest.Corpus do
       case occurrence_store(state) do
         {:packed, packed} -> Packed.occurrences(packed, PositionKey.to_hash128(key))
         :postgres -> Occurrences.occurrences(state.pool, key)
+        :unconfigured -> {:error, :not_configured}
+      end
+
+    {:reply, result, state}
+  end
+
+  def handle_call({:occurrences, key, limit}, _from, state) do
+    result =
+      case occurrence_store(state) do
+        {:packed, packed} -> Packed.occurrences(packed, PositionKey.to_hash128(key), limit)
+        :postgres -> Occurrences.occurrences(state.pool, key, limit)
         :unconfigured -> {:error, :not_configured}
       end
 
