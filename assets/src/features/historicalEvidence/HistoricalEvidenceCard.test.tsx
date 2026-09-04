@@ -100,6 +100,44 @@ describe('HistoricalEvidenceCard', () => {
     expect(screen.getByText('E97 · 1-0')).toBeInTheDocument();
   });
 
+  it('claims "same position" only for an identical placement', () => {
+    const identical: EvidenceCandidate = {
+      ...candidate,
+      position: {
+        ...candidate.position,
+        dims: {
+          ...candidate.position.dims,
+          piece_placement: { matches: 12, mismatches: 0, ref_pieces: 12 },
+          side_to_move: 'same',
+        },
+      },
+    };
+    render(<HistoricalEvidenceCard candidate={identical} />);
+    expect(screen.getByText('Same position')).toBeInTheDocument();
+  });
+
+  it('does not claim "same position" when the candidate carries extra pieces', () => {
+    // The reported bug shape: every reference piece is on its square, but the
+    // candidate still has material the reference traded away (queens here) —
+    // matches === ref_pieces with mismatches > 0. That is a material
+    // difference, never sameness.
+    const extraQueens: EvidenceCandidate = {
+      ...candidate,
+      position: {
+        ...candidate.position,
+        dims: {
+          ...candidate.position.dims,
+          material: ['different', 'wQ+1 bQ+1'],
+          piece_placement: { matches: 12, mismatches: 2, ref_pieces: 12 },
+          side_to_move: 'same',
+        },
+      },
+    };
+    render(<HistoricalEvidenceCard candidate={extraQueens} />);
+    expect(screen.getByText('Same pawn structure · different material')).toBeInTheDocument();
+    expect(screen.queryByText('Same position')).not.toBeInTheDocument();
+  });
+
   it('claims "one piece differs" only when the side to move matches', () => {
     render(<HistoricalEvidenceCard candidate={onePieceDiffers('same')} />);
     expect(screen.getByText('One piece differs')).toBeInTheDocument();

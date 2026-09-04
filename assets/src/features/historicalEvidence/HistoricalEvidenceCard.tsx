@@ -29,11 +29,13 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
  * never a fused verdict about the game. Continuation conclusions live in
  * their own per-side lines, and raw numbers under Comparison details.
  *
- * "Same position" is only claimed when the placement and the side to move
- * both match — a half-move off is a different statement. One piece moved
- * *and* the side to move flipped means the candidate is one half-move off
- * the viewed position (it played an extra move, or hasn't reached it yet),
- * so the headline names the move instead of claiming sameness.
+ * "Same position" is only claimed when the placement is *identical* — every
+ * reference piece on its square and nothing extra (`mismatches === 0`) — and
+ * the side to move matches; a half-move off is a different statement. All
+ * pieces present but extras on top (e.g. queens never traded) is a material
+ * difference, never sameness. With the material equal, exactly two
+ * mismatched squares mean one piece moved, and the route names how the
+ * candidate is off.
  */
 function headline(candidate: EvidenceCandidate, t: TFunction): string {
   const d = candidate.position.dims;
@@ -42,11 +44,17 @@ function headline(candidate: EvidenceCandidate, t: TFunction): string {
   if (d.pawn_structure !== 'same') {
     return t('evidence.headlineDifferentPawns');
   }
-  if (placement.matches === placement.ref_pieces && d.side_to_move === 'same') {
+  if (placement.mismatches === 0 && d.side_to_move === 'same') {
     return t('evidence.headlineSamePosition');
   }
-  if (placement.matches === placement.ref_pieces) {
+  if (placement.mismatches === 0) {
     return t('evidence.headlineTempoTwin');
+  }
+  if (d.material !== 'same') {
+    // Extra or missing pieces (with the same pawn skeleton) — the
+    // mismatches count alone can't say "one piece moved", because two
+    // mismatched squares are also two extra pieces.
+    return t('evidence.headlineMaterialDiffers');
   }
   if (placement.mismatches === 2 && d.side_to_move === 'same') {
     return t('evidence.headlineOnePieceDiffers');
@@ -62,9 +70,6 @@ function headline(candidate: EvidenceCandidate, t: TFunction): string {
       return t('evidence.headlineMoveBefore');
     }
     return t('evidence.headlineOnePieceAndTempo');
-  }
-  if (d.material !== 'same') {
-    return t('evidence.headlineMaterialDiffers');
   }
   if (d.king_position !== 'same') {
     return t('evidence.headlineKingDiffers');
