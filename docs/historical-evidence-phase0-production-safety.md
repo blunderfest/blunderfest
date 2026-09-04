@@ -204,11 +204,11 @@ Deployed 2026-09-04 (`e681290e`, v503; bounded-fetch follow-up `c4feb498`, v505)
    calls: A2 measured 9.3 s evidence on ord vs ~0.5 s on ams. This is
    pre-existing behavior (the card loop always made those calls), now the
    dominant cost on the far machine once the packed reads were cheap.
-2. **Scale-to-zero churn.** With `auto_stop_machines` and ~10-minute
-   boots, machines stop ~5 s after the last request and every cold start
-   costs a full boot; verification required keeping continuous traffic in
-   flight. Operational, out of scope here (the boot phase addresses the
-   boot duration itself).
+2. **Scale-to-zero churn.** With `auto_stop_machines` and the then
+   ~10-minute boots, machines stopped ~5 s after the last request and
+   every cold start cost a full boot; verification required keeping
+   continuous traffic in flight. Resolved by the Phase 1 boot fix below
+   (boots are now seconds, so auto-stop/auto-start is benign).
 3. **The preserved candidates-stage materialization still OOM-killed the
    1 GB machine.** A single start-position query on a freshly booted
    machine OOM'd both ams (20:55:25) and ord (20:58:29): machine events
@@ -245,9 +245,12 @@ DTO-parity harness (`/tmp/opencode/spike09/he_bench.exs` +
   fixed by format-v2 position-header metadata;
 - **bounded fetches still read the whole run's bytes** before decoding
   the prefix (25.7 MB for the start position) — same fix;
-- **anchor boot behavior is unchanged** — opens still rebuild anchors as
-  1.21M single-record preads (the ~6–11-minute prod boots, and the
-  scale-to-zero churn above); that is the separate boot phase;
+- ~~anchor boot behavior~~ — **fixed same-day (Phase 1, `e8d89351`,
+  v508):** anchors are persisted as `<file>.anchors-256` sidecars (shipped
+  to both volumes); `Packed.open` loads them in ~240 ms measured on prod,
+  with a chunked sequential rebuild fallback that re-persists. Prod boots
+  went from 6.2–11.6 min to seconds; cold wake (stopped machine → first
+  200) measured at 7 s;
 - the ord cross-region PG latency (§"Production deployment verification")
   is pre-existing; a region-aware routing or PG-placement decision is
   separate from this patch;

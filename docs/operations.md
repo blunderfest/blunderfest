@@ -82,13 +82,41 @@ monthly `.pgn.zst` files under `https://database.lichess.org/broadcast/`
 `mix corpus.extract --games <n> --corpus <filtered.pgn>`. Extraction emits
 each game's initial position at ply 0 and skips non-standard games.
 
-**The full broadcast load does not fit the current prod Postgres** (the
-94M-row `corpus_occurrences.key` index build OOM-crashes the shared-cpu box;
-the COPY stage filled the volume into read-only mode). The broadcast corpus is
-therefore local-only for now; prod runs the 100k slice. See ADR-0036 and the
-scale-readiness trigger — the packed binary index is the path forward.
+**Prod serves the broadcast corpus (1.17M games) from the packed backend**
+(ADR-0037, live since 2026-09-03). The occurrence layer is the packed binary
+index; games/moves/metadata stay in prod PG (`corpus_games`/`corpus_moves`,
+COPY-loaded). The PG occurrence tables are **not** loaded in prod — the
+packed index replaced them (the 94M-row COPY/index build OOM'd the
+shared-cpu Postgres and filled the volume into read-only mode; that path is
+abandoned, see ADR-0036). Prod layout:
 
-The prod load lessons (all fought the hard way, 2026-08-25 and 2026-08-30):
+- `fly.toml` `[env]` sets `PACKED_CORPUS=1` and
+  `PACKED_DIR=/data/corpus-packed-broadcast`.
+- The packed dir lives on the **per-region `blunderfest_data` volumes**
+  (one per machine/region — each region needs its own copy; they are not
+  shared). Ship with `flyctl ssh sftp put --machine <id> -R
+  data/corpus-packed-broadcast /data/corpus-packed-broadcast`, then verify
+  on-machine: `sha256sum` the four segment bins against `manifest.json`
+  (boot fails truthfully on a corrupt/missing dir — never silent PG
+  fallback). Volumes are 20GB (extended from 2GB; `flyctl volumes extend`).
+  The dir also carries the **anchor sidecars**
+  (`seg-*/{occ,pos,bucket,book}.bin.anchors-256`, ~17 MB total) — boot
+  loads them in one read (~240 ms on prod; Spike 09 Phase 1); a fresh dir
+  without sidecars rebuilds them once on first open (chunked sequential
+  scan) and persists them, so shipping them is an optimization, not a
+  correctness requirement. When rebuilding the corpus, keep them out of
+  stale state: delete the old dir's sidecars or ship the freshly built
+  ones with the new bins.
+- Games/moves into prod PG: export from the local docker corpus
+  (`COPY corpus_games TO STDOUT` / `corpus_moves`), then `COPY ... FROM
+  STDIN` through `flyctl proxy 15432:5432 -a blunderfest-db`. ~1.2M rows
+  load in under a minute each.
+
+For a future corpus refresh: rebuild the packed dir locally, ship to each
+region's volume, reload games/moves in PG, redeploy. Boot fails safe if the
+dir is absent mid-ship.
+
+The prod load lessons (all fought the hard way, 2026-08-25 and 2026-08-30 — the PG occurrence-load path, now superseded by packed):
 
 - **Don't load on the app machines.** They auto-stop (killing the load),
   deploys recreate them (wiping the ephemeral disk), and the shared vCPU
