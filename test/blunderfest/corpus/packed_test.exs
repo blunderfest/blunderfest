@@ -180,6 +180,57 @@ defmodule Blunderfest.Corpus.PackedTest do
     assert {:error, _reason} = Packed.open(dir)
   end
 
+  test "the first open persists anchor sidecars; a reopen loads them", %{tmp_dir: dir} do
+    {occs, poss} = fixture_streams()
+    dir = Path.join(dir, "packed")
+
+    backend = build_backend!(dir, occs, poss)
+    [seg] = backend.segments
+    assert seg.anchors_from == :rebuilt
+    anchors = [seg.occ_anchors, seg.pos_anchors, seg.bucket_anchors, seg.book_anchors]
+
+    # Sidecars land next to the segment files, one per non-empty index
+    # (the fixture has no book entries, so book.bin has 0 records and no
+    # sidecar).
+    sidecars = Path.wildcard(Path.join([dir, "seg-000001", "*.anchors-*"]))
+    assert length(sidecars) == 3
+
+    Packed.close(backend)
+
+    {:ok, reopened} = Packed.open(dir, stride: 1024)
+    [seg2] = reopened.segments
+    assert seg2.anchors_from == :sidecar
+
+    assert [seg2.occ_anchors, seg2.pos_anchors, seg2.bucket_anchors, seg2.book_anchors] ==
+             anchors
+
+    # The sidecar-loaded backend answers identically.
+    assert Packed.occurrences(reopened, hash(@key_c)) == [{1, 1}, {4, 1}, {4, 2}, {9, 1}]
+    Packed.close(reopened)
+  end
+
+  test "a corrupt sidecar falls back to a rebuild and still opens correct", %{tmp_dir: dir} do
+    {occs, poss} = fixture_streams()
+    dir = Path.join(dir, "packed")
+
+    backend = build_backend!(dir, occs, poss)
+    [seg] = backend.segments
+    good = seg.occ_anchors
+    Packed.close(backend)
+
+    # Truncate the occ sidecar: size no longer matches, so open must rebuild.
+    [occ_sidecar] = Path.wildcard(Path.join([dir, "seg-000001", "occ.bin.anchors-*"]))
+    {:ok, bin} = File.read(occ_sidecar)
+    File.write!(occ_sidecar, binary_part(bin, 0, div(byte_size(bin), 2)))
+
+    {:ok, reopened} = Packed.open(dir, stride: 1024)
+    [seg2] = reopened.segments
+    assert seg2.anchors_from == :rebuilt
+    assert seg2.occ_anchors == good
+    assert Packed.occurrences(reopened, hash(@key_c)) == [{1, 1}, {4, 1}, {4, 2}, {9, 1}]
+    Packed.close(reopened)
+  end
+
   test "two segments merge occurrence results in gid/ply order", %{tmp_dir: dir} do
     # Segment 1: old gids; segment 2: newer gids.
     seg1_dir = Path.join(dir, "packed1")

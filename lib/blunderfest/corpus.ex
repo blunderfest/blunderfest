@@ -27,6 +27,8 @@ defmodule Blunderfest.Corpus do
 
   use GenServer
 
+  require Logger
+
   alias Blunderfest.Corpus.{Book, GameExport, Occurrences, Packed, PositionKey}
 
   def start_link(opts \\ []) do
@@ -168,8 +170,22 @@ defmodule Blunderfest.Corpus do
         # When the packed backend is explicitly configured, failing to open it
         # is a boot failure (never silently fall back to the Postgres
         # occurrence tables).
-        case Packed.open(Keyword.get(config, :packed_dir, "data/corpus-packed")) do
+        {open_us, open_result} =
+          :timer.tc(fn ->
+            Packed.open(Keyword.get(config, :packed_dir, "data/corpus-packed"))
+          end)
+
+        case open_result do
           {:ok, backend} ->
+            # Boot visibility (Spike 09): the anchor source decides whether a
+            # boot costs milliseconds (sidecars) or a rebuild.
+            sources = backend.segments |> Enum.map(& &1.anchors_from) |> Enum.uniq()
+
+            Logger.info(
+              "packed corpus open in #{div(open_us, 1000)}ms " <>
+                "(#{length(backend.segments)} segment(s), anchors: #{Enum.join(sources, ",")})"
+            )
+
             backend
 
           {:error, reason} ->

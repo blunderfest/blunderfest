@@ -24,6 +24,12 @@ defmodule Blunderfest.Corpus.Packed.Segment do
   no walk-back is needed there); bucket.bin by `(pawn_hash, pos_hash)` with
   8-byte anchors on `pawn_hash` alone (big-endian u64 — lexical comparison
   equals integer comparison).
+
+  Anchors are derived data persisted as `<file>.anchors-<stride>` sidecars
+  (Spike 09 Phase 1): open loads a valid sidecar in one read and falls back
+  to a chunked sequential rebuild (persisting the result), so boots never
+  pay the old one-pread-per-anchor walk. `anchors_from` records which path
+  the open took.
   """
 
   alias Blunderfest.Corpus.Packed.Format
@@ -51,7 +57,8 @@ defmodule Blunderfest.Corpus.Packed.Segment do
     :occurrence_count,
     :position_count,
     :gids,
-    :stride
+    :stride,
+    :anchors_from
   ]
 
   @type t :: %__MODULE__{}
@@ -98,16 +105,26 @@ defmodule Blunderfest.Corpus.Packed.Segment do
         {:error, {:invalid_book_file_size, book_size}}
 
       true ->
-        # Anchors are rebuilt at open (a per-file strided read), then the
-        # descriptors are dropped — lookups reopen the file per call.
-        occ_anchors = build_anchors(files["occ"], occ_records, @occ_record_bytes, 16, stride)
-        pos_anchors = build_anchors(files["pos"], pos_records, @pos_header_bytes, 16, stride)
+        # Anchors load from a persisted sidecar when one exists (one read
+        # per file); otherwise they are rebuilt with a chunked sequential
+        # scan and persisted for the next open. Lookups still reopen the
+        # data file per call.
+        {occ_anchors, occ_src} =
+          load_anchors(files["occ"], occ_records, @occ_record_bytes, 16, stride)
 
-        bucket_anchors =
-          build_anchors(files["bucket"], bucket_records, @bucket_record_bytes, 8, stride)
+        {pos_anchors, pos_src} =
+          load_anchors(files["pos"], pos_records, @pos_header_bytes, 16, stride)
 
-        book_anchors =
-          build_anchors(files["book"], book_records, @book_header_bytes, 16, stride)
+        {bucket_anchors, bucket_src} =
+          load_anchors(files["bucket"], bucket_records, @bucket_record_bytes, 8, stride)
+
+        {book_anchors, book_src} =
+          load_anchors(files["book"], book_records, @book_header_bytes, 16, stride)
+
+        anchors_from =
+          if Enum.all?([occ_src, pos_src, bucket_src, book_src], &(&1 == :sidecar)),
+            do: :sidecar,
+            else: :rebuilt
 
         {:ok,
          %__MODULE__{
@@ -128,7 +145,8 @@ defmodule Blunderfest.Corpus.Packed.Segment do
            occurrence_count: occ_records,
            position_count: pos_records,
            gids: segment_entry.gids,
-           stride: stride
+           stride: stride,
+           anchors_from: anchors_from
          }}
     end
   end
@@ -573,22 +591,78 @@ defmodule Blunderfest.Corpus.Packed.Segment do
     end
   end
 
-  # Anchor binary: n × key_size bytes; anchor i is the key of record i*stride.
-  defp build_anchors(_path, 0, _record_bytes, _key_size, _stride), do: <<>>
+  # Anchor lifecycle (Spike 09 Phase 1): anchors are derived data — anchor
+  # i is the key of record i*stride, n = ceil(records/stride), packed as
+  # n × key_size bytes. They are persisted as `<file>.anchors-<stride>`
+  # sidecars next to the segment files; open loads a valid sidecar in one
+  # read, and only a missing/invalid sidecar pays a rebuild — a chunked
+  # sequential scan (one pread per @anchor_group anchors), not the old
+  # one-pread-per-anchor walk (1.21M reads at the broadcast tier, minutes
+  # on the prod volume). Rebuilds persist their result for the next open.
 
-  defp build_anchors(path, records, record_bytes, key_size, stride) do
+  @anchor_group 256
+
+  defp sidecar_path(path, stride), do: "#{path}.anchors-#{stride}"
+
+  defp load_anchors(_path, 0, _record_bytes, _key_size, _stride), do: {<<>>, :sidecar}
+
+  defp load_anchors(path, records, record_bytes, key_size, stride) do
     n = div(records + stride - 1, stride)
+    expected = n * key_size
+    sidecar = sidecar_path(path, stride)
+
+    case read_sidecar(sidecar, path, n, record_bytes, key_size, stride, expected) do
+      {:ok, bin} ->
+        {bin, :sidecar}
+
+      :error ->
+        bin = build_anchors(path, record_bytes, key_size, stride, n)
+        # Best effort: an unwritable sidecar just rebuilds on the next open.
+        _ = File.write(sidecar, bin)
+        {bin, :rebuilt}
+    end
+  end
+
+  # A sidecar is trusted when its size matches the expected anchor bytes and
+  # its first/last anchors equal the data file's actual anchor-record keys
+  # (two spot reads; the data files themselves are checksum-guarded by the
+  # manifest).
+  defp read_sidecar(sidecar, path, n, record_bytes, key_size, stride, expected) do
+    with {:ok, %{size: ^expected}} <- File.stat(sidecar),
+         {:ok, bin} <- File.read(sidecar),
+         {:ok, fd} <- open_raw(path),
+         {:ok, first_key} <- :file.pread(fd, 0, key_size),
+         true <- binary_part(bin, 0, key_size) == first_key,
+         {:ok, last_key} <- :file.pread(fd, (n - 1) * stride * record_bytes, key_size),
+         true <- binary_part(bin, (n - 1) * key_size, key_size) == last_key do
+      File.close(fd)
+      {:ok, bin}
+    else
+      _ -> :error
+    end
+  rescue
+    _ -> :error
+  end
+
+  # Chunked sequential rebuild: one pread per @anchor_group anchors (a
+  # contiguous span of the file), keys sliced out of each window.
+  defp build_anchors(path, record_bytes, key_size, stride, n) do
     {:ok, fd} = open_raw(path)
+    anchor_stride = stride * record_bytes
 
     anchors =
-      for i <- 0..(n - 1), reduce: <<>> do
-        acc ->
-          {:ok, chunk} = :file.pread(fd, i * stride * record_bytes, record_bytes)
-          <<acc::binary, binary_part(chunk, 0, key_size)::binary>>
-      end
+      0..(n - 1)//@anchor_group
+      |> Enum.map(fn start ->
+        count = min(@anchor_group, n - start)
+        {:ok, buf} = :file.pread(fd, start * anchor_stride, count * anchor_stride)
+
+        for i <- 0..(count - 1)//1, into: <<>> do
+          binary_part(buf, i * anchor_stride, key_size)
+        end
+      end)
 
     File.close(fd)
-    anchors
+    IO.iodata_to_binary(anchors)
   end
 
   # Every read uses the caller-threaded fd — either the one opened for a
