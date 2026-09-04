@@ -195,7 +195,7 @@ peaked at 1,429 MB with just n=2). Four concurrent start queries sit at
 
 ## Production deployment verification
 
-Deployed 2026-09-04 (`e681290e`, v503) via the standard `git push` +
+Deployed 2026-09-04 (`e681290e`, v503; bounded-fetch follow-up `c4feb498`, v505) via the standard `git push` +
 `flyctl deploy`; both regions (ams + ord) restarted with the usual
 ~6–11-minute anchor-rebuild boot. Verification surfaced three things:
 
@@ -255,7 +255,7 @@ DTO-parity harness (`/tmp/opencode/spike09/he_bench.exs` +
 
 ## Deployment recommendation
 
-**Deployed and verified.** Final state: both regions serve v504
+**Deployed and verified.** Final state: both regions serve v505
 (counts + memo + bounded fetch). All correctness gates pass (445 tests;
 DTOs byte-identical on all 8 benchmark positions at every stage;
 `same_game_only` exact), all performance gates pass (start: 1.66 s, 113 MB
