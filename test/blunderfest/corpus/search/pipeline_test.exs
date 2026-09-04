@@ -152,6 +152,25 @@ defmodule Blunderfest.Corpus.Search.PipelineTest do
     refute :singleton in sg.flags
   end
 
+  test "card stats from the counts path equal the full occurrence list's stats" do
+    # Phase 0 (Spike 09 Horizon 1): cards derive occurrences/games/
+    # same_game_only from the aggregate, never from a materialized list —
+    # the values must be exactly what the full list would produce, for
+    # every card (exact cards sharing the reference key included).
+    result = run_analyze()
+
+    for cand <- result.candidates do
+      list = Blunderfest.Corpus.occurrences(cand.key)
+      games = list |> Enum.map(&elem(&1, 0)) |> Enum.uniq() |> length()
+
+      assert cand.historical == %{
+               occurrences: length(list),
+               games: games,
+               same_game_only: length(list) > 1 and games == 1
+             }
+    end
+  end
+
   test "exact candidates carry game metadata and the reference route comparison" do
     result = run_analyze()
 

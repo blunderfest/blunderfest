@@ -30,6 +30,7 @@ defmodule Blunderfest.Corpus.Search.Candidates do
   """
 
   alias Blunderfest.Corpus.Analysis.{Differences, Features}
+  alias Blunderfest.Corpus.Search.CountMemo
 
   @type candidate :: %{
           id: String.t(),
@@ -46,16 +47,21 @@ defmodule Blunderfest.Corpus.Search.Candidates do
   Generates the capped candidate lists for a reference key. Returns
   `%{exact: [candidate], structural: [candidate], reference: Features.t()}`.
   The full result also carries `:exact_occurrences` (the bounded occurrence
-  list the pipeline's family build consumes).
+  list the pipeline's family build consumes) and `:count_memo` — the
+  request-scoped occurrence-count memo (threaded in via the `:count_memo`
+  option so the reference key is counted once per request and reused by the
+  caller).
   """
   @spec generate(String.t(), keyword()) :: %{
           exact: [candidate],
           exact_occurrences: [{pos_integer(), pos_integer()}],
           structural: [candidate],
-          reference: Features.t()
+          reference: Features.t(),
+          count_memo: CountMemo.t()
         }
   def generate(ref_key, opts \\ []) do
     ref = Features.from_key(ref_key)
+    memo = Keyword.get(opts, :count_memo) || CountMemo.new()
 
     # The occurrence list feeds the family clustering and used to drive the
     # counts/next-moves. It is bounded (families are heuristic; the exact
@@ -68,8 +74,10 @@ defmodule Blunderfest.Corpus.Search.Candidates do
       |> Blunderfest.Corpus.occurrences()
       |> Enum.take(occurrence_limit)
 
+    {ref_counts, memo} = CountMemo.fetch(memo, ref_key)
+
     exact_total =
-      case Blunderfest.Corpus.occurrence_counts(ref_key) do
+      case ref_counts do
         {:error, _} -> length(exact_occurrences)
         %{occurrences: n} -> n
       end
@@ -85,7 +93,8 @@ defmodule Blunderfest.Corpus.Search.Candidates do
       exact: exact,
       exact_occurrences: exact_occurrences,
       structural: structural_candidates(ref, opts),
-      reference: ref
+      reference: ref,
+      count_memo: memo
     }
   end
 

@@ -17,6 +17,17 @@ defmodule Blunderfest.Corpus.Analysis.CountsTest do
     assert Counts.same_game_only?([{1, 10}, {1, 20}, {1, 30}])
   end
 
+  test "same_game_only? on aggregate counts is the exact same rule" do
+    # one occurrence / one game — a singleton, not a repetition
+    refute Counts.same_game_only?(%{occurrences: 1, games: 1})
+    # multiple occurrences / one game — a repetition, not evidence
+    assert Counts.same_game_only?(%{occurrences: 2, games: 1})
+    assert Counts.same_game_only?(%{occurrences: 27, games: 1})
+    # multiple occurrences / multiple games — recurring evidence
+    refute Counts.same_game_only?(%{occurrences: 27, games: 19})
+    refute Counts.same_game_only?(%{occurrences: 2, games: 2})
+  end
+
   test "singleton? is the one-game family flag" do
     refute Counts.singleton?(0)
     assert Counts.singleton?(1)

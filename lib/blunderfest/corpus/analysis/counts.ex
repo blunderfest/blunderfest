@@ -34,11 +34,20 @@ defmodule Blunderfest.Corpus.Analysis.Counts do
 
   @doc """
   True when every occurrence comes from a single game — the candidate is
-  "the same game a few plies later", not an independent example.
+  "the same game a few plies later", not an independent example. Accepts
+  an occurrence list or the aggregate counts map; both shapes apply the
+  exact same rule: `occurrences > 1 and games == 1`.
   """
-  @spec same_game_only?([{pos_integer(), pos_integer()}]) :: boolean()
-  def same_game_only?(occurrences) do
+  @spec same_game_only?(
+          [{pos_integer(), pos_integer()}]
+          | %{occurrences: non_neg_integer(), games: non_neg_integer()}
+        ) :: boolean()
+  def same_game_only?(occurrences) when is_list(occurrences) do
     %{occurrences: n, games: games} = counts(occurrences)
+    n > 1 and games == 1
+  end
+
+  def same_game_only?(%{occurrences: n, games: games}) do
     n > 1 and games == 1
   end
 
