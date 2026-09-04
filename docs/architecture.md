@@ -102,8 +102,12 @@ release and served by a catch-all (`SpaController`).
     `packed/builder.ex` (sortedness + size + SHA-256 validation per
     segment), `packed/manifest.ex` (manifest read/write/all-or-nothing
     validation), `packed/segment.ex` (sparse anchors — binary search
-    anchors → bounded chunk scans; ~5.6 MB anchors at stride 256 for the
-    broadcast corpus), `packed/input.ex` (8 MB chunk line reader — the
+    anchors → bounded chunk scans; ~17 MB anchors at stride 256 for the
+    broadcast corpus, persisted as `<file>.anchors-<stride>` sidecars next
+    to the bins and loaded at open — a missing/corrupt sidecar falls back
+    to a chunked sequential rebuild and re-persists, so boots cost
+    milliseconds instead of the old 1.21M-pread walk; Spike 09 Phase 1),
+    `packed/input.ex` (8 MB chunk line reader — the
     build path bottleneck), `packed.ex` (segments merged in build order).
     Opens per query in the calling process — the raw fd never crosses
     process boundaries.

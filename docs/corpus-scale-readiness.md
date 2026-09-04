@@ -44,10 +44,24 @@ The two hot endpoints:
   transposition candidates). One `COUNT(DISTINCT gid) … WHERE key = ANY($1)`
   query; scales with the matched occurrence count.
 
-The expensive path is the historical-evidence pipeline (ADR-0027): measured
-**170–354 ms on the 100k-game corpus**, comfortably interactive. Its cost
+The expensive path is the historical-evidence pipeline (ADR-0027). On the
+100k-game corpus it measured 170–354 ms, comfortably interactive. Its cost
 scales with candidate count and per-candidate occurrence fan-out, capped by
 explicit limits (12 exact, 40 structural, 2000 bucket keys).
+
+**Packed-backend note (2026-09-03):** the evidence stage builds one card per
+candidate, and originally fetched the full occurrence list per card
+(`Corpus.occurrences/1`) to derive `occurrences`/`games`/`same_game_only`.
+On the packed backend that re-reads the candidate key's segment run once per
+card — ~10× for a hot key (~900 occurrences) shared across ~20 cards. In
+PG's warm page cache this was invisible; on a cold 1GB prod machine it
+dominated (~9.5s of a ~10.8s query). The card now uses
+`occurrence_counts/1` (a bounded packed read / `COUNT(*), COUNT(DISTINCT
+gid)` in PG) — same returned data, no occurrence-list materialization.
+Result on the 1.17M broadcast corpus: evidence stage ~690ms, total ~1.3s,
+identical with the OS page cache dropped. Lesson for the packed backend:
+**per-candidate work must be counts-only; never re-read an occurrence run
+per card.**
 
 ## The one structural bottleneck
 

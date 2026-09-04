@@ -71,6 +71,71 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
+### Session handoff (2026-09-04 — Spike 09 design review + hot-key and boot fixes live)
+
+**Spike 09 design review** —
+[`docs/technical-spike-09-packed-corpus-production-design-review-report.md`](docs/technical-spike-09-packed-corpus-production-design-review-report.md):
+the packed architecture is vindicated; the production failures were the
+pipeline fetching full occurrence lists where counts sufficed (13× per
+request on keys shared by all exact cards), no precomputed per-position
+counts, and the boot rebuilding sparse anchors as 1.21M single-record
+preads (6–11 min prod boots; the "site not responding" window behind
+scale-to-zero). Horizon 2 (format v2: occurrence/game counts + run offset
+in the pos header) is designed and prototyped in the report but not built.
+
+**Phase 0 — hot-key safety fix** —
+[`docs/historical-evidence-phase0-production-safety.md`](docs/historical-evidence-phase0-production-safety.md):
+cards derive stats from `occurrence_counts/1`; a request-scoped count memo
+is threaded explicitly through pipeline/candidates (each distinct key
+counted once); a bounded `Corpus.occurrences(key, limit)` (packed prefix
+decode / SQL LIMIT) serves bounded consumers. Start position 19.7 s →
+~1.7 s, peak 972 MB → ~113 MB; DTOs byte-identical on all 8 benchmark
+positions at every step; the first prod deploy still OOM'd on the start
+position (the candidates-stage full materialization), the bounded fetch
+closed that, and hot keys now serve in 1–3 s on prod with no OOM since.
+
+**Phase 1 — boot fix** (same report): anchors are derived data, persisted
+as `<file>.anchors-256` sidecars (17 MB, shipped to both volumes);
+`Packed.open` loads them in ~240 ms on prod (was 6.2–11.6 min), with a
+chunked sequential rebuild fallback that re-persists. Cold wake
+(stopped → serving) measured 7 s; `Corpus.init` logs open time + anchor
+source. The local corpus dir carries the sidecars too.
+
+**Evidence headline fix** (740b2736): a structural candidate containing
+every reference piece *plus extras* (e.g. queens never traded — repro:
+lichess 3eRBBiRt after 6. Nbd2, Bade–Beck) was headed "Same position";
+sameness now requires an identical placement (`mismatches === 0`), and
+extra/missing material reads "Same pawn structure · different material".
+
+### Session handoff (2026-09-03 — packed flip is live in prod + evidence-perf fix)
+
+**Prod now serves the broadcast corpus from the packed backend.** The flip
+(ADR-0037, recommendation A) shipped: the packed dir (manifest + 4 segment
+bins, 12.2 GiB) was sftp'd to both per-region `blunderfest_data` volumes
+(ams + ord, extended 2GB → 20GB) and SHA-256-verified on-machine against the
+manifest; broadcast `corpus_games`/`corpus_moves` were COPY-loaded into prod
+PG (1,174,661 rows each, full-table MD5 identical to local); `PACKED_CORPUS=1`
++ `PACKED_DIR=/data/corpus-packed-broadcast` set in `fly.toml`. Boot fails
+truthfully if the packed dir is missing (never silently falls back to PG).
+Rollback = drop the env + redeploy; prod PG is untouched. Verified: start
+book e4 569,149 / d4 337,058 / Nf3 87,920; Ruy decision point d6 3,985 /
+O-O 3,624 — matching the local packed numbers exactly.
+
+**Evidence-perf fix (the 10s → 1.3s one).** A user-reported ~10s "Find
+examples" on prod traced to the evidence stage re-reading each candidate
+key's occurrence run **per card** (`Corpus.occurrences/1`) to derive
+counts/same_game_only — ~10× for a ~900-occurrence hot key across ~20 cards.
+Warm PG cache hid this; on a cold 1GB prod machine it was ~9.5s of a ~10.8s
+query. Cards now use `occurrence_counts/1` (bounded packed read / SQL
+aggregate) — same data, no list materialization. Evidence stage 9554ms →
+~690ms, total ~1.3s, **identical with the OS page cache dropped** on both
+machines. Regression pinned by the existing same-game-candidate test. 437
+backend green. (The earlier session's `.dockerignore` now also excludes
+`/data/` so the 42GB local corpus never enters the build context.)
+
+The prior session's work is below; the packed backend is now the live
+occurrence store in both local and prod.
+
 ### Session handoff (2026-09-02 — packed occurrence backend validated; broadcast flip is live locally)
 
 Spike 08 + the broadcast follow-up are implemented and green: the packed
@@ -92,8 +157,7 @@ are promoted to `corpus_games`/`corpus_moves` locally (the 100k tables
 are parked as `corpus_*_100k`). UI smoke: start-position book shows
 e4 569,149 games; Ruy decision point d6 3,985 / O-O 3,624; the evidence
 dialog returns real players with standard-notation continuations.
-Prod still serves PG (empty corpus until the flip); the flip is one deploy
-with `PACKED_CORPUS=1` + the packed dir shipped to the volume.
+(Prod flip landed the next day — see the 2026-09-03 entry above.)
 
 Also fixed along the way: evidence-dialog miniboards follow the main
 board's orientation (no per-candidate flip), the read-only find CTA no

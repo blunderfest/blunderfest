@@ -1,6 +1,6 @@
 # ADR-0037: Packed binary occurrence backend
 
-Status: Accepted (2026-08-31); broadcast 1.17M validated (2026-09-02)
+Status: Accepted (2026-08-31); broadcast 1.17M validated (2026-09-02); live in prod (2026-09-03)
 
 ## Context
 
@@ -62,3 +62,14 @@ closing condition) passed: broadcast artifact parity 72.4M keys streamed,
 The recommendation is A — production migration approved; deploy with
 `PACKED_CORPUS=1` behind the existing PG tables, then drop the PG
 occurrence tables once prod is validated.
+
+**Prod flip shipped 2026-09-03.** The packed dir (12.2 GiB) is on both
+per-region `blunderfest_data` volumes (ams + ord, extended to 20GB),
+checksum-verified; broadcast games/moves COPY'd into prod PG;
+`PACKED_CORPUS=1` + `PACKED_DIR=/data/corpus-packed-broadcast` in
+`fly.toml`. A same-day perf fix followed: the evidence pipeline's per-card
+`occurrences/1` fetch became `occurrence_counts/1` (the per-card count
+derivation never needed the list) — on a cold 1GB prod machine the repeated
+hot-key occurrence-run reads were ~9.5s of a ~10.8s query; now ~0.7s /
+~1.3s total, cold or warm. The PG occurrence tables stay in place (inert)
+pending a deliberate drop.
