@@ -140,7 +140,7 @@ export default function AnalysisSidebar({
         // ADR-0024 as amended), then the move list scrolling below —
         // lichess's analysis panel.
         <section
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden max-xl:overflow-y-auto"
           data-tour="analysis-panel"
         >
           <EngineBox

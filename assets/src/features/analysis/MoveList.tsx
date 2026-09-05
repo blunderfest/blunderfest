@@ -343,7 +343,7 @@ export default function MoveList({
   }
 
   return (
-    <section className="flex min-h-0 flex-col border-t border-line xl:flex-1">
+    <section className="flex min-h-0 flex-col border-t border-line max-xl:shrink-0 xl:flex-1">
       <div
         ref={listRef}
         id="analysis-move-list"
