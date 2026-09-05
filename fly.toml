@@ -18,7 +18,7 @@ kill_signal = 'SIGTERM'
   # per-region `blunderfest_data` volumes. Games/moves/metadata stay in
   # Postgres. Boot fails truthfully if the packed dir is missing.
   PACKED_CORPUS = '1'
-  PACKED_DIR = '/data/corpus-packed-broadcast'
+  PACKED_DIR = '/data/corpus-packed-broadcast-v2'
   # SECRET_KEY_BASE and RELEASE_COOKIE live in `fly secrets` (never in the repo).
 
 [http_service]
