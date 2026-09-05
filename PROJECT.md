@@ -71,6 +71,38 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
+### Session handoff (2026-09-05 — packed v2 + Phase 3 runtime + HE CPU opts are LIVE in prod)
+
+**CUTOVER SUCCESSFUL — v2 is now production**
+([`docs/packed-corpus-v2-production-cutover.md`](docs/packed-corpus-v2-production-cutover.md)).
+The validated packed v2 corpus + Phase 3 bounded Corpus API + the
+semantics-preserving HE CPU optimizations were deployed to both regions
+(ams `2874763ead9608`, ord `7811de03c23638`), machine version 513 → **516**,
+image `deployment-01M1S4NWA3SS7V53SGV40SJ1VR`, commit `94ec7e50`.
+
+- **Capacity**: the 20 GB volumes couldn't hold v1 (rollback) + v2, so they
+  were extended grow-only — ams → **32 GB**, ord → **40 GB** (ord also carries
+  a stale 1.3 G `/data/corpus` 100k-era dir, left untouched per the "don't
+  change corpus files" rule).
+- **Upload**: runtime artifact only (manifest + 4 bins + 4 sidecars, 13.12 GiB;
+  no `.tsv` intermediates) sftp'd to each volume, byte-size + **SHA-256
+  verified** against the manifest on both machines.
+- **Boot**: corpus opens from **sidecars** in ~200 ms both regions (no rebuild);
+  endpoint on :::8080.
+- **Probes**: A2/Najdorf/1.e4/start all HTTP 200 in both regions; counts/cards/
+  families match; **start DTO byte-identical** to local v2. ams `pg` 288–397 ms
+  (colocated); ord `pg` ~10 s (the parked cross-region issue — not a v2
+  regression). `menu` 23–160 ms everywhere (HE CPU opts live).
+- **`book_counts`** start returns **1,169,353** (authoritative `game_count`,
+  not the old book-sum proxy).
+- **No OOM / no HE-caused restart**; memory healthy (n=2 probe OK). Autostop
+  restored to scale-to-zero.
+- **Rollback** (not needed): revert `fly.toml` `PACKED_DIR` →
+  `/data/corpus-packed-broadcast` + redeploy (v1 intact on both volumes).
+
+**Next** (the separately parked task): the ord → ams PostgreSQL latency
+investigation.
+
 ### Session handoff (2026-09-05 — HE product-CPU spike: the <1s gate now passes)
 
 The class-E product-CPU floor Phase 3 left behind is removed, semantics

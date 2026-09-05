@@ -94,22 +94,31 @@ monthly `.pgn.zst` files under `https://database.lichess.org/broadcast/`
 each game's initial position at ply 0 and skips non-standard games.
 
 **Prod serves the broadcast corpus (1.17M games) from the packed backend**
-(ADR-0037, live since 2026-09-03). The occurrence layer is the packed binary
-index; games/moves/metadata stay in prod PG (`corpus_games`/`corpus_moves`,
+(ADR-0037, live since 2026-09-03; **packed format v2 + Phase 3 runtime + HE
+CPU optimizations live since 2026-09-05**, see
+`packed-corpus-v2-production-cutover.md`). The occurrence layer is the packed
+binary index; games/moves/metadata stay in prod PG (`corpus_games`/`corpus_moves`,
 COPY-loaded). The PG occurrence tables are **not** loaded in prod — the
 packed index replaced them (the 94M-row COPY/index build OOM'd the
 shared-cpu Postgres and filled the volume into read-only mode; that path is
 abandoned, see ADR-0036). Prod layout:
 
 - `fly.toml` `[env]` sets `PACKED_CORPUS=1` and
-  `PACKED_DIR=/data/corpus-packed-broadcast`.
+  `PACKED_DIR=/data/corpus-packed-broadcast-v2`. The **v1** dir
+  (`/data/corpus-packed-broadcast`) is retained on every volume as the
+  immediate rollback (revert `PACKED_DIR` + redeploy; no data rebuild).
 - The packed dir lives on the **per-region `blunderfest_data` volumes**
   (one per machine/region — each region needs its own copy; they are not
   shared). Ship with `flyctl ssh sftp put --machine <id> -R
-  data/corpus-packed-broadcast /data/corpus-packed-broadcast`, then verify
-  on-machine: `sha256sum` the four segment bins against `manifest.json`
-  (boot fails truthfully on a corrupt/missing dir — never silent PG
-  fallback). Volumes are 20GB (extended from 2GB; `flyctl volumes extend`).
+  <local-packed-dir> /data/<packed-dir>`, then verify on-machine:
+  `sha256sum` the four segment bins against `manifest.json` (boot fails
+  truthfully on a corrupt/missing dir — never silent PG fallback). Ship the
+  **runtime files only** (manifest + `seg-*/{occ,pos,bucket,book}.bin` +
+  `.anchors-256` sidecars), not the pack-time `.tsv` intermediates. Note
+  `flyctl sftp` refuses to overwrite — remove a partial before retry — and
+  `flyctl ssh console -C` needs compound commands wrapped in `sh -c`.
+  Volumes: ams 32 GB, ord 40 GB (extended from 20 GB to fit v1+v2;
+  `flyctl volumes extend` is grow-only and safe).
   The dir also carries the **anchor sidecars**
   (`seg-*/{occ,pos,bucket,book}.bin.anchors-256`, ~17 MB total) — boot
   loads them in one read (~240 ms on prod; Spike 09 Phase 1); a fresh dir
