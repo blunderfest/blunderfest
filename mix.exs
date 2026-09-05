@@ -48,6 +48,7 @@ defmodule Blunderfest.MixProject do
       {:echecs, "~> 0.1.4"},
       {:postgrex, "~> 0.22"},
       {:ecto_sql, "~> 3.11"},
+      {:telemetry, "~> 1.0"},
       {:req, "~> 0.5"}
     ]
   end

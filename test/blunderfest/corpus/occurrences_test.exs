@@ -148,6 +148,78 @@ defmodule Blunderfest.Corpus.OccurrencesTest do
     assert Occurrences.moves(conn, 99) == []
   end
 
+  ## Bulk hydration (PG hydration spike): the batch APIs the pipeline's
+  ## card hydration uses. Parity with the individual lookups is the
+  ## contract — same rows, same map shapes, exact move ordering.
+
+  test "moves_for/2 equals moves/2 per gid with exact move ordering", %{
+    conn: conn,
+    data_dir: dir
+  } do
+    Occurrences.rebuild(conn, dir, 10)
+
+    map = Occurrences.moves_for(conn, [1, 2])
+    assert map == %{1 => ["e4", "c5", "Nf3", "d6", "d4"], 2 => ["d4", "d5", "c4", "e6", "Nc3"]}
+
+    for gid <- [1, 2] do
+      assert Map.fetch!(map, gid) == Occurrences.moves(conn, gid)
+    end
+  end
+
+  test "moves_for/2 handles empty, duplicate and missing gids", %{conn: conn, data_dir: dir} do
+    Occurrences.rebuild(conn, dir, 10)
+
+    assert Occurrences.moves_for(conn, []) == %{}
+    # Duplicates fetch once and yield one entry; a gid without a moves row
+    # is absent (the per-gid lookup answers [] for it).
+    assert Occurrences.moves_for(conn, [1, 1, 1, 99]) == %{1 => ["e4", "c5", "Nf3", "d6", "d4"]}
+  end
+
+  test "games/2 equals game/2 per gid", %{conn: conn, data_dir: dir} do
+    Occurrences.rebuild(conn, dir, 10)
+
+    map = Occurrences.games(conn, [1, 2])
+
+    for gid <- [1, 2] do
+      assert Map.fetch!(map, gid) == Occurrences.game(conn, gid)
+    end
+
+    assert map[1] == %{
+             gid: 1,
+             white: "Alpha",
+             black: "Beta",
+             result: "1-0",
+             date: "2017.05.01",
+             eco: "B32",
+             opening: "Sicilian",
+             white_elo: 2400,
+             black_elo: 2350,
+             event: "Event A",
+             time_control: "300+0",
+             site: "abc12"
+           }
+  end
+
+  test "games/2 handles empty, duplicate and missing gids", %{conn: conn, data_dir: dir} do
+    Occurrences.rebuild(conn, dir, 10)
+
+    assert Occurrences.games(conn, []) == %{}
+
+    dup = Occurrences.games(conn, [1, 1, 2])
+    assert Map.keys(dup) |> Enum.sort() == [1, 2]
+
+    # A gid without a game row is absent from the map (the per-gid lookup
+    # answers nil for it).
+    once = Occurrences.games(conn, [1, 2])
+    assert Occurrences.games(conn, [1, 2, 99]) == once
+  end
+
+  test "games/2 is independent of the input gid order", %{conn: conn, data_dir: dir} do
+    Occurrences.rebuild(conn, dir, 10)
+
+    assert Occurrences.games(conn, [2, 1]) == Occurrences.games(conn, [1, 2])
+  end
+
   test "rebuild/3 is idempotent", %{conn: conn, data_dir: dir} do
     assert Occurrences.rebuild(conn, dir, 10) == %{
              positions: 3,

@@ -285,6 +285,46 @@ defmodule Blunderfest.Corpus.Occurrences do
   end
 
   @doc """
+  Game metadata for a batch of gids, one query — `%{gid => game}` (the same
+  row shape `game/2` returns per gid; gids without a row are absent). The
+  Historical Evidence card hydration fetches every card's metadata in one
+  round trip instead of one `game/2` query per card — the per-card shape
+  multiplied the cross-region round trips (PG hydration spike).
+  """
+  @spec games(conn(), [pos_integer()]) :: %{pos_integer() => map()}
+  def games(conn, gids) do
+    %{rows: rows} =
+      Postgrex.query!(
+        conn,
+        """
+        SELECT gid, white, black, result, date, eco, opening,
+               white_elo, black_elo, event, time_control, site
+        FROM corpus_games WHERE gid = ANY($1)
+        """,
+        [Enum.uniq(gids)],
+        timeout: :infinity
+      )
+
+    Map.new(rows, fn [gid, white, black, result, date, eco, opening, welo, belo, event, tc, site] ->
+      {gid,
+       %{
+         gid: gid,
+         white: white,
+         black: black,
+         result: result,
+         date: date,
+         eco: eco,
+         opening: opening,
+         white_elo: welo,
+         black_elo: belo,
+         event: event,
+         time_control: tc,
+         site: site
+       }}
+    end)
+  end
+
+  @doc """
   Game results for a batch of gids, one query — `%{gid => result}`. The
   packed occurrence backend's book aggregation needs results without the
   full metadata rows.

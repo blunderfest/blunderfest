@@ -152,6 +152,15 @@ defmodule Blunderfest.Corpus do
   def moves_for(gids), do: GenServer.call(__MODULE__, {:moves_for, gids}, :infinity)
 
   @doc """
+  Game metadata for a batch of gids, one query — `%{gid => game}` (the same
+  rows `game/1` returns individually; gids without a row are absent). The
+  Historical Evidence card hydration fetches every card's game row in one
+  round trip instead of one query per card (PG hydration spike).
+  """
+  @spec games([pos_integer()]) :: %{pos_integer() => map()} | {:error, :not_configured}
+  def games(gids), do: GenServer.call(__MODULE__, {:games, gids}, :infinity)
+
+  @doc """
   The opening-book next-move stats for a FEN (games + W/D/B per move),
   `[]` for a position with no occurrences.
   """
@@ -281,6 +290,7 @@ defmodule Blunderfest.Corpus do
              :position,
              :pawn_bucket,
              :game,
+             :games,
              :moves,
              :moves_for,
              :book,
@@ -435,16 +445,32 @@ defmodule Blunderfest.Corpus do
     {:reply, result, state}
   end
 
+  # The PG-bound hydration queries emit a `[:blunderfest, :corpus, :query]`
+  # telemetry event (PG hydration spike): the per-request Postgres share of
+  # Historical Evidence stays attributable by kind without exposing
+  # diagnostics in the DTO. No handler attached — the emit is a no-op.
   def handle_call({:game, gid}, _from, state) do
-    {:reply, Occurrences.game(state.pool, gid), state}
+    {duration, result} = :timer.tc(fn -> Occurrences.game(state.pool, gid) end)
+    emit_query(:game, [gid], result, duration)
+    {:reply, result, state}
+  end
+
+  def handle_call({:games, gids}, _from, state) do
+    {duration, result} = :timer.tc(fn -> Occurrences.games(state.pool, gids) end)
+    emit_query(:games, gids, result, duration)
+    {:reply, result, state}
   end
 
   def handle_call({:moves, gid}, _from, state) do
-    {:reply, Occurrences.moves(state.pool, gid), state}
+    {duration, result} = :timer.tc(fn -> Occurrences.moves(state.pool, gid) end)
+    emit_query(:moves, [gid], result, duration)
+    {:reply, result, state}
   end
 
   def handle_call({:moves_for, gids}, _from, state) do
-    {:reply, Occurrences.moves_for(state.pool, gids), state}
+    {duration, result} = :timer.tc(fn -> Occurrences.moves_for(state.pool, gids) end)
+    emit_query(:moves_for, gids, result, duration)
+    {:reply, result, state}
   end
 
   def handle_call(:counts, _from, %{pool: nil} = state) do
@@ -497,6 +523,21 @@ defmodule Blunderfest.Corpus do
   defp packed_games_count(packed, hash) do
     packed_position_stats(packed, hash).games
   end
+
+  # Telemetry emit for the PG-bound hydration queries (see the handle_call
+  # clauses above).
+  defp emit_query(kind, gids, result, duration) do
+    :telemetry.execute(
+      [:blunderfest, :corpus, :query],
+      %{duration: duration},
+      %{kind: kind, gids: gids, rows: rows_of(result)}
+    )
+  end
+
+  defp rows_of({:error, _}), do: 0
+  defp rows_of(nil), do: 0
+  defp rows_of(result) when is_map(result), do: map_size(result)
+  defp rows_of(result) when is_list(result), do: length(result)
 
   # In packed mode the facade routes :book to the precomputed book.bin
   # aggregate; :book_counts serves the authoritative independent-game count

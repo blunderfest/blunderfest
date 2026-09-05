@@ -142,11 +142,24 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
         counts -> counts
       end
 
-    {evidence_us, {candidates, {_memo, cards_pg_us}}} =
+    # Batched card hydration (PG hydration spike): one request's cards need
+    # game metadata + mainlines for at most 22 gids, several of them
+    # duplicates — fetched here in bulk (one games query, one moves query
+    # for the gids the menu's moves_for did not already cover) instead of
+    # two sequential Postgres round trips per card. The menu's
+    # continuation fetch above stays its own request-level concept; this
+    # only reuses its result where the gid sets overlap.
+    cards = gen.exact ++ gen.structural
+    card_gids = cards |> Enum.map(& &1.gid) |> Enum.uniq()
+
+    {cards_pg_us, hydration} =
+      :timer.tc(fn -> hydrate_cards(card_gids, moves_map) end)
+
+    {evidence_us, {candidates, _memo}} =
       :timer.tc(fn ->
-        (gen.exact ++ gen.structural)
-        |> Enum.map_reduce({memo, 0}, fn cand, {memo, pg_us} ->
-          {card_map, memo, card_pg_us} =
+        cards
+        |> Enum.map_reduce(memo, fn cand, memo ->
+          {card_map, memo} =
             card(
               cand,
               ref,
@@ -156,10 +169,11 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
               route,
               ref_ply,
               ref_window,
-              memo
+              memo,
+              hydration
             )
 
-          {card_map, {memo, pg_us + card_pg_us}}
+          {card_map, memo}
         end)
       end)
 
@@ -191,13 +205,14 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
          route,
          ref_ply,
          ref_window,
-         memo
+         memo,
+         hydration
        ) do
-    # The card's two Postgres lookups (game metadata + mainline), timed as
-    # hydration — on the far region this is where cross-region latency
-    # lands, and the timing keeps it separable from the local assembly.
-    {pg_us, {game_row, cand_moves}} =
-      :timer.tc(fn -> {Blunderfest.Corpus.game(cand.gid), Blunderfest.Corpus.moves(cand.gid)} end)
+    # The card's Postgres data (game metadata + mainline) comes from the
+    # request's bulk hydration — missing rows keep their individual-lookup
+    # semantics: nil game, empty mainline.
+    game_row = Map.get(hydration.games, cand.gid)
+    cand_moves = Map.get(hydration.moves, cand.gid, [])
 
     window = cand_moves |> drop_ply(cand.ply) |> cap()
 
@@ -260,9 +275,36 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
             same_game_only
           )
       },
-      memo,
-      pg_us
+      memo
     }
+  end
+
+  # The card hydration set, fetched in bulk: all game metadata in one query,
+  # all mainlines the menu's moves_for did not already return in one more
+  # (exact cards' gids are a subset of the menu's occurrence gids, so they
+  # are reused, not re-fetched). Errors degrade exactly like the menu's
+  # moves_for handling above — a database error still raises from the
+  # query, as the individual lookups always did.
+  defp hydrate_cards(card_gids, moves_map) do
+    games_map =
+      case Blunderfest.Corpus.games(card_gids) do
+        {:error, _} -> %{}
+        map -> map
+      end
+
+    moves_map =
+      case Enum.reject(card_gids, &Map.has_key?(moves_map, &1)) do
+        [] ->
+          moves_map
+
+        missing ->
+          case Blunderfest.Corpus.moves_for(missing) do
+            {:error, _} -> moves_map
+            map -> Map.merge(moves_map, map)
+          end
+      end
+
+    %{games: games_map, moves: moves_map}
   end
 
   # Counts only — the card never needs the occurrence list itself. The

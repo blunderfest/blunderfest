@@ -31,8 +31,43 @@ defmodule Blunderfest.CorpusFacadeTest do
     assert Corpus.position(@key).first_gid == 1
     assert Corpus.moves(1) == ["e4", "c5"]
     assert Corpus.game(1).white == "A"
+    assert Corpus.games([1]) == %{1 => Corpus.game(1)}
+    assert Corpus.moves_for([1]) == %{1 => Corpus.moves(1)}
     assert Corpus.pawn_bucket(Corpus.position(@key).pawn_hash) == [@key]
     assert Corpus.counts() == %{positions: 1, occurrences: 1, games: 1, moves: 1}
+  end
+
+  test "the PG hydration queries emit a corpus query telemetry event", %{data_dir: dir} do
+    assert Corpus.rebuild(dir, 10).occurrences == 1
+
+    test_pid = self()
+    handler_id = {__MODULE__, :query_emit_test}
+
+    :telemetry.attach(
+      handler_id,
+      [:blunderfest, :corpus, :query],
+      fn _event, measurements, metadata, _config ->
+        send(test_pid, {:corpus_query, measurements, metadata})
+      end,
+      nil
+    )
+
+    on_exit(fn -> :telemetry.detach(handler_id) end)
+
+    assert %{1 => _} = Corpus.games([1])
+    assert %{1 => _} = Corpus.moves_for([1])
+    assert %{white: "A"} = Corpus.game(1)
+    assert ["e4", "c5"] = Corpus.moves(1)
+
+    kinds =
+      for _ <- 1..4 do
+        assert_received {:corpus_query, measurements, metadata}
+        assert is_integer(measurements.duration)
+        assert metadata.rows >= 0
+        metadata.kind
+      end
+
+    assert kinds == [:games, :moves_for, :game, :moves]
   end
 
   test "an unconfigured instance answers not_configured on every query" do
@@ -55,7 +90,9 @@ defmodule Blunderfest.CorpusFacadeTest do
     assert {:error, :not_configured} = GenServer.call(probe, {:first_occurrence, "k"})
     assert {:error, :not_configured} = GenServer.call(probe, {:pawn_bucket, 1})
     assert {:error, :not_configured} = GenServer.call(probe, {:game, 1})
+    assert {:error, :not_configured} = GenServer.call(probe, {:games, [1]})
     assert {:error, :not_configured} = GenServer.call(probe, {:moves, 1})
+    assert {:error, :not_configured} = GenServer.call(probe, {:moves_for, [1]})
     assert {:error, :not_configured} = GenServer.call(probe, :counts)
     assert {:error, :not_configured} = GenServer.call(probe, {:rebuild, "dir", 10})
   end

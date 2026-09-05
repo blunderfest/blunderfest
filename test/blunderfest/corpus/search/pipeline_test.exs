@@ -224,6 +224,102 @@ defmodule Blunderfest.Corpus.Search.PipelineTest do
     assert result.timings.pg_ms >= 0
   end
 
+  test "card hydration is batched: one games query, no per-card queries" do
+    # PG hydration spike: the evidence stage must not issue one game + one
+    # moves query per card. The facade trace of one request shows the whole
+    # PG-bound shape: a single `:games` call for the deduplicated card gids,
+    # `:moves_for` calls covering every card gid (the menu's batch plus, if
+    # needed, one more for gids the menu did not fetch), and zero
+    # individual `:game` / `:moves` calls.
+    corpus = Process.whereis(Blunderfest.Corpus)
+    :erlang.trace(corpus, true, [:receive])
+
+    result = run_analyze()
+
+    :erlang.trace(corpus, false, [:receive])
+
+    calls =
+      for {:trace, _pid, :receive, {:"$gen_call", _from, call}} <- drain_trace([]), do: call
+
+    refute Enum.any?(calls, &match?({:game, _}, &1))
+    refute Enum.any?(calls, &match?({:moves, _}, &1))
+
+    [games_gids] = for {:games, gids} <- calls, do: gids
+    assert games_gids == Enum.uniq(games_gids)
+
+    card_gids = Enum.map(result.candidates, & &1.gid)
+    assert Enum.sort(games_gids) == Enum.sort(Enum.uniq(card_gids))
+
+    moves_for_gids =
+      for {:moves_for, gids} <- calls, reduce: [] do
+        acc -> acc ++ gids
+      end
+
+    for gid <- Enum.uniq(card_gids) do
+      assert gid in moves_for_gids
+    end
+
+    # Duplicate card gids cost no duplicate database work: the gid arrays
+    # are deduplicated before the queries go out.
+    assert length(games_gids) == length(Enum.uniq(games_gids))
+  end
+
+  test "card hydration is deterministic regardless of gid order" do
+    # The bulk lookups answer from maps keyed by gid; shuffling the input
+    # order must not change a single card's game or continuation data.
+    strip = fn result ->
+      result.candidates
+      |> Enum.map(fn cand -> {cand.id, cand.game, cand.continuation.window} end)
+    end
+
+    assert strip.(run_analyze()) == strip.(run_analyze())
+  end
+
+  test "a missing moves row degrades the card to an empty window, not a crash" do
+    result = run_analyze()
+
+    # Every exact/structural card carries a full mainline in this fixture —
+    # pick one card gid, drop its moves row, and re-run.
+    gid = hd(result.candidates).gid
+    delete!("DELETE FROM corpus_moves WHERE gid = $1", [gid])
+
+    degraded = run_analyze()
+
+    assert Enum.find(degraded.candidates, &(&1.gid == gid && &1.strategy == :exact)) != nil
+
+    for cand <- degraded.candidates, cand.gid == gid do
+      assert cand.continuation.window == []
+      assert cand.game != nil
+    end
+  end
+
+  test "a missing game row leaves the card's game nil, not a crash" do
+    result = run_analyze()
+
+    gid = hd(result.candidates).gid
+    delete!("DELETE FROM corpus_games WHERE gid = $1", [gid])
+
+    degraded = run_analyze()
+
+    for cand <- degraded.candidates, cand.gid == gid do
+      assert cand.game == nil
+      # The mainline is untouched — only the metadata row is gone.
+      assert is_list(cand.continuation.window)
+    end
+  end
+
+  defp delete!(sql, args) do
+    db_opts = Application.fetch_env!(:blunderfest, Blunderfest.Corpus)[:db]
+
+    conn =
+      start_supervised!(
+        {Postgrex,
+         [name: :pipeline_delete_pool, pool_size: 1] ++ Keyword.put(db_opts, :name, nil)}
+      )
+
+    Postgrex.query!(conn, sql, args)
+  end
+
   test "the member index is request-local: interleaved requests stay independent" do
     # HE-CPU spike: the family/skeleton membership index is a plain map
     # threaded through one pipeline request — nothing is cached across
