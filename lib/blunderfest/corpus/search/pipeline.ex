@@ -96,13 +96,19 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
         end)
       end)
 
-    {menu_us, menu} =
+    {menu_us, {menu, member_index}} =
       :timer.tc(fn ->
-        gen.exact_occurrences
-        |> Enum.map(fn {gid, ply} ->
-          {gid, ply, Map.get(moves_map, gid, []) |> drop_ply(ply)}
-        end)
-        |> Families.build(family_cfg)
+        menu =
+          gen.exact_occurrences
+          |> Enum.map(fn {gid, ply} ->
+            {gid, ply, Map.get(moves_map, gid, []) |> drop_ply(ply)}
+          end)
+          |> Families.build(family_cfg)
+
+        # The per-card membership layers score this same menu against every
+        # card; the index precomputes each member's representations once
+        # (request-local, threaded like the count memo — Spike HE-CPU).
+        {menu, Families.member_index(menu, family_cfg, ref.stm)}
       end)
 
     # The next-move distribution is computed in SQL via the corpus Book
@@ -144,7 +150,7 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
             card(
               cand,
               ref,
-              menu,
+              member_index,
               family_cfg,
               skeleton_threshold,
               route,
@@ -176,7 +182,17 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
     }
   end
 
-  defp card(cand, ref, menu, family_cfg, skeleton_threshold, route, ref_ply, ref_window, memo) do
+  defp card(
+         cand,
+         ref,
+         member_index,
+         family_cfg,
+         skeleton_threshold,
+         route,
+         ref_ply,
+         ref_window,
+         memo
+       ) do
     # The card's two Postgres lookups (game metadata + mainline), timed as
     # hydration — on the far region this is where cross-region latency
     # lands, and the timing keeps it separable from the local assembly.
@@ -188,14 +204,13 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
     positional_diffs = Differences.positional(ref, cand.features)
     continuation_diffs = Differences.continuation(ref, cand.features, ref_window, window)
 
-    family = Families.membership(menu, window, family_cfg)
+    family = Families.membership_indexed(member_index, window, family_cfg)
 
     skeleton =
-      Skeleton.membership(
-        menu,
+      Skeleton.membership_indexed(
+        member_index,
         window,
         cand.features.stm,
-        ref.stm,
         family_cfg.window,
         skeleton_threshold
       )

@@ -206,4 +206,50 @@ defmodule Blunderfest.Corpus.Analysis.SkeletonTest do
       end
     end
   end
+
+  describe "membership_indexed/5 (HE-CPU parity)" do
+    defp f1_menu do
+      entries = [
+        {1, 16, ~w(Ne1 Ne8 Nd3 f5 Bd2 Kh8)},
+        {2, 16, ~w(Ne1 Ne8 Nd3 f5 Bd2 g5)},
+        {3, 16, ~w(Bd2 a5 a3 Nd7 Rb1 f5)},
+        {4, 16, ~w(Bd2 a5 a3 Nd7 Rb1 f5)},
+        {6, 16, ~w(Qc2 c5 dxc6 bxc6 b4 Be6)},
+        {7, 16, ~w(Nd2 a5 a3 Nd7 Rb1 f5)},
+        {12, 16, ~w(Ne1 Ne8 Nf3 Nf6 Bd2 g5)},
+        {12, 20, ~w(Bd2 g5 Rc1 Kh8)}
+      ]
+
+      Families.build(entries, Families.default())
+    end
+
+    test "equals the legacy membership for every window and stm pairing" do
+      menu = f1_menu()
+      cfg = Families.default()
+
+      windows = [
+        ~w(Ne8 Bg5 h6 Be3 f5 Qc1),
+        ~w(a5 a3 Nd7 Rb1 f5 f3),
+        ~w(c5 dxc6 bxc6 b4 Be6 a4),
+        ~w(Ne1 Ne8 Nd3 f5 Bd2 Kh8),
+        ~w(Bd2 g5),
+        []
+      ]
+
+      for ref_stm <- [:w, :b],
+          cand_stm <- [:w, :b],
+          w <- windows do
+        index = Families.member_index(menu, cfg, ref_stm)
+
+        assert Skeleton.membership_indexed(index, w, cand_stm, 6) ==
+                 Skeleton.membership(menu, w, cand_stm, ref_stm, 6)
+      end
+    end
+
+    test "an empty index answers no_menu on both sides" do
+      empty = Skeleton.membership_indexed([], ~w(e4 e5), :w, 6)
+      assert empty.white.status == :no_menu
+      assert empty.black.status == :no_menu
+    end
+  end
 end

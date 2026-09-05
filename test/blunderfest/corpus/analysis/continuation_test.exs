@@ -48,6 +48,46 @@ defmodule Blunderfest.Corpus.Analysis.ContinuationTest do
     end
   end
 
+  describe "jaccard_freq/2" do
+    test "matches jaccard/2 exactly, empty edges included" do
+      assert Continuation.jaccard_freq(%{}, %{}) == 1.0
+      assert Continuation.jaccard_freq(%{"e4" => 1}, %{}) == 0.0
+      assert Continuation.jaccard_freq(%{}, %{"e4" => 1}) == 0.0
+      assert Continuation.jaccard_freq(%{"a" => 1, "b" => 1}, %{"a" => 1, "c" => 1}) == 1.0 / 3.0
+
+      # multiplicity: min/max per element
+      assert Continuation.jaccard_freq(%{"a" => 2}, %{"a" => 1}) == 1.0 / 2.0
+    end
+
+    test "equals jaccard/2 over random multisets (HE-CPU parity)" do
+      # The clustering and both membership layers compare via the
+      # precomputed-frequency form; it must be exactly the list-form value.
+      tokens = ~w(e4 e5 d4 d5 Nf3 Nc6 Nf6 Nc3 Bb5 Bc4 O-O a6)
+      rng = :rand.seed_s(:exsss, {1, 2, 3})
+
+      {pairs, _rng} =
+        Enum.map_reduce(1..400, rng, fn _, r ->
+          {la, r} = random_window(tokens, r)
+          {lb, r} = random_window(tokens, r)
+          {{la, lb}, r}
+        end)
+
+      for {a, b} <- pairs do
+        assert Continuation.jaccard_freq(Enum.frequencies(a), Enum.frequencies(b)) ==
+                 Continuation.jaccard(a, b)
+      end
+    end
+  end
+
+  defp random_window(tokens, rng) do
+    {len, rng} = :rand.uniform_s(7, rng)
+
+    Enum.map_reduce(1..(len - 1), rng, fn _, r ->
+      {i, r} = :rand.uniform_s(length(tokens), r)
+      {Enum.at(tokens, i - 1), r}
+    end)
+  end
+
   describe "lcs_similarity/2" do
     test "normalized LCS" do
       assert Continuation.lcs_similarity([], []) == 1.0

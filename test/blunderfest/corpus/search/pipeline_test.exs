@@ -224,6 +224,27 @@ defmodule Blunderfest.Corpus.Search.PipelineTest do
     assert result.timings.pg_ms >= 0
   end
 
+  test "the member index is request-local: interleaved requests stay independent" do
+    # HE-CPU spike: the family/skeleton membership index is a plain map
+    # threaded through one pipeline request — nothing is cached across
+    # requests, so interleaved positions must each produce exactly their
+    # own standalone result (membership included).
+    strip = fn result -> Map.delete(result, :timings) end
+
+    tabiya_alone = strip.(run_analyze())
+    a2_alone = strip.(Pipeline.analyze(TestFixtures.a2_key(), limit: 100, scan_limit: 200))
+
+    tabiya_interleaved = strip.(run_analyze())
+    a2_interleaved = strip.(Pipeline.analyze(TestFixtures.a2_key(), limit: 100, scan_limit: 200))
+
+    assert tabiya_interleaved == tabiya_alone
+    assert a2_interleaved == a2_alone
+
+    # And the two positions genuinely carry different menus — the equality
+    # above is not vacuous.
+    refute tabiya_alone.reference.families == a2_alone.reference.families
+  end
+
   defp drain_trace(acc) do
     receive do
       msg -> drain_trace([msg | acc])

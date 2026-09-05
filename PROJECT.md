@@ -71,6 +71,30 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
+### Session handoff (2026-09-05 — HE product-CPU spike: the <1s gate now passes)
+
+The class-E product-CPU floor Phase 3 left behind is removed, semantics
+untouched ([`docs/technical-spike-he-product-cpu.md`](docs/technical-spike-he-product-cpu.md)).
+Start-position Historical Evidence warm median **1,467 → 160 ms** (menu
+861→58, evidence 497→45), all eight benchmark positions faster, both Phase 3
+gates **PASS** (<1s, <300 MB peak 146 MB). Four semantics-preserving changes:
+`Continuation.jaccard_freq/2` (per-sequence frequency maps hoisted out of the
+O(m²) clustering pair loop), union-by-rank (the 7.9M-step degenerate
+union-find chain is gone), a request-local **member index**
+(`Families.member_index/3` + `membership_indexed` / `Skeleton.membership_indexed`,
+threaded through the pipeline like the count memo — member representations
+precomputed once per request instead of re-tokenized 22×/44×), and an exact
+single-linkage pair-skip (already-connected endpoints are never compared).
+Parity proven at every step: 9/9 DTO snapshot vs the pre-change baseline,
+9/9 `corpus.he_parity` broadcast v1↔v2, optimized `Families.build`
+term-identical to a naive reference on all six hot real menus, 480 tests green
+(+8 regression/property tests). New spike harness `mix corpus.he_cpu`
+(variance runs, computation graph, `--eprof`/`--cprof`, `--snapshot/--compare`).
+**Decision: outcome A — ship the optimization + proceed to the v2 cutover.**
+The Phase 3 cutover procedure stands as written; deployment is not executed
+(needs explicit authorization). Cross-region PG stays parked — `pg_ms` is now
+the largest single share of a warm start request.
+
 ### Session handoff (2026-09-05 — packed format v2 + Phase 3 bounded Corpus API cutover)
 
 **Phase 2 — format v2 behind a flag**

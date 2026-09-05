@@ -136,16 +136,26 @@ defmodule Blunderfest.Corpus.Analysis.Continuation do
   """
   @spec jaccard(list(), list()) :: float()
   def jaccard(a, b) when is_list(a) and is_list(b) do
-    fa = Enum.frequencies(a)
-    fb = Enum.frequencies(b)
+    jaccard_freq(Enum.frequencies(a), Enum.frequencies(b))
+  end
 
+  @doc """
+  Jaccard index from precomputed frequency maps (`Enum.frequencies/1` of
+  each multiset). Exactly `jaccard/2` with the frequencies hoisted out, so
+  a hot comparison set (the family clustering's O(n²) pairs) computes each
+  multiset's frequencies once instead of once per pair. Both empty → 1.0.
+  """
+  @spec jaccard_freq(map(), map()) :: float()
+  def jaccard_freq(fa, fb) when is_map(fa) and is_map(fb) do
     {inter, union} =
-      (Map.keys(fa) ++ Map.keys(fb))
-      |> Enum.uniq()
-      |> Enum.reduce({0, 0}, fn k, {i, u} ->
-        x = Map.get(fa, k, 0)
+      Enum.reduce(fa, {0, 0}, fn {k, x}, {i, u} ->
         y = Map.get(fb, k, 0)
         {i + min(x, y), u + max(x, y)}
+      end)
+
+    union =
+      Enum.reduce(fb, union, fn {k, y}, u ->
+        if Map.has_key?(fa, k), do: u, else: u + y
       end)
 
     if union == 0, do: 1.0, else: inter / union

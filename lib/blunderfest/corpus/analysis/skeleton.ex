@@ -180,21 +180,78 @@ defmodule Blunderfest.Corpus.Analysis.Skeleton do
         end)
         |> Enum.sort_by(fn s -> {-s.sim, -s.family_occurrences, s.family_id} end)
 
-      {side,
-       case scored do
-         [] ->
-           %{status: :no_menu, family_id: nil, sim: nil}
-
-         [best | _] ->
-           %{
-             status: if(best.sim >= threshold, do: :member, else: :none),
-             family_id: best.family_id,
-             sim: best.sim,
-             family_occurrences: best.family_occurrences,
-             family_games: best.family_games
-           }
-       end}
+      {side, side_result(scored, threshold)}
     end
     |> Map.new()
+  end
+
+  @doc """
+  `membership/6` over a `Families.member_index/3` — exactly the same scores
+  and result shape (proven by test). The member skeletons and their
+  per-color frequency maps come precomputed from the index (once per menu),
+  and the candidate skeleton is tokenized once per card instead of every
+  member re-tokenizing per side.
+  """
+  @spec membership_indexed([map()], [Continuation.san()], :w | :b, pos_integer(), float()) ::
+          map()
+  def membership_indexed(index, cand_window, cand_stm, window, threshold \\ 0.5) do
+    cand = cand_window |> Enum.take(window) |> represent(:skeleton, cand_stm)
+    cand_w = Map.get(cand, :w, [])
+    cand_b = Map.get(cand, :b, [])
+    cand_freq_w = Enum.frequencies(cand_w)
+    cand_freq_b = Enum.frequencies(cand_b)
+
+    for side <- [:white, :black] do
+      {cand_side, cand_freq, side_key, freq_key} =
+        case side do
+          :white -> {cand_w, cand_freq_w, :skel_w, :skel_freq_w}
+          :black -> {cand_b, cand_freq_b, :skel_b, :skel_freq_b}
+        end
+
+      scored =
+        index
+        |> Enum.map(fn family ->
+          best =
+            family.members
+            |> Enum.map(fn m ->
+              member_side = Map.fetch!(m, side_key)
+
+              if cand_side == [] and member_side == [] do
+                nil
+              else
+                Continuation.jaccard_freq(cand_freq, Map.fetch!(m, freq_key))
+              end
+            end)
+            |> Enum.reject(&is_nil/1)
+            |> Enum.max(fn -> 0.0 end)
+
+          %{
+            family_id: family.id,
+            sim: Float.round(best, 3),
+            family_occurrences: family.occurrences,
+            family_games: family.games
+          }
+        end)
+        |> Enum.sort_by(fn s -> {-s.sim, -s.family_occurrences, s.family_id} end)
+
+      {side, side_result(scored, threshold)}
+    end
+    |> Map.new()
+  end
+
+  defp side_result(scored, threshold) do
+    case scored do
+      [] ->
+        %{status: :no_menu, family_id: nil, sim: nil}
+
+      [best | _] ->
+        %{
+          status: if(best.sim >= threshold, do: :member, else: :none),
+          family_id: best.family_id,
+          sim: best.sim,
+          family_occurrences: best.family_occurrences,
+          family_games: best.family_games
+        }
+    end
   end
 end

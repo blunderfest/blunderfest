@@ -161,7 +161,11 @@ release and served by a catch-all (`SpaController`).
     hydration) broken out from the packed-corpus/local work (Spike 09
     Phase 3). Count questions go through `position_stats/1` via the
     request-scoped memo (`search/count_memo.ex`); the pipeline never reads
-    an unbounded occurrence list on a live path.
+    an unbounded occurrence list on a live path. The family/skeleton
+    membership scoring runs against a request-local **member index**
+    (`Families.member_index/3`): each menu member's continuation
+    representations are precomputed once per request and threaded through
+    the cards (HE-CPU spike), never cached across requests.
 - `lib/blunderfest_web/` — HTTP and channel surface:
   - `router.ex` — `/api` scope: `healthz`, `historical-evidence`,
     `profiles`, `rooms`, `import/pgn`,
