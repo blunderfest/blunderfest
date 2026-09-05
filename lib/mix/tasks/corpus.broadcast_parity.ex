@@ -17,6 +17,12 @@ defmodule Mix.Tasks.Corpus.BroadcastParity do
   candidates for the edge-case classes (singleton / multi-game /
   same-game duplicate / EP / castling / stm variants / hot) are also
   found in-stream and checked against the packed index.
+
+  For format-v2 directories (Spike 09 Phase 2) every sampled key
+  additionally re-counts the run straight from the artifact stream and
+  compares it to the packed position header's stored statistics
+  (`occurrence_count`, `game_count`) — the streamed re-count parity of the
+  migration plan, with no PostgreSQL reload.
   """
 
   use Mix.Task
@@ -84,6 +90,12 @@ defmodule Mix.Tasks.Corpus.BroadcastParity do
       if status != 0, do: Mix.raise("artifact sort failed: #{out}")
     end
 
+    v2 = Enum.all?(backend.segments, &(&1.pos_version == 2))
+
+    if v2 do
+      Mix.shell().info("format v2 directory — sampled keys also re-count header statistics")
+    end
+
     acc0 = %{
       curr: nil,
       curr_occs: [],
@@ -91,7 +103,8 @@ defmodule Mix.Tasks.Corpus.BroadcastParity do
       sampled: 0,
       failures: [],
       sample_every: sample_every,
-      backend: backend
+      backend: backend,
+      v2: v2
     }
 
     state =
@@ -135,19 +148,24 @@ defmodule Mix.Tasks.Corpus.BroadcastParity do
   defp close_key(st) do
     key = st.curr
     occs = Enum.reverse(st.curr_occs)
+    sampled? = rem(st.total, st.sample_every) == 0
 
     failures =
-      if rem(st.total, st.sample_every) == 0 do
-        packed = Packed.occurrences(st.backend, PositionKey.to_hash128(key))
+      if sampled? do
+        hash = PositionKey.to_hash128(key)
+        packed = Packed.occurrences(st.backend, hash)
 
-        if packed == occs do
-          st.failures
-        else
-          [
-            "occurrences differ for #{key} (#{length(occs)} artifact vs #{length(packed)} packed)"
-            | st.failures
-          ]
-        end
+        failures =
+          if packed == occs do
+            st.failures
+          else
+            [
+              "occurrences differ for #{key} (#{length(occs)} artifact vs #{length(packed)} packed)"
+              | st.failures
+            ]
+          end
+
+        compare_v2_stats(failures, st, key, hash, occs)
       else
         st.failures
       end
@@ -155,8 +173,39 @@ defmodule Mix.Tasks.Corpus.BroadcastParity do
     %{
       st
       | total: st.total + 1,
-        sampled: if(rem(st.total, st.sample_every) == 0, do: st.sampled + 1, else: st.sampled),
+        sampled: if(sampled?, do: st.sampled + 1, else: st.sampled),
         failures: failures
     }
+  end
+
+  # The artifact run itself is the oracle for the stored v2 statistics:
+  # occurrence_count is the run length, game_count the distinct gids in it.
+  defp compare_v2_stats(failures, %{v2: false}, _key, _hash, _occs), do: failures
+
+  defp compare_v2_stats(failures, st, key, hash, occs) do
+    expected_games = occs |> Enum.map(&elem(&1, 0)) |> Enum.uniq() |> length()
+
+    case Packed.position_stats(st.backend, hash) do
+      {:ok, %{occurrences: occ_count, games: game_count}} ->
+        cond do
+          occ_count != length(occs) ->
+            [
+              "v2 occurrence_count differs for #{key} (artifact #{length(occs)} vs header #{occ_count})"
+              | failures
+            ]
+
+          game_count != expected_games ->
+            [
+              "v2 game_count differs for #{key} (artifact #{expected_games} vs header #{game_count})"
+              | failures
+            ]
+
+          true ->
+            failures
+        end
+
+      {:error, :format_v1} ->
+        failures
+    end
   end
 end

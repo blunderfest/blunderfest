@@ -25,19 +25,37 @@ defmodule Blunderfest.Corpus.Packed.Manifest do
   Open-time validation: segment ids unique, files exist, byte sizes match
   the manifest exactly. Checksums are verified only when `:verify_checksums`
   is passed (they cost one full read of every file).
+
+  ## Versions (Spike 09 Phase 2)
+
+  `"version"` is the manifest format version; each segment additionally
+  records `"pos_version"` — the pos.bin header format of that segment (1 =
+  36-byte headers, 2 = 49-byte headers with the pack-time statistics; a
+  missing entry means v1). Open accepts every supported version pair and
+  rejects unknown ones, so v1 and v2 directories coexist during rollout and
+  a rollback is a `PACKED_DIR` flip.
   """
 
-  @version 1
+  @version 2
+  @supported_versions [1, 2]
+  @supported_pos_versions [1, 2]
 
-  @doc "Feature version of the manifest format."
+  @doc "Current manifest format version written by `write!/3` by default."
   def version, do: @version
+
+  @doc "Manifest versions `open/2` accepts."
+  def supported_versions, do: @supported_versions
 
   @doc "Manifest path of a packed data directory."
   def path(dir), do: Path.join(dir, "manifest.json")
 
-  @doc "Writes the manifest file (pretty-printed JSON through Jason)."
-  def write!(dir, segments) when is_list(segments) do
-    doc = %{"version" => @version, "segments" => Enum.map(segments, &segment_doc/1)}
+  @doc """
+  Writes the manifest file (pretty-printed JSON through Jason). `version`
+  defaults to the current version; each segment doc carries the segment's
+  `pos_version` (default 1).
+  """
+  def write!(dir, segments, version \\ @version) when is_list(segments) do
+    doc = %{"version" => version, "segments" => Enum.map(segments, &segment_doc/1)}
     File.write!(path(dir), Jason.encode!(doc, pretty: true))
     :ok
   end
@@ -49,6 +67,7 @@ defmodule Blunderfest.Corpus.Packed.Manifest do
       "occurrences" => entry.occurrences,
       "positions" => entry.positions,
       "book_records" => entry.book_records,
+      "pos_version" => Map.get(entry, :pos_version, 1),
       "gids" => %{"min" => entry.gids.min, "max" => entry.gids.max},
       "files" => entry.files
     }
@@ -63,7 +82,7 @@ defmodule Blunderfest.Corpus.Packed.Manifest do
     with {:ok, json} <- read_json(path(dir)),
          :ok <- validate_version(json),
          {:ok, segments} <- validate_segments(dir, json, opts) do
-      {:ok, %{dir: dir, segments: segments}}
+      {:ok, %{dir: dir, version: json["version"], segments: segments}}
     end
   end
 
@@ -80,7 +99,7 @@ defmodule Blunderfest.Corpus.Packed.Manifest do
     end
   end
 
-  defp validate_version(%{"version" => @version}), do: :ok
+  defp validate_version(%{"version" => version}) when version in @supported_versions, do: :ok
 
   defp validate_version(%{"version" => other}),
     do: {:error, {:unsupported_manifest_version, other}}
@@ -110,7 +129,8 @@ defmodule Blunderfest.Corpus.Packed.Manifest do
   defp validate_segments(_dir, _json, _opts), do: {:error, :manifest_missing_segments}
 
   defp validate_segment(dir, seg, opts) do
-    with {:ok, files} <- validate_files(dir, seg, opts) do
+    with {:ok, pos_version} <- validate_pos_version(seg),
+         {:ok, files} <- validate_files(dir, seg, opts) do
       {:ok,
        %{
          id: seg["id"],
@@ -118,9 +138,19 @@ defmodule Blunderfest.Corpus.Packed.Manifest do
          occurrences: seg["occurrences"],
          positions: seg["positions"],
          book_records: seg["book_records"],
+         pos_version: pos_version,
          gids: %{"min" => get_in(seg, ["gids", "min"]), "max" => get_in(seg, ["gids", "max"])},
          files: files
        }}
+    end
+  end
+
+  # A missing pos_version means a v1 manifest/segment (the field did not
+  # exist before format v2).
+  defp validate_pos_version(seg) do
+    case Map.get(seg, "pos_version", 1) do
+      pos_version when pos_version in @supported_pos_versions -> {:ok, pos_version}
+      other -> {:error, {:segment, seg["id"], {:unsupported_pos_version, other}}}
     end
   end
 

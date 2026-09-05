@@ -20,10 +20,18 @@ defmodule Blunderfest.Corpus.PackedTest do
 
   defp hash(key), do: PositionKey.to_hash128(key)
 
-  defp build_backend!(dir, occs, poss, id \\ "seg-000001", stride \\ 1024, books \\ []) do
+  defp build_backend!(
+         dir,
+         occs,
+         poss,
+         id \\ "seg-000001",
+         stride \\ 1024,
+         books \\ [],
+         opts \\ []
+       ) do
     File.mkdir_p!(dir)
-    entry = Builder.build!(dir, id, occs, poss, books, 100)
-    Manifest.write!(dir, [entry])
+    entry = Builder.build!(dir, id, occs, poss, books, 100, opts)
+    Manifest.write!(dir, [entry], entry.pos_version)
     {:ok, backend} = Packed.open(dir, stride: stride)
     backend
   end
@@ -337,5 +345,215 @@ defmodule Blunderfest.Corpus.PackedTest do
     assert Packed.book(backend, <<0::128>>) == []
 
     Packed.close(backend)
+  end
+
+  describe "format v2 (Spike 09 Phase 2)" do
+    # Derive v2 position rows (with the pack-time run statistics) from an
+    # already-sorted occurrence list, exactly the shape corpus.pack's
+    # position_stream_v2 emits.
+    defp v2_positions(occs, keys) do
+      {rows, _offset} =
+        occs
+        |> Enum.chunk_by(fn {hash, _gid, _ply} -> hash end)
+        |> Enum.map_reduce(0, fn run, offset ->
+          {hash, first_gid, first_ply} = hd(run)
+          key = Map.fetch!(keys, hash)
+          games = run |> Enum.map(&elem(&1, 1)) |> Enum.uniq() |> length()
+
+          row =
+            {hash, Features.pawn_hash(key), first_gid, first_ply, key, length(run), games, offset}
+
+          {row, offset + length(run)}
+        end)
+
+      rows
+    end
+
+    defp keys_by_hash(keys), do: Map.new(keys, fn key -> {hash(key), key} end)
+
+    test "v2 build round-trips every query family identically to v1", %{tmp_dir: dir} do
+      {occs, poss} = fixture_streams()
+      keys = [@key_a, @key_b, @key_c]
+      poss2 = v2_positions(occs, keys_by_hash(keys))
+
+      v1 = build_backend!(Path.join(dir, "v1"), occs, poss)
+
+      v2 =
+        build_backend!(Path.join(dir, "v2"), occs, poss2, "seg-000001", 1024, [], pos_version: 2)
+
+      for key <- keys do
+        assert Packed.occurrences(v2, hash(key)) == Packed.occurrences(v1, hash(key))
+        assert Packed.occurrence_counts(v2, hash(key)) == Packed.occurrence_counts(v1, hash(key))
+        assert Packed.position(v2, hash(key)) == Packed.position(v1, hash(key))
+      end
+
+      assert Packed.pawn_bucket(v2, Features.pawn_hash(@key_a)) ==
+               Packed.pawn_bucket(v1, Features.pawn_hash(@key_a))
+
+      [seg] = v2.segments
+      assert seg.pos_version == 2
+      assert seg.pos_header_bytes == 49
+
+      Packed.close(v1)
+      Packed.close(v2)
+    end
+
+    test "v2 position_stats returns the stored counts and run offset", %{tmp_dir: dir} do
+      {occs, _poss} = fixture_streams()
+      keys = [@key_a, @key_b, @key_c]
+      poss2 = v2_positions(occs, keys_by_hash(keys))
+
+      backend =
+        build_backend!(Path.join(dir, "v2"), occs, poss2, "seg-000001", 1024, [], pos_version: 2)
+
+      # key_a: 3 occurrences across gids {1, 2}. Offsets are segment-local
+      # — the segment accessor exposes them; the backend sums counts only.
+      assert {:ok, %{occurrences: 3, games: 2}} = Packed.position_stats(backend, hash(@key_a))
+
+      [seg] = backend.segments
+
+      # The stored run offset is exactly the first occurrence's record
+      # index in the (hash, gid, ply)-sorted run stream.
+      for key <- [@key_a, @key_b, @key_c] do
+        first = Enum.find_index(occs, fn {h, _gid, _ply} -> h == hash(key) end)
+        count = Enum.count(occs, fn {h, _gid, _ply} -> h == hash(key) end)
+
+        games =
+          occs
+          |> Enum.filter(fn {h, _, _} -> h == hash(key) end)
+          |> Enum.map(&elem(&1, 1))
+          |> Enum.uniq()
+          |> length()
+
+        assert {:ok, %{occurrences: ^count, games: ^games, run_offset: ^first}} =
+                 Blunderfest.Corpus.Packed.Segment.position_stats(seg, hash(key))
+      end
+
+      # A key with no header sums to zero occurrences/games.
+      assert {:ok, %{occurrences: 0, games: 0}} =
+               Packed.position_stats(backend, hash("8/8/8/8/8/8/8/7K w - -"))
+
+      # Stats equal the run-walking occurrence_counts for every key.
+      for key <- keys do
+        {:ok, stats} = Packed.position_stats(backend, hash(key))
+        assert stats == Packed.occurrence_counts(backend, hash(key))
+      end
+
+      Packed.close(backend)
+    end
+
+    test "v2 verify_run passes on a clean build and reads the run back", %{tmp_dir: dir} do
+      {occs, _poss} = fixture_streams()
+      keys = [@key_a, @key_b, @key_c]
+      poss2 = v2_positions(occs, keys_by_hash(keys))
+
+      backend =
+        build_backend!(Path.join(dir, "v2"), occs, poss2, "seg-000001", 2, [], pos_version: 2)
+
+      [seg] = backend.segments
+
+      for key <- keys do
+        assert :ok = Blunderfest.Corpus.Packed.Segment.verify_run(seg, hash(key))
+      end
+
+      assert {:error, {:no_position_header, _}} =
+               Blunderfest.Corpus.Packed.Segment.verify_run(seg, <<0::128>>)
+
+      assert :ok = Blunderfest.Corpus.Packed.Segment.verify_sampled_runs(seg, 8)
+
+      Packed.close(backend)
+    end
+
+    test "position_stats reports format_v1 on a v1 segment", %{tmp_dir: dir} do
+      {occs, poss} = fixture_streams()
+      backend = build_backend!(Path.join(dir, "v1"), occs, poss)
+
+      assert {:error, :format_v1} = Packed.position_stats(backend, hash(@key_a))
+      [seg] = backend.segments
+
+      assert {:error, :format_v1} =
+               Blunderfest.Corpus.Packed.Segment.position_stats(seg, hash(@key_a))
+
+      Packed.close(backend)
+    end
+
+    test "v2 builder validation rejects a corrupt run offset", %{tmp_dir: dir} do
+      {occs, _poss} = fixture_streams()
+      keys = [@key_a, @key_b, @key_c]
+
+      # Shift every stored run offset by one — the builder's sampled
+      # re-count against occ.bin must refuse to publish.
+      poss2 =
+        v2_positions(occs, keys_by_hash(keys))
+        |> Enum.map(fn {h, ph, g, p, key, occ, games, off} ->
+          {h, ph, g, p, key, occ, games, off + 1}
+        end)
+
+      dir = Path.join(dir, "v2")
+      File.mkdir_p!(dir)
+
+      assert_raise RuntimeError, ~r/validation failed/, fn ->
+        Builder.build!(dir, "seg-000001", occs, poss2, [], 100, pos_version: 2)
+      end
+    end
+
+    test "v2 builder validation rejects a wrong game_count", %{tmp_dir: dir} do
+      {occs, _poss} = fixture_streams()
+      keys = [@key_a, @key_b, @key_c]
+
+      poss2 =
+        v2_positions(occs, keys_by_hash(keys))
+        |> Enum.map(fn {h, ph, g, p, key, occ, games, off} ->
+          {h, ph, g, p, key, occ, games + 1, off}
+        end)
+
+      dir = Path.join(dir, "v2")
+      File.mkdir_p!(dir)
+
+      assert_raise RuntimeError, ~r/validation failed/, fn ->
+        Builder.build!(dir, "seg-000001", occs, poss2, [], 100, pos_version: 2)
+      end
+    end
+
+    test "manifest records version 2 and rejects unknown versions", %{tmp_dir: dir} do
+      {occs, _poss} = fixture_streams()
+      keys = [@key_a, @key_b, @key_c]
+      poss2 = v2_positions(occs, keys_by_hash(keys))
+
+      dir = Path.join(dir, "v2")
+      File.mkdir_p!(dir)
+      entry = Builder.build!(dir, "seg-000001", occs, poss2, [], 100, pos_version: 2)
+      Manifest.write!(dir, [entry], 2)
+
+      json = dir |> Manifest.path() |> File.read!() |> Jason.decode!()
+      assert json["version"] == 2
+      assert hd(json["segments"])["pos_version"] == 2
+
+      {:ok, backend} = Packed.open(dir)
+      assert backend.segments |> hd() |> Map.fetch!(:pos_version) == 2
+      Packed.close(backend)
+
+      # An unknown manifest version must not open.
+      bad = Map.put(json, "version", 3)
+      File.write!(Manifest.path(dir), Jason.encode!(bad))
+      assert {:error, {:unsupported_manifest_version, 3}} = Packed.open(dir)
+    end
+
+    test "bounded occurrences equal the full-run prefix on v2", %{tmp_dir: dir} do
+      {occs, _poss} = fixture_streams()
+      keys = [@key_a, @key_b, @key_c]
+      poss2 = v2_positions(occs, keys_by_hash(keys))
+
+      backend =
+        build_backend!(Path.join(dir, "v2"), occs, poss2, "seg-000001", 1024, [], pos_version: 2)
+
+      full_c = Packed.occurrences(backend, hash(@key_c))
+
+      for limit <- 0..(length(full_c) + 1) do
+        assert Packed.occurrences(backend, hash(@key_c), limit) == Enum.take(full_c, limit)
+      end
+
+      Packed.close(backend)
+    end
   end
 end

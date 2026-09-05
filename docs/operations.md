@@ -58,7 +58,13 @@ the Postgres occurrence tables. Games/moves/metadata stay in Postgres.
 mix corpus.pack --data-dir data/corpus-broadcast --tier 1174661 \
   --out data/corpus-packed-broadcast
 
-# Validate (manifest, sizes, counts, checksums):
+# Format v2 repack (Spike 09 Phase 2, ADR-0038): pos headers carry the
+# pack-time run statistics; builds into a NEW dir, v1 stays the rollback:
+mix corpus.pack --data-dir data/corpus-broadcast --tier 1174661 \
+  --out data/corpus-packed-broadcast-v2 --format-version 2
+
+# Validate (manifest, sizes, counts, checksums; on v2 dirs also the
+# sampled re-verification of the stored run statistics against occ.bin):
 mix corpus.validate --packed-dir data/corpus-packed-broadcast
 
 # Serve the packed backend (games/moves still come from the PG tables):

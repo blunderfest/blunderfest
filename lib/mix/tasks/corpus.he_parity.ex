@@ -10,7 +10,10 @@ defmodule Mix.Tasks.Corpus.HeParity do
 
   Reference positions (brief §9): F1 King's Indian tabiya, A2 Ruy López
   decision point, Najdorf, a rare middlegame, a cold/endgame position, and
-  a same-game duplicate position.
+  a same-game duplicate position — extended (Spike 09 §2) with the three
+  hot opening positions the original set lacked: the start position and
+  after 1.e4 / 1.d4, the corpus' hottest keys and the exact class the
+  original parity pass never covered.
 
   For each: the pipeline runs twice (once with the facade's occurrence
   backend as Postgres, once packed) and the resulting DTOs are compared
@@ -30,6 +33,9 @@ defmodule Mix.Tasks.Corpus.HeParity do
   @requirements ["app.start"]
 
   @fens [
+    {"Start position", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"},
+    {"After 1.e4", "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"},
+    {"After 1.d4", "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"},
     {"F1 (KID tabiya)", "r1bq1rk1/ppp1npbp/3p1np1/3Pp3/2P1P3/2N2N2/PP2BPPP/R1BQ1RK1 w - - 0 9"},
     {"A2 (Ruy Lopez)", "r1bqk2r/2ppbppp/p1n2n2/1p2p3/4P3/1B3N2/PPPP1PPP/RNBQR1K1 b kq - 0 8"},
     {"Najdorf (6.Be3)", "rnbqkb1r/1p2pppp/p2p1n2/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 7"},

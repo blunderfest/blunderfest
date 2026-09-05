@@ -97,8 +97,8 @@ release and served by a catch-all (`SpaController`).
     the occurrence backend is configured (`:postgres` or `:packed`) and
     nothing downstream notices (Spike 08/ADR-0037).
   - `packed/` — the packed occurrence backend (Spike 08/ADR-0037):
-    `packed/format.ex` (fixed-width records: occ 22B, pos 36B header +
-    strings region, bucket 24B, book 22B header + variable blob),
+    `packed/format.ex` (fixed-width records: occ 22B, pos header + strings
+    region, bucket 24B, book 22B header + variable blob),
     `packed/builder.ex` (sortedness + size + SHA-256 validation per
     segment), `packed/manifest.ex` (manifest read/write/all-or-nothing
     validation), `packed/segment.ex` (sparse anchors — binary search
@@ -110,7 +110,16 @@ release and served by a catch-all (`SpaController`).
     `packed/input.ex` (8 MB chunk line reader — the
     build path bottleneck), `packed.ex` (segments merged in build order).
     Opens per query in the calling process — the raw fd never crosses
-    process boundaries.
+    process boundaries. **Format v2** (Spike 09 Phase 2, ADR-0038):
+    `mix corpus.pack --format-version 2` writes 49-byte pos headers that
+    additionally carry the pack-time run statistics — `occurrence_count`,
+    `game_count`, `occ_run_offset` — under a `"version": 2` manifest with a
+    per-segment `pos_version`; open serves v1 and v2 alike and rejects
+    unknown versions. The builder verifies the stored statistics against
+    occ.bin on a sampled pass before publish; `Segment.position_stats/2` /
+    `Packed.position_stats/2` read them and `Segment.verify_run/2`
+    re-checks them — consumed by `corpus.validate`/`corpus.parity` only
+    (no product cutover yet).
   - `position_key.ex` — canonical position identity (Spike 01): the
     capturable-only en-passant convention, 128-bit BLAKE2b hashes.
   - `replay.ex` + `extraction.ex` — lean mainline replay and the streaming

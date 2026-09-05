@@ -15,6 +15,10 @@ defmodule Mix.Tasks.Corpus.Parity do
     * `position` (pawn_hash, first_gid, first_ply, key)
     * `pawn_bucket` (distinct sorted keys)
     * `book` (full next-move aggregate rows) for a subset
+    * format-v2 headers (Spike 09 Phase 2): the pack-time `occurrence_count`
+      and `game_count` against the exact SQL oracles (`COUNT(*)` /
+      `COUNT(DISTINCT gid)`), and the `occ_run_offset` via the full run
+      re-verification — skipped automatically on v1 directories
 
   Requires DATABASE_URL pointing at the loaded corpus Postgres.
   """
@@ -22,6 +26,7 @@ defmodule Mix.Tasks.Corpus.Parity do
   use Mix.Task
 
   alias Blunderfest.Corpus.{Book, Occurrences, Packed, PositionKey}
+  alias Blunderfest.Corpus.Packed.Segment
 
   @requirements ["app.start"]
 
@@ -38,6 +43,11 @@ defmodule Mix.Tasks.Corpus.Parity do
     {:ok, conn} = Postgrex.start_link(Keyword.merge([pool_size: 2, timeout: :infinity], db))
 
     {:ok, backend} = Packed.open(packed_dir)
+
+    versions =
+      backend.segments |> Enum.map(&"#{&1.id}: pos v#{&1.pos_version}") |> Enum.join(", ")
+
+    Mix.shell().info("opened #{packed_dir} (#{versions})")
 
     started = System.monotonic_time(:millisecond)
 
@@ -290,6 +300,65 @@ defmodule Mix.Tasks.Corpus.Parity do
         end
       end
 
-    failures
+    compare_v2_stats(failures, backend, hash, key, label, pg_counts, pg_pos, packed_pos)
+  end
+
+  ## Format-v2 header statistics (Spike 09 Phase 2)
+
+  # No-op unless both sides have the key (an existence mismatch is already
+  # reported by the position-row comparison above). On v2, the pack-time
+  # header fields must reproduce the exact SQL oracles: occurrence_count =
+  # COUNT(*), game_count = COUNT(DISTINCT gid); and occ_run_offset must
+  # point at the run whose first record is the position's first occurrence.
+  defp compare_v2_stats(failures, _backend, _hash, _key, _label, _pg_counts, nil, _packed_pos),
+    do: failures
+
+  defp compare_v2_stats(failures, _backend, _hash, _key, _label, _pg_counts, _pg_pos, nil),
+    do: failures
+
+  defp compare_v2_stats(failures, backend, hash, key, label, pg_counts, _pg_pos, _packed_pos) do
+    case Packed.position_stats(backend, hash) do
+      {:error, :format_v1} ->
+        failures
+
+      {:ok, stats} ->
+        failures =
+          if stats.occurrences == pg_counts.occurrences and stats.games == pg_counts.games do
+            failures
+          else
+            [
+              "#{label}: v2 counts differ for #{key}: header occ=#{stats.occurrences} games=#{stats.games} vs pg #{inspect(pg_counts)}"
+              | failures
+            ]
+          end
+
+        compare_v2_run_offset(failures, backend, hash, key, label)
+    end
+  end
+
+  # The stored run offset must decode to the header's first occurrence and
+  # bound exactly the run PG sees. The header's first_gid/first_ply are
+  # already compared to PG's by the position-row check, so per-segment
+  # `Segment.verify_run/2` (run span, hash, dedup count, boundaries) closes
+  # the chain: run offset → header first occurrence → PG first occurrence.
+  defp compare_v2_run_offset(failures, backend, hash, key, label) do
+    Enum.reduce(backend.segments, failures, fn seg, acc ->
+      case Segment.verify_run(seg, hash) do
+        :ok ->
+          acc
+
+        {:error, {:no_position_header, _}} ->
+          acc
+
+        {:error, :format_v1} ->
+          acc
+
+        {:error, reason} ->
+          [
+            "#{label}: v2 run verify failed for #{key} segment #{seg.id}: #{inspect(reason)}"
+            | acc
+          ]
+      end
+    end)
   end
 end

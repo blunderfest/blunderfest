@@ -8,6 +8,7 @@ defmodule Mix.Tasks.Corpus.Pack do
 
       mix corpus.pack [--data-dir data/corpus] [--tier 100000]
                       [--out data/corpus-packed] [--segments 1]
+                      [--format-version 1]
 
   Inputs are the row-aligned artifacts (`occ-N.tsv` hash/gid/ply,
   `positions-N.tsv` key/pawn_hash/gid/ply); the task asserts the alignment
@@ -15,6 +16,13 @@ defmodule Mix.Tasks.Corpus.Pack do
   split into `--segments` gid ranges, and packed per segment; the manifest
   is written last (a directory without a manifest never opens — atomic
   publication, §18).
+
+  `--format-version 2` (Spike 09 Phase 2) writes the 49-byte v2 position
+  headers carrying the pack-time run statistics (`occurrence_count`,
+  `game_count`, `occ_run_offset`), validated by a sampled re-count against
+  occ.bin at build time, under a version-2 manifest. The default stays v1 —
+  v2 publishes behind the flag and the two directory formats coexist (the
+  rollback is a `PACKED_DIR` flip).
 
   Postgres is not involved: the corpus tables are built from the same
   artifacts, and the packed index is verified against them by
@@ -36,7 +44,8 @@ defmodule Mix.Tasks.Corpus.Pack do
           out: :string,
           tier: :integer,
           segments: :integer,
-          resume: :string
+          resume: :string,
+          format_version: :integer
         ]
       )
 
@@ -45,6 +54,12 @@ defmodule Mix.Tasks.Corpus.Pack do
     tier = Keyword.get(opts, :tier, config[:tier] || 100_000)
     out = Keyword.get(opts, :out, config[:packed_dir] || "data/corpus-packed")
     n_segments = Keyword.get(opts, :segments, 1)
+
+    format_version = Keyword.get(opts, :format_version, 1)
+
+    unless format_version in [1, 2] do
+      Mix.raise("unsupported --format-version #{format_version} (expected 1 or 2)")
+    end
 
     occ_path = Path.join(data_dir, "occ-#{tier}.tsv")
     positions_path = Path.join(data_dir, "positions-#{tier}.tsv")
@@ -123,6 +138,12 @@ defmodule Mix.Tasks.Corpus.Pack do
     boundaries = gid_boundaries(games_count, n_segments)
     splits = split_segments(sorted, tmp, boundaries, games_count)
 
+    position_source =
+      case format_version do
+        1 -> &position_stream/1
+        2 -> &position_stream_v2/1
+      end
+
     entries =
       splits
       |> Enum.with_index(1)
@@ -133,17 +154,18 @@ defmodule Mix.Tasks.Corpus.Pack do
           tmp,
           id,
           occurrence_stream(path),
-          position_stream(path),
+          position_source.(path),
           book_stream(
             bookraw_sorted,
             elem(Enum.at(boundaries, i - 1), 0),
             elem(Enum.at(boundaries, i - 1), 1)
           ),
-          seg_games
+          seg_games,
+          pos_version: format_version
         )
       end)
 
-    Manifest.write!(tmp, entries)
+    Manifest.write!(tmp, entries, format_version)
 
     # Atomic publication: swap the built directory into place as one rename.
     publish!(tmp, out)
@@ -425,6 +447,75 @@ defmodule Mix.Tasks.Corpus.Pack do
     end)
   end
 
+  # Format v2: the same rows plus the pack-time run statistics —
+  # {hash, pawn_hash, first_gid, first_ply, key, occurrence_count,
+  #  game_count, occ_run_offset}. The sorted stream makes all three free:
+  # the run length is a counter, distinct games an adjacent-gid dedup
+  # (gids ascend within a run), and the run offset the number of rows
+  # before the run's first row — exactly the run's first record index in
+  # occ.bin, which occurrence_stream writes in this same order.
+  defp position_stream_v2(path) do
+    path
+    |> Input.lines()
+    |> Stream.map(&parse_row/1)
+    # transform/5 — the last run is emitted by last_fun (transform/4's final
+    # callback discards its return value; see book_stream's note).
+    |> Stream.transform(
+      fn -> nil end,
+      fn {hash, pawn_hash, gid, ply, key}, run ->
+        cond do
+          run == nil ->
+            {[], run_start(%{hash: hash, pawn_hash: pawn_hash, gid: gid, ply: ply, key: key}, 0)}
+
+          run.hash == hash ->
+            {[], run_continue(run, gid)}
+
+          true ->
+            {[run_emit(run)],
+             run_start(
+               %{hash: hash, pawn_hash: pawn_hash, gid: gid, ply: ply, key: key},
+               run.offset + 1
+             )}
+        end
+      end,
+      fn
+        nil -> {[], nil}
+        run -> {[run_emit(run)], nil}
+      end,
+      fn _run -> :ok end
+    )
+  end
+
+  defp run_start(row, offset) do
+    %{
+      hash: row.hash,
+      pawn_hash: row.pawn_hash,
+      first_gid: row.gid,
+      first_ply: row.ply,
+      key: row.key,
+      offset: offset,
+      run_start: offset,
+      occurrences: 1,
+      games: 1,
+      last_gid: row.gid
+    }
+  end
+
+  defp run_continue(run, gid) do
+    %{
+      run
+      | offset: run.offset + 1,
+        occurrences: run.occurrences + 1,
+        games: if(gid == run.last_gid, do: run.games, else: run.games + 1),
+        last_gid: gid
+    }
+  end
+
+  defp run_emit(run) do
+    {run.hash, run.pawn_hash, run.first_gid, run.first_ply, run.key, run.occurrences, run.games,
+     run.run_start}
+  end
+
   ## Book stream (per-key next-move distribution, precomputed)
 
   # bookraw-sorted.tsv is sorted by (hash, move, gid); each row is
@@ -442,6 +533,10 @@ defmodule Mix.Tasks.Corpus.Pack do
     # A segment covers [gid_lo, gid_hi]; rows outside it belong to another
     # segment's book.
     |> Stream.filter(fn {_hash, _move, gid, _result} -> gid >= gid_lo and gid <= gid_hi end)
+    # transform/5: the LAST key's aggregate must be emitted by last_fun —
+    # transform/4's final callback is a side-effect-only hook whose return
+    # value is discarded, which silently dropped the final book key of
+    # every build before format v2 (found by the v2 repack parity work).
     |> Stream.transform(
       fn -> nil end,
       fn
@@ -458,9 +553,10 @@ defmodule Mix.Tasks.Corpus.Pack do
           end
       end,
       fn
-        nil -> {[], []}
-        acc -> {[book_emit(acc)], []}
-      end
+        nil -> {[], nil}
+        acc -> {[book_emit(acc)], nil}
+      end,
+      fn _acc -> :ok end
     )
   end
 

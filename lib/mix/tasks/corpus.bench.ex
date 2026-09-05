@@ -148,26 +148,28 @@ defmodule Mix.Tasks.Corpus.Bench do
   end
 
   # Samples actual position hashes from the packed header region —
-  # stop at pos_records × 36 and never enter the strings region (the
-  # earlier probe skipped sorted-by-hash structure of pos.bin and
-  # missed hits).
+  # stop at pos_records × header width and never enter the strings region
+  # (the earlier probe skipped sorted-by-hash structure of pos.bin and
+  # missed hits). Header width follows the segment's pos_version (36 B v1,
+  # 49 B v2).
   defp sample_header_hashes(packed_dir, n) do
     [pos_path | _] = Path.wildcard(Path.join(packed_dir, "*/pos.bin"))
     {:ok, manifest} = Packed.Manifest.open(packed_dir)
     [seg_entry | _] = manifest.segments
     pos_records = seg_entry.positions
+    hb = Blunderfest.Corpus.Packed.Format.pos_header_bytes(seg_entry.pos_version)
 
     {:ok, fd} = File.open(pos_path, [:raw, :read])
-    headers_bytes = pos_records * 36
+    headers_bytes = pos_records * hb
 
-    # Stride within the header region only (multiples of a 36-byte header).
+    # Stride within the header region only (multiples of the header width).
     step_headers = max(1, div(pos_records, n))
-    step_bytes = step_headers * 36
+    step_bytes = step_headers * hb
 
     keys =
       Stream.unfold(0, fn off ->
-        if off + 36 <= headers_bytes do
-          {:ok, <<hash::binary-size(16), _::binary>>} = :file.pread(fd, off, 36)
+        if off + hb <= headers_bytes do
+          {:ok, <<hash::binary-size(16), _::binary>>} = :file.pread(fd, off, hb)
           {hash, off + step_bytes}
         else
           nil

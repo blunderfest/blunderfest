@@ -30,12 +30,19 @@ defmodule Blunderfest.Corpus.Packed.Segment do
   to a chunked sequential rebuild (persisting the result), so boots never
   pay the old one-pread-per-anchor walk. `anchors_from` records which path
   the open took.
+
+  pos.bin headers come in two widths (Spike 09 Phase 2): v1's 36-byte
+  header and v2's 49-byte header, which additionally carries the pack-time
+  run statistics (`occurrence_count`, `game_count`, `occ_run_offset`). The
+  segment's `pos_version` comes from the manifest entry; every query family
+  above serves both versions identically, and `position_stats/2` +
+  `verify_run/2` expose/validate the v2 statistics for the parity and
+  validation tasks (no product path consumes them yet).
   """
 
   alias Blunderfest.Corpus.Packed.Format
 
   @occ_record_bytes Format.occ_record_bytes()
-  @pos_header_bytes Format.pos_header_bytes()
   @bucket_record_bytes Format.bucket_record_bytes()
   @book_header_bytes Format.book_header_bytes()
 
@@ -47,6 +54,8 @@ defmodule Blunderfest.Corpus.Packed.Segment do
     :pos_path,
     :pos_records,
     :pos_anchors,
+    :pos_version,
+    :pos_header_bytes,
     :bucket_path,
     :bucket_records,
     :bucket_anchors,
@@ -72,6 +81,8 @@ defmodule Blunderfest.Corpus.Packed.Segment do
   def open(segment_entry, stride) do
     files = segment_entry.files
     pos_records = segment_entry.positions
+    pos_version = Map.get(segment_entry, :pos_version, 1)
+    pos_header_bytes = Format.pos_header_bytes(pos_version)
 
     occ_size = File.stat!(files["occ"]).size
     bucket_size = File.stat!(files["bucket"]).size
@@ -98,7 +109,7 @@ defmodule Blunderfest.Corpus.Packed.Segment do
       bucket_records != pos_records ->
         {:error, {:bucket_position_count_mismatch, bucket_records, pos_records}}
 
-      pos_size < pos_records * @pos_header_bytes ->
+      pos_size < pos_records * pos_header_bytes ->
         {:error, {:invalid_pos_file_size, pos_size}}
 
       book_size < book_headers_bytes ->
@@ -113,7 +124,7 @@ defmodule Blunderfest.Corpus.Packed.Segment do
           load_anchors(files["occ"], occ_records, @occ_record_bytes, 16, stride)
 
         {pos_anchors, pos_src} =
-          load_anchors(files["pos"], pos_records, @pos_header_bytes, 16, stride)
+          load_anchors(files["pos"], pos_records, pos_header_bytes, 16, stride)
 
         {bucket_anchors, bucket_src} =
           load_anchors(files["bucket"], bucket_records, @bucket_record_bytes, 8, stride)
@@ -135,6 +146,8 @@ defmodule Blunderfest.Corpus.Packed.Segment do
            pos_path: files["pos"],
            pos_records: pos_records,
            pos_anchors: pos_anchors,
+           pos_version: pos_version,
+           pos_header_bytes: pos_header_bytes,
            bucket_path: files["bucket"],
            bucket_records: bucket_records,
            bucket_anchors: bucket_anchors,
@@ -218,9 +231,15 @@ defmodule Blunderfest.Corpus.Packed.Segment do
 
     result =
       case find_pos_header(seg, hash, pos_fd) do
-        {:ok, pawn_hash, first_gid, first_ply, off, len} ->
-          key = read_string(seg, pos_fd, off, len)
-          %{key: key, pawn_hash: pawn_hash, first_gid: first_gid, first_ply: first_ply}
+        {:ok, fields} ->
+          key = read_string(seg, pos_fd, fields.string_offset, fields.string_len)
+
+          %{
+            key: key,
+            pawn_hash: fields.pawn_hash,
+            first_gid: fields.first_gid,
+            first_ply: fields.first_ply
+          }
 
         :none ->
           nil
@@ -228,6 +247,177 @@ defmodule Blunderfest.Corpus.Packed.Segment do
 
     File.close(pos_fd)
     result
+  end
+
+  @doc """
+  The pack-time run statistics of a format-v2 header —
+  `%\{occurrences, games, run_offset, first_gid, first_ply}` — in one
+  bounded header read (O(log anchors)), independent of the run length.
+  Returns `{:error, :format_v1}` for a v1 segment (no stored stats) and
+  `:none` for a key without a header.
+  """
+  def position_stats(%__MODULE__{pos_version: 1}, _hash), do: {:error, :format_v1}
+
+  def position_stats(%__MODULE__{} = seg, hash) do
+    {:ok, pos_fd} = open_raw(seg.pos_path)
+
+    result =
+      case find_pos_header(seg, hash, pos_fd) do
+        {:ok, fields} ->
+          {:ok,
+           %{
+             occurrences: fields.occurrence_count,
+             games: fields.game_count,
+             run_offset: fields.occ_run_offset,
+             first_gid: fields.first_gid,
+             first_ply: fields.first_ply
+           }}
+
+        :none ->
+          :none
+      end
+
+    File.close(pos_fd)
+    result
+  end
+
+  @doc """
+  Internal consistency of the v2 stats against `occ.bin`, for validation
+  sampling (build-time, `corpus.validate`, parity): the record at
+  `run_offset` is the header's first occurrence, the whole span carries the
+  header's hash, its adjacent-gid dedup equals `game_count`, and the records
+  just outside the span belong to other keys. O(run) — deliberately never
+  called on a hot path. `{:error, :format_v1}` on a v1 segment,
+  `{:error, {:no_position_header, hash}}` on a missing key.
+  """
+  def verify_run(%__MODULE__{pos_version: 1}, _hash), do: {:error, :format_v1}
+
+  def verify_run(%__MODULE__{} = seg, hash) do
+    case position_stats(seg, hash) do
+      {:ok, stats} -> do_verify_run(seg, hash, stats)
+      :none -> {:error, {:no_position_header, hash}}
+      {:error, _} = error -> error
+    end
+  end
+
+  @doc """
+  Runs `verify_run/2` on `n` evenly spread position headers (always
+  including the first and last) — the sampled v2 validation pass. No-op on
+  v1 segments and empty segments.
+  """
+  def verify_sampled_runs(%__MODULE__{pos_version: 1}, _n), do: :ok
+  def verify_sampled_runs(%__MODULE__{pos_records: 0}, _n), do: :ok
+
+  def verify_sampled_runs(%__MODULE__{} = seg, n) when is_integer(n) and n > 0 do
+    {:ok, pos_fd} = open_raw(seg.pos_path)
+
+    result =
+      seg.pos_records
+      |> sample_indices(n)
+      |> Enum.reduce_while(:ok, fn idx, :ok ->
+        {:ok, header} = :file.pread(pos_fd, idx * seg.pos_header_bytes, seg.pos_header_bytes)
+        <<hash::binary-size(16), _::binary>> = header
+
+        case verify_run(seg, hash) do
+          :ok -> {:cont, :ok}
+          {:error, _} = error -> {:halt, error}
+        end
+      end)
+
+    File.close(pos_fd)
+    result
+  end
+
+  defp sample_indices(records, n) do
+    step = max(1, div(records - 1, max(n - 1, 1)))
+
+    0..(records - 1)//step
+    |> Enum.take(n)
+    |> Kernel.++([records - 1])
+    |> Enum.uniq()
+  end
+
+  defp do_verify_run(seg, hash, %{occurrences: count, run_offset: offset} = stats) do
+    cond do
+      count == 0 ->
+        {:error, {:zero_occurrence_count, hash}}
+
+      offset + count > seg.occ_records ->
+        {:error, {:run_out_of_bounds, hash, offset, count}}
+
+      true ->
+        {:ok, fd} = open_raw(seg.occ_path)
+
+        result =
+          case :file.pread(fd, offset * @occ_record_bytes, count * @occ_record_bytes) do
+            {:ok, span} when byte_size(span) == count * @occ_record_bytes ->
+              verify_span(fd, seg, hash, stats, span)
+
+            {:ok, short} ->
+              {:error, {:short_run_read, hash, byte_size(short)}}
+
+            {:error, reason} ->
+              {:error, {:run_read_failed, hash, reason}}
+          end
+
+        File.close(fd)
+        result
+    end
+  end
+
+  defp verify_span(fd, seg, hash, stats, span) do
+    <<span_hash::binary-size(16), first_gid::32, first_ply::16, _::binary>> = span
+
+    cond do
+      span_hash != hash ->
+        {:error, {:run_hash_mismatch, hash, stats.run_offset}}
+
+      {first_gid, first_ply} != {stats.first_gid, stats.first_ply} ->
+        {:error,
+         {:first_occurrence_mismatch, hash, {first_gid, first_ply},
+          {stats.first_gid, stats.first_ply}}}
+
+      not all_records_hash?(span, hash) ->
+        {:error, {:run_span_hash_mismatch, hash}}
+
+      count_run_gids(span, nil, 0) != stats.games ->
+        {:error, {:game_count_mismatch, hash}}
+
+      true ->
+        with :ok <- check_boundary(fd, seg, hash, stats.run_offset - 1, :before),
+             :ok <- check_boundary(fd, seg, hash, stats.run_offset + stats.occurrences, :after) do
+          :ok
+        end
+    end
+  end
+
+  # The record adjacent to the run (just before / just after) must belong to
+  # another key — otherwise the stored run span is not the full run.
+  defp check_boundary(_fd, _seg, _hash, idx, _side) when idx < 0, do: :ok
+
+  defp check_boundary(fd, seg, hash, idx, side) do
+    if idx >= seg.occ_records do
+      :ok
+    else
+      case :file.pread(fd, idx * @occ_record_bytes, 16) do
+        {:ok, ^hash} -> {:error, {:run_boundary_mismatch, hash, side, idx}}
+        {:ok, _other} -> :ok
+        {:error, reason} -> {:error, {:boundary_read_failed, hash, side, reason}}
+      end
+    end
+  end
+
+  defp all_records_hash?(<<>>, _hash), do: true
+
+  defp all_records_hash?(<<hash::binary-size(16), _gid::32, _ply::16, rest::binary>>, hash),
+    do: all_records_hash?(rest, hash)
+
+  defp all_records_hash?(<<_other::binary-size(22), _rest::binary>>, _hash), do: false
+
+  defp count_run_gids(<<>>, _last_gid, games), do: games
+
+  defp count_run_gids(<<_h::binary-size(16), gid::32, _ply::16, rest::binary>>, last_gid, games) do
+    count_run_gids(rest, gid, if(gid == last_gid, do: games, else: games + 1))
   end
 
   # Each distinct key has exactly one header, so no hot-key walk-back:
@@ -242,21 +432,25 @@ defmodule Blunderfest.Corpus.Packed.Segment do
       idx = floor_anchor(seg.pos_anchors, n, 16, hash)
       from = idx * seg.stride
       to = min(from + seg.stride, seg.pos_records)
+      hb = seg.pos_header_bytes
 
       {:ok, chunk} =
-        pread_fd(pos_fd, seg.pos_path, from * @pos_header_bytes, (to - from) * @pos_header_bytes)
+        pread_fd(pos_fd, seg.pos_path, from * hb, (to - from) * hb)
 
       scan_pos_chunk(seg, chunk, to, hash, pos_fd)
     end
   end
 
   defp scan_pos_chunk(seg, chunk, next_from, hash, pos_fd) do
-    case chunk do
-      <<^hash::binary-size(16), pawn_hash::64, first_gid::32, first_ply::16, off::32, len::16,
-        _rest::binary>> ->
-        {:ok, pawn_hash, first_gid, first_ply, off, len}
+    hb = seg.pos_header_bytes
+    skip = hb - 16
 
-      <<key::binary-size(16), _::binary-size(20), rest::binary>> when key < hash ->
+    case chunk do
+      <<^hash::binary-size(16), _rest::binary>> ->
+        <<record::binary-size(^hb), _::binary>> = chunk
+        {:ok, decode_pos_record(seg.pos_version, record)}
+
+      <<key::binary-size(16), _::binary-size(^skip), rest::binary>> when key < hash ->
         scan_pos_chunk(seg, rest, next_from, hash, pos_fd)
 
       <<key::binary-size(16), _::binary>> when key > hash ->
@@ -269,18 +463,42 @@ defmodule Blunderfest.Corpus.Packed.Segment do
           to = min(next_from + seg.stride, seg.pos_records)
 
           {:ok, more} =
-            pread_fd(
-              pos_fd,
-              seg.pos_path,
-              next_from * @pos_header_bytes,
-              (to - next_from) * @pos_header_bytes
-            )
+            pread_fd(pos_fd, seg.pos_path, next_from * hb, (to - next_from) * hb)
 
           scan_pos_chunk(seg, more, to, hash, pos_fd)
         else
           :none
         end
     end
+  end
+
+  defp decode_pos_record(1, record) do
+    {_hash, pawn_hash, first_gid, first_ply, string_offset, string_len} =
+      Format.decode_pos_header(record)
+
+    %{
+      pawn_hash: pawn_hash,
+      first_gid: first_gid,
+      first_ply: first_ply,
+      string_offset: string_offset,
+      string_len: string_len
+    }
+  end
+
+  defp decode_pos_record(2, record) do
+    {_hash, pawn_hash, occurrence_count, game_count, occ_run_offset, first_gid, first_ply,
+     string_offset, string_len} = Format.decode_pos_header_v2(record)
+
+    %{
+      pawn_hash: pawn_hash,
+      occurrence_count: occurrence_count,
+      game_count: game_count,
+      occ_run_offset: occ_run_offset,
+      first_gid: first_gid,
+      first_ply: first_ply,
+      string_offset: string_offset,
+      string_len: string_len
+    }
   end
 
   ## Pawn bucket
@@ -310,7 +528,7 @@ defmodule Blunderfest.Corpus.Packed.Segment do
       |> bucket_hashes(seg)
       |> Enum.map(fn pos_hash ->
         case find_pos_header(seg, pos_hash, pos_fd) do
-          {:ok, _pawn_hash, _gid, _ply, off, len} -> read_string(seg, pos_fd, off, len)
+          {:ok, fields} -> read_string(seg, pos_fd, fields.string_offset, fields.string_len)
           :none -> nil
         end
       end)
@@ -331,7 +549,7 @@ defmodule Blunderfest.Corpus.Packed.Segment do
       |> Enum.take(limit)
       |> Enum.map(fn pos_hash ->
         case find_pos_header(seg, pos_hash, pos_fd) do
-          {:ok, _pawn_hash, _gid, _ply, off, len} -> read_string(seg, pos_fd, off, len)
+          {:ok, fields} -> read_string(seg, pos_fd, fields.string_offset, fields.string_len)
           :none -> nil
         end
       end)
@@ -552,7 +770,7 @@ defmodule Blunderfest.Corpus.Packed.Segment do
   # locates the key exactly. A pread failure must not silently mutate the
   # position's key (management: read-side errors surface as crashes).
   defp read_string(seg, pos_fd, offset, len) do
-    base = seg.pos_records * @pos_header_bytes
+    base = seg.pos_records * seg.pos_header_bytes
 
     case pread_fd(pos_fd, seg.pos_path, base + offset, len) do
       {:ok, string} -> string

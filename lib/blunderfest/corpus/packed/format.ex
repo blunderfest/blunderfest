@@ -8,7 +8,7 @@ defmodule Blunderfest.Corpus.Packed.Format do
 
   **pos.bin** — one distinct position key. Two regions: a header region of
   fixed-width sorted-by-hash headers, then a strings region with the canonical
-  key strings. Header:
+  key strings. Header v1:
 
       <<hash::binary-size(16),          # position key hash
         pawn_hash::unsigned-64,         # pawn-skeleton bucket hash
@@ -16,6 +16,25 @@ defmodule Blunderfest.Corpus.Packed.Format do
         first_ply::unsigned-16,         # first occurrence ply
         string_offset::unsigned-32,     # into the strings region
         string_len::unsigned-16>>       — 36 bytes
+
+  Header v2 (Spike 09 §6 — the format-v2 repack): the three derived
+  per-position statistics computed at pack time, so count/stat questions and
+  bounded occurrence reads never walk the run:
+
+      <<hash::binary-size(16),          # position key hash
+        pawn_hash::unsigned-64,         # pawn-skeleton bucket hash
+        occurrence_count::unsigned-32,  # run length in occ.bin
+        game_count::unsigned-32,        # distinct gids in the run
+        occ_run_offset::unsigned-40,    # first record index of the run
+        first_gid::unsigned-32,         # first occurrence gid
+        first_ply::unsigned-16,         # first occurrence ply
+        string_offset::unsigned-32,     # into the strings region
+        string_len::unsigned-16>>       — 49 bytes
+
+  `occ_run_offset` is segment-local (each segment's `occ.bin` is its own
+  address space) and addresses 1.1 T occurrences; the run length is
+  `occurrence_count`, so the run is the exact span
+  `occ.bin[occ_run_offset, occurrence_count)`.
 
   **bucket.bin** — pawn-bucket membership, sorted by `(pawn_hash, pos_hash)`:
 
@@ -39,6 +58,7 @@ defmodule Blunderfest.Corpus.Packed.Format do
 
   @occ_record_bytes 22
   @pos_header_bytes 36
+  @pos_header_v2_bytes 49
   @bucket_record_bytes 24
   @book_header_bytes 22
 
@@ -46,6 +66,10 @@ defmodule Blunderfest.Corpus.Packed.Format do
   def pos_header_bytes, do: @pos_header_bytes
   def bucket_record_bytes, do: @bucket_record_bytes
   def book_header_bytes, do: @book_header_bytes
+
+  @doc "The pos.bin header width of a format version (1 → 36 B, 2 → 49 B)."
+  def pos_header_bytes(1), do: @pos_header_bytes
+  def pos_header_bytes(2), do: @pos_header_v2_bytes
 
   def occ_record(hash, gid, ply) when byte_size(hash) == 16 do
     <<hash::binary-size(16), gid::32, ply::16>>
@@ -66,6 +90,34 @@ defmodule Blunderfest.Corpus.Packed.Format do
           string_len::16>>
       ) do
     {hash, pawn_hash, first_gid, first_ply, string_offset, string_len}
+  end
+
+  @doc """
+  One v2 pos header (49 bytes): the v1 fields plus the pack-time statistics
+  `occurrence_count`, `game_count` and the segment-local `occ_run_offset`.
+  """
+  def pos_header_v2(
+        hash,
+        pawn_hash,
+        occurrence_count,
+        game_count,
+        occ_run_offset,
+        first_gid,
+        first_ply,
+        string_offset,
+        string_len
+      )
+      when byte_size(hash) == 16 do
+    <<hash::binary-size(16), pawn_hash::64, occurrence_count::32, game_count::32,
+      occ_run_offset::40, first_gid::32, first_ply::16, string_offset::32, string_len::16>>
+  end
+
+  def decode_pos_header_v2(
+        <<hash::binary-size(16), pawn_hash::64, occurrence_count::32, game_count::32,
+          occ_run_offset::40, first_gid::32, first_ply::16, string_offset::32, string_len::16>>
+      ) do
+    {hash, pawn_hash, occurrence_count, game_count, occ_run_offset, first_gid, first_ply,
+     string_offset, string_len}
   end
 
   def bucket_record(pawn_hash, pos_hash) when is_integer(pawn_hash) do

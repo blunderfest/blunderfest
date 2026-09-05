@@ -131,6 +131,47 @@ defmodule Blunderfest.Corpus.Packed do
     Enum.find_value(backend.segments, &Segment.position(&1, hash))
   end
 
+  @doc """
+  The pack-time run statistics of a hash from the format-v2 headers —
+  `{:ok, %{occurrences, games}}` summed over the segments holding the key.
+  The sum is exact: segment gid ranges are disjoint (Spike 09 §6 — a game is
+  packed exactly once), so per-segment occurrence and independent-game
+  counts add without double counting. This is the bounded (O(log anchors)
+  per segment) replacement for the run-walking `occurrence_counts/2`; it
+  reads header fields only, never `occ.bin`.
+
+  `{:error, :format_v1}` when a segment holding the key predates format v2
+  (no stored stats); `%{occurrences: 0, games: 0}` for a key with no header
+  anywhere. Segment-local run offsets are not summed — use
+  `Segment.position_stats/2` per segment when an offset is needed.
+  """
+  def position_stats(%__MODULE__{segments: segments}, hash) do
+    stats = Enum.map(segments, &segment_stats(&1, hash))
+
+    if Enum.any?(stats, &match?({:error, :format_v1}, &1)) do
+      {:error, :format_v1}
+    else
+      sums =
+        Enum.reduce(stats, %{occurrences: 0, games: 0}, fn
+          {:ok, s}, acc ->
+            %{occurrences: acc.occurrences + s.occurrences, games: acc.games + s.games}
+
+          :none, acc ->
+            acc
+        end)
+
+      {:ok, sums}
+    end
+  end
+
+  defp segment_stats(%Segment{pos_version: 1} = seg, hash) do
+    # A v1 segment carries no stored stats; it only taints the sum when it
+    # actually holds the key (the header lookup is the same bounded read).
+    if Segment.position(seg, hash) == nil, do: :none, else: {:error, :format_v1}
+  end
+
+  defp segment_stats(%Segment{} = seg, hash), do: Segment.position_stats(seg, hash)
+
   @doc "Distinct canonical keys in a pawn bucket across segments, sorted."
   def pawn_bucket(%__MODULE__{} = backend, pawn_hash) do
     backend.segments
