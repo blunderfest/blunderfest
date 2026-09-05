@@ -12,10 +12,16 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
   No stage fuses its signals into a relevance score (brief §16): the
   result exposes facts — typed differences, routes, family memberships,
   counts — and the consumer decides what is interesting. Every stage is
-  timed (brief §19); the timings ride along on the result.
+  timed (brief §19); the timings ride along on the result — including
+  `pg_ms`, the game/move hydration time in Postgres, broken out so the
+  packed-corpus cost and the (cross-region) PG cost of a request can be
+  told apart (Spike 09 Phase 3).
 
   The pipeline lives behind the `Blunderfest.Corpus` boundary and only
-  talks to the facade.
+  talks to the facade. Count questions go through `Corpus.position_stats/1`
+  (header-backed on packed v2) via the request-scoped memo; occurrence
+  lists are always bounded (`Corpus.occurrences/2`) — the pipeline never
+  calls the unbounded `all_occurrences/1` on a live path.
   """
 
   alias Blunderfest.Corpus.Analysis.{
@@ -74,20 +80,24 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
     ref = gen.reference
     memo = gen.count_memo
 
+    # One batch query for the bounded occurrence list's continuations — a
+    # hot key's family build is one round trip, not N GenServer calls. The
+    # query is Postgres hydration, timed apart from the local family build
+    # so the two costs stay distinguishable.
+    {menu_pg_us, moves_map} =
+      :timer.tc(fn ->
+        gen.exact_occurrences
+        |> Enum.map(fn {gid, _ply} -> gid end)
+        |> then(fn gids ->
+          case Blunderfest.Corpus.moves_for(gids) do
+            {:error, _} -> %{}
+            map -> map
+          end
+        end)
+      end)
+
     {menu_us, menu} =
       :timer.tc(fn ->
-        # One batch query for the bounded occurrence list's continuations —
-        # a hot key's family build is one round trip, not N GenServer calls.
-        moves_map =
-          gen.exact_occurrences
-          |> Enum.map(fn {gid, _ply} -> gid end)
-          |> then(fn gids ->
-            case Blunderfest.Corpus.moves_for(gids) do
-              {:error, _} -> %{}
-              map -> map
-            end
-          end)
-
         gen.exact_occurrences
         |> Enum.map(fn {gid, ply} ->
           {gid, ply, Map.get(moves_map, gid, []) |> drop_ply(ply)}
@@ -126,11 +136,24 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
         counts -> counts
       end
 
-    {evidence_us, {candidates, _memo}} =
+    {evidence_us, {candidates, {_memo, cards_pg_us}}} =
       :timer.tc(fn ->
         (gen.exact ++ gen.structural)
-        |> Enum.map_reduce(memo, fn cand, memo ->
-          card(cand, ref, menu, family_cfg, skeleton_threshold, route, ref_ply, ref_window, memo)
+        |> Enum.map_reduce({memo, 0}, fn cand, {memo, pg_us} ->
+          {card_map, memo, card_pg_us} =
+            card(
+              cand,
+              ref,
+              menu,
+              family_cfg,
+              skeleton_threshold,
+              route,
+              ref_ply,
+              ref_window,
+              memo
+            )
+
+          {card_map, {memo, pg_us + card_pg_us}}
         end)
       end)
 
@@ -147,13 +170,19 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
       timings: %{
         candidates_ms: div(candidates_us, 1000),
         menu_ms: div(menu_us, 1000),
-        evidence_ms: div(evidence_us, 1000)
+        evidence_ms: div(evidence_us, 1000),
+        pg_ms: div(menu_pg_us + cards_pg_us, 1000)
       }
     }
   end
 
   defp card(cand, ref, menu, family_cfg, skeleton_threshold, route, ref_ply, ref_window, memo) do
-    cand_moves = Blunderfest.Corpus.moves(cand.gid)
+    # The card's two Postgres lookups (game metadata + mainline), timed as
+    # hydration — on the far region this is where cross-region latency
+    # lands, and the timing keeps it separable from the local assembly.
+    {pg_us, {game_row, cand_moves}} =
+      :timer.tc(fn -> {Blunderfest.Corpus.game(cand.gid), Blunderfest.Corpus.moves(cand.gid)} end)
+
     window = cand_moves |> drop_ply(cand.ply) |> cap()
 
     positional_diffs = Differences.positional(ref, cand.features)
@@ -173,8 +202,7 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
 
     # Counts only — the card never needs the occurrence list itself, and a
     # hot key shared by many exact cards is counted once per request via the
-    # memo (Spike 09 Horizon 1). The list fallback keeps the unconfigured
-    # behavior exactly as before.
+    # memo (Spike 09 Horizon 1; Phase 3 serves it from the v2 headers).
     {historical, memo} = card_counts(cand.key, memo)
     same_game_only = Counts.same_game_only?(historical)
 
@@ -187,7 +215,7 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
         fen: Features.fen(cand.key),
         gid: cand.gid,
         ply: cand.ply,
-        game: Blunderfest.Corpus.game(cand.gid),
+        game: game_row,
         position: %{
           dims: cand.dims,
           typed_differences: positional_diffs
@@ -217,17 +245,22 @@ defmodule Blunderfest.Corpus.Search.Pipeline do
             same_game_only
           )
       },
-      memo
+      memo,
+      pg_us
     }
   end
 
+  # Counts only — the card never needs the occurrence list itself. The
+  # memo's fetcher is `Corpus.position_stats/1`; the full-list branch is a
+  # last-resort fallback for a facade error and is the only place the
+  # pipeline touches the explicitly unbounded API.
   defp card_counts(key, memo) do
     case CountMemo.fetch(memo, key) do
       {%{} = counts, memo} ->
         {counts, memo}
 
       {{:error, _}, memo} ->
-        {Counts.counts(Blunderfest.Corpus.occurrences(key)), memo}
+        {Counts.counts(Blunderfest.Corpus.all_occurrences(key)), memo}
     end
   end
 

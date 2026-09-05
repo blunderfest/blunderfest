@@ -94,6 +94,20 @@ defmodule Blunderfest.Corpus.OccurrencesTest do
     assert Occurrences.position(conn, "unknown key") == nil
   end
 
+  test "first_occurrence/2 equals the full-list head without the run", %{
+    conn: conn,
+    data_dir: dir
+  } do
+    Occurrences.rebuild(conn, dir, 10)
+
+    for key <- [@key_a, @key_b, @key_c] do
+      assert Occurrences.first_occurrence(conn, key) ==
+               conn |> Occurrences.occurrences(key) |> List.first()
+    end
+
+    assert Occurrences.first_occurrence(conn, "unknown key") == nil
+  end
+
   test "pawn_bucket/2 returns distinct keys sharing the skeleton", %{conn: conn, data_dir: dir} do
     Occurrences.rebuild(conn, dir, 10)
 

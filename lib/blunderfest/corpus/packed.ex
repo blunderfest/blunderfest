@@ -11,8 +11,11 @@ defmodule Blunderfest.Corpus.Packed do
       globally, so a two-segment merge interleaves; matching it is part of
       the parity contract);
     * `occurrence_counts` — summed occurrences, games as distinct gids
-      across segments;
+      across segments (the run-walking oracle; Phase 3 product paths use
+      the header-backed `position_stats/2` instead);
     * `position` — first segment (build order) holding the key;
+    * `first_occurrence` — the minimum of the per-segment header first
+      occurrences (exact under any interleaving);
     * `pawn_bucket` — union of keys, sorted, deduplicated.
 
   `open/2` loads a packed data directory: reads the manifest, validates
@@ -78,7 +81,14 @@ defmodule Blunderfest.Corpus.Packed do
     end)
   end
 
-  @doc "`ORDER BY gid, ply` occurrences of a hash across all segments."
+  @doc """
+  `ORDER BY gid, ply` occurrences of a hash across all segments —
+  explicitly unbounded, O(full run): reads and decodes every occurrence.
+  Product paths that keep a prefix use `occurrences/3`; count questions use
+  `position_stats/2`. This full list remains for callers that genuinely
+  need the complete run (validation oracles, the packed-mode book
+  recomputation).
+  """
   def occurrences(%__MODULE__{} = backend, hash) do
     backend.segments
     |> Enum.flat_map(&Segment.occurrences(&1, hash))
@@ -87,18 +97,86 @@ defmodule Blunderfest.Corpus.Packed do
 
   @doc """
   The first `limit` occurrences of a hash in global `(gid, ply)` order —
-  the same prefix as `occurrences/2 |> Enum.take(limit)`, but each segment
-  decodes at most `limit` tuples, so a hot key shared by many callers never
-  materializes its full run. (The global first `limit` is always contained
-  in the union of the per-segment first-`limit` prefixes, whatever the
-  segments' gid ranges.)
+  exactly `occurrences/2 |> Enum.take(limit)`, with the read bounded.
+
+  Two merge shapes:
+
+    * **Disjoint gid ranges** (the production invariant — `corpus.pack`
+      partitions gids into non-overlapping per-segment ranges, so a segment
+      earlier in gid order carries only smaller gids): the segments are
+      visited in gid order and each supplies at most the *remaining* global
+      budget — `min(remaining, its run length)` records. A segment that
+      holds 8 of a 12-record prefix costs 8 reads, the next segment at most
+      4, and later segments are not read at all. On v2 segments each fetch
+      is a run-offset prefix read, so the total occurrence bytes scale with
+      `min(limit, result size)`, never the run length.
+    * **Overlapping ranges** (test fixtures, defensive): each segment
+      contributes its first `limit` tuples and the merge re-sorts globally.
+      (The global first `limit` is always contained in the union of the
+      per-segment first-`limit` prefixes, whatever the segments' gid
+      ranges.) A hot key shared by many callers still never materializes
+      its full run.
   """
   def occurrences(%__MODULE__{} = backend, hash, limit)
       when is_integer(limit) and limit >= 0 do
+    if disjoint_gid_ranges?(backend.segments) do
+      backend.segments
+      |> Enum.sort_by(& &1.gids.min)
+      |> fill_prefix(hash, limit, [])
+    else
+      backend.segments
+      |> Enum.flat_map(&Segment.occurrences(&1, hash, limit))
+      |> Enum.sort()
+      |> Enum.take(limit)
+    end
+  end
+
+  # Sequential prefix fill in gid order: each segment reads at most the
+  # remaining global budget; once the budget is spent, later segments are
+  # not queried at all (not even their headers).
+  defp fill_prefix(_segments, _hash, remaining, acc) when remaining <= 0,
+    do: acc |> Enum.reverse() |> Enum.concat()
+
+  defp fill_prefix([], _hash, _remaining, acc), do: acc |> Enum.reverse() |> Enum.concat()
+
+  defp fill_prefix([seg | rest], hash, remaining, acc) do
+    occs = Segment.occurrences(seg, hash, remaining)
+    fill_prefix(rest, hash, remaining - length(occs), [occs | acc])
+  end
+
+  # Segment gid ranges are disjoint when every segment carries a known
+  # range and no two ranges overlap. Empty/unknown ranges (nil gids) force
+  # the defensive sorted merge.
+  defp disjoint_gid_ranges?(segments) do
+    ranges = Enum.map(segments, & &1.gids)
+
+    if Enum.any?(ranges, &(&1 == nil or &1.min == nil or &1.max == nil)) do
+      false
+    else
+      ranges
+      |> Enum.sort_by(& &1.min)
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.all?(fn [a, b] -> a.max < b.min end)
+    end
+  end
+
+  @doc """
+  The globally first occurrence of a hash — `{gid, ply}` or nil — without
+  materializing any occurrence run: the minimum of the per-segment header
+  first occurrences (`Segment.first_occurrence/2`, O(log anchors) each).
+  Exact under any segment interleaving — a segment's stored first
+  occurrence is the minimum within that segment, so the global minimum is
+  the minimum of the segment minimums. Equal to
+  `occurrences/2 |> List.first()` for every key.
+  """
+  def first_occurrence(%__MODULE__{} = backend, hash) do
     backend.segments
-    |> Enum.flat_map(&Segment.occurrences(&1, hash, limit))
-    |> Enum.sort()
-    |> Enum.take(limit)
+    |> Enum.reduce(nil, fn seg, acc ->
+      case Segment.first_occurrence(seg, hash) do
+        nil -> acc
+        occ -> if acc == nil or occ < acc, do: occ, else: acc
+      end
+    end)
   end
 
   @doc "`%{occurrences, games}` for a hash across all segments."
@@ -200,8 +278,15 @@ defmodule Blunderfest.Corpus.Packed do
   end
 
   @doc """
-  Independent games for a key from the precomputed book — the sum of
-  per-move game counts. A key with no header has no book entry (no games).
+  The sum of the precomputed book's per-move game counts for a key. This
+  counts **games that played some recorded continuation** — not "number of
+  independent games containing this position" (a game that reaches the
+  position and stops there, or whose next move is unrecorded, drops out;
+  Spike 09 §12.8 measured that divergence at −87,264 for the start
+  position). The authoritative independent-game count is the position's
+  `game_count` — `position_stats/2`. Phase 3 stops serving this as
+  `book_counts`; it stays available where the book-sum concept itself is
+  wanted. A key with no book entry sums to 0.
   """
   def book_games_count(%__MODULE__{} = backend, hash) do
     backend

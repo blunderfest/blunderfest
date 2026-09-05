@@ -139,6 +139,21 @@ defmodule Blunderfest.Corpus.Occurrences do
   end
 
   @doc """
+  The first occurrence of a canonical key — `{gid, ply}` or nil — without
+  fetching the run: the positions row's `first_gid`/`first_ply` are the
+  true minimum `(gid, ply)` by load construction (`DISTINCT ON … ORDER BY
+  key, first_gid, first_ply`). Semantics equal
+  `occurrences(conn, key) |> List.first()`.
+  """
+  @spec first_occurrence(conn(), String.t()) :: {pos_integer(), pos_integer()} | nil
+  def first_occurrence(conn, key) do
+    case position(conn, key) do
+      nil -> nil
+      %{first_gid: gid, first_ply: ply} -> {gid, ply}
+    end
+  end
+
+  @doc """
   The position row for a canonical key (`%{pawn_hash, first_gid, first_ply}`)
   or nil when the corpus has never seen the position.
   """

@@ -35,6 +35,7 @@ directory holds the durable record of how and why the system is built.
 | `technical-spike-08-production-packed-binary-corpus-index-report.md` | Spike 08 results: packed backend ready (B→A) — parity exact on 10k sampled keys + edge cases, product-level parity on all six reference positions, 36% of PG's storage (764 MB vs 2113 MB), ~4× faster lookups. Behind the `Corpus` facade's `occurrence_backend` config; PG still serves games/moves/metadata/export. |
 | `product-experiment01-historical-decision-menu.md` | Product Experiment 01 brief: add the historical next-move distribution before the example carousel (independent-game counts; not families). |
 | `product-experiment-01-historical-decision-menu.md` | Product Experiment 01 results: implemented. New `DecisionMenu` module computes per-move independent-game counts; families untouched; F1/A2 verified end-to-end; limitations + evaluation questions. |
+| `packed-corpus-phase3-runtime-cutover.md` | Packed Corpus v2 Phase 3 report: the cost-explicit Corpus API (`position_stats`/`first_occurrence`/bounded `occurrences`/`all_occurrences`), the Historical Evidence cutover and caller audit, the `book_games_count` independent-game correction, v1 rollback behavior, parity results, the benchmark/memory tables, the start-position gate outcome (memory passes; latency misses on the class-E product-CPU floor), and the prepared production cutover procedure. |
 
 ## How to use the ADRs
 

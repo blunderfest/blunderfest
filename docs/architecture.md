@@ -95,7 +95,16 @@ release and served by a catch-all (`SpaController`).
     config exists, e.g. dev without `DATABASE_URL`. It serializes every
     corpus read through one process — the replaceability seam (ADR-0026);
     the occurrence backend is configured (`:postgres` or `:packed`) and
-    nothing downstream notices (Spike 08/ADR-0037).
+    nothing downstream notices (Spike 08/ADR-0037). The occurrence API is
+    cost-explicit (Spike 09 Phase 3): `position_stats/1` (bounded
+    header/metadata counts), `first_occurrence/1` (header-backed),
+    `occurrences/2` (bounded prefix read), `all_occurrences/1`
+    (explicitly unbounded); `occurrence_counts/1` and `occurrences/1`
+    stay as legacy aliases. Packed v2 answers the bounded primitives from
+    the stored header statistics/run offsets; v1 falls back to the
+    run-walking/whole-run-read implementations (rollback-compatible).
+    `book_counts` serves the authoritative independent-game count (the v2
+    `game_count`, never the book's per-move sum — Spike 09 §12.8).
   - `packed/` — the packed occurrence backend (Spike 08/ADR-0037):
     `packed/format.ex` (fixed-width records: occ 22B, pos header + strings
     region, bucket 24B, book 22B header + variable blob),
@@ -118,8 +127,15 @@ release and served by a catch-all (`SpaController`).
     unknown versions. The builder verifies the stored statistics against
     occ.bin on a sampled pass before publish; `Segment.position_stats/2` /
     `Packed.position_stats/2` read them and `Segment.verify_run/2`
-    re-checks them — consumed by `corpus.validate`/`corpus.parity` only
-    (no product cutover yet).
+    re-checks them. **Phase 3 cutover:** the facade's cost-explicit API
+    (`position_stats`, `first_occurrence`, bounded `occurrences`) consumes
+    these fields on v2 — count/stat lookups are O(log anchors) header reads
+    and bounded occurrence reads pread only the requested prefix from the
+    stored `occ_run_offset`. `Packed.occurrences/3` spends a global limit
+    across segments in gid order (disjoint ranges) so later segments are
+    not read once the prefix is satisfied. v1 segments keep the correct
+    run-walking/whole-run paths, so a `PACKED_DIR` flip back to a v1
+    directory remains a usable rollback.
   - `position_key.ex` — canonical position identity (Spike 01): the
     capturable-only en-passant convention, 128-bit BLAKE2b hashes.
   - `replay.ex` + `extraction.ex` — lean mainline replay and the streaming
@@ -138,9 +154,14 @@ release and served by a catch-all (`SpaController`).
     `Skeleton` (Spike 06 per-side membership layer), `Counts`
     (occurrences vs games, same-game/singleton flags).
   - `search/candidates.ex` — exact + pawn-skeleton retrieval, capped and
-    independently observable.
+    independently observable. Occurrence fetches are bounded
+    (`occurrences/2`), so a hot reference key reads only the kept prefix.
   - `search/pipeline.ex` — the vertical-slice orchestrator: per-candidate
-    evidence with per-stage timings.
+    evidence with per-stage timings, including `pg_ms` (Postgres game/move
+    hydration) broken out from the packed-corpus/local work (Spike 09
+    Phase 3). Count questions go through `position_stats/1` via the
+    request-scoped memo (`search/count_memo.ex`); the pipeline never reads
+    an unbounded occurrence list on a live path.
 - `lib/blunderfest_web/` — HTTP and channel surface:
   - `router.ex` — `/api` scope: `healthz`, `historical-evidence`,
     `profiles`, `rooms`, `import/pgn`,

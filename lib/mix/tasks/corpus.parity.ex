@@ -11,6 +11,9 @@ defmodule Mix.Tasks.Corpus.Parity do
   (missing key, singleton, hot key, same-game duplicates) and compares:
 
     * `occurrences` (exact `(gid, ply)` sequence, `ORDER BY gid, ply`)
+    * bounded `occurrences(limit)` at 1 / 12 / 2000 (Phase 3: the bounded
+      read must equal the full list's prefix)
+    * `first_occurrence` (the full list's head, nil on a missing key)
     * `occurrence_counts` (occurrences + distinct games)
     * `position` (pawn_hash, first_gid, first_ply, key)
     * `pawn_bucket` (distinct sorted keys)
@@ -262,6 +265,9 @@ defmodule Mix.Tasks.Corpus.Parity do
         ]
       end
 
+    failures = compare_bounded(failures, backend, hash, pg_occ, key, label)
+    failures = compare_first(failures, backend, hash, pg_occ, key, label)
+
     pg_counts = Occurrences.counts_for(conn, key)
     packed_counts = Packed.occurrence_counts(backend, hash)
 
@@ -301,6 +307,39 @@ defmodule Mix.Tasks.Corpus.Parity do
       end
 
     compare_v2_stats(failures, backend, hash, key, label, pg_counts, pg_pos, packed_pos)
+  end
+
+  ## Bounded reads and first occurrence (Spike 09 Phase 3)
+
+  # The bounded read must equal the full list's prefix at every limit —
+  # including limits past the run length and limit 0.
+  defp compare_bounded(failures, backend, hash, pg_occ, key, label) do
+    Enum.reduce([0, 1, 12, 2000, length(pg_occ) + 7], failures, fn limit, acc ->
+      packed = Packed.occurrences(backend, hash, limit)
+
+      if packed == Enum.take(pg_occ, limit) do
+        acc
+      else
+        [
+          "#{label}: bounded occurrences(limit #{limit}) differ for #{key}: packed #{length(packed)} vs pg prefix #{min(limit, length(pg_occ))}"
+          | acc
+        ]
+      end
+    end)
+  end
+
+  defp compare_first(failures, backend, hash, pg_occ, key, label) do
+    packed = Packed.first_occurrence(backend, hash)
+    pg_first = List.first(pg_occ)
+
+    if packed == pg_first do
+      failures
+    else
+      [
+        "#{label}: first_occurrence differs for #{key}: packed #{inspect(packed)} vs pg #{inspect(pg_first)}"
+        | failures
+      ]
+    end
   end
 
   ## Format-v2 header statistics (Spike 09 Phase 2)

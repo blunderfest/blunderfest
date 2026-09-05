@@ -556,4 +556,247 @@ defmodule Blunderfest.Corpus.PackedTest do
       Packed.close(backend)
     end
   end
+
+  describe "Phase 3 bounded reads" do
+    # v2_positions/2 and keys_by_hash/1 come from the format-v2 describe
+    # block above (module-level helpers).
+
+    alias Blunderfest.Corpus.Packed.Segment
+
+    # A 30-occurrence run across 10 games (gid repeats within games), so
+    # limits 1 / 12 / 2000 / >run all have distinct behavior.
+    defp long_run_occs do
+      for gid <- 1..10, ply <- [1, 2, 4], do: {hash(@key_a), gid, ply}
+    end
+
+    defp build_long_v2!(dir) do
+      occs = Enum.sort(long_run_occs())
+      poss2 = v2_positions(occs, keys_by_hash([@key_a]))
+      build_backend!(dir, occs, poss2, "seg-000001", 4, [], pos_version: 2)
+    end
+
+    test "v2 bounded reads at limits 0, 1, 12, 2000 and beyond the run", %{tmp_dir: dir} do
+      backend = build_long_v2!(Path.join(dir, "v2"))
+      full = Packed.occurrences(backend, hash(@key_a))
+      assert length(full) == 30
+
+      assert Packed.occurrences(backend, hash(@key_a), 0) == []
+      assert Packed.occurrences(backend, hash(@key_a), 1) == Enum.take(full, 1)
+      assert Packed.occurrences(backend, hash(@key_a), 12) == Enum.take(full, 12)
+      assert Packed.occurrences(backend, hash(@key_a), 2000) == full
+      assert Packed.occurrences(backend, hash(@key_a), 31) == full
+
+      # A missing key stays empty at every limit.
+      for limit <- [0, 1, 12, 2000] do
+        assert Packed.occurrences(backend, hash("8/8/8/8/8/8/8/7K w - -"), limit) == []
+      end
+
+      Packed.close(backend)
+    end
+
+    test "v1 bounded reads keep the prefix semantics", %{tmp_dir: dir} do
+      occs = Enum.sort(long_run_occs())
+      poss = [{hash(@key_a), Features.pawn_hash(@key_a), 1, 1, @key_a}]
+      backend = build_backend!(Path.join(dir, "v1"), occs, poss, "seg-000001", 4)
+
+      full = Packed.occurrences(backend, hash(@key_a))
+
+      for limit <- [0, 1, 12, 2000] do
+        assert Packed.occurrences(backend, hash(@key_a), limit) == Enum.take(full, limit)
+      end
+
+      Packed.close(backend)
+    end
+
+    test "a v2 bounded read does not read past the requested prefix", %{tmp_dir: dir} do
+      dir = Path.join(dir, "v2")
+      backend = build_long_v2!(dir)
+      [seg] = backend.segments
+      {:ok, %{run_offset: offset}} = Segment.position_stats(seg, hash(@key_a))
+
+      # Truncate occ.bin so only the first 12 records of the run survive.
+      occ_path = Path.join([dir, "seg-000001", "occ.bin"])
+      {:ok, bin} = File.read(occ_path)
+      File.write!(occ_path, binary_part(bin, 0, (offset + 12) * 22))
+
+      # The bounded prefix still succeeds — it never needed the tail.
+      expected = for gid <- 1..4, ply <- [1, 2, 4], do: {gid, ply}
+      assert Packed.occurrences(backend, hash(@key_a), 12) == Enum.take(expected, 12)
+
+      # A read that wants the missing tail fails truthfully.
+      assert_raise RuntimeError, ~r/bounded occurrence read failed/, fn ->
+        Packed.occurrences(backend, hash(@key_a), 30)
+      end
+
+      Packed.close(backend)
+    end
+
+    test "multi-segment v2 position_stats sums occurrences and games exactly", %{
+      tmp_dir: dir
+    } do
+      # Segment A: gids 1..3 (the key at gid 2 twice), plus another key.
+      occs_a =
+        Enum.sort([
+          {hash(@key_a), 1, 4},
+          {hash(@key_a), 2, 4},
+          {hash(@key_a), 2, 10},
+          {hash(@key_b), 1, 7}
+        ])
+
+      # Segment B: disjoint higher gids, the key in two more games.
+      occs_b =
+        Enum.sort([
+          {hash(@key_a), 4, 1},
+          {hash(@key_a), 5, 2},
+          {hash(@key_a), 5, 9}
+        ])
+
+      keys = keys_by_hash([@key_a, @key_b])
+
+      b1 =
+        build_backend!(Path.join(dir, "a"), occs_a, v2_positions(occs_a, keys), "seg-a", 4, [],
+          pos_version: 2
+        )
+
+      b2 =
+        build_backend!(Path.join(dir, "b"), occs_b, v2_positions(occs_b, keys), "seg-b", 4, [],
+          pos_version: 2
+        )
+
+      merged = %Packed{segments: b1.segments ++ b2.segments, stride: 4, dir: nil}
+
+      # 6 occurrences; 2 distinct games per segment — the per-segment
+      # game_counts sum exactly (disjoint gid ranges, a game packed exactly
+      # once).
+      assert {:ok, %{occurrences: 6, games: 4}} = Packed.position_stats(merged, hash(@key_a))
+      assert {:ok, %{occurrences: 1, games: 1}} = Packed.position_stats(merged, hash(@key_b))
+      assert {:ok, %{occurrences: 0, games: 0}} = Packed.position_stats(merged, <<0::128>>)
+
+      # The stored stats equal the run-walking oracle.
+      oracle = Packed.occurrence_counts(merged, hash(@key_a))
+      assert {:ok, ^oracle} = Packed.position_stats(merged, hash(@key_a))
+
+      Packed.close(b1)
+      Packed.close(b2)
+    end
+
+    test "first_occurrence equals the full-list head on every key", %{tmp_dir: dir} do
+      {occs, poss} = fixture_streams()
+      keys = [@key_a, @key_b, @key_c]
+      poss2 = v2_positions(occs, keys_by_hash(keys))
+
+      v1 = build_backend!(Path.join(dir, "v1"), occs, poss)
+
+      v2 =
+        build_backend!(Path.join(dir, "v2"), occs, poss2, "seg-000001", 1024, [], pos_version: 2)
+
+      for backend <- [v1, v2], key <- keys do
+        assert Packed.first_occurrence(backend, hash(key)) ==
+                 backend |> Packed.occurrences(hash(key)) |> List.first()
+      end
+
+      assert Packed.first_occurrence(v1, <<0::128>>) == nil
+      assert Packed.first_occurrence(v2, <<0::128>>) == nil
+
+      Packed.close(v1)
+      Packed.close(v2)
+    end
+
+    test "first_occurrence finds the global minimum across interleaved segments", %{
+      tmp_dir: dir
+    } do
+      # The globally earliest occurrence lives in the *second* segment — the
+      # answer must not be assumed from segment build order.
+      occs1 = [{hash(@key_a), 5, 2}] |> Enum.sort()
+      poss1 = [{hash(@key_a), Features.pawn_hash(@key_a), 5, 2, @key_a}]
+      b1 = build_backend!(Path.join(dir, "a"), occs1, poss1, "seg-a")
+
+      occs2 = [{hash(@key_a), 3, 9}] |> Enum.sort()
+      poss2 = [{hash(@key_a), Features.pawn_hash(@key_a), 3, 9, @key_a}]
+      b2 = build_backend!(Path.join(dir, "b"), occs2, poss2, "seg-b")
+
+      merged = %Packed{segments: b1.segments ++ b2.segments, stride: 1024, dir: nil}
+
+      assert Packed.first_occurrence(merged, hash(@key_a)) == {3, 9}
+
+      assert Packed.first_occurrence(merged, hash(@key_a)) ==
+               merged |> Packed.occurrences(hash(@key_a)) |> List.first()
+
+      Packed.close(b1)
+      Packed.close(b2)
+    end
+
+    test "multi-segment bounded prefix spends the global limit in gid order", %{
+      tmp_dir: dir
+    } do
+      # Segment A holds 8 occurrences (gids 1..8), segment B holds 20
+      # (gids 9..28): limit 12 takes all 8 from A and exactly 4 from B.
+      occs_a = for gid <- 1..8, do: {hash(@key_a), gid, 0}
+      occs_b = for gid <- 9..28, do: {hash(@key_a), gid, 0}
+      keys = keys_by_hash([@key_a])
+
+      dir_a = Path.join(dir, "a")
+      dir_b = Path.join(dir, "b")
+
+      b1 =
+        build_backend!(dir_a, occs_a, v2_positions(occs_a, keys), "seg-a", 4, [], pos_version: 2)
+
+      b2 =
+        build_backend!(dir_b, occs_b, v2_positions(occs_b, keys), "seg-b", 4, [], pos_version: 2)
+
+      merged = %Packed{segments: b1.segments ++ b2.segments, stride: 4, dir: nil}
+
+      assert Packed.occurrences(merged, hash(@key_a), 12) ==
+               for(gid <- 1..12, do: {gid, 0})
+
+      assert Packed.occurrences(merged, hash(@key_a), 8) == for(gid <- 1..8, do: {gid, 0})
+      assert Packed.occurrences(merged, hash(@key_a), 28) == for(gid <- 1..28, do: {gid, 0})
+
+      # Segment B is not read fully: truncate its occ.bin to the 4 records
+      # the limit-12 prefix actually needs — the bounded merge still
+      # succeeds, so the remaining 16 records were never touched.
+      [seg_b] = b2.segments
+      {:ok, %{run_offset: offset_b}} = Segment.position_stats(seg_b, hash(@key_a))
+      occ_path_b = Path.join([dir_b, "seg-b", "occ.bin"])
+      {:ok, bin_b} = File.read(occ_path_b)
+      File.write!(occ_path_b, binary_part(bin_b, 0, (offset_b + 4) * 22))
+
+      assert Packed.occurrences(merged, hash(@key_a), 12) ==
+               for(gid <- 1..12, do: {gid, 0})
+
+      # A limit that would need B's truncated tail fails truthfully — the
+      # truncation is real, the success above was a bounded read.
+      assert_raise RuntimeError, fn -> Packed.occurrences(merged, hash(@key_a), 13) end
+
+      Packed.close(b1)
+      Packed.close(b2)
+    end
+
+    test "the sequential fill does not touch segments past the limit", %{tmp_dir: dir} do
+      occs_a = for gid <- 1..8, do: {hash(@key_a), gid, 0}
+      occs_b = for gid <- 9..28, do: {hash(@key_a), gid, 0}
+      keys = keys_by_hash([@key_a])
+
+      dir_a = Path.join(dir, "a")
+      dir_b = Path.join(dir, "b")
+
+      b1 =
+        build_backend!(dir_a, occs_a, v2_positions(occs_a, keys), "seg-a", 4, [], pos_version: 2)
+
+      b2 =
+        build_backend!(dir_b, occs_b, v2_positions(occs_b, keys), "seg-b", 4, [], pos_version: 2)
+
+      merged = %Packed{segments: b1.segments ++ b2.segments, stride: 4, dir: nil}
+
+      # Empty segment B entirely after open: a limit the first segment
+      # satisfies alone must not read it.
+      File.write!(Path.join([dir_b, "seg-b", "occ.bin"]), <<>>)
+
+      assert Packed.occurrences(merged, hash(@key_a), 8) == for(gid <- 1..8, do: {gid, 0})
+      assert Packed.occurrences(merged, hash(@key_a), 5) == for(gid <- 1..5, do: {gid, 0})
+
+      Packed.close(b1)
+      Packed.close(b2)
+    end
+  end
 end

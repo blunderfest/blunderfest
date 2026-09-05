@@ -67,7 +67,8 @@ defmodule Blunderfest.Corpus.Search.Candidates do
     # counts/next-moves. It is bounded (families are heuristic; the exact
     # counts and next-move distribution come from SQL in the pipeline), so a
     # hot key like the start position never materializes a million rows —
-    # the store fetch decodes only the bounded prefix.
+    # the bounded facade fetch reads and decodes only the requested prefix
+    # (on packed v2 straight from the stored run offset).
     occurrence_limit = Keyword.get(opts, :occurrence_limit, 2000)
 
     exact_occurrences = Blunderfest.Corpus.occurrences(ref_key, occurrence_limit)
@@ -155,8 +156,9 @@ defmodule Blunderfest.Corpus.Search.Candidates do
     }
   end
 
-  # The exact total rides in from the one occurrence fetch; the structural
-  # why needs no extra query (the evidence stage fetches counts anyway).
+  # The exact total rides in from the memoized position stats; the
+  # structural why needs no extra query (the evidence stage fetches counts
+  # anyway).
   defp why(:exact, _key, _overlap, n) do
     "exact position occurrence (#{n} occurrence#{if n == 1, do: "", else: "s"} total)"
   end

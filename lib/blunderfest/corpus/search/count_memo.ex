@@ -1,6 +1,7 @@
 defmodule Blunderfest.Corpus.Search.CountMemo do
   @moduledoc """
-  Request-scoped memoization of occurrence counts (Spike 09, Horizon 1).
+  Request-scoped memoization of position stats (Spike 09, Horizon 1;
+  Phase 3 cutover).
 
   One Historical Evidence request asks the same count question several
   times: the reference key (candidate totals + reference stats) and every
@@ -9,6 +10,12 @@ defmodule Blunderfest.Corpus.Search.CountMemo do
   `%{occurrences, games}` — so each distinct key is counted once per
   request. It is created in `Pipeline.analyze/2`, dies with the request,
   and is never shared: no ETS, no application state, no TTL.
+
+  Phase 3 keeps the memo (repeated semantic work still collapses within a
+  request even when single lookups are cheap) and points its default
+  fetcher at `Corpus.position_stats/1` — the header-backed count on packed
+  v2 — instead of the run-walking `occurrence_counts/1`. The memoized
+  value shape is unchanged.
 
   Facade errors (`{:error, :not_configured}`) are passed through without
   being memoized, so callers keep their existing fallback behavior.
@@ -26,11 +33,12 @@ defmodule Blunderfest.Corpus.Search.CountMemo do
   @doc """
   The counts for `key`, memoized. Returns `{counts_or_error, memo}` — the
   memo carries any newly stored result, so thread the returned map. The
-  `fetcher` default is the corpus facade; tests inject a counting stub.
+  `fetcher` default is `Corpus.position_stats/1` (header-backed on packed
+  v2); tests inject a counting stub.
   """
   @spec fetch(t(), String.t(), (String.t() -> counts() | {:error, term()})) ::
           {counts() | {:error, term()}, t()}
-  def fetch(memo, key, fetcher \\ &Corpus.occurrence_counts/1) do
+  def fetch(memo, key, fetcher \\ &Corpus.position_stats/1) do
     case Map.fetch(memo, key) do
       {:ok, counts} ->
         {counts, memo}

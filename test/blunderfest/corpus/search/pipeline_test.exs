@@ -193,4 +193,42 @@ defmodule Blunderfest.Corpus.Search.PipelineTest do
     assert closed.families.membership.status == :member
     refute marshall.families.membership.member_of == closed.families.membership.member_of
   end
+
+  test "each key's position stats are fetched once per request (memo)" do
+    # The memo's fetcher is Corpus.position_stats/1 — trace the facade
+    # process and assert each key is counted exactly once, however many
+    # cards share it (the 12 exact cards all carry the reference key).
+    corpus = Process.whereis(Blunderfest.Corpus)
+    :erlang.trace(corpus, true, [:receive])
+
+    result = run_analyze()
+
+    :erlang.trace(corpus, false, [:receive])
+
+    stats_keys =
+      for {:trace, _pid, :receive, {:"$gen_call", _from, {:position_stats, key}}} <-
+            drain_trace([]),
+          do: key
+
+    assert stats_keys == Enum.uniq(stats_keys)
+    assert Enum.count(stats_keys, &(&1 == TestFixtures.tabiya_key())) == 1
+    # Every card's key was memoized from a single fetch.
+    for cand <- result.candidates do
+      assert cand.key in stats_keys
+    end
+  end
+
+  test "the timings break out the Postgres hydration" do
+    result = run_analyze()
+    assert is_integer(result.timings.pg_ms)
+    assert result.timings.pg_ms >= 0
+  end
+
+  defp drain_trace(acc) do
+    receive do
+      msg -> drain_trace([msg | acc])
+    after
+      0 -> Enum.reverse(acc)
+    end
+  end
 end

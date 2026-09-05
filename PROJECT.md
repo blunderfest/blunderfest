@@ -71,6 +71,38 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
+### Session handoff (2026-09-05 — packed format v2 + Phase 3 bounded Corpus API cutover)
+
+**Phase 2 — format v2 behind a flag**
+([`docs/packed-corpus-v2-phase2-report.md`](docs/packed-corpus-v2-phase2-report.md),
+ADR-0038): pos headers grew the pack-time run statistics
+(`occurrence_count`, `game_count`, `occ_run_offset`) under
+`mix corpus.pack --format-version 2`; manifest version 2; builder and
+read-time verification; parity against the PG oracle (100k) and the
+artifact (broadcast, 10,001 sampled keys, 0 failures). The v2 broadcast
+directory (13.1 GiB) is validated and retained; production keeps v1.
+
+**Phase 3 — bounded Corpus API + Historical Evidence cutover**
+([`docs/packed-corpus-phase3-runtime-cutover.md`](docs/packed-corpus-phase3-runtime-cutover.md)):
+the facade is now cost-explicit — `position_stats/1` (header-backed
+counts, ~40 µs on the 1.17M-run start position vs ~157 ms run walk),
+`first_occurrence/1` (header-backed), bounded `occurrences/2` (reads only
+the requested prefix from the stored run offset; multi-segment prefixes
+spend one global limit in gid order), and explicit `all_occurrences/1`.
+Historical Evidence was cut over through the existing request-scoped memo;
+`book_counts` now serves the authoritative independent-game count (closes
+the Spike 09 §12.8 `book_games_count` divergence, −87,264 at start). All
+parity is green (PG-oracle 100k on v1+v2, HE DTO 9/9 on v1, v2, and
+broadcast v1↔v2), 472 tests. **The start-position HE gate misses on
+latency** (median 1,467 ms vs < 1 s; memory passes at ≤ 121 MB vs
+< 300 MB) — the packed-corpus cost is ~gone (candidates stage 11 ms), the
+remainder is the class-E product-CPU floor (`Families.build` ~880 ms +
+card assembly ~510 ms), explicitly out of Phase 3 scope; the report
+records the profile and the proposed next step. **Production cutover is
+prepared but not executed** (gate condition); the exact ship/flip/verify
+procedure is in the report. Next: decide gate acceptance or do the
+product-CPU pass first.
+
 ### Session handoff (2026-09-04 — Spike 09 design review + hot-key and boot fixes live)
 
 **Spike 09 design review** —

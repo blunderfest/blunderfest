@@ -37,7 +37,14 @@ defmodule Blunderfest.Corpus.Packed.Segment do
   segment's `pos_version` comes from the manifest entry; every query family
   above serves both versions identically, and `position_stats/2` +
   `verify_run/2` expose/validate the v2 statistics for the parity and
-  validation tasks (no product path consumes them yet).
+  validation tasks.
+
+  Phase 3 (this module's bounded-read path): on a v2 segment,
+  `occurrences/3` seeks straight to the run via the stored `occ_run_offset`
+  and reads only the requested prefix — `min(limit, occurrence_count)`
+  records, independent of the run length. v1 segments keep the Phase 0
+  behavior (the run is read as a unit, only the prefix decoded);
+  `first_occurrence/2` is header-backed on both versions.
   """
 
   alias Blunderfest.Corpus.Packed.Format
@@ -157,12 +164,19 @@ defmodule Blunderfest.Corpus.Packed.Segment do
            games_count: segment_entry.games,
            occurrence_count: occ_records,
            position_count: pos_records,
-           gids: segment_entry.gids,
+           gids: normalize_gids(segment_entry.gids),
            stride: stride,
            anchors_from: anchors_from
          }}
     end
   end
+
+  # The manifest decodes gids with string keys; the builder emits atom
+  # keys. Read-time consumers (the bounded merge's gid-range disjointness
+  # check) see one shape.
+  defp normalize_gids(nil), do: nil
+  defp normalize_gids(%{min: _min, max: _max} = gids), do: gids
+  defp normalize_gids(%{"min" => min, "max" => max}), do: %{min: min, max: max}
 
   @doc "No-op: the segment keeps no file descriptors open."
   def close(%__MODULE__{}), do: :ok
@@ -177,16 +191,69 @@ defmodule Blunderfest.Corpus.Packed.Segment do
   end
 
   @doc """
-  The first `limit` occurrence tuples of the run, in run order. The run is
-  still located and read as a unit (bounded reads land with format v2), but
-  only the requested prefix is decoded — a hot key's caller that keeps a
-  bounded list never materializes the full run's tuples.
+  The first `limit` occurrence tuples of the run, in run order.
+
+  On a format-v2 segment this is a true bounded read: the stored
+  `occ_run_offset` locates the run and exactly `min(limit,
+  occurrence_count)` records are read from occ.bin — the rest of the run's
+  bytes are never touched. On a v1 segment (no stored offset) the run is
+  still located and read as a unit; only the requested prefix is decoded.
   """
+  def occurrences(%__MODULE__{pos_version: 2} = seg, hash, limit)
+      when is_integer(limit) and limit >= 0 do
+    if limit == 0 do
+      []
+    else
+      case position_stats(seg, hash) do
+        {:ok, %{run_offset: offset, occurrences: count}} ->
+          read_run_prefix(seg, offset, min(limit, count))
+
+        :none ->
+          []
+      end
+    end
+  end
+
   def occurrences(%__MODULE__{} = seg, hash, limit)
       when is_integer(limit) and limit >= 0 do
     bin = run_binary(seg, hash)
     take = min(byte_size(bin), limit * @occ_record_bytes)
     decode_occurrences(binary_part(bin, 0, take))
+  end
+
+  defp read_run_prefix(_seg, _offset, 0), do: []
+
+  defp read_run_prefix(seg, offset, count) do
+    {:ok, fd} = open_raw(seg.occ_path)
+    result = :file.pread(fd, offset * @occ_record_bytes, count * @occ_record_bytes)
+    File.close(fd)
+
+    case result do
+      {:ok, bin} when byte_size(bin) == count * @occ_record_bytes ->
+        decode_occurrences(bin)
+
+      other ->
+        raise "packed bounded occurrence read failed: #{inspect(other)}"
+    end
+  end
+
+  @doc """
+  The segment-local first occurrence of a hash — `{gid, ply}` or nil —
+  from the position header's stored first occurrence fields (both header
+  versions carry them). One bounded header read (O(log anchors)); occ.bin
+  is never opened.
+  """
+  def first_occurrence(%__MODULE__{} = seg, hash) do
+    {:ok, pos_fd} = open_raw(seg.pos_path)
+
+    result =
+      case find_pos_header(seg, hash, pos_fd) do
+        {:ok, fields} -> {fields.first_gid, fields.first_ply}
+        :none -> nil
+      end
+
+    File.close(pos_fd)
+    result
   end
 
   @doc """

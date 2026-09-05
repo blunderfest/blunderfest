@@ -51,6 +51,8 @@ defmodule Blunderfest.CorpusFacadeTest do
     assert {:error, :not_configured} = GenServer.call(probe, {:occurrences, "k"})
     assert {:error, :not_configured} = GenServer.call(probe, {:occurrences, "k", 5})
     assert {:error, :not_configured} = GenServer.call(probe, {:position, "k"})
+    assert {:error, :not_configured} = GenServer.call(probe, {:position_stats, "k"})
+    assert {:error, :not_configured} = GenServer.call(probe, {:first_occurrence, "k"})
     assert {:error, :not_configured} = GenServer.call(probe, {:pawn_bucket, 1})
     assert {:error, :not_configured} = GenServer.call(probe, {:game, 1})
     assert {:error, :not_configured} = GenServer.call(probe, {:moves, 1})

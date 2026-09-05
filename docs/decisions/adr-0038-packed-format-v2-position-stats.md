@@ -1,6 +1,6 @@
 # ADR-0038: Packed format v2 — position headers carry pack-time run statistics
 
-Status: Accepted (2026-09-05) — built and validated behind a flag; product/API cutover pending (Phase 3)
+Status: Accepted (2026-09-05) — built and validated behind a flag; Phase 3 product/API cutover implemented locally 2026-09-05 (facade cost-explicit API + Historical Evidence cutover; production `PACKED_DIR` flip pending)
 
 ## Context
 
@@ -37,6 +37,8 @@ measured ≤100 µs for the broadcast hot keys (Spike 09 §12.5). Storage grows
 `Stream.transform` book/position streams were fixed to `transform/5` in the
 process — `transform/4`'s final callback discards its return value, which
 had silently dropped the last book key of every build (latent since Spike
-08). Phase 3 is the API cutover (`position_stats`/bounded reads in the
-facade + pipeline); until then the v2 fields are consumed only by the
-validation and parity tasks.
+08). Phase 3 (this repo's `docs/packed-corpus-phase3-runtime-cutover.md`)
+performed the API cutover: the facade's cost-explicit primitives
+(`position_stats`/`first_occurrence`/bounded `occurrences`) and Historical
+Evidence consume the v2 fields; v1 directories keep the run-walking
+fallbacks and remain the rollback target.

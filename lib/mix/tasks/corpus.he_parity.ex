@@ -20,7 +20,19 @@ defmodule Mix.Tasks.Corpus.HeParity do
   field by field. Timings are excluded from comparison but recorded for the
   end-to-end latency numbers.
 
-  Requires DATABASE_URL pointing at the loaded corpus Postgres.
+  With `--vs-dir`, the comparison is packed-vs-packed instead of
+  PG-vs-packed (Phase 3: the broadcast v1 ↔ v2 format parity, where no PG
+  occurrence oracle exists at that scale):
+
+      mix corpus.he_parity --packed-dir data/corpus-packed-broadcast \
+        --vs-dir data/corpus-packed-broadcast-v2
+
+  The known one-key book-stream difference (v2 carries the final book key
+  the v1 `Stream.transform/4` bug dropped) does not touch the reference
+  positions, so the set must still compare identical.
+
+  Requires DATABASE_URL pointing at the loaded corpus Postgres (the
+  games/moves tier matching the packed directories).
   """
 
   use Mix.Task
@@ -46,49 +58,63 @@ defmodule Mix.Tasks.Corpus.HeParity do
 
   @impl Mix.Task
   def run(args) do
-    {opts, _rest} = OptionParser.parse!(args, strict: [packed_dir: :string])
+    {opts, _rest} = OptionParser.parse!(args, strict: [packed_dir: :string, vs_dir: :string])
 
     config = Application.get_env(:blunderfest, Blunderfest.Corpus, [])
     packed_dir = Keyword.get(opts, :packed_dir, config[:packed_dir] || "data/corpus-packed")
+    vs_dir = Keyword.get(opts, :vs_dir)
 
     db = config[:db] || Mix.raise("no corpus database configured — set DATABASE_URL")
     {:ok, conn} = Postgrex.start_link(Keyword.merge([pool_size: 4, timeout: :infinity], db))
 
     {:ok, backend} = Packed.open(packed_dir)
 
-    Mix.shell().info("running Historical Evidence against both backends…\n")
+    # Two packed directories → packed-vs-packed (format parity); otherwise
+    # Postgres is the oracle backend on the left side.
+    vs =
+      if vs_dir do
+        {:ok, other} = Packed.open(vs_dir)
+        {:packed, other, Path.basename(vs_dir)}
+      else
+        {:postgres, nil, "PG"}
+      end
+
+    Mix.shell().info(
+      "running Historical Evidence (#{Path.basename(packed_dir)} vs #{elem(vs, 2)})…\n"
+    )
 
     results =
       Enum.map(@fens, fn {label, fen} ->
         {:ok, key} = PositionKey.from_fen(fen)
 
-        pg = run_backend(conn, :postgres, nil, key)
-        packed = run_backend(conn, :packed, backend, key)
+        left = run_backend(conn, :packed, backend, key)
+        right = run_backend(conn, elem(vs, 0), elem(vs, 1), key)
 
-        same = pg.result == packed.result
+        same = left.result == right.result
 
         Mix.shell().info(
-          "#{if same, do: "OK  ", else: "DIFF"} #{label}: PG #{pg.ms}ms vs packed #{packed.ms}ms"
+          "#{if same, do: "OK  ", else: "DIFF"} #{label}: #{elem(vs, 2)} #{right.ms}ms vs packed #{left.ms}ms"
         )
 
         unless same do
           Mix.shell().info(
-            "  ref counts: PG #{inspect(pg.result.reference.historical)} vs packed #{inspect(packed.result.reference.historical)}"
+            "  ref counts: #{elem(vs, 2)} #{inspect(right.result.reference.historical)} vs packed #{inspect(left.result.reference.historical)}"
           )
 
           Mix.shell().info(
-            "  next_moves: PG #{inspect(pg.result.reference.next_moves)} vs packed #{inspect(packed.result.reference.next_moves)}"
+            "  next_moves: #{elem(vs, 2)} #{inspect(right.result.reference.next_moves)} vs packed #{inspect(left.result.reference.next_moves)}"
           )
 
           Mix.shell().info(
-            "  candidates: PG #{length(pg.result.candidates)} vs packed #{length(packed.result.candidates)}"
+            "  candidates: #{elem(vs, 2)} #{length(right.result.candidates)} vs packed #{length(left.result.candidates)}"
           )
         end
 
-        {label, same, %{pg_ms: pg.ms, packed_ms: packed.ms}}
+        {label, same, %{left_ms: left.ms, right_ms: right.ms}}
       end)
 
     Packed.close(backend)
+    if elem(vs, 1), do: Packed.close(elem(vs, 1))
 
     if Enum.all?(results, fn {_, same, _} -> same end) do
       Mix.shell().info("\nHE PARITY OK — all #{length(results)} reference positions identical")
@@ -99,6 +125,8 @@ defmodule Mix.Tasks.Corpus.HeParity do
 
   ## One pipeline run against one occurrence store
 
+  # `packed` nil selects the Postgres occurrence tables; a backend struct
+  # selects that packed directory. Games/moves always come from `conn`.
   defp run_backend(conn, backend_kind, packed, key) do
     # Swap the facade's occurrence backend for this run (the process is
     # single and app-booted; restore it after).

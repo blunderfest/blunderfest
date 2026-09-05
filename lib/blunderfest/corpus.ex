@@ -20,9 +20,28 @@ defmodule Blunderfest.Corpus do
   serves them from the packed binary segment directory at `packed_dir`
   instead; games, moves, game metadata, and game export always come from
   Postgres (the spike replaces the occurrence store, not game storage —
-  brief §8). In packed mode the book aggregate is computed locally from the
-  packed occurrence run plus batched Postgres `moves_for`/`results_for`
-  queries, with identical independent-game semantics.
+  brief §8). In packed mode the book aggregate comes from the precomputed
+  `book.bin`.
+
+  ## Cost-explicit occurrence API (Spike 09 Phase 3)
+
+  The occurrence queries come in cost-explicit variants so a caller cannot
+  accidentally pay O(run length) for a count question on a hot key:
+
+      API                        Cost (packed v2)
+      position_stats/1           O(segment/header lookup) — never walks the run
+      first_occurrence/1         O(segment/header lookup) — never reads occ.bin
+      occurrences/2 (limit)      O(segment lookup + min(limit, run length))
+      all_occurrences/1          O(full run) — explicitly unbounded
+      occurrence_counts/1        legacy alias of position_stats/1
+      occurrences/1              legacy alias of all_occurrences/1
+
+  On packed format v1 (no stored run statistics) `position_stats/1` falls
+  back to the run-walking count (correct, O(run)) rather than fabricating
+  metadata; bounded reads fall back to whole-run reads with a prefix decode
+  (the Phase 0 behavior). Postgres serves `position_stats/1` with the same
+  `COUNT(*)` / `COUNT(DISTINCT gid)` query `occurrence_counts/1` always
+  used, so both backends agree field for field.
   """
 
   use GenServer
@@ -42,24 +61,66 @@ defmodule Blunderfest.Corpus do
   @spec configured?() :: boolean()
   def configured?, do: GenServer.call(__MODULE__, :configured?)
 
-  @doc "Every occurrence of a canonical key as `[{gid, ply}]`, in game/ply order."
+  @doc """
+  Every occurrence of a canonical key as `[{gid, ply}]`, in game/ply order —
+  explicitly unbounded, O(full run). Kept as a legacy alias of
+  `all_occurrences/1`; new product code should call the cost-explicit name.
+  """
   @spec occurrences(String.t()) :: [{pos_integer(), pos_integer()}] | {:error, :not_configured}
   def occurrences(key), do: GenServer.call(__MODULE__, {:occurrences, key}, :infinity)
 
   @doc """
+  Every occurrence of a canonical key as `[{gid, ply}]`, in game/ply order.
+  Explicitly unbounded — O(full run) read and decode on every call, so the
+  cost is obvious at the call site. Hot keys (the start position carries
+  ~1.17M occurrences) must never reach this from a product path; use
+  `position_stats/1`, `first_occurrence/1` or `occurrences/2`.
+  """
+  @spec all_occurrences(String.t()) ::
+          [{pos_integer(), pos_integer()}] | {:error, :not_configured}
+  def all_occurrences(key), do: GenServer.call(__MODULE__, {:occurrences, key}, :infinity)
+
+  @doc """
   The first `limit` occurrences of a canonical key in `(gid, ply)` order —
-  the bounded variant for callers that only keep a prefix (a hot key's full
-  run is never materialized into tuples for them). Semantics equal
-  `occurrences(key) |> Enum.take(limit)`.
+  the bounded variant for callers that only keep a prefix. Semantics equal
+  `occurrences(key) |> Enum.take(limit)`. On packed format v2 the read
+  scales with `min(limit, run length)`, never the full run (the limit
+  applies to the complete logical result, not per segment).
   """
   @spec occurrences(String.t(), non_neg_integer()) ::
           [{pos_integer(), pos_integer()}] | {:error, :not_configured}
   def occurrences(key, limit),
     do: GenServer.call(__MODULE__, {:occurrences, key, limit}, :infinity)
 
-  @doc "Total occurrence and independent-game counts for a canonical key, one query."
+  @doc """
+  Total occurrence and independent-game counts for a canonical key —
+  `%{occurrences, games}`. Packed format v2 answers from the stored
+  position-header statistics (bounded, independent of run length); format
+  v1 falls back to the run-walking count; Postgres runs the exact
+  `COUNT(*)` / `COUNT(DISTINCT gid)` query. This is the product count API;
+  `occurrence_counts/1` is its legacy alias.
+  """
+  @spec position_stats(String.t()) :: map() | {:error, :not_configured}
+  def position_stats(key), do: GenServer.call(__MODULE__, {:position_stats, key}, :infinity)
+
+  @doc """
+  Total occurrence and independent-game counts for a canonical key, one
+  query. Legacy alias of `position_stats/1` (identical results on every
+  backend); kept for compatibility — new code calls `position_stats/1`.
+  """
   @spec occurrence_counts(String.t()) :: map() | {:error, :not_configured}
-  def occurrence_counts(key), do: GenServer.call(__MODULE__, {:occurrence_counts, key}, :infinity)
+  def occurrence_counts(key), do: GenServer.call(__MODULE__, {:position_stats, key}, :infinity)
+
+  @doc """
+  The globally earliest occurrence of a canonical key — `{gid, ply}` or nil
+  when the position never occurs — without materializing the occurrence
+  run. Semantics equal `occurrences(key) |> List.first()`. Packed answers
+  from the position headers (both format versions); Postgres from the
+  positions row.
+  """
+  @spec first_occurrence(String.t()) ::
+          {pos_integer(), pos_integer()} | nil | {:error, :not_configured}
+  def first_occurrence(key), do: GenServer.call(__MODULE__, {:first_occurrence, key}, :infinity)
 
   @doc "The position row for a canonical key, or nil if never seen."
   @spec position(String.t()) :: map() | nil | {:error, :not_configured}
@@ -224,7 +285,8 @@ defmodule Blunderfest.Corpus do
              :moves_for,
              :book,
              :book_counts,
-             :occurrence_counts
+             :position_stats,
+             :first_occurrence
            ] do
     {:reply, {:error, :not_configured}, state}
   end
@@ -267,9 +329,13 @@ defmodule Blunderfest.Corpus do
     counts =
       case occurrence_store(state) do
         {:packed, packed} ->
-          # Packed book: a key with no header has no next moves (no games).
+          # Independent-game support counts (Spike 09 §12.8): the v2
+          # position header's game_count is authoritative — the old
+          # book.bin per-move sum drops games without a recorded
+          # continuation (−87,264 at the start position). v1 segments fall
+          # back to the exact run-walking distinct-gid count.
           Map.new(fen_keys, fn {_fen, key} ->
-            {key, Packed.book_games_count(packed, PositionKey.to_hash128(key))}
+            {key, packed_games_count(packed, PositionKey.to_hash128(key))}
           end)
 
         :postgres ->
@@ -314,11 +380,22 @@ defmodule Blunderfest.Corpus do
     {:reply, result, state}
   end
 
-  def handle_call({:occurrence_counts, key}, _from, state) do
+  def handle_call({:position_stats, key}, _from, state) do
     result =
       case occurrence_store(state) do
-        {:packed, packed} -> Packed.occurrence_counts(packed, PositionKey.to_hash128(key))
+        {:packed, packed} -> packed_position_stats(packed, PositionKey.to_hash128(key))
         :postgres -> Occurrences.counts_for(state.pool, key)
+        :unconfigured -> {:error, :not_configured}
+      end
+
+    {:reply, result, state}
+  end
+
+  def handle_call({:first_occurrence, key}, _from, state) do
+    result =
+      case occurrence_store(state) do
+        {:packed, packed} -> Packed.first_occurrence(packed, PositionKey.to_hash128(key))
+        :postgres -> Occurrences.first_occurrence(state.pool, key)
         :unconfigured -> {:error, :not_configured}
       end
 
@@ -402,9 +479,27 @@ defmodule Blunderfest.Corpus do
     {:reply, GameExport.tree(gid, state.pool), state}
   end
 
-  # In packed mode the facade routes :book/:book_counts to the precomputed
-  # book.bin aggregate (see the handle_call clauses above);
-  # `Book.for_key_packed/3` remains as the non-precomputed alternative. The
-  # parity task exercises the same implementation so both paths check one
-  # source of truth.
+  # Position stats from the packed backend (Phase 3): format v2 answers
+  # from the stored header statistics — bounded, independent of run length.
+  # A format-v1 segment holding the key has no stored stats; rather than
+  # fabricate v2 metadata, fall back to the exact run-walking count (the
+  # pre-Phase-3 implementation), keeping v1 directories a usable rollback.
+  defp packed_position_stats(packed, hash) do
+    case Packed.position_stats(packed, hash) do
+      {:ok, stats} -> stats
+      {:error, :format_v1} -> Packed.occurrence_counts(packed, hash)
+    end
+  end
+
+  # Independent games for a key from the packed backend (the book_counts
+  # fix): the v2 header's game_count, or the exact run-walking distinct-gid
+  # count on v1. Never the book.bin per-move sum (Spike 09 §12.8).
+  defp packed_games_count(packed, hash) do
+    packed_position_stats(packed, hash).games
+  end
+
+  # In packed mode the facade routes :book to the precomputed book.bin
+  # aggregate; :book_counts serves the authoritative independent-game count
+  # (see the handle_call clauses above). `Book.for_key_packed/3` remains as
+  # the non-precomputed book recomputation for the parity/he18 tasks.
 end

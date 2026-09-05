@@ -77,7 +77,12 @@ PG coexistence mode (the current default) the SQL aggregate stays.
 
 Other measurement/verification tasks: `corpus.parity` (PG oracle),
 `corpus.broadcast_parity` (artifact oracle), `corpus.he_parity` (product
-parity on the reference positions), `corpus.bench` (storage/stride/latency).
+parity on the reference positions; `--vs-dir` compares two packed
+directories, e.g. broadcast v1 ↔ v2), `corpus.bench`
+(storage/stride/latency), and `corpus.he_bench` (Spike 09 Phase 3: API
+microbenchmarks + Historical Evidence latency/memory + the start-position
+gate + a concurrency probe; run it against a v1 and a v2 directory for the
+before/after comparison).
 
 ### Loading the corpus into production
 
