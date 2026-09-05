@@ -1092,9 +1092,9 @@ describe('RoomView', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'First' }));
     await act(async () => {});
-    fireEvent.click(await screen.findByTestId('square-e2'));
-    await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('square-e4'));
+    fireEvent.click(await screen.findByTestId('square-d2'));
+    await waitFor(() => expect(screen.getByTestId('target-d4')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('square-d4'));
 
     await waitFor(() => expect(channel.pushes.length).toBeGreaterThanOrEqual(1));
     const movePush = channel.pushes.find(
@@ -1107,11 +1107,11 @@ describe('RoomView', () => {
         payload: {
           game_id: 'game-1',
           ply: 1,
-          san: 'e4',
-          from: 'e2',
-          to: 'e4',
+          san: 'd4',
+          from: 'd2',
+          to: 'd4',
           promotion: null,
-          fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+          fen: 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1',
           status: 'active',
           parent_id: 0,
         },
@@ -1127,14 +1127,14 @@ describe('RoomView', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'First' }));
     await act(async () => {});
-    fireEvent.click(await screen.findByTestId('square-e2'));
-    await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('square-e4'));
+    fireEvent.click(await screen.findByTestId('square-d2'));
+    await waitFor(() => expect(screen.getByTestId('target-d4')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('square-d4'));
 
     // The rejected move never becomes a phantom: the board snaps back to
     // the position it was played from.
     expect(await screen.findByLabelText('Chess board after start position')).toBeInTheDocument();
-    expect(pieceAt('square-e4')).toBeNull();
+    expect(pieceAt('square-d4')).toBeNull();
   });
 
   it('saves a comment on the current position as a comment_at_ply op', async () => {

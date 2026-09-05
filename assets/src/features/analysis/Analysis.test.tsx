@@ -360,28 +360,46 @@ describe('Analysis', () => {
     render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'First' }));
-    fireEvent.click(screen.getByTestId('square-e2'));
+    fireEvent.click(screen.getByTestId('square-d2'));
 
-    expect(screen.getByTestId('selected-e2')).toBeInTheDocument();
-    expect(screen.getByTestId('target-e4')).toBeInTheDocument();
-    expect(screen.getByTestId('target-e3')).toBeInTheDocument();
+    expect(screen.getByTestId('selected-d2')).toBeInTheDocument();
+    expect(screen.getByTestId('target-d4')).toBeInTheDocument();
+    expect(screen.getByTestId('target-d3')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByTestId('square-e4'));
+    fireEvent.click(screen.getByTestId('square-d4'));
 
     await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(1));
     expect(onPlayMove).toHaveBeenCalledWith(
       {
         ply: 1,
-        san: 'e4',
-        from: 'e2',
-        to: 'e4',
+        san: 'd4',
+        from: 'd2',
+        to: 'd4',
         promotion: null,
-        fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+        fen: 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1',
         status: 'active',
         parent_id: tree.root.id,
       },
       expect.any(Function),
     );
+  });
+
+  it('replaying an existing child navigates to it instead of duplicating', () => {
+    const onPlayMove = vi.fn();
+    render(<Analysis tree={tree} presenterId="p1" selfId="p1" canEdit onPlayMove={onPlayMove} />);
+
+    // The position after 1. e4: e5 already exists as a child (mainline).
+    fireEvent.click(screen.getByRole('button', { name: 'First' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByTestId('square-e7'));
+    fireEvent.click(screen.getByTestId('square-e5'));
+
+    // No op: the shared tree already carries the node for everyone.
+    expect(onPlayMove).not.toHaveBeenCalled();
+    expect(pieceAt('square-e5')).toBe('bp');
+    // The cursor sits on the EXISTING e5 node: Next continues down it.
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(pieceAt('square-f3')).toBe('wn');
   });
 
   it('implicit pass: black taps a black piece while white-to-move → pass op then move op', async () => {
@@ -489,9 +507,9 @@ describe('Analysis', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'First' }));
-    fireEvent.click(screen.getByTestId('square-e2'));
-    await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('square-e4'));
+    fireEvent.click(screen.getByTestId('square-d2'));
+    await waitFor(() => expect(screen.getByTestId('target-d4')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('square-d4'));
 
     await waitFor(() => expect(onPlayMove).toHaveBeenCalledTimes(1));
     expect(onCursorChange).not.toHaveBeenCalled();
@@ -512,25 +530,25 @@ describe('Analysis', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'First' }));
-    fireEvent.click(screen.getByTestId('square-e2'));
-    await waitFor(() => expect(screen.getByTestId('target-e4')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('square-e4'));
+    fireEvent.click(screen.getByTestId('square-d2'));
+    await waitFor(() => expect(screen.getByTestId('target-d4')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('square-d4'));
 
     await waitFor(() => expect(onCursorChange).toHaveBeenCalledWith(5));
-    expect(pieceAt('square-e2')).toBeNull();
-    expect(pieceAt('square-e4')).toBe('wp');
+    expect(pieceAt('square-d2')).toBeNull();
+    expect(pieceAt('square-d4')).toBe('wp');
 
     const echoed: GameNode = {
       id: 5,
       ply: 1,
-      san: 'e4',
-      from: 'e2',
-      to: 'e4',
+      san: 'd4',
+      from: 'd2',
+      to: 'd4',
       promotion: null,
       comment: null,
       nags: [],
       status: 'active',
-      fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1',
+      fen: 'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1',
       children: [],
     };
     rerender(
@@ -542,8 +560,8 @@ describe('Analysis', () => {
       />,
     );
 
-    expect(pieceAt('square-e2')).toBeNull();
-    expect(pieceAt('square-e4')).toBe('wp');
+    expect(pieceAt('square-d2')).toBeNull();
+    expect(pieceAt('square-d4')).toBe('wp');
   });
 
   it('lets an editor save a comment on the current position via the note popup', () => {

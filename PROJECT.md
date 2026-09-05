@@ -71,6 +71,56 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
+### Session handoff (2026-09-06 — Positional context is corpus-primary)
+
+**The Positional Context panel now leads with the corpus book.** Owner
+report: importing lichess 3eRBBiRt (Caro-Kann Endgame Variation) made the
+panel flicker between "No named continuations", "Possible transpositions"
+(suggesting sideline moves like 4. Ng5) and "Find historical evidence" on
+consecutive plies. Root cause: the static named book (lichess
+chess-openings) keys each line only at its leaf position, and the panel's
+resolution order gated everything on that sparse exact-key membership —
+while `/api/book` held hundreds of games for every one of those positions
+(after 3. d3 → dxe4 988; after 4. dxe4 → Qxd1+ 900; after 5... Nf6 → Nbd2
+278). The corpus fetch is lifted above the ladder (`useCorpusBook`, one
+fetch per FEN, module-cached) and the new order is: tablebase label →
+corpus rows (what was played here, joined with local legality for the
+ghost/click machinery, labeled by the named book where it keys the
+resulting position; annotated SANs merged — `Bg4?!` into `Bg4`) → one-ply
+transpositions as a secondary block under the corpus rows → cached
+evidence → find-CTA, which now renders only once the corpus has answered
+"nothing here" (loading state while in flight; a failed fetch falls back
+to the legacy ladder). `openingExitPly` and the header classification keep
+using the named book (named theory is what they name). New `corpusBook.ts`
++ `useCorpusBook.ts`; `ReferencePanel` is now presentational. 665 frontend
++ 490 backend green; browser-verified against the local corpus (imported
+3eRBBiRt, walked all ten opening plies — corpus rows with W/D/B bars at
+every stop, the played move always among them). ADR-0024 amended.
+
+**Same-day follow-up (owner's transposition walkthrough):** three fixes.
+(1) Transposition rows now name the opening they land in (e5 → "C40 ·
+King's Pawn Game: Gunderam Gambit"), and the ReferencePanel shows the
+current position's own book line when keyed — a transposition destination
+no longer reads as a bare "No named continuations". (2) Playing a move
+that already exists as a child is navigation, not a new op: `playMove`
+and `playPassAndMove` reuse the matching child (from/to/promotion — the
+same match `add_line` dedupes with), so replaying 2... e5 no longer grows
+duplicate variations; only novel moves broadcast. (3) Covered by new
+tests (Analysis dedupe regression, RoomView play/rollback re-pointed at a
+fresh move, panel naming assertions). 668 frontend + 490 backend green;
+browser-verified on the exact repro (row click and board play both
+navigate, move list keeps a single 2... e5).
+
+**Same-day follow-up (import keep-options on every tab):** the
+metadata/evaluations/comments/variations keep-cards used to reach only
+the paste and studies tabs (they render off the preview, which the
+one-click tabs never showed) — and the My-games/Chess.com one-click
+imports entered the room **unstripped**. The cards now also render once
+a games/chess.com selection is importable (all four, applicability
+unknown pre-fetch), and `handleImportSelectedGames`/`handleImportChesscom`
+apply the same `stripTree` options as the preview path. The one-click
+contract stands; the choices now ride along. +3 tests; 671 frontend green.
+
 ### Session handoff (2026-09-05 — HE PG hydration batched: cross-region latency solved)
 
 **BATCHING SOLVES CROSS-REGION LATENCY**

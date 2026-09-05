@@ -364,35 +364,48 @@ so clients send nothing and hide the member list.
   to `ECO|Name`, so transpositions match and the en-passant-field convention
   can't break lookups. The name is the deepest book position on the *viewed*
   line, so it refines going deeper, sticks off-book, and follows variations.
-  The same book backs the **Openings tab** (`ReferencePanel.tsx`,
-  ADR-0024): `continuationsFor` lists the named book moves of the cursor
-  position, each with its corpus game count + W/D/B rate bar
-  (`GET /api/book?fen=…`); hovering a row previews the move as a ghost
-  arrow (local), and clicking it plays the move as a real broadcast op —
-  the panel's re-anchor on cursor move makes the descent free. The stats
-  fetch is explicit about its state (ADR-0035): a pulsing "Loading corpus
+  The book keys each named line only at its leaf position (the build script
+  maps each TSV row to its final position), so exact-key membership flickers
+  ply by ply even along a named line — the book is a sparse labeling layer,
+  not the panel's primary source (see the PositionContext bullet).
+- `assets/src/features/analysis/ReferencePanel.tsx` — the reference rows
+  (ADR-0024): the corpus next-move distribution leads — the
+  `GET /api/book?fen=…` rows (independent-game counts + W/D/B), joined with
+  local legality for the ghost preview / click-to-play and labeled with the
+  named book where it keys the resulting position; corpus SANs are stored as
+  played with annotations, so rows are normalized (`Bg4?!` merges into
+  `Bg4`). Only when the corpus is empty does the plain named-continuation
+  shape take over. Hovering a row previews the move as a ghost arrow
+  (local), and clicking it plays the move as a real broadcast op — the
+  panel's re-anchor on cursor move makes the descent free. The corpus fetch
+  is explicit about its state (ADR-0035): a pulsing "Loading corpus
   statistics…" header + per-row skeleton while `/api/book` is in flight, a
   red error line on failure. The stats are aggregated in SQL (one grouped
   query, one row per `(move, result)`, no per-occurrence BEAM round-trip)
-  and the endpoint sends `Cache-Control: private, max-age=86400` — a
+  and the endpoint sends `Cache-Control: private, max-age=300` — a
   position's stats are content-addressed by its FEN.
 - `assets/src/features/analysis/PositionContext.tsx` — the positional-
-  context panel (ADR-0024 as amended). An explicit resolution order:
-  tablebase-eligible (a label; no source yet) → in-book (the ReferencePanel)
-  → one-ply transposition back into book (local child-position check against
-  the book + one batched `POST /api/book/counts` for the candidates'
-  independent-game support; the rows are interactive like the book rows) →
-  likely-endgame → cached evidence summary + View → the find-CTA. The phase
-  model (`phaseOf` in `gamePhases.ts`: material/24 with pawns counted,
-  `tablebaseEligible` ≤ 7 pieces, `likelyEndgame` ≤ 0.5) is shared with the
-  eval chart's endgame shading (`endgameStart`). The start position counts
-  as in the book by definition (the openings corpus never keys it), and
-  since the ply-0 extraction it has corpus occurrences too — the start
-  position's first moves get real W/D/B stats like any other book position.
-  The evidence summary counts the candidates the
-  View dialog will list (the analyzed game itself filtered out), not the
-  reference position's exact-match games: an off-book position has 0 exact
-  games yet can still surface a full list of similar examples.
+  context panel (ADR-0024 as amended). The corpus book is the primary
+  source: `useCorpusBook` fetches `/api/book?fen` once per FEN
+  (module-cached), and the resolution order is: tablebase-eligible (a
+  label; no source yet) → corpus rows (the ReferencePanel, in-book or out —
+  the named book labels the rows) → one-ply transposition back into the
+  named book (a secondary block under the corpus rows; local child-position
+  check against the book + one batched `POST /api/book/counts` for the
+  candidates' independent-game support; the rows are interactive like the
+  book rows) → likely-endgame → cached evidence summary + View → the
+  find-CTA, only when the corpus has nothing. The find-CTA no longer flashes
+  while the corpus verdict is in flight, and a failed fetch falls back to
+  the legacy ladder. The phase model (`phaseOf` in `gamePhases.ts`:
+  material/24 with pawns counted, `tablebaseEligible` ≤ 7 pieces,
+  `likelyEndgame` ≤ 0.5) is shared with the eval chart's endgame shading
+  (`endgameStart`). The start position counts as in the book by definition
+  (the openings corpus never keys it), and since the ply-0 extraction it has
+  corpus occurrences too — the start position's first moves get real W/D/B
+  stats like any other book position. The evidence summary counts the
+  candidates the View dialog will list (the analyzed game itself filtered
+  out), not the reference position's exact-match games: an off-book position
+  has 0 exact games yet can still surface a full list of similar examples.
 - `assets/src/features/historicalEvidence/` — the vertical slice's UI
   (ADR-0027, ADR-0030): the board header's **Find examples** button
   (next to Export PGN / Save to library — editors only; the old

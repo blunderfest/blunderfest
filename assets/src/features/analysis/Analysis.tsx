@@ -448,9 +448,19 @@ export default function Analysis({
    * kept in `pending` until the echo applies it to the tree; a rejection
    * rolls it back. Playing a move is a local navigation, so it also breaks
    * away from the presenter.
+   *
+   * A move that already exists as a child is navigation, not a new node:
+   * replaying it must not grow a duplicate variation — the shared tree
+   * already carries the node for everyone.
    */
   function playMove(move: LegalMove) {
     if (current === null || onPlayMove === undefined) {
+      return;
+    }
+    const existing = matchingChild(current, move);
+    if (existing !== undefined) {
+      setSelected(null);
+      navigate(existing.id);
       return;
     }
     const nodeId = maxNodeId + 1;
@@ -487,13 +497,59 @@ export default function Analysis({
   /**
    * Auto-pass then play: the drag didn't match the side-to-move's legal
    * moves, so a null move is inserted first and the drag lands under it —
-   * e.g. 1. e4 c5 -- a6 with the whole thing one gesture. The pass op and
-   * move op are dispatched in order (op echo applies FIFO); the pending
+   * e.g. 1. e4 c5 -- a6 with the whole line one gesture. The pass op and
+   * the move op are dispatched in order (op echo applies FIFO); the pending
    * tracks both ids so a server rejection of either rolls back to the pre-
    * pass position.
+   *
+   * The same dedupe as playMove, one level deeper: an existing pass child
+   * (same null-move position) is reused — a move child under it is plain
+   * navigation, otherwise only the move op is broadcast under the existing
+   * pass.
    */
   function playPassAndMove(pass: PassMove, move: LegalMove) {
     if (current === null || onPlayMove === undefined) {
+      return;
+    }
+    const existingPass = current.children.find(
+      (child) => child.san === '--' && child.fen === pass.fen,
+    );
+    if (existingPass !== undefined) {
+      const existingMove = matchingChild(existingPass, move);
+      if (existingMove !== undefined) {
+        setSelected(null);
+        navigate(existingMove.id);
+        return;
+      }
+      const childId = maxNodeId + 1;
+      onPlayMove(
+        {
+          ply: existingPass.ply + 1,
+          san: move.san,
+          from: move.from,
+          to: move.to,
+          promotion: move.promotion,
+          fen: move.fen,
+          status: move.status,
+          parent_id: existingPass.id,
+        },
+        () => rollbackPending(childId, current.id),
+      );
+      addPending({
+        id: childId,
+        ply: existingPass.ply + 1,
+        san: move.san,
+        from: move.from,
+        to: move.to,
+        promotion: move.promotion,
+        comment: null,
+        nags: [],
+        status: move.status,
+        fen: move.fen,
+        children: [],
+      });
+      setSelected(null);
+      navigate(childId);
       return;
     }
     const passId = maxNodeId + 1;
@@ -1255,6 +1311,13 @@ function lastChildOf(node: GameNode): GameNode {
   return node.children[0] ? lastChildOf(node.children[0]) : node;
 }
 
+function matchingChild(node: GameNode, move: LegalMove): GameNode | undefined {
+  return node.children.find(
+    (child) =>
+      child.from === move.from && child.to === move.to && child.promotion === move.promotion,
+  );
+}
+
 /**
  * Whether `start` already carries a child chain matching `moves` — the
  * same from/to/promotion descent the `add_line` echo uses to de-duplicate
@@ -1263,10 +1326,7 @@ function lastChildOf(node: GameNode): GameNode {
 function chainMatches(start: GameNode, moves: LegalMove[]): boolean {
   let node = start;
   for (const move of moves) {
-    const next = node.children.find(
-      (child) =>
-        child.from === move.from && child.to === move.to && child.promotion === move.promotion,
-    );
+    const next = matchingChild(node, move);
     if (next === undefined) {
       return false;
     }

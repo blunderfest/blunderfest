@@ -115,6 +115,35 @@ an ambient panel.
   one batched `POST /api/book/counts` for the candidates' independent-game
   support; the rows are interactive (ghost preview + click-to-play, like
   the book rows).
+- **Corpus-primary panel (2026-09-06):** the 2026-08-30 order gated the
+  panel's richest source on its sparsest — the static named book keys each
+  line only at its leaf position, so walking a named line flickered between
+  "no named continuations", "possible transpositions" (suggesting sideline
+  moves) and the find-CTA, while `/api/book` held hundreds of games for
+  every one of those positions (repro: lichess 3eRBBiRt — the Caro-Kann
+  Endgame Variation, the corpus mainline all the way). The resolution order
+  is now: tablebase-eligible (label) → **corpus rows** (what was played
+  here — the `/api/book` distribution, joined with local legality, labeled
+  by the named book where it keys the resulting position; corpus SANs
+  normalized, `Bg4?!` merged into `Bg4`) → one-ply transpositions (a
+  secondary block under the corpus rows) → likely-endgame → cached
+  evidence → find-CTA, which now only renders once the corpus has answered
+  "nothing here" (loading state while in flight; failed fetch falls back
+  to the legacy ladder). The named book is demoted to a labeling layer;
+  `openingExitPly` and the header classification keep using it (named
+  theory is what they name). The corpus fetch is lifted above the ladder
+  (`useCorpusBook`, one fetch per FEN, module-cached), so in-book and
+  out-of-book positions share one decision point. Two follow-ups from the
+  owner's transposition walkthrough the same day: the panel names
+  positions, not just moves — the ReferencePanel shows the current
+  position's own book line when keyed, and transposition rows carry the
+  opening they land in (a bare "no named continuations" at a transposition
+  destination never said what it transposed *to*); and playing a move that
+  already exists as a child is navigation, not a new op — replaying an
+  existing move (board or panel row) used to grow a duplicate variation,
+  so `playMove`/`playPassAndMove` now reuse the matching child
+  (from/to/promotion, the same match `add_line` dedupes with) and only
+  novel moves broadcast.
 - **Corrections the same day (2026-08-30):** the start position counts as
   in the book by definition — the corpus has no entry for it, so a fresh
   board otherwise read as "outside the book" and its 20 first moves looked

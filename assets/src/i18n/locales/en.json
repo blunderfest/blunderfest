@@ -522,6 +522,7 @@
   },
   "positionContext": {
     "title": "Positional context",
+    "loading": "Checking the corpus…",
     "find": "Find historical evidence",
     "finding": "Finding historical evidence…",
     "view": "View evidence",

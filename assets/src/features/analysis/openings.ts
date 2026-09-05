@@ -43,8 +43,15 @@ function positionKey(fen: string | null): string | null {
         .join(' ');
 }
 
-/** The book entry for an exact position (no ancestor fallback). */
-function lookup(book: OpeningBook, fen: string | null): Opening | null {
+/**
+ * The book entry for an exact position (no ancestor fallback). The corpus
+ * layer uses it to label its rows: the named book is the labeling layer over
+ * the corpus-primary panel content.
+ */
+export function openingAt(book: OpeningBook | null, fen: string | null): Opening | null {
+  if (book === null) {
+    return null;
+  }
   const key = positionKey(fen);
   const hit = key === null ? undefined : book[key];
   if (hit === undefined) {
@@ -72,7 +79,7 @@ export function continuationsFor(book: OpeningBook, fen: string | null): BookCon
   }
   const continuations: BookContinuation[] = [];
   for (const move of legalMovesFor(fen)) {
-    const hit = lookup(book, move.fen);
+    const hit = openingAt(book, move.fen);
     if (hit !== null) {
       continuations.push({ ...move, ...hit });
     }
@@ -94,7 +101,7 @@ export function classifyOpening(
 ): Opening | null {
   let current = node;
   while (current !== null) {
-    const hit = lookup(book, current.fen);
+    const hit = openingAt(book, current.fen);
     if (hit !== null) {
       return hit;
     }

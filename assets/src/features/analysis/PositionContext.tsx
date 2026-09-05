@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { statusDot } from '@/components/ui';
 import { phaseOf } from '@/features/analysis/gamePhases';
 import { legalMovesFor } from '@/features/analysis/legalMoves';
-import { isBookPosition, type OpeningBook } from '@/features/analysis/openings';
+import { isBookPosition, type OpeningBook, openingAt } from '@/features/analysis/openings';
 import ReferencePanel from '@/features/analysis/ReferencePanel';
+import { useCorpusBook } from '@/features/analysis/useCorpusBook';
 import DecisionMenu from '@/features/historicalEvidence/DecisionMenu';
 import { cachedResult, requestKey } from '@/features/historicalEvidence/evidenceCache';
 import { isAnalyzedGame } from '@/features/historicalEvidence/HistoricalEvidenceDialog';
@@ -67,17 +69,20 @@ function useTranspositionCounts(fens: string[]): Record<string, number> | null {
 /**
  * Positional context — what Blunderfest knows about the current board
  * position, with an explicit way to ask for more expensive knowledge
- * (ADR-0024 as amended by the position-context UI task).
+ * (ADR-0024 as amended by the position-context UI task and the
+ * corpus-primary panel change).
  *
  * Priority (explicit, not a plugin framework): tablebase (reserved
- * extension point — no TB source exists in the repo yet; the state's
- * first check is where one would land) > opening book (cheap, already
- * indexed via `continuationsFor`) > historical evidence (expensive — the
- * CTA refuses to auto-run; a remembered result renders the decision-menu
- * summary).
+ * extension point — no TB source exists in the repo yet; the state's first
+ * check is where one would land) > the corpus book (what was played here —
+ * `GET /api/book?fen`, keyed by position like the corpus, so it covers
+ * positions the sparse, leaf-keyed named book misses; the named book labels
+ * its rows where it can) > one-ply transposition back into the named book >
+ * historical evidence (expensive — the CTA refuses to auto-run; a
+ * remembered result renders the decision-menu summary).
  *
- * The kind of knowledge is recomputed on every position change (the
- * cache is keyed on `[fen, route, refPly]`), so nothing is stale across
+ * The kind of knowledge is recomputed on every position change (the cache
+ * is keyed on `[fen, route, refPly]`), so nothing is stale across
  * navigation. The find-CTA's request is forked per render — a stale
  * resolution is discarded by comparing the mounted cursor.
  */
@@ -151,6 +156,13 @@ export default function PositionContext({
   // The corpus support for the transposing children (one batched call).
   const transpositionCounts = useTranspositionCounts(transpositions.map((m) => m.fen));
 
+  // The corpus book for the position itself — the panel's primary source.
+  // Lifted here (above the ladder) because the out-of-book branch is
+  // decided by it: corpus rows lead whenever the corpus knows the position,
+  // even where the named book has no key.
+  const corpusStatus = useCorpusBook(fen);
+  const corpusKnown = corpusStatus.kind === 'ready' && corpusStatus.moves.length > 0;
+
   async function runFind() {
     if (onFindEvidence === undefined) {
       return;
@@ -167,15 +179,6 @@ export default function PositionContext({
     }
   }
 
-  let content = (
-    <ReferencePanel
-      book={book}
-      fen={fen}
-      onPlayMove={canPlay ? onPlayMove : undefined}
-      onHoverMove={onHoverMove}
-    />
-  );
-
   // The phase notes that ride the out-of-book states: tablebase-eligible
   // (the reserved extension point — no TB source in the repo yet) and
   // likely-endgame. Shown on whichever out-of-book branch renders.
@@ -191,138 +194,200 @@ export default function PositionContext({
       </p>
     ) : null;
 
-  if (!inBook) {
-    content =
-      // Out of book but a child lands back in it: the transposition note
-      // replaces the plain book rows (the position itself has no named line).
-      transpositions.length > 0 ? (
-        // One-ply transposition back into the book: the position itself is
-        // out, but these moves land back in it. Interactive rows — the
-        // ghost preview and click-to-play match the book rows.
-        <div className="flex min-h-0 flex-col" data-testid="position-context-transpositions">
-          {phaseNote}
-          <p className="m-0 px-3 pt-2 text-note text-muted">
-            {t('positionContext.noDirectMatches')}
-          </p>
-          <p className="m-0 px-3 pb-1 text-micro font-semibold uppercase tracking-[0.11em] text-faint">
-            {t('positionContext.possibleTranspositions')}
-          </p>
-          <ul className="m-0 list-none p-1">
-            {[...transpositions]
-              .sort(
-                (a, b) =>
-                  (transpositionCounts?.[b.fen] ?? 0) - (transpositionCounts?.[a.fen] ?? 0) ||
-                  a.san.localeCompare(b.san),
-              )
-              .map((move) => (
-                <li
-                  key={move.san}
-                  onMouseEnter={() => onHoverMove(move)}
-                  onMouseLeave={() => onHoverMove(null)}
-                >
-                  <button
-                    type="button"
-                    className="flex w-full items-baseline gap-2 rounded-control px-2 py-1.5 text-left transition-colors not-disabled:hover:bg-raised disabled:cursor-default"
-                    disabled={onPlayMove === undefined}
-                    onClick={() => onPlayMove?.(move)}
-                    data-testid="position-context-transposition"
-                  >
-                    <span className="shrink-0 text-ui font-semibold text-ink tabular-nums">
-                      {move.san}
-                    </span>
-                    <span className="ml-auto shrink-0 font-mono text-micro text-faint tabular-nums">
-                      {transpositionCounts?.[move.fen] !== undefined
-                        ? t('positionContext.transpositionGames', {
-                            count: transpositionCounts[move.fen],
-                          })
-                        : '…'}
-                    </span>
-                  </button>
-                </li>
-              ))}
-          </ul>
-        </div>
-      ) : cached !== undefined ? (
-        // Historical evidence already calculated — the decision menu leads
-        // (what did they play next?), then the View link carries the split
-        // count ("View 4 exact + 10 similar games →") so the found total is
-        // unmissable and exact vs similar is not conflated. Counts match
-        // the dialog: the analyzed game itself is filtered out.
-        <div className="flex min-h-0 flex-col" data-testid="position-context-evidence">
-          {phaseNote}
-          <DecisionMenu
-            fen={cached.reference.fen}
-            nextMoves={cached.reference.next_moves ?? null}
-          />
-          {onViewEvidence !== undefined && (
-            <button
-              type="button"
-              className="border-t border-line px-3 py-1.5 text-left text-note text-accent transition-colors hover:bg-raised hover:text-accent-hi"
-              onClick={() => onViewEvidence()}
-              data-testid="position-context-view-evidence"
-            >
-              {(() => {
-                const visible = cached.candidates.filter(
-                  (candidate) => !isAnalyzedGame(candidate.game, gameHeaders),
-                );
-                const exact = visible.filter((c) => c.strategy === 'exact').length;
-                const similar = visible.length - exact;
-
-                if (exact > 0 && similar > 0) {
-                  return t('positionContext.viewCountMixed', { exact, similar });
-                }
-                if (exact > 0) {
-                  return t('positionContext.viewCountExact', { count: exact });
-                }
-                return t('positionContext.viewCountSimilar', { count: similar });
-              })()}
-            </button>
-          )}
-        </div>
-      ) : (
-        // Historical evidence absent — explicit CTA (no auto-run). Centered,
-        // no repeated header: the sticky "Position context" title already
-        // names the box, and the button hugs its label.
-        <div
-          className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-3 py-4"
-          data-testid="position-context-find"
+  // The transposition rows, sorted by corpus support — shared by the
+  // corpus-led branch (a secondary block under the corpus rows) and the
+  // legacy branch (the primary content).
+  const transpositionRows = [...transpositions]
+    .sort(
+      (a, b) =>
+        (transpositionCounts?.[b.fen] ?? 0) - (transpositionCounts?.[a.fen] ?? 0) ||
+        a.san.localeCompare(b.san),
+    )
+    .map((move) => (
+      <li
+        key={move.san}
+        onMouseEnter={() => onHoverMove(move)}
+        onMouseLeave={() => onHoverMove(null)}
+      >
+        <button
+          type="button"
+          className="flex w-full items-baseline gap-2 rounded-control px-2 py-1.5 text-left transition-colors not-disabled:hover:bg-raised disabled:cursor-default"
+          disabled={onPlayMove === undefined}
+          onClick={() => onPlayMove?.(move)}
+          data-testid="position-context-transposition"
         >
-          {phaseNote}
-          {findStatus.kind === 'failed' ? (
-            <>
-              <p className="m-0 text-note text-bad-hi">{t('positionContext.failed')}</p>
-              <button
-                type="button"
-                className="self-center rounded-control border border-line px-3 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised"
-                onClick={() => {
-                  void runFind();
-                }}
-                data-testid="position-context-retry"
-              >
-                {t('positionContext.retry')}
-              </button>
-            </>
-          ) : onFindEvidence ===
-            undefined ? // Evidence is an editor feature (ADR-0030's private browsing) —
-          // no handler for viewers: render nothing here (the phase note
-          // already renders above), never a stuck "Finding…" button.
-          null : (
+          <span className="shrink-0 text-ui font-semibold text-ink tabular-nums">{move.san}</span>
+          <span className="min-w-0 flex-1 truncate text-right text-note text-muted">
+            {(() => {
+              const opening = openingAt(book, move.fen);
+              return opening !== null ? `${opening.eco} · ${opening.name}` : '';
+            })()}
+          </span>
+          <span className="shrink-0 font-mono text-micro text-faint tabular-nums">
+            {transpositionCounts?.[move.fen] !== undefined
+              ? t('positionContext.transpositionGames', {
+                  count: transpositionCounts[move.fen],
+                })
+              : '…'}
+          </span>
+        </button>
+      </li>
+    ));
+
+  // The View-evidence link: the dialog-visible candidate count (the analyzed
+  // game filtered out) so the summary and the dialog always agree.
+  const viewEvidenceButton =
+    cached !== undefined && onViewEvidence !== undefined ? (
+      <button
+        type="button"
+        className="border-t border-line px-3 py-1.5 text-left text-note text-accent transition-colors hover:bg-raised hover:text-accent-hi"
+        onClick={() => onViewEvidence()}
+        data-testid="position-context-view-evidence"
+      >
+        {(() => {
+          const visible = cached.candidates.filter(
+            (candidate) => !isAnalyzedGame(candidate.game, gameHeaders),
+          );
+          const exact = visible.filter((c) => c.strategy === 'exact').length;
+          const similar = visible.length - exact;
+
+          if (exact > 0 && similar > 0) {
+            return t('positionContext.viewCountMixed', { exact, similar });
+          }
+          if (exact > 0) {
+            return t('positionContext.viewCountExact', { count: exact });
+          }
+          return t('positionContext.viewCountSimilar', { count: similar });
+        })()}
+      </button>
+    ) : null;
+
+  let content = (
+    <ReferencePanel
+      book={book}
+      fen={fen}
+      corpusStatus={corpusStatus}
+      onPlayMove={canPlay ? onPlayMove : undefined}
+      onHoverMove={onHoverMove}
+    />
+  );
+
+  if (!inBook) {
+    content = corpusKnown ? (
+      // The corpus knows the position even though the named book doesn't
+      // key it: corpus rows lead (what was played here, named where the
+      // book knows the resulting position). The transposition block rides
+      // below when it also applies, and a remembered evidence result keeps
+      // its View link.
+      <div className="flex min-h-0 flex-col" data-testid="position-context-corpus">
+        {phaseNote}
+        <ReferencePanel
+          book={book}
+          fen={fen}
+          corpusStatus={corpusStatus}
+          onPlayMove={canPlay ? onPlayMove : undefined}
+          onHoverMove={onHoverMove}
+        />
+        {transpositions.length > 0 && (
+          <>
+            <p className="m-0 px-3 pb-1 text-micro font-semibold uppercase tracking-[0.11em] text-faint">
+              {t('positionContext.possibleTranspositions')}
+            </p>
+            <ul className="m-0 list-none p-1">{transpositionRows}</ul>
+          </>
+        )}
+        {viewEvidenceButton}
+      </div>
+    ) : corpusStatus.kind === 'loading' ? (
+      // The corpus verdict is in flight — the branch can't be decided yet.
+      // One fetch per FEN (module-cached), so revisits resolve instantly.
+      <div
+        className="flex min-h-0 flex-1 flex-col justify-center px-3 py-4"
+        data-testid="position-context-loading"
+      >
+        {phaseNote}
+        <p
+          className="m-0 flex items-center gap-1.5 text-micro text-muted"
+          role="status"
+          data-testid="position-context-loading-status"
+        >
+          <span className={statusDot({ tone: 'warn', pulse: true })} />
+          {t('positionContext.loading')}
+        </p>
+      </div>
+    ) : // No corpus support (empty or failed) — the legacy ladder:
+    // transpositions back into the named book, a remembered evidence
+    // result, or the explicit find-CTA.
+    //
+    // Out of book but a child lands back in it: the transposition note
+    // replaces the plain book rows (the position itself has no named line).
+    transpositions.length > 0 ? (
+      // One-ply transposition back into the book: the position itself is
+      // out, but these moves land back in it. Interactive rows — the
+      // ghost preview and click-to-play match the book rows.
+      <div className="flex min-h-0 flex-col" data-testid="position-context-transpositions">
+        {phaseNote}
+        <p className="m-0 px-3 pt-2 text-note text-muted">{t('positionContext.noDirectMatches')}</p>
+        <p className="m-0 px-3 pb-1 text-micro font-semibold uppercase tracking-[0.11em] text-faint">
+          {t('positionContext.possibleTranspositions')}
+        </p>
+        <ul className="m-0 list-none p-1">{transpositionRows}</ul>
+      </div>
+    ) : cached !== undefined ? (
+      // Historical evidence already calculated — the decision menu leads
+      // (what did they play next?), then the View link carries the split
+      // count ("View 4 exact + 10 similar games →") so the found total is
+      // unmissable and exact vs similar is not conflated. Counts match
+      // the dialog: the analyzed game itself is filtered out.
+      <div className="flex min-h-0 flex-col" data-testid="position-context-evidence">
+        {phaseNote}
+        <DecisionMenu fen={cached.reference.fen} nextMoves={cached.reference.next_moves ?? null} />
+        {viewEvidenceButton}
+      </div>
+    ) : (
+      // Historical evidence absent — explicit CTA (no auto-run). Centered,
+      // no repeated header: the sticky "Position context" title already
+      // names the box, and the button hugs its label.
+      <div
+        className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-3 py-4"
+        data-testid="position-context-find"
+      >
+        {phaseNote}
+        {findStatus.kind === 'failed' ? (
+          <>
+            <p className="m-0 text-note text-bad-hi">{t('positionContext.failed')}</p>
             <button
               type="button"
-              className="self-center rounded-control border border-line px-3 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised disabled:opacity-50"
-              disabled={findStatus.kind === 'loading'}
+              className="self-center rounded-control border border-line px-3 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised"
               onClick={() => {
                 void runFind();
               }}
-              data-testid="position-context-find-button"
+              data-testid="position-context-retry"
             >
-              {findStatus.kind === 'loading'
-                ? t('positionContext.finding')
-                : t('positionContext.find')}
+              {t('positionContext.retry')}
             </button>
-          )}
-        </div>
-      );
+          </>
+        ) : onFindEvidence ===
+          undefined ? // Evidence is an editor feature (ADR-0030's private browsing) —
+        // no handler for viewers: render nothing here (the phase note
+        // already renders above), never a stuck "Finding…" button.
+        null : (
+          <button
+            type="button"
+            className="self-center rounded-control border border-line px-3 py-1.5 text-ui font-semibold text-ink transition-colors hover:bg-raised disabled:opacity-50"
+            disabled={findStatus.kind === 'loading'}
+            onClick={() => {
+              void runFind();
+            }}
+            data-testid="position-context-find-button"
+          >
+            {findStatus.kind === 'loading'
+              ? t('positionContext.finding')
+              : t('positionContext.find')}
+          </button>
+        )}
+      </div>
+    );
   }
 
   return (
