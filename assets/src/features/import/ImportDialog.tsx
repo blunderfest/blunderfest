@@ -105,6 +105,103 @@ function skipLine(t: TFunction, skip: ImportSkip): string {
 }
 
 /**
+ * The import's keep-cards: what enters the room, checked = included.
+ * Rendered from the preview's applicability when one exists (paste and
+ * studies tabs), and unconditionally once a games/chess.com selection is
+ * importable — those tabs fetch and import in one click, so the cards must
+ * be settable before any content is known, and the import applies them.
+ */
+type KeepState = {
+  evaluations: boolean;
+  comments: boolean;
+  variations: boolean;
+  metadata: boolean;
+};
+
+function stripOf(keep: KeepState): StripOptions {
+  return {
+    evaluations: !keep.evaluations,
+    comments: !keep.comments,
+    variations: !keep.variations,
+    metadata: !keep.metadata,
+  };
+}
+
+function KeepOptions({
+  keep,
+  onChange,
+  applicable,
+}: {
+  keep: KeepState;
+  onChange: (next: KeepState) => void;
+  /** Which cards make sense for the pending import (preview-derived, or all). */
+  applicable: Record<keyof KeepState, boolean>;
+}) {
+  const { t } = useTranslation();
+  const cards = [
+    ['comments', t('import.keepComments'), t('import.keepCommentsDesc'), applicable.comments],
+    [
+      'variations',
+      t('import.keepVariations'),
+      t('import.keepVariationsDesc'),
+      applicable.variations,
+    ],
+    ['metadata', t('import.keepMetadata'), t('import.keepMetadataDesc'), applicable.metadata],
+    [
+      'evaluations',
+      t('import.keepEvaluations'),
+      t('import.keepEvaluationsDesc'),
+      applicable.evaluations,
+    ],
+  ] as const;
+
+  if (!cards.some(([, , , applies]) => applies)) {
+    return null;
+  }
+
+  return (
+    <fieldset className="m-0 border-0 border-t border-line p-0 pt-2">
+      <legend className="mb-1.5 text-micro font-semibold uppercase tracking-[0.08em] text-faint">
+        {t('import.keepLabel')}
+      </legend>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {cards.map(([key, title, description]) => (
+          <label
+            key={key}
+            className="group/card flex cursor-pointer items-start gap-2 rounded-control border border-line bg-raised p-2.5 transition-colors has-[:checked]:border-accent/60 has-[:checked]:bg-accent-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent"
+          >
+            <input
+              type="checkbox"
+              className="sr-only"
+              aria-label={title}
+              checked={keep[key]}
+              onChange={(event) => onChange({ ...keep, [key]: event.target.checked })}
+            />
+            <span
+              aria-hidden="true"
+              className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border border-line-strong transition-colors group-has-[:checked]/card:border-accent group-has-[:checked]/card:bg-accent"
+            >
+              {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative tick — the wrapping span is aria-hidden and the real checkbox carries the state */}
+              <svg
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-3 w-3 text-void opacity-0 transition-opacity group-has-[:checked]/card:opacity-100"
+              >
+                <path d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.8 3.8 6.8-6.8a1 1 0 0 1 1.4 0Z" />
+              </svg>
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <span className="text-ui font-semibold text-ink">{title}</span>
+              <span className="text-note text-faint">{description}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+/**
  * The import dialog: a modal for pasting PGN/Lichess URLs or, when the
  * profile is Lichess-linked, picking one of the owner's studies (every
  * chapter imports). Input is parsed (debounced) into a preview; nothing
@@ -145,8 +242,9 @@ export default function ImportDialog({
   const [ccState, setCcState] = useState<ChesscomState>({ status: 'idle' });
   const [ccSelected, setCcSelected] = useState<Set<string>>(new Set());
   // What the import keeps, not what it strips: checked = included. Engine
-  // annotations are the one thing excluded by default.
-  const [keep, setKeep] = useState({
+  // annotations are the one thing excluded by default. Shared by every
+  // source tab — the one-click games/chess.com imports apply it too.
+  const [keep, setKeep] = useState<KeepState>({
     evaluations: false,
     comments: true,
     variations: true,
@@ -284,9 +382,10 @@ export default function ImportDialog({
       (result) => {
         // Clean fetch → import immediately (the selection WAS the
         // confirmation; a second Import click was a usability bug).
-        // Failures pause at the preview with the skip list.
+        // Failures pause at the preview with the skip list. The keep
+        // options apply exactly as on the preview path.
         if (result.failures.length === 0) {
-          onImported(result.trees);
+          onImported(result.trees.map((tree) => stripTree(tree, stripOf(keep))));
           onClose();
           return;
         }
@@ -343,9 +442,10 @@ export default function ImportDialog({
     importPgn(pgns).then(
       (result) => {
         // Same one-click contract as the Lichess games tab: clean fetch
-        // imports immediately; failures pause at the preview.
+        // imports immediately (with the keep options applied); failures
+        // pause at the preview.
         if (result.failures.length === 0) {
-          onImported(result.trees);
+          onImported(result.trees.map((tree) => stripTree(tree, stripOf(keep))));
           onClose();
           return;
         }
@@ -372,13 +472,7 @@ export default function ImportDialog({
     if (preview === null) {
       return null;
     }
-    const strip: StripOptions = {
-      evaluations: !keep.evaluations,
-      comments: !keep.comments,
-      variations: !keep.variations,
-      metadata: !keep.metadata,
-    };
-    return preview.map((tree) => stripTree(tree, strip));
+    return preview.map((tree) => stripTree(tree, stripOf(keep)));
   }, [preview, keep]);
 
   const strippable = useMemo(
@@ -836,80 +930,18 @@ export default function ImportDialog({
                 </div>
               </div>
             ))}
-          {displayTrees !== null &&
-            strippable !== null &&
-            (strippable.evaluations ||
-              strippable.comments ||
-              strippable.variations ||
-              strippable.metadata) && (
-              <fieldset className="m-0 border-0 border-t border-line p-0 pt-2">
-                <legend className="mb-1.5 text-micro font-semibold uppercase tracking-[0.08em] text-faint">
-                  {t('import.keepLabel')}
-                </legend>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {(
-                    [
-                      [
-                        'comments',
-                        t('import.keepComments'),
-                        t('import.keepCommentsDesc'),
-                        strippable.comments,
-                      ],
-                      [
-                        'variations',
-                        t('import.keepVariations'),
-                        t('import.keepVariationsDesc'),
-                        strippable.variations,
-                      ],
-                      [
-                        'metadata',
-                        t('import.keepMetadata'),
-                        t('import.keepMetadataDesc'),
-                        strippable.metadata,
-                      ],
-                      [
-                        'evaluations',
-                        t('import.keepEvaluations'),
-                        t('import.keepEvaluationsDesc'),
-                        strippable.evaluations,
-                      ],
-                    ] as const
-                  ).map(([key, title, description, applicable]) =>
-                    applicable ? (
-                      <label
-                        key={key}
-                        className="group/card flex cursor-pointer items-start gap-2 rounded-control border border-line bg-raised p-2.5 transition-colors has-[:checked]:border-accent/60 has-[:checked]:bg-accent-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent"
-                      >
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          aria-label={title}
-                          checked={keep[key]}
-                          onChange={(event) => setKeep({ ...keep, [key]: event.target.checked })}
-                        />
-                        <span
-                          aria-hidden="true"
-                          className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border border-line-strong transition-colors group-has-[:checked]/card:border-accent group-has-[:checked]/card:bg-accent"
-                        >
-                          {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative tick — the wrapping span is aria-hidden and the real checkbox carries the state */}
-                          <svg
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="h-3 w-3 text-void opacity-0 transition-opacity group-has-[:checked]/card:opacity-100"
-                          >
-                            <path d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0L3.3 9.7a1 1 0 1 1 1.4-1.4l3.8 3.8 6.8-6.8a1 1 0 0 1 1.4 0Z" />
-                          </svg>
-                        </span>
-                        <span className="flex min-w-0 flex-col">
-                          <span className="text-ui font-semibold text-ink">{title}</span>
-                          <span className="text-note text-faint">{description}</span>
-                        </span>
-                      </label>
-                    ) : null,
-                  )}
-                </div>
-              </fieldset>
-            )}
+          {displayTrees !== null && strippable !== null ? (
+            <KeepOptions keep={keep} onChange={setKeep} applicable={strippable} />
+          ) : selectedGames.size > 0 || ccSelected.size > 0 ? (
+            // One-click tabs: no preview yet, so applicability is unknown —
+            // offer every card (lichess/chess.com exports carry at least
+            // metadata; the import applies the choices).
+            <KeepOptions
+              keep={keep}
+              onChange={setKeep}
+              applicable={{ evaluations: true, comments: true, variations: true, metadata: true }}
+            />
+          ) : null}
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-2 border-t border-line px-4 py-3">

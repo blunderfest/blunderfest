@@ -47,6 +47,29 @@ const tree = {
 
 const pgn = '1. e4 e5 *\n';
 
+// 1. e4 {[%eval] comment} with mainline e5 and a variation c5.
+const annotated = {
+  ...tree,
+  root: {
+    ...tree.root,
+    children: [
+      {
+        ...tree.root,
+        id: 1,
+        ply: 1,
+        san: 'e4',
+        from: 'e2',
+        to: 'e4',
+        comment: '[%eval 0.3] Sharp.',
+        children: [
+          { ...tree.root, id: 2, ply: 2, san: 'e5', from: 'e7', to: 'e5' },
+          { ...tree.root, id: 3, ply: 2, san: 'c5', from: 'c7', to: 'c5' },
+        ],
+      },
+    ],
+  },
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -340,28 +363,6 @@ describe('ImportDialog', () => {
   });
 
   it('excludes engine annotations by default and variations on uncheck', async () => {
-    // 1. e4 {[%eval] comment} with mainline e5 and a variation c5.
-    const annotated = {
-      ...tree,
-      root: {
-        ...tree.root,
-        children: [
-          {
-            ...tree.root,
-            id: 1,
-            ply: 1,
-            san: 'e4',
-            from: 'e2',
-            to: 'e4',
-            comment: '[%eval 0.3] Sharp.',
-            children: [
-              { ...tree.root, id: 2, ply: 2, san: 'e5', from: 'e7', to: 'e5' },
-              { ...tree.root, id: 3, ply: 2, san: 'c5', from: 'c7', to: 'c5' },
-            ],
-          },
-        ],
-      },
-    };
     stubFetch({
       '/api/import/pgn': () => jsonResponse({ tree: annotated }),
     });
@@ -386,5 +387,107 @@ describe('ImportDialog', () => {
     // ...and only the mainline remains.
     expect(first.children).toHaveLength(1);
     expect(first.children[0].san).toBe('e5');
+  });
+
+  it('offers the keep options on the games tab and applies them to the one-click import', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    stubFetch({
+      '/api/lichess/games?profile_id=profile-1&max=10': () =>
+        jsonResponse({
+          games: [
+            { id: 'g1', white: 'dr_ny', black: 'someone', result: '1-0', date: 1, speed: 'blitz' },
+          ],
+        }),
+      '/api/import/lichess-games': () => jsonResponse({ trees: [annotated], failures: [] }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} lichessLinked />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'My games' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: /dr_ny – someone/ }));
+
+    // The cards are settable before any fetch (no preview on this tab).
+    expect(screen.getByRole('checkbox', { name: 'Engine annotations' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Names & event' })).toBeChecked();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1));
+
+    // Defaults apply like on the paste tab: evals stripped, metadata kept.
+    const imported = (onImported.mock.calls[0][0] as (typeof annotated)[])[0];
+    expect(imported.root.children[0].comment).toBe('Sharp.');
+    expect(imported.headers).toEqual(annotated.headers);
+  });
+
+  it('strips metadata on the games tab when unchecked', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    stubFetch({
+      '/api/lichess/games?profile_id=profile-1&max=10': () =>
+        jsonResponse({
+          games: [
+            { id: 'g1', white: 'dr_ny', black: 'someone', result: '1-0', date: 1, speed: 'blitz' },
+          ],
+        }),
+      '/api/import/lichess-games': () => jsonResponse({ trees: [annotated], failures: [] }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} lichessLinked />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'My games' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: /dr_ny – someone/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Names & event' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1));
+    const imported = (onImported.mock.calls[0][0] as (typeof annotated)[])[0];
+    expect(imported.headers).toEqual({});
+  });
+
+  it('offers the keep options on the chess.com tab once games are selected', async () => {
+    localStorage.setItem(
+      'blunderfest.device',
+      JSON.stringify({ id: 'profile-1', secret: 'the-secret' }),
+    );
+    const now = new Date();
+    const monthParam = `year=${now.getFullYear()}&month=${now.getMonth() + 1}`;
+    stubFetch({
+      [`/api/chesscom/games?profile_id=profile-1&username=hikaru&${monthParam}`]: () =>
+        jsonResponse({
+          games: [
+            {
+              id: 'cc1',
+              white: 'BornForTheEndgame',
+              black: 'Hikaru',
+              result: '0-1',
+              date: 1,
+              speed: 'blitz',
+              pgn: '1. d4 d5 *',
+            },
+          ],
+        }),
+      '/api/import/pgn': () => jsonResponse({ tree: annotated }),
+    });
+    const onImported = vi.fn();
+    render(<ImportDialog onImported={onImported} onClose={vi.fn()} lichessLinked />);
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Chess.com' }));
+    fireEvent.change(screen.getByLabelText('Chess.com username'), {
+      target: { value: 'hikaru' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Load games' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: /BornForTheEndgame – Hikaru/ }));
+
+    expect(screen.getByRole('checkbox', { name: 'Engine annotations' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    await waitFor(() => expect(onImported).toHaveBeenCalledTimes(1));
+    const imported = (onImported.mock.calls[0][0] as (typeof annotated)[])[0];
+    expect(imported.root.children[0].comment).toBe('Sharp.');
   });
 });
