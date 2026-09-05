@@ -159,10 +159,14 @@ release and served by a catch-all (`SpaController`).
   - `search/pipeline.ex` — the vertical-slice orchestrator: per-candidate
     evidence with per-stage timings, including `pg_ms` (Postgres game/move
     hydration) broken out from the packed-corpus/local work (Spike 09
-    Phase 3). Count questions go through `position_stats/1` via the
-    request-scoped memo (`search/count_memo.ex`); the pipeline never reads
-    an unbounded occurrence list on a live path. The family/skeleton
-    membership scoring runs against a request-local **member index**
+    Phase 3). Card hydration is **batched once per request** — one bulk
+    `games(gids)` query plus one `moves_for` for the gids the menu's batch
+    did not cover (PG hydration spike; 45 sequential round trips became
+    2–3, taking cross-region ord start HE from ~10 s to sub-second). Count
+    questions go through `position_stats/1` via the request-scoped memo
+    (`search/count_memo.ex`); the pipeline never reads an unbounded
+    occurrence list on a live path. The family/skeleton membership scoring
+    runs against a request-local **member index**
     (`Families.member_index/3`): each menu member's continuation
     representations are precomputed once per request and threaded through
     the cards (HE-CPU spike), never cached across requests.

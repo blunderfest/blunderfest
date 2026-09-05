@@ -257,7 +257,7 @@ counts -> per-candidate evidence
 
 | # | Query | Why |
 |---|-------|-----|
-| Q1 | `SELECT gid, ply FROM corpus_occurrences WHERE key = $1 ORDER BY gid, ply` | **All exact occurrences** of the reference key. One fetch serves three consumers: the *exact candidates* (capped at `:exact_limit` 12 for display), the *decision menu* (which needs every occurrence, not the cap), and the *reference counts*. |
+| Q1 | `SELECT gid, ply FROM corpus_occurrences WHERE key = $1 ORDER BY gid, ply LIMIT $2` | **The bounded exact-occurrence prefix** of the reference key (`occurrence_limit`, default 2000 — the packed v2 equivalent is a prefix read). One fetch serves two consumers: the *exact candidates* (capped at `:exact_limit` 12 for display) and the *decision menu*. The reference counts come from `position_stats` (Q6's memoized aggregate), never from materializing a hot run. |
 | Q2 | `SELECT key FROM corpus_positions WHERE pawn_hash = $1 ORDER BY key` | The **pawn-skeleton bucket**: every distinct canonical key sharing the reference's pawn structure. This is the only structural (non-exact) retrieval strategy — uncontrolled relaxed retrieval produced ~1M candidates in research and is deliberately not implemented. |
 
 For Q2's result (capped at `:bucket_limit` 2000 keys): each bucket key is
@@ -289,12 +289,13 @@ game's mainline to build continuation windows:
 
 | # | Query | Why |
 |---|-------|-----|
-| Q4 | `SELECT sans FROM corpus_moves WHERE gid = $1` | One per occurrence gid. `sans` is sliced from the occurrence's ply (window capped at 12 moves) and fed to two consumers: **`Families.build`** (the decision menu) and **`DecisionMenu.from_occurrences`** (the raw next-move distribution). |
+| Q4 | `SELECT gid, sans FROM corpus_moves WHERE gid = ANY($1)` | One batch for all occurrence gids of the bounded list (`moves_for`, the ADR-0036 hot-key fix). `sans` is sliced per occurrence from its ply (window capped at 12 moves) and fed to **`Families.build`** (the decision menu). |
 
 The **reference continuation window** is *not* a query — it is sliced
 from the client-supplied `route` / `reference_moves` at `ref_ply`. The
-reference's `occurrences` / `games` counts are computed locally from the
-already-fetched Q1 list.
+reference's `occurrences` / `games` counts come from the memoized
+`position_stats` aggregate (Q6), never from materializing a hot occurrence
+run.
 
 - **Families — the decision menu.** The distinct continuations actually
   played after the reference position, clustered by single-linkage
@@ -303,23 +304,29 @@ already-fetched Q1 list.
   is deliberately out of scope). Output: families sorted by occurrence
   count, each with `id`, `occurrences`, `games`, and `members`
   (`%{seq, count}`).
-- **DecisionMenu — the raw next-move distribution.** Counts, per distinct
-  first move, the number of *independent games* that played it (a
-  `MapSet` of gids per move). Computed alongside families from the same
-  triples because Spike 07 measured that family clustering chains
-  genuinely different directions together under the general settings
-  (A2: 68/71 games in one family; Najdorf: 445/477) — the raw
-  distribution has no such failure and is the reliable overview.
+- **The raw next-move distribution** (`reference.next_moves`). Counts, per
+  distinct first move, the number of *independent games* that played it.
+  Served by the corpus book aggregate (`Corpus.book` — the precomputed
+  `book.bin` in packed mode, the Q8 SQL aggregate in PG mode; the
+  per-`(gid, move)` dedupe keeps a game that reaches the position twice
+  counting once per move). Kept separate from the families because Spike 07
+  measured that family clustering chains genuinely different directions
+  together under the general settings (A2: 68/71 games in one family;
+  Najdorf: 445/477) — the raw distribution has no such failure and is the
+  reliable overview.
 
 #### Stage 3 — Per-candidate evidence (`Pipeline.card`)
 
-For each of the exact (~12) plus structural (<=10) candidates:
+For each of the exact (~12) plus structural (<=10) candidates — hydrated
+**once per request in bulk** before the cards are assembled (the PG
+hydration spike: the per-card sequential shape multiplied the cross-region
+round trips into a ~10 s ord penalty), then assembled from the maps:
 
 | # | Query | Why |
 |---|-------|-----|
-| Q5 | `SELECT sans FROM corpus_moves WHERE gid = $1` | The candidate's own mainline -> its continuation window (for the typed continuation differences and the family/skeleton membership checks) and its full move list (for the route comparison). |
-| Q6 | `SELECT gid, ply FROM corpus_occurrences WHERE key = $1 ORDER BY gid, ply` | The candidate **key's** own occurrences -> its historical counts (`occurrences`, `games`, `same_game_only`). This powers the central honesty distinction: occurrences and independent games must never be conflated — "27 occurrences / 19 independent games" is recurring evidence, "27 occurrences / 1 game" is a repetition, not evidence. |
-| Q7 | `SELECT white, black, result, date, eco, opening, white_elo, black_elo, event, time_control, site FROM corpus_games WHERE gid = $1` | Candidate game metadata for the evidence card (players, result, ECO, opening, Elo, event, time control, site). |
+| Q5 | `SELECT gid, sans FROM corpus_moves WHERE gid = ANY($1)` (`moves_for`, one query for the card gids the Q4 menu batch did not already cover — exact cards' gids are a subset of the menu's and are reused) | Every candidate's own mainline -> its continuation window (for the typed continuation differences and the family/skeleton membership checks) and its full move list (for the route comparison). |
+| Q6 | count questions via `position_stats` (packed v2 headers; Postgres fallback `SELECT COUNT(*), COUNT(DISTINCT gid) FROM corpus_occurrences WHERE key = $1`) | The candidate **key's** own occurrences -> its historical counts (`occurrences`, `games`, `same_game_only`), memoized per request. This powers the central honesty distinction: occurrences and independent games must never be conflated — "27 occurrences / 19 independent games" is recurring evidence, "27 occurrences / 1 game" is a repetition, not evidence. |
+| Q7 | `SELECT gid, white, black, result, date, eco, opening, white_elo, black_elo, event, time_control, site FROM corpus_games WHERE gid = ANY($1)` (one query for the deduplicated card gids) | Candidate game metadata for the evidence card (players, result, ECO, opening, Elo, event, time control, site). |
 
 All comparison math then happens **locally** on the feature bitboards
 (`Features`, `Differences`, `Route`, `Families.membership`,
@@ -399,28 +406,31 @@ by design, so the export is a clean mainline.
 ```
 POST /api/historical-evidence { fen, route, ref_ply }
 
-  Q1  corpus_occurrences WHERE key = <refKey>        -> exact candidates (cap 12),
-                                                        decision menu, reference counts
+  Q1  corpus_occurrences WHERE key = <refKey> LIMIT  -> exact candidates (cap 12),
+                                                        decision menu input (cap 2000)
   Q2  corpus_positions WHERE pawn_hash = <bucket>    -> bucket keys (cap 2000),
                                                         rank locally, take top 30
-       Q3 corpus_occurrences WHERE key = <bucketKey> (x30) -> structural candidates (cap 10)
+       Q3 corpus_occurrences WHERE key = <bucketKey> (x≤30) -> structural candidates (cap 10)
 
-  Q4  corpus_moves WHERE gid = <occ gid> (x all exact occurrences)
-                                                     -> Families.build + DecisionMenu
-  -- locals -- reference window from route/ref_ply, counts from Q1
+  Q4  corpus_moves WHERE gid = ANY(<occ gids>)       -> one batch: Families.build
+  -- locals -- reference window from route/ref_ply; reference counts from Q6 stats
 
-  per candidate (exact + structural, ~22):
-    Q5 corpus_moves       WHERE gid = <cand gid>     -> candidate window + route
-    Q6 corpus_occurrences WHERE key = <cand key>     -> candidate counts, same_game_only
-    Q7 corpus_games       WHERE gid = <cand gid>     -> card metadata
+  hydrate cards once (bulk, deduped), then assemble per candidate (~22):
+    Q7 corpus_games WHERE gid = ANY(<cand gids>)     -> card metadata (one query)
+    Q5 corpus_moves WHERE gid = ANY(<missing gids>)  -> candidate mainlines not
+                                                        already covered by Q4 (one query)
+    Q6 position_stats per cand key (memoized)        -> candidate counts, same_game_only
 
   -> facts-only JSON + stage timings
 ```
 
-Measured on the 100k tier: 170-354 ms per request (start position / KID
-tabiya / Ruy Lopez tabiya), dominated by the per-candidate sequential
-Q5-Q7 through the single facade GenServer. The packed binary index
-(ADR-0026's successor store) replaces this path if the corpus grows.
+On the packed occurrence backend (production, ADR-0037) Q1/Q2/Q3 and the Q6
+count questions are served locally (packed reads / v2 header stats); the only
+Postgres round trips left are the hydration queries — Q4 plus the two bulk
+card queries Q5/Q7. The PG hydration spike batched those from 45 sequential
+per-card round trips to 2–3 per request, taking cross-region (ord → ams)
+start-position `pg_ms` from ~9.5 s to a ~753 ms median. In PG-mode the same
+bulk shapes run against the tables above.
 
 ### 2.5 Why it is designed this way
 

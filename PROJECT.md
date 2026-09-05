@@ -71,6 +71,25 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
+### Session handoff (2026-09-05 — HE PG hydration batched: cross-region latency solved)
+
+**BATCHING SOLVES CROSS-REGION LATENCY**
+([`docs/technical-spike-he-postgres-hydration.md`](docs/technical-spike-he-postgres-hydration.md)).
+The parked ord → ams PostgreSQL hydration penalty is closed. One Historical
+Evidence request made **45 sequential PG round trips** (22× `game` + 22×
+`moves` + the menu's `moves_for`); cross-region each costs ~206 ms RTT
+(≥97% network waiting, not SQL), so ord start `pg_ms` was ~9.5 s. Card
+hydration is now issued once per request in bulk — new `Occurrences.games/2`
+/ `Corpus.games/1` (`gid = ANY($1)`, same shape as `moves_for`) plus a
+`moves_for` for the gids the menu batch didn't already cover — **2–3 trips
+everywhere**. Deployed to both regions (machine version 521): ord start HE
+~10 s → **median 883 ms** (pg 753), targets pass (`pg < 1 s`, `total < 1.5 s`),
+colocated ams faster too (pg 287–335 → 54–82). Parity exact at every step:
+9/9 DTO snapshot, 9/9 backend, prod start DTO SHA-256 identical before/after
+in both regions. Topology unchanged (Outcome A). New harness
+`mix corpus.he_pg` (round-trip census / RTT probe / payload); facade emits
+`[:blunderfest, :corpus, :query]` telemetry. 490 tests green (+10).
+
 ### Session handoff (2026-09-05 — packed v2 + Phase 3 runtime + HE CPU opts are LIVE in prod)
 
 **CUTOVER SUCCESSFUL — v2 is now production**
@@ -100,8 +119,8 @@ image `deployment-01M1S4NWA3SS7V53SGV40SJ1VR`, commit `94ec7e50`.
 - **Rollback** (not needed): revert `fly.toml` `PACKED_DIR` →
   `/data/corpus-packed-broadcast` + redeploy (v1 intact on both volumes).
 
-**Next** (the separately parked task): the ord → ams PostgreSQL latency
-investigation.
+**Next**: nothing parked — the ord → ams PostgreSQL latency was the last
+item, and the HE hydration spike closed it (below).
 
 ### Session handoff (2026-09-05 — HE product-CPU spike: the <1s gate now passes)
 
