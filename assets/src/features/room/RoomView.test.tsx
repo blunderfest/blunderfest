@@ -336,7 +336,7 @@ describe('RoomView', () => {
     fireEvent.click(document.getElementById('empty-import-button') as HTMLElement);
     fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } });
     await screen.findByText('Valid PGN');
-    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    fireEvent.click(document.getElementById('import-submit-button') as HTMLElement);
 
     await waitFor(() => expect(channel.pushes.length).toBe(1));
     expect(channel.pushes[0]).toEqual({
@@ -374,7 +374,7 @@ describe('RoomView', () => {
       target: { value: '1. e4 e5 *\n\n[Event "G2"]\n\n1. d4 d5 *\n' },
     });
     await screen.findByText('2 games found');
-    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    fireEvent.click(document.getElementById('import-submit-button') as HTMLElement);
 
     // set_game ×2, then select_game back to the first — otherwise the
     // op-log presenter focus stays on the last imported game. (A
@@ -413,7 +413,7 @@ describe('RoomView', () => {
       target: { value: '1. e4 e5 *\n\n[Event "G2"]\n\n1. d4 d5 *\n' },
     });
     await screen.findByText('2 games found');
-    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    fireEvent.click(document.getElementById('import-submit-button') as HTMLElement);
 
     // (A set_cursor from the just-opened board may follow the import batch.)
     await waitFor(() => expect(channel.pushes.length).toBeGreaterThanOrEqual(3));
@@ -468,7 +468,7 @@ describe('RoomView', () => {
     fireEvent.click(document.getElementById('empty-import-button') as HTMLElement);
     fireEvent.change(await screen.findByLabelText('PGN'), { target: { value: '1. e4 e5 *' } });
     await screen.findByText('Valid PGN');
-    fireEvent.click(screen.getByRole('button', { name: 'Import' }));
+    fireEvent.click(document.getElementById('import-submit-button') as HTMLElement);
 
     await waitFor(() => expect(channel.pushes.length).toBeGreaterThan(0));
     const setGame = channel.pushes[0].payload as {

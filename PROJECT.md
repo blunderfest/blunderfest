@@ -71,6 +71,27 @@ For how it all fits together (state model, channel protocol, data flow, testing)
 Each milestone ends releasable; deploy is a manual `flyctl deploy` on `main`
 (see [`docs/operations.md`](docs/operations.md)).
 
+### Session handoff (2026-09-06 — import dialog redesigned as tray + checkout bar)
+
+**The import popup is a tray now** (owner-approved mock at
+`design/import-tray-mock.html`, local-only like the v0 sources): a source rail that always shows all three
+sources (Chess.com needs no account, so it is no longer hidden behind the
+Lichess link), one shared row shape per pane (parsed games pre-checked,
+failures as red inline rows instead of layout-shifting alert boxes), and a
+fixed checkout bar — summary ("2 games · 100 ply · PGN"), the keep-options
+demoted to an Options popover (a setting, not content; dot badge when
+non-default), and a count-aware Import button that is the single confirm
+for every source. Paste gained drag-and-drop/`choose one` for .pgn files,
+live detection chips ("1 Lichess link · PGN detected"), and Enter-confirms.
+The Lichess pane has a first-class URL/ID field with Fetch (works
+unlinked) plus the linked browsers (Recent | Studies + filter); the
+link-account CTA starts the real OAuth flow. Chess.com auto-loads a
+remembered username. Deferred selections (recent games, chess.com) still
+fetch behind the one click, and the keep options apply to every path.
+ImportDialog tests rewritten for the new UI; RoomView import tests
+re-pointed at `#import-submit-button`. 662 frontend + 490 backend green;
+browser-verified (light + dark themes, mobile rail).
+
 ### Session handoff (2026-09-06 — Positional context is corpus-primary)
 
 **The Positional Context panel now leads with the corpus book.** Owner
