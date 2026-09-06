@@ -3,6 +3,7 @@ import { axe } from 'jest-axe';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RoomView from '@/features/room/RoomView';
 import { emptyGameTree, type GameNode, type GameTree } from '@/lib/api';
+import { regionFlag } from '@/lib/region';
 import type { Op } from '@/protocol/ops';
 import { FakeChannel } from '@/test/fakeChannel';
 
@@ -221,7 +222,10 @@ describe('RoomView', () => {
     channel.joinReturn = { ops: [], region: 'ord' };
     renderRoom();
 
-    expect(await screen.findByTestId('region-chip')).toHaveTextContent('ord');
+    // The chip reads as the country flag; the tooltip carries the names.
+    expect(await screen.findByTestId('region-flags')).toHaveTextContent(
+      regionFlag('ord') as string,
+    );
   });
 
   it('shows a not-found screen and a way home when the join is rejected', async () => {

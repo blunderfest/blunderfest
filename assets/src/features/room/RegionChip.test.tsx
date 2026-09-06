@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import RegionChip from '@/features/room/RegionChip';
+import { regionFlag } from '@/lib/region';
 import { RoomStoreProvider } from '@/store/roomContext';
 import { createRoomStore } from '@/store/roomStore';
 
@@ -21,13 +22,20 @@ describe('RegionChip', () => {
     expect(screen.queryByTestId('region-chip')).toBeNull();
   });
 
-  it('shows the single region when the room is co-located', () => {
+  it('shows the single region as its country flag when co-located', () => {
     renderChip('ams');
-    expect(screen.getByTestId('region-chip')).toHaveTextContent('ams');
+    expect(screen.getByTestId('region-flags')).toHaveTextContent(regionFlag('ams') as string);
   });
 
-  it('shows both regions split when the room lives elsewhere', () => {
+  it('shows both country flags when the room lives elsewhere', () => {
     renderChip('ams', 'ord');
-    expect(screen.getByTestId('region-chip')).toHaveTextContent('ams↔ord');
+    expect(screen.getByTestId('region-flags')).toHaveTextContent(
+      `${regionFlag('ams')}↔${regionFlag('ord')}`,
+    );
+  });
+
+  it('falls back to the raw code for unknown regions', () => {
+    renderChip('xyz');
+    expect(screen.getByTestId('region-flags')).toHaveTextContent('xyz');
   });
 });
